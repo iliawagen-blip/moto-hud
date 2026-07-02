@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000">
+<title>Мото HUD навигатор</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --bg:#000; --fg:#fff; --dim:#8b9cb3;
+  --accent:#ffd400; --ok:#39d353; --warn:#ff6b6b; --alert:#ff2d2d;
+  --panel:#0a0f16; --panel2:#141d2a; --border:#1a2332;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{height:100%;background:var(--bg);color:var(--fg);overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-weight:800}
+
+/* ---------- SETUP ---------- */
+#setup{position:fixed;inset:0;background:var(--panel);padding:16px;overflow-y:auto;z-index:30;
+  padding-top:calc(env(safe-area-inset-top) + 16px)}
+#setup h1{font-size:22px;margin-bottom:14px;color:var(--accent)}
+#setup h2{font-size:14px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px}
+#setup .row{margin-bottom:8px}
+#setup input,#setup button{
+  width:100%;min-height:56px;padding:12px;border-radius:12px;
+  border:1px solid var(--border);background:var(--panel2);color:var(--fg);
+  font-size:16px;font-weight:700
+}
+#setup .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#setup button.primary{background:var(--accent);color:#000;border-color:var(--accent);
+  min-height:72px;font-size:22px;margin-top:16px}
+#setup button.primary:disabled{opacity:.4}
+#setup .status{font-size:13px;color:var(--dim);margin:6px 0;line-height:1.4}
+#setup .status.ok{color:var(--ok)} #setup .status.err{color:var(--warn)}
+#setup .hint{font-size:12px;color:var(--dim);line-height:1.4;margin-top:4px}
+#setup .hint code{background:var(--panel2);padding:1px 5px;border-radius:5px}
+#setup .toggle{display:flex;justify-content:space-between;align-items:center;
+  background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;min-height:56px;font-size:15px}
+#setup .toggle input[type="checkbox"]{width:auto;min-height:auto;transform:scale(1.5);margin-left:12px}
+#setup .toggle input[type="number"]{width:80px;min-height:auto;padding:6px 8px;font-size:16px}
+
+/* результаты поиска адреса */
+.search-results{background:var(--panel2);border:1px solid var(--border);border-radius:12px;
+  margin-top:8px;max-height:240px;overflow-y:auto}
+.search-results div{padding:12px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;cursor:pointer}
+.search-results div:last-child{border-bottom:none}
+.search-results div:active{background:var(--panel)}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;display:none;flex-direction:column;background:#000}
+#hud.on{display:flex}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;
+  padding:6px 12px;font-size:13px;color:var(--dim);
+  padding-top:calc(env(safe-area-inset-top) + 6px);background:#000;border-bottom:1px solid #111}
+.topbar .dot{width:10px;height:10px;border-radius:50%;background:var(--warn);display:inline-block;margin-right:6px;vertical-align:middle}
+.topbar .dot.ok{background:var(--ok)}
+
+.maneuver{
+  background:#000;padding:8px 12px;display:grid;
+  grid-template-columns:auto 1fr;gap:14px;align-items:center;
+  border-bottom:2px solid var(--border);min-height:130px
+}
+.maneuver .arrow{width:110px;height:110px;flex-shrink:0}
+.maneuver .arrow svg{width:100%;height:100%}
+.maneuver .info{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.maneuver .dist{font-size:64px;line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
+.maneuver .dist .u{font-size:24px;color:var(--dim);margin-left:6px}
+.maneuver .street{font-size:16px;color:var(--fg);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.mapwrap{flex:1;position:relative;background:#111;min-height:100px}
+#map{position:absolute;inset:0}
+.mapwrap .overlay{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.65);
+  padding:6px 10px;border-radius:8px;font-size:12px;color:var(--dim);pointer-events:none}
+
+.tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;background:#111;padding:2px 0}
+.tile{background:#000;padding:8px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;position:relative}
+.tile .lbl{position:absolute;top:4px;left:8px;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.tile .val{font-size:52px;line-height:1;font-variant-numeric:tabular-nums}
+.tile .unit{font-size:14px;color:var(--dim);margin-top:2px}
+.tile.speed .val{color:var(--accent)}
+.tile.speed.over .val{color:var(--warn);animation:blink .8s infinite}
+
+.bottombar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;background:#111;
+  padding-bottom:env(safe-area-inset-bottom)}
+.bottombar button{min-height:60px;background:var(--panel);border:none;color:var(--fg);
+  font-size:13px;font-weight:800;letter-spacing:.5px}
+.bottombar button:active{background:var(--panel2)}
+.bottombar .stop{color:var(--warn)}
+
+#camAlert{position:fixed;top:calc(env(safe-area-inset-top) + 30px);left:50%;transform:translateX(-50%);
+  background:var(--alert);color:#fff;padding:14px 22px;border-radius:14px;
+  font-size:24px;font-weight:900;text-align:center;box-shadow:0 8px 30px rgba(255,45,45,.6);
+  display:none;z-index:25;min-width:70%;max-width:90%}
+#camAlert.on{display:block;animation:pulse .6s infinite alternate}
+#camAlert .big{font-size:44px;display:block;line-height:1}
+#camAlert .sub{font-size:14px;opacity:.9;margin-top:4px}
+
+@keyframes blink{50%{opacity:.3}}
+@keyframes pulse{to{transform:translateX(-50%) scale(1.05)}}
+
+@media (orientation:landscape) and (max-height:500px){
+  .maneuver{min-height:100px}
+  .maneuver .arrow{width:80px;height:80px}
+  .maneuver .dist{font-size:48px}
+  .tile .val{font-size:38px}
+  .tile{min-height:70px}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP ============ -->
+<div id="setup">
+  <h1>🏍 Мото HUD навигатор</h1>
+
+  <h2>GPS</h2>
+  <div class="status" id="s-gps">📍 Ожидание…</div>
+  <button id="btn-gps">📍 Включить GPS</button>
+
+  <h2>Финиш</h2>
+  <div class="status" id="s-finish">🏁 Не задан</div>
+  <div class="row">
+    <input type="text" id="finish-input" placeholder="Адрес, координаты или ссылка карты">
+  </div>
+  <div class="grid2">
+    <button id="btn-search">🔎 Найти адрес</button>
+    <button id="btn-parse">✓ Координаты/ссылка</button>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button id="btn-paste">📋 Вставить из буфера</button>
+  </div>
+  <div id="search-results" class="search-results" style="display:none"></div>
+  <div class="hint">Примеры: <code>55.7558, 37.6173</code> · ссылка Яндекс.Карт с <code>ll=</code>/<code>pt=</code> · любой адрес («Тверская 7, Москва»).</div>
+
+  <h2>Опции</h2>
+  <div class="toggle">🔊 Голос предупреждений <input type="checkbox" id="opt-voice" checked></div>
+  <div class="toggle" style="margin-top:8px">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
+  <div class="toggle" style="margin-top:8px">
+    🎯 Только камеры в спину
+    <input type="checkbox" id="opt-back-only" checked>
+  </div>
+  <div class="hint" style="margin-top:6px">
+    Включено: предупреждаем только о камерах, объектив которых направлен в сторону движения (снимают задний номер мотоцикла).<br>
+    Выключено: предупреждаем обо всех камерах в радиусе.
+  </div>
+  <div class="toggle" style="margin-top:8px">
+    ⚙ Допуск направления (°)
+    <input type="number" id="opt-tol" value="45" min="10" max="90">
+  </div>
+  <div class="toggle" style="margin-top:8px">
+    ❓ Камеры без указания направления
+    <select id="opt-nodir" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px">
+      <option value="skip">пропускать</option>
+      <option value="warn">предупреждать</option>
+    </select>
+  </div>
+  <div class="toggle" style="margin-top:8px">🚧 Лимит скорости (км/ч) <input type="number" id="opt-limit" value="60" min="0" max="200"></div>
+
+  <button class="primary" id="btn-start" disabled>▶ ПОСТРОИТЬ МАРШРУТ И СТАРТ</button>
+
+  <div class="hint" style="margin-top:14px;line-height:1.5">
+    <b>Как работают камеры «в спину»:</b> мотономер сзади, поэтому его фиксирует камера, объектив которой смотрит вслед уходящему мотоциклу. В OSM тег <code>direction</code> = азимут объектива. Опасна камера, если её direction ≈ ваш курс (± допуск).<br>
+    <b>Ограничения:</b> база OSM не покрывает 100% камер, у части нет тега direction — такие по умолчанию пропускаются.
+  </div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud">
+  <div class="topbar">
+    <span><span class="dot" id="gps-dot"></span><span id="gps-txt">GPS…</span></span>
+    <span id="route-info">маршрут: --</span>
+    <span id="clock">--:--</span>
+  </div>
+
+  <div class="maneuver">
+    <div class="arrow" id="arrow-box"></div>
+    <div class="info">
+      <div class="dist"><span id="v-mdist">–</span><span class="u" id="v-mdist-u">м</span></div>
+      <div class="street" id="v-street">Ожидание маршрута…</div>
+    </div>
+  </div>
+
+  <div class="mapwrap">
+    <div id="map"></div>
+    <div class="overlay" id="off-route-warn" style="display:none">⚠ Сошли с маршрута — пересчёт…</div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile speed" id="tile-speed">
+      <div class="lbl">Скорость</div>
+      <div class="val" id="v-speed">0</div>
+      <div class="unit">км/ч</div>
+    </div>
+    <div class="tile">
+      <div class="lbl">До финиша</div>
+      <div class="val" id="v-total">–</div>
+      <div class="unit" id="v-total-u">км</div>
+    </div>
+    <div class="tile">
+      <div class="lbl">Прибытие</div>
+      <div class="val" id="v-eta" style="font-size:38px">–:–</div>
+      <div class="unit"><span id="v-elapsed">00:00</span> в пути</div>
+    </div>
+  </div>
+
+  <div class="bottombar">
+    <button id="btn-mute">🔊 ЗВУК</button>
+    <button id="btn-recenter">🎯 ЦЕНТР</button>
+    <button class="stop" id="btn-stop">■ СТОП</button>
+  </div>
+</div>
+
+<div id="camAlert">
+  <span class="big" id="cam-dist">300 м</span>
+  <span>📷 КАМЕРА В СПИНУ</span>
+  <span class="sub" id="cam-sub">впереди</span>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ============================================================
+   МОТО HUD — универсальный автономный навигатор
+   Камеры фильтруются по направлению: только те, что стреляют в спину
+   ============================================================ */
+
+const S = {
+  gps: null,
+  finish: null,
+  route: null,
+  cameras: [],           // сырой список из OSM
+  camWarned: new Set(),
+  offRouteSince: null,
+  watchId: null,
+  wakeLock: null,
+  startTs: null,
+  distDone: 0,
+  lastPos: null,
+  smoothedHeading: null, // сглаженный курс движения
+  map: null,
+  mapLayers: {},
+  voice: true,
+  cams: true,
+  backOnly: true,        // фильтр «только в спину»
+  tolerance: 45,         // допуск в градусах
+  noDirPolicy: 'skip',   // что делать с камерами без direction
+  limit: 60,
+  lastVoiceTs: 0
+};
+
+const $ = id => document.getElementById(id);
+const pad = n => n < 10 ? '0' + n : '' + n;
+const fmtClock = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+const fmtTime = s => {
+  s = Math.max(0, Math.floor(s));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return h > 0 ? h + ':' + pad(m) + ':' + pad(sec) : pad(m) + ':' + pad(sec);
+};
+
+/* ---------- Гео-математика ---------- */
+function haversine(a, b){
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r;
+  const s = Math.sin(dLat / 2) ** 2 +
+            Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+function bearing(a, b){
+  const r = Math.PI / 180, d = 180 / Math.PI;
+  const f1 = a.lat * r, f2 = b.lat * r, dl = (b.lon - a.lon) * r;
+  const y = Math.sin(dl) * Math.cos(f2);
+  const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+  return (Math.atan2(y, x) * d + 360) % 360;
+}
+function distToSegment(p, a, b){
+  const kx = Math.cos(p.lat * Math.PI / 180) * 111320;
+  const ky = 110540;
+  const ax = (a.lon - p.lon) * kx, ay = (a.lat - p.lat) * ky;
+  const bx = (b.lon - p.lon) * kx, by = (b.lat - p.lat) * ky;
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  if(len2 === 0) return Math.hypot(ax, ay);
+  let t = -(ax * dx + ay * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t * dx, cy = ay + t * dy;
+  return Math.hypot(cx, cy);
+}
+/* угловая разница по кругу, всегда 0..180 */
+function angleDiff(a, b){
+  let d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+/* ---------- Парсинг координат и ссылок ---------- */
+function parseInput(raw){
+  raw = (raw || '').trim();
+  if(!raw) return null;
+  let s = raw;
+  try { s = decodeURIComponent(raw); } catch(e){}
+
+  // Яндекс.Карты: ll=lon,lat или pt=lon,lat (запятая может быть URL-кодирована как %2C)
+  const ym = s.match(/[?&](?:ll|pt)=(-?\d+\.?\d*)\s*(?:,|%2C)\s*(-?\d+\.?\d*)/i);
+  if(ym){
+    const lon = parseFloat(ym[1]), lat = parseFloat(ym[2]);
+    if(lat > -90 && lat < 90 && lon > -180 && lon < 180){
+      return { lat, lon, label: 'Финиш из ссылки' };
+    }
+  }
+  // Google Maps: @lat,lon
+  const g = s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if(g){
+    return { lat: parseFloat(g[1]), lon: parseFloat(g[2]), label: 'Финиш из ссылки' };
+  }
+  // Просто пара координат: "55.7558, 37.6173"
+  const p = s.match(/(-?\d{1,3}\.\d{3,})\s*[,;\s]\s*(-?\d{1,3}\.\d{3,})/);
+  if(p){
+    const x = parseFloat(p[1]), y = parseFloat(p[2]);
+    // Эвристика: широта |x| <= 90, долгота |y| <= 180
+    if(Math.abs(x) <= 90 && Math.abs(y) <= 180) return { lat: x, lon: y, label: 'Координаты' };
+    if(Math.abs(y) <= 90 && Math.abs(x) <= 180) return { lat: y, lon: x, label: 'Координаты' };
+  }
+  return null;
+}
+
+/* ---------- Поиск адреса через Nominatim ---------- */
+async function searchAddress(query){
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&q=' +
+              encodeURIComponent(query);
+  const r = await fetch(url, { headers: { 'Accept-Language': 'ru' } });
+  if(!r.ok) throw new Error('Nominatim ' + r.status);
+  return await r.json();
+}
+
+/* ---------- GPS ---------- */
+function startGps(){
+  if(!navigator.geolocation){
+    $('s-gps').textContent = '❌ Геолокация недоступна';
+    $('s-gps').className = 'status err';
+    return;
+  }
+  $('s-gps').textContent = '⏳ Определяем…';
+  $('s-gps').className = 'status';
+  if(S.watchId !== null) navigator.geolocation.clearWatch(S.watchId);
+  S.watchId = navigator.geolocation.watchPosition(
+    pos => {
+      const c = pos.coords;
+      const next = {
+        lat: c.latitude, lon: c.longitude,
+        speed: c.speed == null ? null : c.speed,
+        heading: c.heading == null ? null : c.heading,
+        acc: c.accuracy, ts: pos.timestamp
+      };
+      if(S.lastPos){
+        const d = haversine(S.lastPos, next);
+        if(d > 3 && d < 500) S.distDone += d;
+        // если GPS не отдаёт heading — считаем по двум последним точкам
+        if((next.heading == null || isNaN(next.heading)) && d > 3){
+          next.heading = bearing(S.lastPos, next);
+        }
+      }
+      // сглаживание курса (низкочастотный фильтр по круговой величине)
+      if(next.heading != null && !isNaN(next.heading)){
+        if(S.smoothedHeading == null) S.smoothedHeading = next.heading;
+        else {
+          const r = Math.PI / 180, d = 180 / Math.PI;
+          const sx = Math.sin(S.smoothedHeading * r) * 0.7 + Math.sin(next.heading * r) * 0.3;
+          const sy = Math.cos(S.smoothedHeading * r) * 0.7 + Math.cos(next.heading * r) * 0.3;
+          S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
+        }
+      }
+      S.lastPos = next;
+      S.gps = next;
+      $('s-gps').textContent = '✅ GPS: ' + next.lat.toFixed(5) + ', ' +
+                               next.lon.toFixed(5) + ' (±' + Math.round(next.acc) + 'м)';
+      $('s-gps').className = 'status ok';
+      $('gps-dot').classList.add('ok');
+      $('gps-txt').textContent = 'GPS ±' + Math.round(next.acc) + 'м';
+      checkStartReady();
+      if($('hud').classList.contains('on')) onTick();
+    },
+    err => {
+      $('s-gps').textContent = '❌ GPS: ' + (err.message || 'нет доступа');
+      $('s-gps').className = 'status err';
+      $('gps-dot').classList.remove('ok');
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 1000 }
+  );
+}
+
+function checkStartReady(){
+  $('btn-start').disabled = !(S.gps && S.finish);
+}
+
+/* ---------- Маршрут OSRM ---------- */
+async function buildRoute(){
+  const url = 'https://router.project-osrm.org/route/v1/driving/' +
+    `${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}` +
+    '?overview=full&geometries=geojson&steps=true&annotations=false';
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('OSRM HTTP ' + r.status);
+  const j = await r.json();
+  if(!j.routes || !j.routes.length) throw new Error('Маршрут не найден');
+  const rt = j.routes[0];
+  const coords = rt.geometry.coordinates.map(c => [c[1], c[0]]);
+  const steps = [];
+  rt.legs.forEach(leg => {
+    leg.steps.forEach(st => {
+      const loc = st.maneuver.location;
+      steps.push({
+        lat: loc[1], lon: loc[0],
+        type: st.maneuver.type,
+        modifier: st.maneuver.modifier,
+        name: st.name || '',
+        distance: st.distance
+      });
+    });
+  });
+  S.route = { coords, steps, distance: rt.distance, duration: rt.duration };
+}
+
+/* ---------- Камеры OSM Overpass ---------- */
+async function loadCameras(){
+  if(!S.cams || !S.route){ S.cameras = []; return; }
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  S.route.coords.forEach(c => {
+    if(c[0] < minLat) minLat = c[0];
+    if(c[0] > maxLat) maxLat = c[0];
+    if(c[1] < minLon) minLon = c[1];
+    if(c[1] > maxLon) maxLon = c[1];
+  });
+  const buf = 0.02;
+  minLat -= buf; maxLat += buf; minLon -= buf; maxLon += buf;
+
+  const q = `[out:json][timeout:20];
+    (node["highway"="speed_camera"](${minLat},${minLon},${maxLat},${maxLon});
+     node["enforcement"="maxspeed"](${minLat},${minLon},${maxLat},${maxLon}););
+    out body;`;
+  try{
+    const r = await fetch('https://overpass-api.de/api/interpreter',
+      { method: 'POST', body: 'data=' + encodeURIComponent(q) });
+    if(!r.ok) throw new Error('Overpass ' + r.status);
+    const j = await r.json();
+    S.cameras = (j.elements || []).map(e => {
+      const t = e.tags || {};
+      // direction в OSM: число (азимут) либо кардинал N/NE/E/… либо "forward"/"backward"
+      let dir = null;
+      if(t.direction != null){
+        const raw = String(t.direction).trim();
+        const num = parseFloat(raw);
+        if(!isNaN(num)){
+          dir = ((num % 360) + 360) % 360;
+        } else {
+          const CARD = { N:0, NNE:22.5, NE:45, ENE:67.5, E:90, ESE:112.5, SE:135, SSE:157.5,
+                         S:180, SSW:202.5, SW:225, WSW:247.5, W:270, WNW:292.5, NW:315, NNW:337.5 };
+          const up = raw.toUpperCase();
+          if(CARD[up] != null) dir = CARD[up];
+        }
+      }
+      return {
+        lat: e.lat, lon: e.lon,
+        speed: t.maxspeed ? parseInt(t.maxspeed, 10) : null,
+        dir: dir
+      };
+    });
+  }catch(e){
+    console.warn('Камеры не загрузились:', e);
+    S.cameras = [];
+  }
+}
+
+/* ---------- Карта ---------- */
+function initMap(){
+  if(S.map) return;
+  S.map = L.map('map', {
+    zoomControl: false, attributionControl: false, dragging: true, tap: false
+  }).setView([S.gps.lat, S.gps.lon], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(S.map);
+  S.mapLayers.route = L.polyline(S.route.coords,
+    { color: '#ffd400', weight: 6, opacity: .9 }).addTo(S.map);
+  S.mapLayers.finish = L.circleMarker([S.finish.lat, S.finish.lon],
+    { radius: 8, color: '#39d353', fillColor: '#39d353', fillOpacity: 1 }).addTo(S.map);
+  S.mapLayers.cams = L.layerGroup().addTo(S.map);
+  S.cameras.forEach(c => {
+    // камеры с известным направлением — красные, без — оранжевые
+    const color = c.dir != null ? '#ff2d2d' : '#ff9d3d';
+    L.circleMarker([c.lat, c.lon],
+      { radius: 5, color: color, fillColor: color, fillOpacity: .8 })
+      .addTo(S.mapLayers.cams);
+  });
+  S.mapLayers.me = L.circleMarker([S.gps.lat, S.gps.lon],
+    { radius: 9, color: '#fff', fillColor: '#4dabf7', fillOpacity: 1, weight: 3 }).addTo(S.map);
+  S.map.fitBounds(S.mapLayers.route.getBounds(), { padding: [30, 30] });
+}
+function updateMap(){ if(S.map && S.gps) S.mapLayers.me.setLatLng([S.gps.lat, S.gps.lon]); }
+function recenter(){ if(S.map && S.gps) S.map.setView([S.gps.lat, S.gps.lon], 16); }
+
+/* ---------- Логика ведения по маршруту ---------- */
+function findNearestOnRoute(){
+  if(!S.route) return null;
+  const c = S.route.coords;
+  let best = { idx: 0, dist: Infinity };
+  for(let i = 0; i < c.length - 1; i++){
+    const d = distToSegment(S.gps,
+      { lat: c[i][0], lon: c[i][1] }, { lat: c[i + 1][0], lon: c[i + 1][1] });
+    if(d < best.dist){ best.dist = d; best.idx = i; }
+  }
+  return best;
+}
+function findNextManeuver(){
+  if(!S.route || !S.route.steps.length) return null;
+  let best = null, bestDist = Infinity;
+  S.route.steps.forEach(st => {
+    if(st.type === 'depart') return;
+    const d = haversine(S.gps, st);
+    if(d < bestDist){ bestDist = d; best = { step: st, dist: d }; }
+  });
+  return best;
+}
+
+/* ---------- Стрелки манёвров ---------- */
+const ARROWS = {
+  'left': `<svg viewBox="0 0 100 100"><path d="M60 20 L60 55 L30 55 L45 40 M30 55 L45 70" stroke="#ffd400" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'right': `<svg viewBox="0 0 100 100"><path d="M40 20 L40 55 L70 55 L55 40 M70 55 L55 70" stroke="#ffd400" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'slight left': `<svg viewBox="0 0 100 100"><path d="M65 20 L45 55 L30 45 M45 55 L60 65" stroke="#ffd400" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'slight right': `<svg viewBox="0 0 100 100"><path d="M35 20 L55 55 L70 45 M55 55 L40 65" stroke="#ffd400" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'sharp left': `<svg viewBox="0 0 100 100"><path d="M70 25 L30 55 L45 40 M30 55 L45 70" stroke="#ffd400" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'sharp right': `<svg viewBox="0 0 100 100"><path d="M30 25 L70 55 L55 40 M70 55 L55 70" stroke="#ffd400" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'straight': `<svg viewBox="0 0 100 100"><path d="M50 80 L50 25 M35 40 L50 25 L65 40" stroke="#ffd400" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'uturn': `<svg viewBox="0 0 100 100"><path d="M35 80 L35 40 A15 15 0 0 1 65 40 L65 70 M50 55 L65 70 L80 55" stroke="#ffd400" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'arrive': `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="28" stroke="#39d353" stroke-width="8" fill="none"/><path d="M35 50 L45 60 L65 40" stroke="#39d353" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+};
+function arrowFor(step){
+  if(!step) return ARROWS.straight;
+  if(step.type === 'arrive') return ARROWS.arrive;
+  if(step.modifier === 'uturn') return ARROWS.uturn;
+  if(step.modifier && ARROWS[step.modifier]) return ARROWS[step.modifier];
+  return ARROWS.straight;
+}
+function maneuverText(step){
+  if(!step) return '—';
+  if(step.type === 'arrive') return 'Прибытие';
+  const m = {
+    'left': 'налево', 'right': 'направо',
+    'slight left': 'левее', 'slight right': 'правее',
+    'sharp left': 'резко налево', 'sharp right': 'резко направо',
+    'straight': 'прямо', 'uturn': 'разворот'
+  }[step.modifier] || 'прямо';
+  return m + (step.name ? ' · ' + step.name : '');
+}
+
+/* ---------- Камеры: фильтр «стреляют в спину» ----------
+   Логика (по уточнению пользователя):
+   Задний номер снимает камера, объектив которой смотрит В ТУ ЖЕ СТОРОНУ, куда едет мотоцикл.
+   Мото едет на север (heading=0°) → в спину стреляет камера с direction≈0° (тоже смотрит на север,
+   ловит уходящий транспорт сзади). Условие: |direction − heading| ≤ tolerance.
+*/
+function isCameraBehind(cam, heading){
+  if(cam.dir == null){
+    // тег direction не задан
+    return S.noDirPolicy === 'warn';
+  }
+  if(heading == null || isNaN(heading)) return true; // курса нет — не фильтруем
+  return angleDiff(cam.dir, heading) <= S.tolerance;
+}
+
+function checkCameras(){
+  if(!S.cams || !S.cameras.length) return;
+  const now = Date.now();
+  const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const heading = S.smoothedHeading;
+  // радиус тревоги от скорости
+  const radius = Math.max(200, Math.min(1000, kmh * 10));
+
+  let closest = null;
+  S.cameras.forEach((c, i) => {
+    const d = haversine(S.gps, c);
+    if(d > radius) return;
+    // проверяем: камера "в спину" (если фильтр включён)
+    if(S.backOnly && !isCameraBehind(c, heading)) return;
+    // и проверяем: камера впереди по курсу (иначе мы уже проехали)
+    if(heading != null){
+      const brg = bearing(S.gps, c);
+      const rel = angleDiff(brg, heading);
+      if(rel > 90) return; // камера позади по ходу — уже проехали
+    }
+    if(!closest || d < closest.dist){
+      closest = { cam: c, dist: d, id: i };
+    }
+  });
+
+  if(closest){
+    const key = closest.id;
+    $('cam-dist').textContent = Math.round(closest.dist) + ' м';
+    $('cam-sub').textContent = closest.cam.speed
+      ? 'лимит ' + closest.cam.speed + ' км/ч'
+      : (closest.cam.dir != null ? 'направление ' + Math.round(closest.cam.dir) + '°' : 'направление неизвестно');
+    $('camAlert').classList.add('on');
+
+    if(!S.camWarned.has(key) && (now - S.lastVoiceTs > 3000)){
+      S.camWarned.add(key);
+      S.lastVoiceTs = now;
+      const dm = closest.dist < 200 ? 'менее 200 метров' :
+                 closest.dist < 400 ? 'через 300 метров' :
+                 closest.dist < 700 ? 'через 500 метров' :
+                 'через ' + Math.round(closest.dist / 100) * 100 + ' метров';
+      speak('Камера в спину ' + dm + (closest.cam.speed ? ', лимит ' + closest.cam.speed : ''));
+    }
+  } else {
+    $('camAlert').classList.remove('on');
+    // очистка предупреждений о камерах, оставшихся далеко позади
+    S.cameras.forEach((c, i) => {
+      if(S.camWarned.has(i) && haversine(S.gps, c) > 2000){
+        S.camWarned.delete(i);
+      }
+    });
+  }
+}
+
+/* ---------- Голос ---------- */
+function speak(text){
+  if(!S.voice || !('speechSynthesis' in window)) return;
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ru-RU';
+    u.rate = 1.05;
+    u.volume = 1;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ---------- Основной тик HUD ---------- */
+function onTick(){
+  if(!S.gps) return;
+  const now = new Date();
+  $('clock').textContent = fmtClock(now);
+
+  const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  $('v-speed').textContent = Math.round(kmh);
+  $('tile-speed').classList.toggle('over', S.limit > 0 && kmh > S.limit + 3);
+
+  updateMap();
+  if(!S.route) return;
+
+  // остаток по маршруту
+  const nearest = findNearestOnRoute();
+  let remaining = 0;
+  if(nearest){
+    const c = S.route.coords;
+    remaining = distToSegment(S.gps,
+      { lat: c[nearest.idx][0], lon: c[nearest.idx][1] },
+      { lat: c[nearest.idx + 1][0], lon: c[nearest.idx + 1][1] });
+    for(let i = nearest.idx + 1; i < c.length - 1; i++){
+      remaining += haversine(
+        { lat: c[i][0], lon: c[i][1] },
+        { lat: c[i + 1][0], lon: c[i + 1][1] });
+    }
+  } else {
+    remaining = haversine(S.gps, S.finish);
+  }
+  if(remaining < 1000){
+    $('v-total').textContent = Math.round(remaining);
+    $('v-total-u').textContent = 'м';
+  } else {
+    $('v-total').textContent = (remaining / 1000).toFixed(remaining < 10000 ? 1 : 0);
+    $('v-total-u').textContent = 'км';
+  }
+
+  if(kmh > 5){
+    const etaSec = remaining / (kmh / 3.6);
+    const eta = new Date(now.getTime() + etaSec * 1000);
+    $('v-eta').textContent = fmtClock(eta);
+  }
+  if(S.startTs) $('v-elapsed').textContent = fmtTime((Date.now() - S.startTs) / 1000);
+
+  const nm = findNextManeuver();
+  if(nm){
+    $('arrow-box').innerHTML = arrowFor(nm.step);
+    if(nm.dist < 1000){
+      $('v-mdist').textContent = Math.round(nm.dist / 10) * 10;
+      $('v-mdist-u').textContent = 'м';
+    } else {
+      $('v-mdist').textContent = (nm.dist / 1000).toFixed(1);
+      $('v-mdist-u').textContent = 'км';
+    }
+    $('v-street').textContent = maneuverText(nm.step);
+
+    const stIdx = S.route.steps.indexOf(nm.step);
+    const kFar = 'st_' + stIdx + '_far';
+    const kNear = 'st_' + stIdx + '_near';
+    if(nm.dist < 300 && nm.dist > 200 && !S.camWarned.has(kFar)){
+      S.camWarned.add(kFar);
+      speak('Через 300 метров ' + maneuverText(nm.step));
+    }
+    if(nm.dist < 70 && !S.camWarned.has(kNear)){
+      S.camWarned.add(kNear);
+      speak(maneuverText(nm.step));
+    }
+  }
+
+  // off-route
+  if(nearest && nearest.dist > 40){
+    if(!S.offRouteSince) S.offRouteSince = Date.now();
+    else if(Date.now() - S.offRouteSince > 8000){
+      $('off-route-warn').style.display = 'block';
+      S.offRouteSince = null;
+      recalcRoute();
+    }
+  } else {
+    S.offRouteSince = null;
+    $('off-route-warn').style.display = 'none';
+  }
+
+  if(remaining < 30){
+    speak('Вы прибыли');
+    $('v-street').textContent = '🏁 Финиш';
+  }
+
+  checkCameras();
+}
+
+async function recalcRoute(){
+  try{
+    await buildRoute();
+    S.mapLayers.route.setLatLngs(S.route.coords);
+    // очистить кэш пройденных манёвров
+    Array.from(S.camWarned).forEach(k => {
+      if(typeof k === 'string' && k.startsWith('st_')) S.camWarned.delete(k);
+    });
+  }catch(e){ console.warn('Пересчёт не удался:', e); }
+}
+
+setInterval(() => { if($('hud').classList.contains('on')) onTick(); }, 1000);
+
+/* ---------- Wake Lock ---------- */
+async function requestWakeLock(){
+  try{
+    if('wakeLock' in navigator){
+      S.wakeLock = await navigator.wakeLock.request('screen');
+    }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && $('hud').classList.contains('on')){
+    requestWakeLock();
+  }
+});
+
+/* ---------- Старт / стоп ---------- */
+async function startHud(){
+  $('btn-start').disabled = true;
+  $('btn-start').textContent = '⏳ Строим маршрут…';
+  try{
+    await buildRoute();
+    $('btn-start').textContent = '⏳ Загружаем камеры…';
+    await loadCameras();
+  }catch(e){
+    alert('Не удалось построить маршрут: ' + e.message);
+    $('btn-start').disabled = false;
+    $('btn-start').textContent = '▶ ПОСТРОИТЬ МАРШРУТ И СТАРТ';
+    return;
+  }
+  S.startTs = Date.now();
+  S.distDone = 0;
+  S.camWarned.clear();
+  $('setup').style.display = 'none';
+  $('hud').classList.add('on');
+  const withDir = S.cameras.filter(c => c.dir != null).length;
+  $('route-info').textContent = 'маршрут: ' + (S.route.distance / 1000).toFixed(1) +
+    ' км · камер: ' + S.cameras.length + ' (с напр.: ' + withDir + ')';
+  setTimeout(initMap, 100);
+  requestWakeLock();
+  try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){}
+  speak('Маршрут построен. В пути ' + Math.round(S.route.duration / 60) + ' минут');
+  onTick();
+}
+
+function stopHud(){
+  $('hud').classList.remove('on');
+  $('setup').style.display = 'block';
+  $('btn-start').disabled = false;
+  $('btn-start').textContent = '▶ ПОСТРОИТЬ МАРШРУТ И СТАРТ';
+  if(S.wakeLock){ try{ S.wakeLock.release(); }catch(e){} S.wakeLock = null; }
+  try{ document.exitFullscreen && document.exitFullscreen(); }catch(e){}
+  if(S.map){ S.map.remove(); S.map = null; S.mapLayers = {}; }
+}
+
+/* ---------- UI: поиск адреса ---------- */
+async function doAddressSearch(){
+  const q = $('finish-input').value.trim();
+  if(!q){
+    $('s-finish').textContent = '❌ Введите адрес';
+    $('s-finish').className = 'status err';
+    return;
+  }
+  $('s-finish').textContent = '⏳ Ищем адрес…';
+  $('s-finish').className = 'status';
+  try{
+    const res = await searchAddress(q);
+    if(!res.length){
+      $('s-finish').textContent = '❌ Ничего не найдено';
+      $('s-finish').className = 'status err';
+      $('search-results').style.display = 'none';
+      return;
+    }
+    // показываем список результатов
+    const box = $('search-results');
+    box.innerHTML = '';
+    res.forEach(r => {
+      const d = document.createElement('div');
+      d.textContent = r.display_name;
+      d.addEventListener('click', () => {
+        S.finish = {
+          lat: parseFloat(r.lat),
+          lon: parseFloat(r.lon),
+          label: r.display_name.split(',')[0]
+        };
+        $('s-finish').textContent = '✅ Финиш: ' + r.display_name;
+        $('s-finish').className = 'status ok';
+        $('finish-input').value = r.display_name;
+        box.style.display = 'none';
+        checkStartReady();
+      });
+      box.appendChild(d);
+    });
+    box.style.display = 'block';
+    $('s-finish').textContent = '🔎 Выберите вариант из списка';
+    $('s-finish').className = 'status';
+  }catch(e){
+    $('s-finish').textContent = '❌ Ошибка поиска: ' + e.message;
+    $('s-finish').className = 'status err';
+  }
+}
+
+/* ---------- UI: применить координаты/ссылку ---------- */
+function applyCoordsOrLink(){
+  const raw = $('finish-input').value.trim();
+  const p = parseInput(raw);
+  if(!p){
+    $('s-finish').textContent = '❌ Не разобрали. Используйте координаты или ссылку карты, либо кнопку «Найти адрес»';
+    $('s-finish').className = 'status err';
+    return;
+  }
+  S.finish = p;
+  $('s-finish').textContent = '✅ Финиш: ' + p.lat.toFixed(5) + ', ' + p.lon.toFixed(5);
+  $('s-finish').className = 'status ok';
+  $('search-results').style.display = 'none';
+  checkStartReady();
+}
+
+/* ---------- Привязка UI ---------- */
+$('btn-gps').addEventListener('click', startGps);
+$('btn-search').addEventListener('click', doAddressSearch);
+$('btn-parse').addEventListener('click', applyCoordsOrLink);
+$('finish-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    // если введена пара цифр — координаты, иначе адрес
+    if(/-?\d{1,2}\.\d+.*-?\d{1,3}\.\d+/.test(e.target.value) || /[?&](ll|pt)=/.test(e.target.value)){
+      applyCoordsOrLink();
+    } else {
+      doAddressSearch();
+    }
+  }
+});
+$('btn-paste').addEventListener('click', async () => {
+  try{
+    const t = await navigator.clipboard.readText();
+    if(t){
+      $('finish-input').value = t;
+      // авто: если координаты/ссылка — применяем, иначе ищем адрес
+      if(/-?\d{1,2}\.\d+.*-?\d{1,3}\.\d+/.test(t) || /[?&](ll|pt)=/.test(t)){
+        applyCoordsOrLink();
+      } else {
+        doAddressSearch();
+      }
+    }
+  }catch(e){
+    $('s-finish').textContent = '❌ Нет доступа к буферу — вставьте вручную';
+    $('s-finish').className = 'status err';
+  }
+});
+$('opt-voice').addEventListener('change', e => { S.voice = e.target.checked; });
+$('opt-cams').addEventListener('change', e => { S.cams = e.target.checked; });
+$('opt-back-only').addEventListener('change', e => { S.backOnly = e.target.checked; });
+$('opt-tol').addEventListener('change', e => {
+  const v = parseInt(e.target.value, 10);
+  S.tolerance = isNaN(v) ? 45 : Math.max(10, Math.min(90, v));
+});
+$('opt-nodir').addEventListener('change', e => { S.noDirPolicy = e.target.value; });
+$('opt-limit').addEventListener('change', e => {
+  S.limit = parseInt(e.target.value, 10) || 0;
+});
+$('btn-start').addEventListener('click', startHud);
+$('btn-stop').addEventListener('click', () => {
+  if(confirm('Завершить поездку?')) stopHud();
+});
+$('btn-recenter').addEventListener('click', recenter);
+$('btn-mute').addEventListener('click', () => {
+  S.voice = !S.voice;
+  $('btn-mute').textContent = S.voice ? '🔊 ЗВУК' : '🔇 БЕЗ ЗВ';
+  if(!S.voice && 'speechSynthesis' in window) speechSynthesis.cancel();
+});
+
+/* автоматически пытаемся включить GPS при загрузке */
+window.addEventListener('load', () => {
+  setTimeout(startGps, 400);
+});
+
+/* инициализация значений из формы (на случай перезагрузки страницы) */
+S.voice = $('opt-voice').checked;
+S.cams = $('opt-cams').checked;
+S.backOnly = $('opt-back-only').checked;
+S.tolerance = parseInt($('opt-tol').value, 10) || 45;
+S.noDirPolicy = $('opt-nodir').value;
+S.limit = parseInt($('opt-limit').value, 10) || 60;
+</script>
+</body>
+</html>
