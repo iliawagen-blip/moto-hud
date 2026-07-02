@@ -108,6 +108,28 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
 .no-heading.on{display:block}
 
 @keyframes blink{50%{opacity:.4}}
+
+/* ---------- Избранное ---------- */
+.favs-empty{font-size:13px;color:var(--dim);padding:10px 4px;line-height:1.4}
+.favs-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.fav-item{display:flex;gap:8px}
+.fav-apply{
+  flex:1;min-height:56px;padding:10px 14px;
+  border-radius:12px;border:1px solid var(--border);
+  background:var(--panel2);color:var(--fg);
+  font-size:15px;font-weight:700;text-align:left;
+  display:flex;flex-direction:column;justify-content:center;cursor:pointer
+}
+.fav-apply:active{background:var(--panel)}
+.fav-name{font-size:16px;color:var(--fg)}
+.fav-coords{font-size:11px;color:var(--dim);margin-top:3px;font-weight:600}
+.fav-del{
+  width:56px;min-height:56px;
+  border-radius:12px;border:1px solid var(--border);
+  background:var(--panel2);color:var(--warn);
+  font-size:20px;font-weight:900;cursor:pointer
+}
+.fav-del:active{background:#2a1010}
 </style>
 </head>
 <body>
@@ -134,6 +156,14 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
   </div>
   <div id="search-results" class="search-results" style="display:none"></div>
   <div class="hint">Примеры: <code>55.7558, 37.6173</code> · ссылка Яндекс.Карт с <code>ll=</code>/<code>pt=</code> · любой адрес.</div>
+
+  <h2>⭐ Мои места <span style="color:var(--dim);font-weight:600;text-transform:none;letter-spacing:0">хранятся на этом устройстве</span></h2>
+  <div class="favs-list" id="favs-list"></div>
+  <div class="grid2">
+    <button id="btn-fav-save-finish">💾 Сохранить финиш</button>
+    <button id="btn-fav-save-gps">📍 Сохранить GPS</button>
+  </div>
+  <div class="hint">Тап по месту — подставить как финиш. Данные лежат в браузере, между устройствами не переносятся.</div>
 
   <h2>Опции</h2>
   <div class="toggle">🔊 Голос предупреждений <input type="checkbox" id="opt-voice" checked></div>
@@ -1058,6 +1088,112 @@ S.backOnly = $('opt-back-only').checked;
 S.tolerance = parseInt($('opt-tol').value, 10) || 45;
 S.noDirPolicy = $('opt-nodir').value;
 S.limit = parseInt($('opt-limit').value, 10) || 60;
+
+/* ============================================================
+   ИЗБРАННЫЕ МЕСТА (localStorage)
+   ============================================================ */
+const FAV_KEY = 'moto-hud-favs';
+function loadFavs(){
+  try{
+    const raw = localStorage.getItem(FAV_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter(f =>
+      f && typeof f.lat === 'number' && typeof f.lon === 'number' && typeof f.name === 'string'
+    ) : [];
+  }catch(e){ return []; }
+}
+function saveFavs(list){
+  try{ localStorage.setItem(FAV_KEY, JSON.stringify(list)); }catch(e){}
+}
+function escapeHtml(s){
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function renderFavs(){
+  const box = $('favs-list');
+  const list = loadFavs();
+  if(!list.length){
+    box.innerHTML = '<div class="favs-empty">Пока пусто. Задайте финиш или включите GPS и нажмите кнопку сохранения ниже.</div>';
+    return;
+  }
+  box.innerHTML = list.map(f =>
+    '<div class="fav-item">' +
+      '<button type="button" class="fav-apply" data-id="' + f.id + '">' +
+        '<span class="fav-name">⭐ ' + escapeHtml(f.name) + '</span>' +
+        '<span class="fav-coords">' + f.lat.toFixed(5) + ', ' + f.lon.toFixed(5) + '</span>' +
+      '</button>' +
+      '<button type="button" class="fav-del" data-del="' + f.id + '" aria-label="Удалить">✕</button>' +
+    '</div>'
+  ).join('');
+  box.querySelectorAll('.fav-apply').forEach(b => {
+    b.addEventListener('click', () => applyFav(b.getAttribute('data-id')));
+  });
+  box.querySelectorAll('.fav-del').forEach(b => {
+    b.addEventListener('click', () => {
+      if(confirm('Удалить это место?')) deleteFav(b.getAttribute('data-del'));
+    });
+  });
+}
+function addFav(name, point){
+  if(!point || typeof point.lat !== 'number' || typeof point.lon !== 'number') return;
+  const list = loadFavs();
+  list.push({
+    id: 'f' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+    name: (name || 'Место').trim().slice(0, 60) || 'Место',
+    lat: point.lat,
+    lon: point.lon
+  });
+  saveFavs(list);
+  renderFavs();
+}
+function deleteFav(id){
+  saveFavs(loadFavs().filter(f => f.id !== id));
+  renderFavs();
+}
+function applyFav(id){
+  const fav = loadFavs().find(f => f.id === id);
+  if(!fav) return;
+  S.finish = { lat: fav.lat, lon: fav.lon, label: fav.name };
+  $('s-finish').textContent = '✅ Финиш: ⭐ ' + fav.name + ' (' + fav.lat.toFixed(5) + ', ' + fav.lon.toFixed(5) + ')';
+  $('s-finish').className = 'status ok';
+  $('finish-input').value = fav.lat + ', ' + fav.lon;
+  $('search-results').style.display = 'none';
+  checkStartReady();
+}
+function promptAndSave(defaultName, point){
+  if(!point){ alert('Нет точки для сохранения'); return; }
+  const name = prompt('Название места (например: Гараж, Работа, Дача):', defaultName || '');
+  if(name === null) return;
+  addFav(name || defaultName || 'Место', point);
+}
+$('btn-fav-save-finish').addEventListener('click', () => {
+  if(!S.finish){
+    $('s-finish').textContent = '❌ Сначала задайте финиш, потом сохраните';
+    $('s-finish').className = 'status err';
+    return;
+  }
+  const defaultName = S.finish.label && !/^Финиш|^Координаты/.test(S.finish.label)
+    ? S.finish.label.split(',')[0]
+    : '';
+  promptAndSave(defaultName, { lat: S.finish.lat, lon: S.finish.lon });
+});
+$('btn-fav-save-gps').addEventListener('click', () => {
+  if(S.gps){
+    promptAndSave('', { lat: S.gps.lat, lon: S.gps.lon });
+    return;
+  }
+  $('s-gps').textContent = '⏳ Определяем GPS для сохранения…';
+  const check = setInterval(() => {
+    if(S.gps){
+      clearInterval(check);
+      promptAndSave('', { lat: S.gps.lat, lon: S.gps.lon });
+    }
+  }, 500);
+  setTimeout(() => clearInterval(check), 20000);
+  startGps();
+});
+renderFavs();
 </script>
 </body>
 </html>
