@@ -49,6 +49,52 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
 .search-results div:last-child{border-bottom:none}
 .search-results div:active{background:var(--panel)}
 
+/* ---------- Компактный UI ---------- */
+#setup .headrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+#setup h1{font-size:20px;margin:0;color:var(--accent)}
+#setup .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);
+  background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:8px 12px;font-weight:700;
+  min-height:auto;width:auto;cursor:pointer}
+#setup .chip.ok{color:var(--ok);border-color:var(--ok)}
+#setup .chip.err{color:var(--warn);border-color:var(--warn)}
+#setup .btnrow{display:grid;gap:8px;margin-bottom:8px}
+#setup .btnrow.c2{grid-template-columns:1fr 1fr}
+#setup .btnrow.c3{grid-template-columns:1fr 1fr 1fr}
+#setup .btnrow.c4{grid-template-columns:repeat(4,1fr)}
+#setup .btnrow button{min-height:52px;font-size:14px;padding:6px}
+#setup .btnrow button.ic{font-size:22px}
+#setup button.primary{margin:2px 0 12px}
+#setup .lbl-in{font-size:13px;color:var(--dim);font-weight:700;margin:14px 0 6px;text-transform:uppercase;letter-spacing:1px}
+
+/* выпадающие секции */
+.drawer-btn{width:100%;min-height:52px;text-align:left;display:flex;justify-content:space-between;align-items:center;
+  background:var(--panel2);border:1px solid var(--border);color:var(--fg);border-radius:12px;padding:12px 16px;
+  font-size:15px;font-weight:800;margin-top:10px;cursor:pointer}
+.drawer-btn .chev{transition:transform .2s;color:var(--dim)}
+.drawer-btn.open .chev{transform:rotate(180deg)}
+.drawer{display:none;padding:6px 2px 2px}
+.drawer.open{display:block}
+
+/* модалка сохранения места */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:40;display:none;
+  align-items:center;justify-content:center;padding:16px;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.modal.on{display:flex}
+.modal-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;
+  width:100%;max-width:440px;color:#fff}
+.modal-card h3{font-size:18px;margin-bottom:6px;color:var(--accent)}
+.modal-card .sub{font-size:12px;color:var(--dim);margin-bottom:12px}
+.modal-card input{width:100%;min-height:56px;padding:12px;border-radius:12px;border:1px solid var(--border);
+  background:var(--panel2);color:#fff;font-size:16px;font-weight:700;margin-bottom:10px}
+.emoji-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:12px}
+.emoji-row button{min-height:48px;font-size:22px;padding:0;background:var(--panel2);
+  border:1px solid var(--border);border-radius:10px;color:#fff;cursor:pointer}
+.emoji-row button.sel{border-color:var(--accent);background:#2a2410}
+.modal-card .btnrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal-card .btnrow button{min-height:56px;border-radius:12px;border:1px solid var(--border);
+  background:var(--panel2);color:#fff;font-size:16px;font-weight:800;cursor:pointer}
+.modal-card .btnrow button.ok{background:var(--accent);color:#000;border-color:var(--accent)}
+
 /* ---------- HUD ИЛС ---------- */
 #hud{position:fixed;inset:0;display:none;background:#000;overflow:hidden;
   font-family:"Consolas","Courier New",monospace;font-weight:700;color:var(--hud)}
@@ -130,68 +176,100 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
   font-size:20px;font-weight:900;cursor:pointer
 }
 .fav-del:active{background:#2a1010}
+.fav-emoji{font-size:22px;margin-right:2px}
+
+/* ---------- Быстрая смена финиша в ИЛС ---------- */
+#quickFinish{position:absolute;inset:0;background:rgba(0,10,6,.96);z-index:6;display:none;
+  flex-direction:column;padding:calc(env(safe-area-inset-top) + 16px) 16px 16px}
+#quickFinish.on{display:flex}
+#quickFinish h3{color:var(--hud);font-size:18px;letter-spacing:2px;margin-bottom:12px;text-align:center;
+  text-shadow:0 0 8px rgba(0,255,136,.6)}
+.qf-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.qf-item{min-height:66px;border:1px solid var(--hud-dim);background:#001208;color:var(--hud);
+  border-radius:10px;padding:12px 16px;font-family:"Consolas",monospace;font-size:18px;font-weight:800;
+  text-align:left;display:flex;flex-direction:column;justify-content:center;cursor:pointer}
+.qf-item:active{background:#00220f}
+.qf-item .c{font-size:12px;color:var(--hud-dim);margin-top:4px}
+.qf-empty{color:var(--hud-dim);text-align:center;padding:24px;font-family:"Consolas",monospace}
+.qf-close{min-height:66px;margin-top:12px;border:2px solid var(--alert);background:#000;color:var(--alert);
+  border-radius:10px;font-family:"Consolas",monospace;font-size:16px;font-weight:900;letter-spacing:2px;cursor:pointer}
 </style>
 </head>
 <body>
 
 <!-- ============ SETUP ============ -->
 <div id="setup">
-  <h1>🏍 Мото ИЛС</h1>
+  <div class="headrow">
+    <h1>🏍 Мото ИЛС</h1>
+    <span class="chip" id="s-gps" title="Тап — включить GPS">📍 GPS…</span>
+  </div>
 
-  <h2>GPS</h2>
-  <div class="status" id="s-gps">📍 Ожидание…</div>
-  <button id="btn-gps">📍 Включить GPS</button>
+  <!-- ГЛАВНАЯ КНОПКА — наверху, крупная -->
+  <button class="primary" id="btn-start" disabled>▶ СТАРТ</button>
 
-  <h2>Финиш</h2>
-  <div class="status" id="s-finish">🏁 Не задан</div>
+  <div class="lbl-in">Финиш</div>
   <div class="row">
-    <input type="text" id="finish-input" placeholder="Адрес, координаты или ссылка карты">
+    <input type="text" id="finish-input" placeholder="Адрес, координаты или ссылка">
   </div>
-  <div class="grid2">
-    <button id="btn-search">🔎 Найти адрес</button>
-    <button id="btn-parse">✓ Координаты/ссылка</button>
+  <div class="btnrow c3">
+    <button class="ic" id="btn-search" title="Найти адрес">🔎</button>
+    <button class="ic" id="btn-parse" title="Координаты / ссылка">📌</button>
+    <button class="ic" id="btn-paste" title="Вставить из буфера">📋</button>
   </div>
-  <div class="row" style="margin-top:8px">
-    <button id="btn-paste">📋 Вставить из буфера</button>
-  </div>
+  <div class="status" id="s-finish">🏁 Финиш не задан</div>
   <div id="search-results" class="search-results" style="display:none"></div>
-  <div class="hint">Примеры: <code>55.7558, 37.6173</code> · ссылка Яндекс.Карт с <code>ll=</code>/<code>pt=</code> · любой адрес.</div>
 
-  <h2>⭐ Мои места <span style="color:var(--dim);font-weight:600;text-transform:none;letter-spacing:0">хранятся на этом устройстве</span></h2>
+  <div class="lbl-in">⭐ Мои места</div>
   <div class="favs-list" id="favs-list"></div>
-  <div class="grid2">
-    <button id="btn-fav-save-finish">💾 Сохранить финиш</button>
-    <button id="btn-fav-save-gps">📍 Сохранить GPS</button>
+  <div class="btnrow c4">
+    <button class="ic" id="btn-fav-save-finish" title="Сохранить текущий финиш">💾</button>
+    <button class="ic" id="btn-fav-save-gps" title="Сохранить точку GPS">📍</button>
+    <button class="ic" id="btn-fav-export" title="Экспорт в файл">📤</button>
+    <button class="ic" id="btn-fav-import" title="Импорт из файла">📥</button>
   </div>
-  <div class="hint">Тап по месту — подставить как финиш. Данные лежат в браузере, между устройствами не переносятся.</div>
+  <input type="file" id="fav-file" accept="application/json,.json" style="display:none">
 
-  <h2>Опции</h2>
-  <div class="toggle">🔊 Голос предупреждений <input type="checkbox" id="opt-voice" checked></div>
-  <div class="toggle" style="margin-top:8px">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
-  <div class="toggle" style="margin-top:8px">
-    🎯 Только камеры в спину
-    <input type="checkbox" id="opt-back-only" checked>
+  <!-- ОПЦИИ — свёрнуто -->
+  <button class="drawer-btn" id="drawer-opts-btn">⚙ Опции <span class="chev">▾</span></button>
+  <div class="drawer" id="drawer-opts">
+    <div class="toggle">🔊 Голос <input type="checkbox" id="opt-voice" checked></div>
+    <div class="toggle" style="margin-top:8px">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
+    <div class="toggle" style="margin-top:8px">🎯 Только камеры в спину <input type="checkbox" id="opt-back-only" checked></div>
+    <div class="toggle" style="margin-top:8px">⚙ Допуск направления (°) <input type="number" id="opt-tol" value="45" min="10" max="90"></div>
+    <div class="toggle" style="margin-top:8px">
+      ❓ Камеры без direction
+      <select id="opt-nodir" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px">
+        <option value="skip">пропускать</option>
+        <option value="warn">предупреждать</option>
+      </select>
+    </div>
+    <div class="toggle" style="margin-top:8px">🚧 Лимит скорости (км/ч) <input type="number" id="opt-limit" value="60" min="0" max="200"></div>
   </div>
-  <div class="hint" style="margin-top:6px">
-    Камера «в спину»: объектив смотрит вслед уходящему мотоциклу (direction ≈ курс).
-  </div>
-  <div class="toggle" style="margin-top:8px">
-    ⚙ Допуск направления (°)
-    <input type="number" id="opt-tol" value="45" min="10" max="90">
-  </div>
-  <div class="toggle" style="margin-top:8px">
-    ❓ Камеры без direction
-    <select id="opt-nodir" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px">
-      <option value="skip">пропускать</option>
-      <option value="warn">предупреждать</option>
-    </select>
-  </div>
-  <div class="toggle" style="margin-top:8px">🚧 Лимит скорости (км/ч) <input type="number" id="opt-limit" value="60" min="0" max="200"></div>
 
-  <button class="primary" id="btn-start" disabled>▶ ПОСТРОИТЬ МАРШРУТ И СТАРТ</button>
+  <!-- ПОМОЩЬ — свёрнуто -->
+  <button class="drawer-btn" id="drawer-help-btn">❓ Как пользоваться <span class="chev">▾</span></button>
+  <div class="drawer" id="drawer-help">
+    <div class="hint" style="line-height:1.6">
+      <b>Финиш:</b> адрес (🔎), координаты <code>55.75, 37.61</code> или ссылка карты (📌), либо буфер (📋).<br>
+      <b>Места:</b> тап по ⭐ — подставить как финиш. 💾/📍 — сохранить, 📤/📥 — перенос на другой телефон.<br>
+      <b>Камера «в спину»:</b> объектив смотрит вслед уходящему мотоциклу (direction ≈ курс).<br>
+      <b>Режим ИЛС:</b> в движении — только приборы (прогноз-дорожка, курс, скорость), без карты. Финиш меняется прямо на ходу кнопкой ◆ DEST.<br>
+      Данные мест хранятся в браузере этого устройства.
+    </div>
+  </div>
+</div>
 
-  <div class="hint" style="margin-top:14px;line-height:1.5">
-    <b>Режим ИЛС:</b> во время движения — только приборная символика (прогноз-дорожка, курсовая лента, лента скорости). Карты нет.
+<!-- модалка сохранения места -->
+<div class="modal" id="favModal">
+  <div class="modal-card">
+    <h3>Сохранить место</h3>
+    <div class="sub">Выберите значок и название</div>
+    <div class="emoji-row" id="emoji-row"></div>
+    <input type="text" id="fav-name-input" placeholder="Например: Гараж, Работа, Дача" maxlength="60">
+    <div class="btnrow">
+      <button id="fav-modal-cancel">Отмена</button>
+      <button class="ok" id="fav-modal-ok">Сохранить</button>
+    </div>
   </div>
 </div>
 
@@ -250,8 +328,15 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
   <div id="offRouteWarn">◆ OFF ROUTE ◆</div>
   <div class="no-heading" id="no-heading">◆ NO HEADING · MOVE TO ACQUIRE ◆</div>
 
+  <div id="quickFinish">
+    <h3>◆ СМЕНА ФИНИША ◆</h3>
+    <div class="qf-list" id="qf-list"></div>
+    <button class="qf-close" id="qf-close">◆ ОТМЕНА ◆</button>
+  </div>
+
   <div class="ils-bar">
     <button id="btn-mute">◆ SND</button>
+    <button id="btn-dest">◆ DEST</button>
     <button id="btn-reset">◆ RST</button>
     <button class="stop" id="btn-stop">◆ END</button>
   </div>
@@ -363,12 +448,12 @@ async function searchAddress(query){
 
 function startGps(){
   if(!navigator.geolocation){
-    $('s-gps').textContent = '❌ Геолокация недоступна';
-    $('s-gps').className = 'status err';
+    $('s-gps').textContent = '❌ нет гео';
+    $('s-gps').className = 'chip err';
     return;
   }
-  $('s-gps').textContent = '⏳ Определяем…';
-  $('s-gps').className = 'status';
+  $('s-gps').textContent = '⏳ GPS…';
+  $('s-gps').className = 'chip';
   if(S.watchId !== null) navigator.geolocation.clearWatch(S.watchId);
   S.watchId = navigator.geolocation.watchPosition(
     pos => {
@@ -397,15 +482,14 @@ function startGps(){
       }
       S.lastPos = next;
       S.gps = next;
-      $('s-gps').textContent = '✅ GPS: ' + next.lat.toFixed(5) + ', ' +
-                               next.lon.toFixed(5) + ' (±' + Math.round(next.acc) + 'м)';
-      $('s-gps').className = 'status ok';
+      $('s-gps').textContent = '✅ GPS ±' + Math.round(next.acc) + 'м';
+      $('s-gps').className = 'chip ok';
       checkStartReady();
       if($('hud').classList.contains('on')) onTickILS();
     },
     err => {
-      $('s-gps').textContent = '❌ GPS: ' + (err.message || 'нет доступа');
-      $('s-gps').className = 'status err';
+      $('s-gps').textContent = '❌ GPS';
+      $('s-gps').className = 'chip err';
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 1000 }
   );
@@ -952,7 +1036,7 @@ async function startHud(){
   }catch(e){
     alert('Не удалось построить маршрут: ' + e.message);
     $('btn-start').disabled = false;
-    $('btn-start').textContent = '▶ ПОСТРОИТЬ МАРШРУТ И СТАРТ';
+    $('btn-start').textContent = '▶ СТАРТ';
     return;
   }
   S.startTs = Date.now();
@@ -970,7 +1054,7 @@ function stopHud(){
   $('hud').classList.remove('on');
   $('setup').style.display = 'block';
   $('btn-start').disabled = false;
-  $('btn-start').textContent = '▶ ПОСТРОИТЬ МАРШРУТ И СТАРТ';
+  $('btn-start').textContent = '▶ СТАРТ';
   if(S.wakeLock){ try{ S.wakeLock.release(); }catch(e){} S.wakeLock = null; }
   try{ document.exitFullscreen && document.exitFullscreen(); }catch(e){}
 }
@@ -1031,7 +1115,7 @@ function applyCoordsOrLink(){
   checkStartReady();
 }
 
-$('btn-gps').addEventListener('click', startGps);
+$('s-gps').addEventListener('click', startGps);
 $('btn-search').addEventListener('click', doAddressSearch);
 $('btn-parse').addEventListener('click', applyCoordsOrLink);
 $('finish-input').addEventListener('keydown', e => {
@@ -1080,6 +1164,18 @@ $('btn-reset').addEventListener('click', () => {
   S.startTs = Date.now();
   S.distDone = 0;
 });
+$('btn-dest').addEventListener('click', openQuickFinish);
+$('qf-close').addEventListener('click', () => $('quickFinish').classList.remove('on'));
+
+/* выпадающие секции */
+function bindDrawer(btnId, drawerId){
+  $(btnId).addEventListener('click', () => {
+    $(btnId).classList.toggle('open');
+    $(drawerId).classList.toggle('open');
+  });
+}
+bindDrawer('drawer-opts-btn', 'drawer-opts');
+bindDrawer('drawer-help-btn', 'drawer-help');
 
 window.addEventListener('load', () => { setTimeout(startGps, 400); });
 S.voice = $('opt-voice').checked;
@@ -1110,17 +1206,18 @@ function escapeHtml(s){
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
+const FAV_EMOJIS = ['🏠', '🏢', '⛽', '🍔', '🏍', '🏔', '🏖', '🛠', '🅿', '⭐', '❤', '📍'];
 function renderFavs(){
   const box = $('favs-list');
   const list = loadFavs();
   if(!list.length){
-    box.innerHTML = '<div class="favs-empty">Пока пусто. Задайте финиш или включите GPS и нажмите кнопку сохранения ниже.</div>';
+    box.innerHTML = '<div class="favs-empty">Пусто. Задайте финиш (💾) или сохраните точку GPS (📍).</div>';
     return;
   }
   box.innerHTML = list.map(f =>
     '<div class="fav-item">' +
       '<button type="button" class="fav-apply" data-id="' + f.id + '">' +
-        '<span class="fav-name">⭐ ' + escapeHtml(f.name) + '</span>' +
+        '<span class="fav-name"><span class="fav-emoji">' + (f.emoji || '⭐') + '</span>' + escapeHtml(f.name) + '</span>' +
         '<span class="fav-coords">' + f.lat.toFixed(5) + ', ' + f.lon.toFixed(5) + '</span>' +
       '</button>' +
       '<button type="button" class="fav-del" data-del="' + f.id + '" aria-label="Удалить">✕</button>' +
@@ -1135,12 +1232,13 @@ function renderFavs(){
     });
   });
 }
-function addFav(name, point){
+function addFav(name, point, emoji){
   if(!point || typeof point.lat !== 'number' || typeof point.lon !== 'number') return;
   const list = loadFavs();
   list.push({
     id: 'f' + Date.now() + '_' + Math.floor(Math.random() * 1000),
     name: (name || 'Место').trim().slice(0, 60) || 'Место',
+    emoji: emoji || '⭐',
     lat: point.lat,
     lon: point.lon
   });
@@ -1155,18 +1253,41 @@ function applyFav(id){
   const fav = loadFavs().find(f => f.id === id);
   if(!fav) return;
   S.finish = { lat: fav.lat, lon: fav.lon, label: fav.name };
-  $('s-finish').textContent = '✅ Финиш: ⭐ ' + fav.name + ' (' + fav.lat.toFixed(5) + ', ' + fav.lon.toFixed(5) + ')';
+  $('s-finish').textContent = '✅ ' + (fav.emoji || '⭐') + ' ' + fav.name + ' (' + fav.lat.toFixed(5) + ', ' + fav.lon.toFixed(5) + ')';
   $('s-finish').className = 'status ok';
   $('finish-input').value = fav.lat + ', ' + fav.lon;
   $('search-results').style.display = 'none';
   checkStartReady();
 }
-function promptAndSave(defaultName, point){
+
+/* ---------- Модалка сохранения (имя + эмодзи) ---------- */
+let favModalState = { point: null, emoji: '⭐' };
+function openFavModal(defaultName, point){
   if(!point){ alert('Нет точки для сохранения'); return; }
-  const name = prompt('Название места (например: Гараж, Работа, Дача):', defaultName || '');
-  if(name === null) return;
-  addFav(name || defaultName || 'Место', point);
+  favModalState = { point, emoji: '⭐' };
+  const row = $('emoji-row');
+  row.innerHTML = FAV_EMOJIS.map(e =>
+    '<button type="button" data-e="' + e + '"' + (e === '⭐' ? ' class="sel"' : '') + '>' + e + '</button>'
+  ).join('');
+  row.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      favModalState.emoji = b.getAttribute('data-e');
+      row.querySelectorAll('button').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    });
+  });
+  $('fav-name-input').value = defaultName || '';
+  $('favModal').classList.add('on');
+  setTimeout(() => $('fav-name-input').focus(), 100);
 }
+function closeFavModal(){ $('favModal').classList.remove('on'); }
+$('fav-modal-cancel').addEventListener('click', closeFavModal);
+$('fav-modal-ok').addEventListener('click', () => {
+  const name = $('fav-name-input').value.trim() || 'Место';
+  addFav(name, favModalState.point, favModalState.emoji);
+  closeFavModal();
+});
+
 $('btn-fav-save-finish').addEventListener('click', () => {
   if(!S.finish){
     $('s-finish').textContent = '❌ Сначала задайте финиш, потом сохраните';
@@ -1176,23 +1297,114 @@ $('btn-fav-save-finish').addEventListener('click', () => {
   const defaultName = S.finish.label && !/^Финиш|^Координаты/.test(S.finish.label)
     ? S.finish.label.split(',')[0]
     : '';
-  promptAndSave(defaultName, { lat: S.finish.lat, lon: S.finish.lon });
+  openFavModal(defaultName, { lat: S.finish.lat, lon: S.finish.lon });
 });
 $('btn-fav-save-gps').addEventListener('click', () => {
   if(S.gps){
-    promptAndSave('', { lat: S.gps.lat, lon: S.gps.lon });
+    openFavModal('', { lat: S.gps.lat, lon: S.gps.lon });
     return;
   }
-  $('s-gps').textContent = '⏳ Определяем GPS для сохранения…';
+  $('s-gps').textContent = '⏳ GPS…';
+  $('s-gps').className = 'chip';
   const check = setInterval(() => {
     if(S.gps){
       clearInterval(check);
-      promptAndSave('', { lat: S.gps.lat, lon: S.gps.lon });
+      openFavModal('', { lat: S.gps.lat, lon: S.gps.lon });
     }
   }, 500);
   setTimeout(() => clearInterval(check), 20000);
   startGps();
 });
+
+/* ---------- Экспорт / импорт JSON ---------- */
+$('btn-fav-export').addEventListener('click', () => {
+  const list = loadFavs();
+  if(!list.length){ alert('Нет мест для экспорта'); return; }
+  const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'moto-hud-места.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+$('btn-fav-import').addEventListener('click', () => $('fav-file').click());
+$('fav-file').addEventListener('change', e => {
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const imported = JSON.parse(reader.result);
+      if(!Array.isArray(imported)) throw new Error('формат');
+      const valid = imported.filter(f =>
+        f && typeof f.lat === 'number' && typeof f.lon === 'number' && typeof f.name === 'string');
+      if(!valid.length){ alert('В файле нет корректных мест'); return; }
+      const cur = loadFavs();
+      const seen = new Set(cur.map(f => f.lat.toFixed(5) + ',' + f.lon.toFixed(5)));
+      let added = 0;
+      valid.forEach(f => {
+        const key = f.lat.toFixed(5) + ',' + f.lon.toFixed(5);
+        if(seen.has(key)) return;
+        seen.add(key);
+        cur.push({
+          id: 'f' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+          name: String(f.name).slice(0, 60),
+          emoji: typeof f.emoji === 'string' ? f.emoji : '⭐',
+          lat: f.lat, lon: f.lon
+        });
+        added++;
+      });
+      saveFavs(cur);
+      renderFavs();
+      alert('Импортировано мест: ' + added + (valid.length - added ? ' (пропущено дублей: ' + (valid.length - added) + ')' : ''));
+    }catch(err){
+      alert('Не удалось прочитать файл: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ---------- Быстрая смена финиша прямо в ИЛС ---------- */
+function openQuickFinish(){
+  const box = $('qf-list');
+  const list = loadFavs();
+  if(!list.length){
+    box.innerHTML = '<div class="qf-empty">NO SAVED PLACES<br>Сохраните места в настройках</div>';
+  } else {
+    box.innerHTML = list.map(f =>
+      '<button class="qf-item" data-id="' + f.id + '">' +
+        (f.emoji || '⭐') + ' ' + escapeHtml(f.name) +
+        '<span class="c">' + f.lat.toFixed(4) + ', ' + f.lon.toFixed(4) + '</span>' +
+      '</button>'
+    ).join('');
+    box.querySelectorAll('.qf-item').forEach(b => {
+      b.addEventListener('click', () => selectQuickFinish(b.getAttribute('data-id')));
+    });
+  }
+  $('quickFinish').classList.add('on');
+}
+async function selectQuickFinish(id){
+  const fav = loadFavs().find(f => f.id === id);
+  if(!fav) return;
+  S.finish = { lat: fav.lat, lon: fav.lon, label: fav.name };
+  $('quickFinish').classList.remove('on');
+  $('corner-street').textContent = 'RECALC…';
+  speak('Новый финиш ' + fav.name + '. Пересчёт маршрута');
+  try{
+    await buildRoute();
+    await loadCameras();
+    S.camWarned.clear();
+    onTickILS();
+  }catch(e){
+    console.warn('Смена финиша не удалась:', e);
+    $('corner-street').textContent = 'RECALC FAIL';
+  }
+}
+
 renderFavs();
 </script>
 </body>
