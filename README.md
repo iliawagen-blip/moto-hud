@@ -33,27 +33,26 @@
 
 ## Развёртывание на GitHub Pages
 
-### Вариант A — автодеплой через GitHub Actions (рекомендуется)
+### Деплой (рекомендуется)
 
-1. Создайте новый репозиторий на GitHub (например, `moto-hud`).
-2. Отправьте содержимое этой папки:
-   ```bash
-   git init
-   git add .
-   git commit -m "Мото HUD навигатор"
-   git branch -M main
-   git remote add origin https://github.com/<ВАШ_ЛОГИН>/moto-hud.git
-   git push -u origin main
-   ```
-3. На GitHub: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-4. Workflow `.github/workflows/deploy.yml` опубликует сайт автоматически.
-   Адрес: `https://<ВАШ_ЛОГИН>.github.io/moto-hud/`.
+1. Репозиторий: `https://github.com/iliawagen-blip/moto-hud`
+2. После `git push` workflow публикует файлы в ветку `gh-pages`.
+3. **Один раз** включите Pages:
+   - **Settings → Pages → Build and deployment**
+   - **Source:** `Deploy from a branch`
+   - **Branch:** `gh-pages` / `/ (root)` → **Save**
+4. Через 1–2 минуты сайт будет доступен:
+   `https://iliawagen-blip.github.io/moto-hud/`
 
-### Вариант B — Deploy from a branch (без Actions)
+> Если workflow `Deploy to GitHub Pages` падает с `Get Pages site failed` — Pages ещё не включён
+> (шаг 3). После включения перезапустите workflow: **Actions → Deploy to GitHub Pages → Re-run jobs**.
 
-1. Запушьте репозиторий (шаги 1–2 выше).
-2. **Settings → Pages → Source: Deploy from a branch → Branch: `main` / `/ (root)`**.
-3. Файл `.nojekyll` уже добавлен, чтобы Pages не обрабатывал сайт через Jekyll.
+### Локальный push
+
+```bash
+cd "D:\UNIGINE Projects\moto-hud-navigator"
+git push -u origin main
+```
 
 ## Локальная проверка
 
