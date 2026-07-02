@@ -291,15 +291,12 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
       <line id="speed-limit" x1="30" y1="820" x2="120" y2="820" stroke="#ff2d2d" stroke-width="2" stroke-dasharray="4,4"/>
     </g>
     <g id="horizon-group">
-      <line id="horizon-line" x1="200" y1="820" x2="800" y2="820" stroke="#00aa5c" stroke-width="1.5"/>
-      <line x1="220" y1="815" x2="220" y2="825" stroke="#00aa5c" stroke-width="1"/>
-      <line x1="780" y1="815" x2="780" y2="825" stroke="#00aa5c" stroke-width="1"/>
+      <line id="horizon-line" x1="180" y1="520" x2="820" y2="520" stroke="#00aa5c" stroke-width="1.5" opacity="0.6"/>
+      <line x1="200" y1="515" x2="200" y2="525" stroke="#00aa5c" stroke-width="1"/>
+      <line x1="800" y1="515" x2="800" y2="525" stroke="#00aa5c" stroke-width="1"/>
     </g>
-    <g id="waterline" transform="translate(500,820)">
-      <circle cx="0" cy="0" r="10" fill="none" stroke="#00ff88" stroke-width="2"/>
-      <line x1="-25" y1="0" x2="-10" y2="0" stroke="#00ff88" stroke-width="2"/>
-      <line x1="10" y1="0" x2="25" y2="0" stroke="#00ff88" stroke-width="2"/>
-      <line x1="0" y1="-10" x2="0" y2="-20" stroke="#00ff88" stroke-width="2"/>
+    <g id="waterline" transform="translate(500,1380)">
+      <path d="M -24 22 L 0 -14 L 24 22" fill="none" stroke="#00ff88" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
     </g>
     <g id="pathway"></g>
     <g id="maneuver-symbol" transform="translate(820,220)"></g>
@@ -707,131 +704,168 @@ function renderHorizon(){
     let diff = ((brg - S.smoothedHeading + 540) % 360) - 180;
     roll = Math.max(-20, Math.min(20, diff / 3));
   }
-  g.setAttribute('transform', `rotate(${roll} ${CENTER_X} ${HORIZON_Y})`);
+  g.setAttribute('transform', `rotate(${roll} ${CENTER_X} 520)`);
 }
 
-/* ---------- ИЛС: прогноз-дорожка ---------- */
-function getForwardPoints(){
-  if(!S.route || !S.gps || S.smoothedHeading == null) return [];
-  const hdg = S.smoothedHeading;
-  const rad = Math.PI / 180;
-  const cosH = Math.cos(-hdg * rad);
-  const sinH = Math.sin(-hdg * rad);
-  const kx = Math.cos(S.gps.lat * rad) * 111320;
-  const ky = 110540;
-  const near = findNearestOnRoute();
-  if(!near) return [];
-  const result = [];
-  const coords = S.route.coords;
-  const step = 10;
-  const maxAhead = 250;
-  let i = near.idx;
-  let curLat = S.gps.lat, curLon = S.gps.lon;
-  while(i < coords.length - 1){
-    const nextLat = coords[i + 1][0], nextLon = coords[i + 1][1];
-    const segLen = haversine({ lat: curLat, lon: curLon }, { lat: nextLat, lon: nextLon });
-    if(segLen < 0.5){ i++; curLat = nextLat; curLon = nextLon; continue; }
-    const stepsHere = Math.max(1, Math.floor(segLen / step));
-    for(let k = 1; k <= stepsHere; k++){
-      const t = k / stepsHere;
-      const lat = curLat + (nextLat - curLat) * t;
-      const lon = curLon + (nextLon - curLon) * t;
-      const dx = (lon - S.gps.lon) * kx;
-      const dy = (lat - S.gps.lat) * ky;
-      const forward = dx * sinH + dy * cosH;
-      const lateral = dx * cosH - dy * sinH;
-      if(forward > 15 && forward < maxAhead){
-        result.push({ forward, lateral, isManeuver: false });
-      }
-    }
-    curLat = nextLat; curLon = nextLon;
-    i++;
-    if(result.length && result[result.length - 1].forward >= maxAhead) break;
-  }
-  const nm = findNextManeuver();
-  if(nm){
-    const dxM = (nm.step.lon - S.gps.lon) * kx;
-    const dyM = (nm.step.lat - S.gps.lat) * ky;
-    const fM = dxM * sinH + dyM * cosH;
-    const lM = dxM * cosH - dyM * sinH;
-    if(fM > 15 && fM < maxAhead){
-      let best = -1, bestD = Infinity;
-      result.forEach((p, idx) => {
-        const d = Math.abs(p.forward - fM);
-        if(d < bestD){ bestD = d; best = idx; }
-      });
-      if(best >= 0){
-        result[best].isManeuver = true;
-        result[best].lateral = lM;
-      }
-    }
-  }
-  return result;
+/* ---------- ИЛС: дорога в перспективе (вид сзади-сверху) ----------
+   Камера расположена позади и над мотоциклом, смотрит вперёд и слегка вниз.
+   Точки маршрута переводятся в локальную систему (x — вбок, z — вперёд),
+   затем проецируются моделью «дырочной камеры». Это даёт корректную
+   перспективу дороги со всеми поворотами без «разлёта» геометрии.
+   Не имитация авиа-ИЛС: рисуется схематичная лента дороги + метки поворотов. */
+const CAM_H = 6;             // высота камеры над дорогой, м
+const CAM_B = 10;            // отставание камеры назад, м
+const CAM_PITCH = 22 * Math.PI / 180; // наклон камеры вниз
+const CAM_FOCAL = 1700;      // фокус (подобран под viewBox 1000×1600)
+const CAM_VOFF = 1200;       // вертикальное смещение проекции
+const ROAD_VP_Y = 520;       // экранная линия горизонта дороги
+const ROAD_MAX = 250;        // дальность прорисовки дороги, м
+const ROAD_HALF = 3;         // половина ширины дороги, м
+
+/* Проекция точки на плоскости дороги (x — вбок, z — вперёд) на экран */
+function projectGround(x, z){
+  const cp = Math.cos(CAM_PITCH), sp = Math.sin(CAM_PITCH);
+  const dy = -CAM_H, dz = z + CAM_B;
+  const Yc = dy * cp + dz * sp;
+  const Zc = -dy * sp + dz * cp;      // всегда > 0 при z >= 0 — нет сингулярности
+  if(Zc < 0.5) return null;
+  let sx = CENTER_X + CAM_FOCAL * x / Zc;
+  const sy = CAM_VOFF - CAM_FOCAL * Yc / Zc;
+  sx = Math.max(-1500, Math.min(2500, sx)); // защита от абсурдных значений на резких поворотах
+  return { x: sx, y: sy };
 }
 
-function project(forward, lateral){
-  const K_lat = 8000;
-  const K_ver = 12000;
+/* Локальные координаты точки относительно мотоцикла (курс — вверх) */
+function toLocal(lat, lon, ctx){
+  const dx = (lon - ctx.lon) * ctx.kx;
+  const dy = (lat - ctx.lat) * ctx.ky;
   return {
-    x: CENTER_X + (lateral * K_lat) / forward,
-    y: HORIZON_Y + K_ver / forward,
-    scale: K_lat / forward
+    x: dx * ctx.cosH - dy * ctx.sinH,  // вбок, право +
+    z: dx * ctx.sinH + dy * ctx.cosH   // вперёд
   };
+}
+
+function localCtx(){
+  const hdg = S.smoothedHeading, rad = Math.PI / 180;
+  return {
+    lat: S.gps.lat, lon: S.gps.lon,
+    kx: Math.cos(S.gps.lat * rad) * 111320, ky: 110540,
+    cosH: Math.cos(-hdg * rad), sinH: Math.sin(-hdg * rad)
+  };
+}
+
+/* Осевая линия дороги впереди, ресемпл по длине дуги (шаг 5 м) */
+function getRoadCenterline(){
+  if(!S.route || !S.gps || S.smoothedHeading == null) return null;
+  const near = findNearestOnRoute();
+  if(!near) return null;
+  const ctx = localCtx();
+  const coords = S.route.coords;
+  const raw = [{ x: 0, z: 0 }]; // старт от проекции мотоцикла
+  for(let i = near.idx + 1; i < coords.length; i++){
+    const p = toLocal(coords[i][0], coords[i][1], ctx);
+    raw.push(p);
+    if(p.z > ROAD_MAX + 30) break;
+  }
+  if(raw.length < 2) return null;
+  const out = [raw[0]];
+  const step = 5;
+  let acc = 0, target = 0;
+  for(let i = 1; i < raw.length; i++){
+    const a = raw[i - 1], b = raw[i];
+    const segLen = Math.hypot(b.x - a.x, b.z - a.z);
+    if(segLen < 0.01) continue;
+    while(target + step <= acc + segLen){
+      target += step;
+      const t = (target - acc) / segLen;
+      out.push({ x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t });
+    }
+    acc += segLen;
+  }
+  return out.filter(p => p.z >= -2 && p.z <= ROAD_MAX);
+}
+
+/* Знаковый угол поворота в точке манёвра (+ вправо, − влево) */
+function turnAngleAt(step){
+  const coords = S.route.coords;
+  let bi = 0, bd = Infinity;
+  for(let i = 0; i < coords.length; i++){
+    const d = haversine({ lat: coords[i][0], lon: coords[i][1] }, step);
+    if(d < bd){ bd = d; bi = i; }
+  }
+  if(bi <= 0 || bi >= coords.length - 1) return null;
+  const bIn = bearing({ lat: coords[bi - 1][0], lon: coords[bi - 1][1] },
+                      { lat: coords[bi][0], lon: coords[bi][1] });
+  const bOut = bearing({ lat: coords[bi][0], lon: coords[bi][1] },
+                       { lat: coords[bi + 1][0], lon: coords[bi + 1][1] });
+  return ((bOut - bIn + 540) % 360) - 180;
+}
+
+/* Метки следующих 1–3 поворотов: шеврон в сторону, угол и дистанция */
+function renderTurns(g){
+  if(!S.route) return;
+  const ctx = localCtx();
+  const turns = S.route.steps.filter(st =>
+    st.type !== 'depart' && st.type !== 'arrive' && st.modifier && st.modifier !== 'straight');
+  let shown = 0;
+  for(const st of turns){
+    if(shown >= 3) break;
+    const loc = toLocal(st.lat, st.lon, ctx);
+    if(loc.z < 5 || loc.z > ROAD_MAX) continue;
+    const P = projectGround(loc.x, loc.z);
+    if(!P) continue;
+    const ang = turnAngleAt(st);
+    const dir = ang == null ? (st.modifier.includes('left') ? -1 : 1) : (ang < 0 ? -1 : 1);
+    const deg = ang == null ? '' : Math.round(Math.abs(ang)) + '°';
+    const dist = Math.round(haversine(S.gps, st));
+    const col = shown === 0 ? '#ffd400' : '#00cc70';
+    const sz = shown === 0 ? 1 : 0.72;
+    const s = 32 * sz;
+    const tip = dir * s, base = -dir * s;
+    g.innerHTML +=
+      '<g transform="translate(' + P.x.toFixed(1) + ',' + P.y.toFixed(1) + ')">' +
+        '<path d="M ' + base + ' ' + (-s) + ' L ' + tip + ' 0 L ' + base + ' ' + s + '" ' +
+          'fill="none" stroke="' + col + '" stroke-width="' + (8 * sz) + '" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<text x="0" y="' + (-s - 14) + '" text-anchor="middle" font-family="Consolas,monospace" ' +
+          'font-size="' + (30 * sz) + '" font-weight="900" fill="' + col + '">' + deg + '</text>' +
+        '<text x="0" y="' + (s + 32) + '" text-anchor="middle" font-family="Consolas,monospace" ' +
+          'font-size="' + (22 * sz) + '" fill="' + col + '" opacity="0.85">' + dist + ' м</text>' +
+      '</g>';
+    shown++;
+  }
 }
 
 function renderPathway(){
   const g = $('pathway');
   g.innerHTML = '';
-  const pts = getForwardPoints();
-  if(!pts.length) return;
-  const gates = [];
-  const gateStep = 30;
-  let nextD = gateStep;
-  pts.forEach(p => {
-    if(p.forward >= nextD || p.isManeuver){
-      gates.push(p);
-      nextD = p.forward + gateStep;
-    }
-  });
-  if(gates.length > 10) gates.length = 10;
-  const ROAD_HALF_W = 1.5;
-  const leftPts = [], rightPts = [], centerPts = [];
-  pts.forEach(p => {
-    if(p.forward > 250) return;
-    const left = project(p.forward, p.lateral - ROAD_HALF_W);
-    const right = project(p.forward, p.lateral + ROAD_HALF_W);
-    const c = project(p.forward, p.lateral);
-    if(left.y > VB_H || right.y > VB_H) return;
-    leftPts.push(left.x + ',' + left.y);
-    rightPts.push(right.x + ',' + right.y);
-    centerPts.push(c.x + ',' + c.y);
-  });
-  if(leftPts.length > 1){
-    g.innerHTML += `<polyline points="${leftPts.join(' ')}" fill="none" stroke="#00aa5c" stroke-width="2" opacity="0.7"/>`;
-    g.innerHTML += `<polyline points="${rightPts.join(' ')}" fill="none" stroke="#00aa5c" stroke-width="2" opacity="0.7"/>`;
+  const center = getRoadCenterline();
+  if(!center || center.length < 2) return;
+  const leftS = [], rightS = [], centerS = [];
+  for(let i = 0; i < center.length; i++){
+    const p = center[i];
+    const q = center[Math.min(i + 1, center.length - 1)];
+    const pr = center[Math.max(i - 1, 0)];
+    let tx = q.x - pr.x, tz = q.z - pr.z;
+    const tl = Math.hypot(tx, tz) || 1;
+    tx /= tl; tz /= tl;
+    const nx = tz, nz = -tx;            // правая нормаль к направлению дороги
+    const cP = projectGround(p.x, p.z);
+    const lP = projectGround(p.x - nx * ROAD_HALF, p.z - nz * ROAD_HALF);
+    const rP = projectGround(p.x + nx * ROAD_HALF, p.z + nz * ROAD_HALF);
+    if(cP) centerS.push(cP);
+    if(lP && rP){ leftS.push(lP); rightS.push(rP); }
   }
-  if(centerPts.length > 1){
-    g.innerHTML += `<polyline points="${centerPts.join(' ')}" fill="none" stroke="#00ff88" stroke-width="1.5" stroke-dasharray="12,10" opacity="0.5"/>`;
-  }
-  gates.forEach((gate, idx) => {
-    const left = project(gate.forward, gate.lateral - ROAD_HALF_W);
-    const right = project(gate.forward, gate.lateral + ROAD_HALF_W);
-    const w = right.x - left.x;
-    const h = Math.min(w * 0.8, 80);
-    const topY = left.y - h;
-    const color = gate.isManeuver ? '#ffd400' : '#00ff88';
-    const width = gate.isManeuver ? 4 : (idx === 0 ? 3 : 2);
-    const opacity = Math.max(0.35, 1 - idx * 0.1);
-    g.innerHTML +=
-      `<polyline points="${left.x},${left.y} ${left.x},${topY} ${right.x},${topY} ${right.x},${right.y}" ` +
-      `fill="none" stroke="${color}" stroke-width="${width}" opacity="${opacity}"/>`;
-    if(idx < 3){
-      g.innerHTML +=
-        `<text x="${(left.x + right.x) / 2}" y="${topY - 8}" text-anchor="middle" ` +
-        `font-family="Consolas,monospace" font-size="${gate.isManeuver ? 24 : 18}" ` +
-        `fill="${color}" opacity="${opacity}">${Math.round(gate.forward)}</text>`;
-    }
-  });
+  if(leftS.length < 2) return;
+  const poly = leftS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1))
+    .concat(rightS.slice().reverse().map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1))).join(' ');
+  g.innerHTML += '<polygon points="' + poly + '" fill="#00ff88" fill-opacity="0.10" stroke="none"/>';
+  g.innerHTML += '<polyline points="' + leftS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
+    '" fill="none" stroke="#00ff88" stroke-width="3" opacity="0.85" stroke-linejoin="round"/>';
+  g.innerHTML += '<polyline points="' + rightS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
+    '" fill="none" stroke="#00ff88" stroke-width="3" opacity="0.85" stroke-linejoin="round"/>';
+  g.innerHTML += '<polyline points="' + centerS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
+    '" fill="none" stroke="#00ff88" stroke-width="2" stroke-dasharray="14,16" opacity="0.5"/>';
+  renderTurns(g);
 }
 
 const ILS_ARROWS = {
