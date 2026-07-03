@@ -95,40 +95,80 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
   background:var(--panel2);color:#fff;font-size:16px;font-weight:800;cursor:pointer}
 .modal-card .btnrow button.ok{background:var(--accent);color:#000;border-color:var(--accent)}
 
-/* ---------- HUD ИЛС ---------- */
+/* ---------- HUD (grid, крупно и читаемо) ---------- */
 #hud{position:fixed;inset:0;display:none;background:#000;overflow:hidden;
-  font-family:"Consolas","Courier New",monospace;font-weight:700;color:var(--hud)}
-#hud.on{display:block}
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#hud.on{display:grid}
 
-#ils{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* тонкая служебная строка сверху */
+.statusbar{grid-area:st;display:flex;justify-content:space-between;align-items:center;
+  padding:2px 12px;font-size:12px;color:var(--dim);letter-spacing:1px;
+  padding-top:calc(env(safe-area-inset-top) + 2px);
+  background:#000;border-bottom:1px solid #0a0a0a}
+.statusbar .dot{width:9px;height:9px;border-radius:50%;background:var(--warn);
+  display:inline-block;margin-right:5px;vertical-align:middle}
+.statusbar .dot.ok{background:var(--ok)}
 
-.hud-corner{
-  position:absolute;font-family:"Consolas","Courier New",monospace;
-  color:var(--hud);text-shadow:0 0 6px rgba(0,255,136,.6);pointer-events:none
-}
-.hud-tl{top:calc(env(safe-area-inset-top) + 8px);left:12px;font-size:14px;letter-spacing:1px}
-.hud-tr{top:calc(env(safe-area-inset-top) + 8px);right:12px;font-size:14px;letter-spacing:1px;text-align:right}
-.hud-bl{bottom:calc(env(safe-area-inset-bottom) + 100px);left:12px;font-size:13px;line-height:1.6}
-.hud-br{bottom:calc(env(safe-area-inset-bottom) + 100px);right:12px;font-size:13px;line-height:1.6;text-align:right}
+/* компас-полоса N E S W — опционально (fixed-оверлей под статусбаром) */
+.compass{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 26px);
+  height:36px;z-index:3;display:none;background:rgba(0,0,0,.55);overflow:hidden;
+  border-bottom:1px solid #0a0a0a}
+#hud.show-compass .compass{display:block}
+.compass svg{width:100%;height:100%;display:block}
 
-.ils-bar{
-  position:absolute;left:0;right:0;bottom:0;
-  display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
-  background:#000;border-top:1px solid var(--hud-dim);
-  padding-bottom:env(safe-area-inset-bottom)
+/* блоки HUD */
+.block{position:relative;overflow:hidden;background:#000;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;padding:2px}
+.block-arrow{grid-area:ar;min-height:0}
+.block-speed{grid-area:sp}
+.block-path{grid-area:pa;align-items:stretch;justify-content:stretch;
+  border-top:1px solid var(--border)}
+.block-path.hidden{display:none}
+
+.street{font-size:15px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;
+  text-align:center;padding:2px 8px;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;flex-shrink:0}
+#arrow-box{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#arrow-box svg{width:100%;height:100%;max-height:100%;display:block}
+.mdist{color:var(--accent);font-variant-numeric:tabular-nums;font-weight:900;line-height:1;
+  text-align:center;padding:2px;flex-shrink:0}
+.mdist .u{color:var(--dim);font-weight:700}
+.speed-val{color:#fff;font-variant-numeric:tabular-nums;font-weight:900;line-height:.9;text-align:center}
+.speed-val.over{color:var(--alert)}
+.speed-unit{color:var(--dim);font-weight:700;letter-spacing:2px;text-align:center;margin-top:4px}
+.path-svg{width:100%;height:100%;display:block}
+
+/* угловые кнопки */
+.corner-btn{position:fixed;z-index:36;background:rgba(20,29,42,.72);color:#fff;
+  border:1px solid var(--border);border-radius:12px;font-size:16px;font-weight:800;
+  padding:8px 12px;min-width:54px;min-height:46px;cursor:pointer}
+.corner-btn.stop{color:var(--warn)}
+.btn-gear{top:calc(env(safe-area-inset-top) + 26px);right:8px}
+.btn-fs{top:calc(env(safe-area-inset-top) + 26px);left:8px}
+.btn-stop{bottom:calc(env(safe-area-inset-bottom) + 8px);right:8px}
+
+/* ---------- Компоновка: КНИЖНАЯ ---------- */
+@media (orientation:portrait){
+  #hud.on{grid-template-areas:"st" "ar" "pa" "sp";grid-template-rows:26px 1fr 30vh 1fr}
+  #hud.on.no-path{grid-template-areas:"st" "ar" "sp";grid-template-rows:26px 1fr 1fr}
+  .speed-val{font-size:min(45vw,300px)}
+  .speed-unit{font-size:22px}
+  .mdist{font-size:min(20vw,150px)}
+  .mdist .u{font-size:min(7vw,44px);margin-left:8px}
 }
-.ils-bar button{
-  min-height:60px;background:#000;border:none;color:var(--hud);
-  font-family:"Consolas",monospace;font-size:13px;font-weight:800;letter-spacing:1px;
-  text-shadow:0 0 4px rgba(0,255,136,.5)
-}
-/* В альбомной ориентации панель ниже и компактнее */
+/* ---------- Компоновка: АЛЬБОМНАЯ ----------
+   Три равные колонки: поворот | дорожка | скорость.
+   Без дорожки — две равные колонки: поворот | скорость. */
 @media (orientation:landscape){
-  .ils-bar button{min-height:46px;font-size:12px}
-  .hud-bl,.hud-br{bottom:calc(env(safe-area-inset-bottom) + 60px)}
+  #hud.on{grid-template-areas:"st st st" "ar pa sp";grid-template-columns:1fr 1fr 1fr;grid-template-rows:26px 1fr}
+  #hud.on.no-path{grid-template-areas:"st st" "ar sp";grid-template-columns:1fr 1fr;grid-template-rows:26px 1fr}
+  /* в колоночной раскладке разделитель дорожки — по бокам, а не сверху */
+  .block-path{border-top:0;border-left:1px solid var(--border);border-right:1px solid var(--border)}
+  .speed-val{font-size:min(28vw,240px)}
+  .speed-unit{font-size:18px}
+  .mdist{font-size:min(11vw,120px)}
+  .mdist .u{font-size:min(4vw,38px);margin-left:6px}
 }
-.ils-bar button:active{background:#001a10}
-.ils-bar .stop{color:var(--alert);text-shadow:0 0 4px rgba(255,45,45,.5)}
 
 #camAlert{
   position:absolute;top:22%;left:50%;transform:translateX(-50%);
@@ -238,6 +278,8 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
   <button class="drawer-btn" id="drawer-opts-btn">⚙ Опции <span class="chev">▾</span></button>
   <div class="drawer" id="drawer-opts">
     <div class="toggle">🔊 Голос <input type="checkbox" id="opt-voice" checked></div>
+    <div class="toggle" style="margin-top:8px">🛣 Прогноз-дорожка <input type="checkbox" id="opt-path" checked></div>
+    <div class="toggle" style="margin-top:8px">🧭 Компас N/E/S/W <input type="checkbox" id="opt-heading"></div>
     <div class="toggle" style="margin-top:8px">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
     <div class="toggle" style="margin-top:8px">🎯 Только камеры в спину <input type="checkbox" id="opt-back-only" checked></div>
     <div class="toggle" style="margin-top:8px">⚙ Допуск направления (°) <input type="number" id="opt-tol" value="45" min="10" max="90"></div>
@@ -258,7 +300,7 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
       <b>Финиш:</b> адрес (🔎), координаты <code>55.75, 37.61</code> или ссылка карты (📌), либо буфер (📋).<br>
       <b>Места:</b> тап по ⭐ — подставить как финиш. 💾/📍 — сохранить, 📤/📥 — перенос на другой телефон.<br>
       <b>Камера «в спину»:</b> объектив смотрит вслед уходящему мотоциклу (direction ≈ курс).<br>
-      <b>Режим ИЛС:</b> в движении — только приборы (прогноз-дорожка, курс, скорость), без карты. Финиш меняется прямо на ходу кнопкой ◆ DEST.<br>
+      <b>Режим HUD:</b> в движении — крупная стрелка манёвра, скорость и прогноз-дорожка. Кнопки в углах: ⚙ настройки, ⛶ полный экран, END — завершить (двойной тап).<br>
       Данные мест хранятся в браузере этого устройства.
     </div>
   </div>
@@ -278,48 +320,42 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
   </div>
 </div>
 
-<!-- ============ HUD ИЛС ============ -->
+<!-- ============ HUD (grid) ============ -->
 <div id="hud">
-  <svg id="ils" viewBox="0 0 1000 1600" preserveAspectRatio="xMidYMid meet">
-    <!-- статичный «хром» приборов рисуется из JS (layoutHud) под ориентацию -->
-    <g id="chrome"></g>
-    <g id="horizon-group"></g>
-    <g id="pathway"></g>
-    <g id="heading-tape">
-      <g id="heading-ticks"></g>
-      <polygon id="heading-bug" points="0,0 -12,-15 12,-15" fill="#ffd400" transform="translate(500)"/>
-    </g>
-    <g id="speed-ticks"></g>
-    <text id="speed-current" x="75" y="838" text-anchor="middle" font-family="Consolas,monospace" font-size="42" font-weight="900" fill="#00ff88">0</text>
-    <line id="speed-limit" x1="30" y1="820" x2="120" y2="820" stroke="#ff2d2d" stroke-width="2" stroke-dasharray="4,4"/>
-    <g id="maneuver-symbol" transform="translate(820,220)"></g>
-    <text id="maneuver-dist" x="820" y="400" text-anchor="middle" font-family="Consolas,monospace" font-size="72" font-weight="900" fill="#ffd400">--</text>
-    <text id="maneuver-unit" x="820" y="440" text-anchor="middle" font-family="Consolas,monospace" font-size="20" fill="#00aa5c">M</text>
-    <g id="waterline" transform="translate(500,1380)">
-      <path d="M -24 22 L 0 -14 L 24 22" fill="none" stroke="#00ff88" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    </g>
-    <text id="gps-status" x="500" y="1550" text-anchor="middle" font-family="Consolas,monospace" font-size="14" fill="#00aa5c">GPS ACQUIRING</text>
-  </svg>
-
-  <div class="hud-corner hud-tl" id="corner-tl">HDG ---</div>
-  <div class="hud-corner hud-tr" id="corner-tr">--:--</div>
-  <div class="hud-corner hud-bl" id="corner-bl">
-    DIST <span id="corner-dist">--</span><br>
-    ETA <span id="corner-eta">--:--</span>
+  <div class="statusbar">
+    <span><span class="dot" id="gps-dot"></span><span id="gps-txt">GPS</span></span>
+    <span id="mid-info">—</span>
+    <span id="clock">--:--</span>
   </div>
-  <div class="hud-corner hud-br" id="corner-br">
-    T+<span id="corner-elapsed">00:00</span><br>
-    <span id="corner-street">---</span>
+
+  <!-- компас N E S W (опционально) -->
+  <div class="compass"><svg id="compass-svg" viewBox="0 0 400 36" preserveAspectRatio="xMidYMid meet"></svg></div>
+
+  <!-- манёвр: улица + крупная стрелка + расстояние -->
+  <div class="block block-arrow">
+    <div class="street" id="street">—</div>
+    <div class="arrow-svg" id="arrow-box"></div>
+    <div class="mdist"><span id="v-mdist">–</span><span class="u" id="v-mdist-u">м</span></div>
+  </div>
+
+  <!-- скорость -->
+  <div class="block block-speed">
+    <div class="speed-val" id="v-speed">0</div>
+    <div class="speed-unit">км/ч</div>
+  </div>
+
+  <!-- прогноз-дорожка -->
+  <div class="block block-path" id="block-path">
+    <svg class="path-svg" id="path-svg" preserveAspectRatio="xMidYMax slice"></svg>
   </div>
 
   <div id="camAlert">
-    <span class="big" id="cam-dist">300 M</span>
-    <span class="lbl">◆ CAMERA ◆</span>
-    <span class="sub" id="cam-sub">REAR PLATE</span>
+    <span class="big" id="cam-dist">300 м</span>
+    <span class="lbl">◆ КАМЕРА В СПИНУ ◆</span>
+    <span class="sub" id="cam-sub">впереди</span>
   </div>
 
-  <div id="offRouteWarn">◆ OFF ROUTE ◆</div>
-  <div class="no-heading" id="no-heading">◆ NO HEADING · MOVE TO ACQUIRE ◆</div>
+  <div id="offRouteWarn">◆ ПЕРЕСЧЁТ МАРШРУТА ◆</div>
 
   <div id="quickFinish">
     <h3>◆ СМЕНА ФИНИША ◆</h3>
@@ -327,13 +363,9 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
     <button class="qf-close" id="qf-close">◆ ОТМЕНА ◆</button>
   </div>
 
-  <div class="ils-bar">
-    <button id="btn-mute">◆ SND</button>
-    <button id="btn-dest">◆ DEST</button>
-    <button id="btn-fs">◆ FS</button>
-    <button id="btn-reset">◆ RST</button>
-    <button class="stop" id="btn-stop">◆ END</button>
-  </div>
+  <button class="corner-btn btn-fs" id="btn-fs">⛶</button>
+  <button class="corner-btn btn-gear" id="btn-gear">⚙</button>
+  <button class="corner-btn stop btn-stop" id="btn-stop">END</button>
 </div>
 
 <script>
@@ -345,16 +377,16 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
   const params = new URLSearchParams(location.search);
   if(params.get('sim') !== '1') return;
 
-  // Демо-маршрут по Москве: набор поворотов (lat, lon)
+  // Демо-маршрут по Москве: ЗАМКНУТОЕ кольцо (последняя точка = первой),
+  // чтобы зацикленная симуляция шла без телепорта и «пропаданий» дороги.
   const WP = [
     [55.75700, 37.61600],
-    [55.75700, 37.62600],
-    [55.75200, 37.62600],
-    [55.75200, 37.64100],
-    [55.74400, 37.64100],
-    [55.74400, 37.62900],
-    [55.73700, 37.62900],
-    [55.73700, 37.61200]
+    [55.75700, 37.62800],
+    [55.75000, 37.62800],
+    [55.75000, 37.64000],
+    [55.74400, 37.64000],
+    [55.74400, 37.61600],
+    [55.75700, 37.61600]
   ];
 
   // Плотный полилайн (шаг ~25 м) для маршрута и движения
@@ -416,7 +448,8 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
       if(move < remain){ sim.frac += move / seg; move = 0; }
       else { move -= remain; sim.idx++; sim.frac = 0; }
     }
-    if(sim.idx >= PATH.length - 1){ sim.idx = PATH.length - 1; sim.frac = 0; sim.running = false; }
+    // зацикливаем демо-маршрут, чтобы движение (и регулировка скорости) не останавливалось
+    if(sim.idx >= PATH.length - 1){ sim.idx = 0; sim.frac = 0; }
   }
   function emit(){
     if(!sim.cb) return;
@@ -536,6 +569,8 @@ const S = {
   lastPos: null,
   smoothedHeading: null,
   voice: true,
+  showPath: true,
+  showCompass: false,
   cams: true,
   backOnly: true,
   tolerance: 45,
@@ -767,7 +802,7 @@ function startGps(){
       $('s-gps').textContent = '✅ GPS ±' + Math.round(next.acc) + 'м';
       $('s-gps').className = 'chip ok';
       checkStartReady();
-      if($('hud').classList.contains('on')) onTickILS();
+      if($('hud').classList.contains('on')) onTick();
     },
     err => {
       $('s-gps').textContent = '❌ GPS';
@@ -861,15 +896,34 @@ function findNearestOnRoute(){
   return best;
 }
 
+/* Индекс точки маршрута, ближайшей к манёвру (кэшируется на step) */
+function stepCoordIndex(step){
+  if(step._ci != null) return step._ci;
+  const c = S.route.coords;
+  let bi = 0, bd = Infinity;
+  for(let i = 0; i < c.length; i++){
+    const d = haversine({ lat: c[i][0], lon: c[i][1] }, step);
+    if(d < bd){ bd = d; bi = i; }
+  }
+  step._ci = bi;
+  return bi;
+}
+
+/* Следующий манёвр ВПЕРЕДИ по маршруту (а не просто ближайший по прямой):
+   берём текущую снап-точку на маршруте и первый манёвр с индексом >= текущего,
+   иначе стрелка показывала бы уже пройденный поворот и расходилась с дорогой. */
 function findNextManeuver(){
   if(!S.route || !S.route.steps.length) return null;
-  let best = null, bestDist = Infinity;
-  S.route.steps.forEach(st => {
-    if(st.type === 'depart') return;
-    const d = haversine(S.gps, st);
-    if(d < bestDist){ bestDist = d; best = { step: st, dist: d }; }
-  });
-  return best;
+  const near = findNearestOnRoute();
+  const curIdx = near ? near.idx : 0;
+  for(const st of S.route.steps){
+    if(st.type === 'depart') continue;
+    if(stepCoordIndex(st) >= curIdx){
+      return { step: st, dist: haversine(S.gps, st) };
+    }
+  }
+  const last = S.route.steps[S.route.steps.length - 1];
+  return { step: last, dist: haversine(S.gps, last) };
 }
 
 function maneuverText(step){
@@ -1004,8 +1058,158 @@ function renderHorizon(){
 const CAM_H = 6;             // высота камеры над дорогой, м
 const CAM_B = 10;            // отставание камеры назад, м
 const CAM_PITCH = 22 * Math.PI / 180; // наклон камеры вниз
-const ROAD_MAX = 250;        // дальность прорисовки дороги, м
+const ROAD_MAX = 500;        // максимальная дальность прорисовки дороги, м (трасса)
 const ROAD_HALF = 4.5;       // половина ширины дороги, м (шире для читаемости на HUD)
+
+/* Пересчёт проекционной системы координат под конкретный блок прогноз-дорожки.
+   viewBox = 0..W по ширине, высота под аспект блока → без искажений. */
+function computePathLayout(w, h){
+  const aspect = Math.max(0.2, w / Math.max(1, h));
+  L.W = 1000;
+  // для проекции используем достаточную «высоту» кадра, иначе на низком блоке
+  // (альбом S20 FE) ближняя дорога уходит за viewBox
+  L.H = Math.max(480, Math.min(2400, Math.round(L.W / aspect)));
+  L.cx = L.W / 2;
+  L.land = aspect > 1;
+  L.camFocal = L.land ? 900 : 1300;
+  L.camVoff = L.H * 0.82;
+  L.horizonY = L.camVoff - L.camFocal * Math.tan(CAM_PITCH);
+}
+
+/* viewBox по фактическим точкам дороги — дорога всегда в кадре */
+function fitPathViewBox(svg, pointSets){
+  const all = [];
+  pointSets.forEach(set => set.forEach(p => all.push(p)));
+  if(!all.length) return;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  all.forEach(p => {
+    minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+  });
+  const padX = Math.max(30, (maxX - minX) * 0.06);
+  const padY = Math.max(20, (maxY - minY) * 0.08);
+  minX -= padX; minY -= padY; maxX += padX; maxY += padY;
+  svg.setAttribute('viewBox',
+    minX.toFixed(1) + ' ' + minY.toFixed(1) + ' ' +
+    (maxX - minX).toFixed(1) + ' ' + (maxY - minY).toFixed(1));
+}
+
+/* Знаковый угол манёвра = bearing_after − bearing_before, диапазон −180..+180
+   (0 — прямо, + направо, − налево). Берём точки ~25 м до и после точки манёвра,
+   чтобы кривизна подхода/выхода не искажала показания на шумной геометрии. */
+function maneuverTurnAngle(step){
+  if(!step || !S.route || !S.route.coords) return 0;
+  const coords = S.route.coords;
+  let bi = 0, bd = Infinity;
+  for(let i = 0; i < coords.length; i++){
+    const d = haversine({ lat: coords[i][0], lon: coords[i][1] }, step);
+    if(d < bd){ bd = d; bi = i; }
+  }
+  if(bi <= 0 || bi >= coords.length - 1) return 0;
+  const at = { lat: coords[bi][0], lon: coords[bi][1] };
+  let pIn = { lat: coords[bi - 1][0], lon: coords[bi - 1][1] };
+  for(let i = bi - 1; i >= 0; i--){
+    pIn = { lat: coords[i][0], lon: coords[i][1] };
+    if(haversine(pIn, at) >= 25) break;
+  }
+  let pOut = { lat: coords[bi + 1][0], lon: coords[bi + 1][1] };
+  for(let i = bi + 1; i < coords.length; i++){
+    pOut = { lat: coords[i][0], lon: coords[i][1] };
+    if(haversine(at, pOut) >= 25) break;
+  }
+  return ((bearing(at, pOut) - bearing(pIn, at) + 540) % 360) - 180;
+}
+
+/* Крупная SVG-стрелка манёвра, параметрическая: честно рисует крутизну поворота.
+   Растягивается на весь блок (viewBox = bbox самой стрелки). */
+function buildArrowSVG(step){
+  if(step && step.type === 'arrive') return arriveFlagSVG();
+  let turn = maneuverTurnAngle(step);
+  // если геометрия почти прямая — доверяем модификатору OSRM для явных поворотов
+  if(Math.abs(turn) < 4 && step && step.modifier){
+    if(step.modifier === 'uturn') turn = 175;
+    else if(step.modifier.includes('left')) turn = -8;
+    else if(step.modifier.includes('right')) turn = 8;
+  }
+  turn = Math.max(-178, Math.min(178, turn));
+  return renderParametricArrow(turn);
+}
+
+/* Построение стрелки: стойка снизу → дуга на turn° → выходной участок →
+   треугольный наконечник. Толщина линии ~12 % от размера — читается через визор. */
+function renderParametricArrow(turnDeg){
+  const H = 120;                              // условный размер стрелки
+  const stemLen = H / 3;                      // прямой участок снизу вверх
+  const exitLen = H / 3;                      // участок после дуги
+  const R = Math.abs(turnDeg) > 150 ? H / 3.2 : H / 4; // радиус дуги (петля крупнее)
+  const sw = Math.round(H * 0.12);            // толщина линии ≈ 12 %
+  const col = '#ffd400';
+  const dirVec = aDeg => { const a = aDeg * Math.PI / 180; return [Math.sin(a), -Math.cos(a)]; };
+
+  let a = 0, x = 0, y = 0;
+  const pts = [[x, y]];
+  let d = dirVec(a); x += d[0] * stemLen; y += d[1] * stemLen; pts.push([x, y]); // стойка
+  const N = Math.max(3, Math.round(Math.abs(turnDeg) / 5));                       // шаги дуги
+  const dA = turnDeg / N;
+  const segLen = (R * Math.abs(turnDeg) * Math.PI / 180) / N;
+  for(let i = 0; i < N; i++){ a += dA; d = dirVec(a); x += d[0] * segLen; y += d[1] * segLen; pts.push([x, y]); }
+  d = dirVec(a); x += d[0] * exitLen; y += d[1] * exitLen; pts.push([x, y]);      // выход
+
+  // треугольный наконечник по конечному направлению d
+  const tip = [x, y];
+  const hl = sw * 2.1, hw = sw * 1.5;
+  const back = [x - d[0] * hl, y - d[1] * hl];
+  const perp = [-d[1], d[0]];
+  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
+  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
+  const stem = pts.slice(0, pts.length - 1).concat([back]);
+
+  // viewBox = ограничивающий прямоугольник (с запасом на толщину линии)
+  const all = pts.concat([tip, wingA, wingB]);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  all.forEach(p => { minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]); maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]); });
+  const pad = sw;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  const vb = minX.toFixed(1) + ' ' + minY.toFixed(1) + ' ' + (maxX - minX).toFixed(1) + ' ' + (maxY - minY).toFixed(1);
+
+  const line = '<polyline points="' + stem.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ') +
+    '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round"/>';
+  const head = '<polygon points="' + tip[0].toFixed(1) + ',' + tip[1].toFixed(1) + ' ' +
+    wingA[0].toFixed(1) + ',' + wingA[1].toFixed(1) + ' ' + wingB[0].toFixed(1) + ',' + wingB[1].toFixed(1) + '" fill="' + col + '"/>';
+  return '<svg class="arrow-svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + line + head + '</svg>';
+}
+
+/* Финиш — клетчатый флажок в круге */
+function arriveFlagSVG(){
+  const col = '#00ff88';
+  return '<svg class="arrow-svg" viewBox="-70 -70 140 140" preserveAspectRatio="xMidYMid meet">' +
+    '<circle cx="0" cy="0" r="52" fill="none" stroke="' + col + '" stroke-width="9"/>' +
+    '<line x1="-22" y1="36" x2="-22" y2="-34" stroke="' + col + '" stroke-width="8" stroke-linecap="round"/>' +
+    '<path d="M-22 -30 L28 -30 L16 -13 L28 4 L-22 4 Z" fill="' + col + '"/>' +
+    '</svg>';
+}
+
+/* Компас-полоса N E S W (без градусов, крупно), центрирован на текущем курсе */
+function renderCompass(){
+  const el = $('compass-svg');
+  if(!el) return;
+  const W = 400, H = 36, cx = W / 2, px = 1.8;   // 1.8 px/град → видно ±110°
+  let html = '<line x1="' + cx + '" y1="2" x2="' + cx + '" y2="' + H + '" stroke="#ffd400" stroke-width="2"/>';
+  const hdg = effectiveHeading();
+  if(hdg != null && !isNaN(hdg)){
+    [['N',0],['E',90],['S',180],['W',270]].forEach(d => {
+      let diff = ((d[1] - hdg + 540) % 360) - 180;   // кратчайшая разница, -180..180
+      const x = cx + diff * px;
+      if(x < 14 || x > W - 14) return;
+      const near = Math.abs(diff) < 12;
+      html += '<text x="' + x.toFixed(1) + '" y="29" text-anchor="middle" ' +
+        'font-family="-apple-system,Segoe UI,sans-serif" font-size="27" font-weight="900" ' +
+        'fill="' + (near ? '#ffd400' : '#fff') + '">' + d[0] + '</text>';
+    });
+  }
+  el.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  el.innerHTML = html;
+}
 
 /* Проекция точки на плоскости дороги (x — вбок, z — вперёд) на экран.
    Фокус и вертикальное смещение берутся из адаптивной раскладки L. */
@@ -1037,7 +1241,9 @@ function localCtx(){
   return {
     lat: S.gps.lat, lon: S.gps.lon,
     kx: Math.cos(S.gps.lat * rad) * 111320, ky: 110540,
-    cosH: Math.cos(-hdg * rad), sinH: Math.sin(-hdg * rad)
+    // «курс вверх»: z(вперёд)=dE·sin(h)+dN·cos(h), x(вправо)=dE·cos(h)−dN·sin(h).
+    // Раньше стояло −hdg → на курсах восток/запад инвертировались вперёд/зеркало.
+    cosH: Math.cos(hdg * rad), sinH: Math.sin(hdg * rad)
   };
 }
 
@@ -1058,7 +1264,8 @@ function effectiveHeading(){
 }
 
 /* Осевая линия дороги впереди, ресемпл по длине дуги (шаг 5 м) */
-function getRoadCenterline(){
+function getRoadCenterline(maxDist){
+  const md = maxDist || ROAD_MAX;
   if(!S.route || !S.gps) return null;
   const near = findNearestOnRoute();
   if(!near) return null;
@@ -1069,7 +1276,7 @@ function getRoadCenterline(){
   for(let i = near.idx + 1; i < coords.length; i++){
     const p = toLocal(coords[i][0], coords[i][1], ctx);
     raw.push(p);
-    if(p.z > ROAD_MAX + 30) break;
+    if(p.z > md + 30) break;
   }
   if(raw.length < 2) return null;
   const out = [raw[0]];
@@ -1086,7 +1293,7 @@ function getRoadCenterline(){
     }
     acc += segLen;
   }
-  return out.filter(p => p.z >= -2 && p.z <= ROAD_MAX);
+  return out.filter(p => p.z >= -2 && p.z <= md);
 }
 
 /* Знаковый угол поворота в точке манёвра (+ вправо, − влево) */
@@ -1141,9 +1348,27 @@ function renderTurns(g){
 }
 
 function renderPathway(){
-  const g = $('pathway');
-  g.innerHTML = '';
-  const center = getRoadCenterline();
+  const block = $('block-path');
+  const svg = $('path-svg');
+  if(!block || !svg) return;
+  const hud = $('hud');
+  // Адаптивность под скорость: <25 км/ч — прячем блок; иначе 100..500 м обзора
+  const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  if(!S.showPath || kmh < 25){
+    block.classList.add('hidden');
+    hud.classList.add('no-path');
+    svg.innerHTML = '';
+    return;
+  }
+  block.classList.remove('hidden');
+  hud.classList.remove('no-path');
+  const maxDist = Math.max(100, Math.min(ROAD_MAX, Math.round(kmh * 8)));
+  // система координат под текущий размер блока
+  const rect = block.getBoundingClientRect();
+  computePathLayout(rect.width || block.clientWidth || 300, rect.height || block.clientHeight || 200);
+
+  svg.innerHTML = '';
+  const center = getRoadCenterline(maxDist);
   if(!center || center.length < 2) return;
   const leftS = [], rightS = [], centerS = [];
   for(let i = 0; i < center.length; i++){
@@ -1163,22 +1388,24 @@ function renderPathway(){
   // если края ленты отбросились (резкий поворот у камеры) — покажем хотя бы осевую
   if(leftS.length < 2){
     if(centerS.length >= 2){
-      g.innerHTML += '<polyline points="' + centerS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-        '" fill="none" stroke="#00ff88" stroke-width="4" opacity="0.9" stroke-linejoin="round"/>';
-      renderTurns(g);
+      fitPathViewBox(svg, [centerS]);
+      svg.innerHTML += '<polyline points="' + centerS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
+        '" fill="none" stroke="#00ff88" stroke-width="6" opacity="0.9" stroke-linejoin="round"/>';
+      renderTurns(svg);
     }
     return;
   }
+  fitPathViewBox(svg, [leftS, rightS, centerS]);
   const poly = leftS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1))
     .concat(rightS.slice().reverse().map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1))).join(' ');
-  g.innerHTML += '<polygon points="' + poly + '" fill="#00ff88" fill-opacity="0.16" stroke="none"/>';
-  g.innerHTML += '<polyline points="' + leftS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-    '" fill="none" stroke="#00ff88" stroke-width="4" opacity="0.95" stroke-linejoin="round"/>';
-  g.innerHTML += '<polyline points="' + rightS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-    '" fill="none" stroke="#00ff88" stroke-width="4" opacity="0.95" stroke-linejoin="round"/>';
-  g.innerHTML += '<polyline points="' + centerS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-    '" fill="none" stroke="#00ff88" stroke-width="3" stroke-dasharray="18,20" opacity="0.6"/>';
-  renderTurns(g);
+  svg.innerHTML += '<polygon points="' + poly + '" fill="#00ff88" fill-opacity="0.18" stroke="none"/>';
+  svg.innerHTML += '<polyline points="' + leftS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
+    '" fill="none" stroke="#00ff88" stroke-width="6" opacity="0.95" stroke-linejoin="round"/>';
+  svg.innerHTML += '<polyline points="' + rightS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
+    '" fill="none" stroke="#00ff88" stroke-width="6" opacity="0.95" stroke-linejoin="round"/>';
+  svg.innerHTML += '<polyline points="' + centerS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
+    '" fill="none" stroke="#00ff88" stroke-width="4" stroke-dasharray="22,24" opacity="0.6"/>';
+  renderTurns(svg);
 }
 
 const ILS_ARROWS = {
@@ -1310,16 +1537,38 @@ function checkCamerasILS(){
   }
 }
 
-function onTickILS(){
+function onTick(){
   if(!S.gps) return;
-  renderHeadingTape();
-  renderSpeedTape();
-  renderHorizon();
+  const now = new Date();
+  // статус-строка
+  $('clock').textContent = fmtClock(now);
+  const dot = $('gps-dot');
+  if(dot){ dot.classList.toggle('ok', !!S.gps); }
+  $('gps-txt').textContent = 'GPS ±' + Math.round(S.gps.acc || 0) + 'м';
+  // скорость (крупно, всегда)
+  const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  $('v-speed').textContent = Math.round(kmh);
+  $('v-speed').classList.toggle('over', S.limit > 0 && kmh > S.limit + 3);
+  // компас (опционально)
+  renderCompass();
+  // прогноз-дорожка
   renderPathway();
-  renderManeuverSymbol();
-  renderCorners();
+
+  if(!S.route){ $('mid-info').textContent = '—'; return; }
+
+  const remaining = getRemainingDistance();
   const nm = findNextManeuver();
-  if(nm && S.route){
+  // крупная стрелка манёвра + улица + расстояние
+  if(nm){
+    $('arrow-box').innerHTML = buildArrowSVG(nm.step);
+    if(nm.dist < 1000){
+      $('v-mdist').textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
+      $('v-mdist-u').textContent = 'м';
+    } else {
+      $('v-mdist').textContent = (nm.dist / 1000).toFixed(1);
+      $('v-mdist-u').textContent = 'км';
+    }
+    $('street').textContent = (nm.step.name || '').toUpperCase() || '—';
     const stIdx = S.route.steps.indexOf(nm.step);
     const kFar = 'st_' + stIdx + '_far';
     const kNear = 'st_' + stIdx + '_near';
@@ -1332,6 +1581,16 @@ function onTickILS(){
       speak(maneuverText(nm.step));
     }
   }
+  // служебная строка: остаток + ETA + время в пути
+  let midInfo = remaining < 1000 ? Math.round(remaining) + ' м' : (remaining / 1000).toFixed(1) + ' км';
+  if(kmh > 5){
+    const eta = new Date(now.getTime() + (remaining / (kmh / 3.6)) * 1000);
+    midInfo += ' · ' + fmtClock(eta);
+  }
+  if(S.startTs) midInfo += ' · T+' + fmtTime((Date.now() - S.startTs) / 1000);
+  $('mid-info').textContent = midInfo;
+
+  // сход с маршрута → пересчёт
   const near = findNearestOnRoute();
   if(near && near.dist > 40){
     if(!S.offRouteSince) S.offRouteSince = Date.now();
@@ -1346,9 +1605,10 @@ function onTickILS(){
     S.offRouteSince = null;
     $('offRouteWarn').classList.remove('on');
   }
-  if(getRemainingDistance() < 30){
+  // прибытие
+  if(remaining < 30 && !S.camWarned.has('arrived')){
+    S.camWarned.add('arrived');
     speak('Вы прибыли');
-    $('corner-street').textContent = 'FINISH';
   }
   checkCamerasILS();
 }
@@ -1362,7 +1622,7 @@ async function recalcRoute(){
   }catch(e){ console.warn('Пересчёт не удался:', e); }
 }
 
-setInterval(() => { if($('hud').classList.contains('on')) onTickILS(); }, 500);
+setInterval(() => { if($('hud').classList.contains('on')) onTick(); }, 500);
 
 async function requestWakeLock(){
   try{
@@ -1390,15 +1650,16 @@ async function startHud(){
   S.distDone = 0;
   S.camWarned.clear();
   $('setup').style.display = 'none';
+  $('setup').style.zIndex = '30';
   $('hud').classList.add('on');
-  layoutHud();
+  $('hud').classList.toggle('show-compass', !!S.showCompass);
   requestWakeLock();
   // в режиме эмуляции не разворачиваем на весь экран (иначе iframe перекроет стенд)
   if(!window.__SIM__){
     try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){}
   }
   speak('Маршрут построен. В пути ' + Math.round(S.route.duration / 60) + ' минут');
-  onTickILS();
+  onTick();
 }
 
 function stopHud(){
@@ -1496,6 +1757,17 @@ $('btn-paste').addEventListener('click', async () => {
   }
 });
 $('opt-voice').addEventListener('change', e => { S.voice = e.target.checked; });
+$('opt-path').addEventListener('change', e => {
+  S.showPath = e.target.checked;
+  if(!S.showPath){
+    $('block-path').classList.add('hidden');
+    $('hud').classList.add('no-path');
+  }
+});
+$('opt-heading').addEventListener('change', e => {
+  S.showCompass = e.target.checked;
+  $('hud').classList.toggle('show-compass', S.showCompass);
+});
 $('opt-cams').addEventListener('change', e => { S.cams = e.target.checked; });
 $('opt-back-only').addEventListener('change', e => { S.backOnly = e.target.checked; });
 $('opt-tol').addEventListener('change', e => {
@@ -1504,18 +1776,25 @@ $('opt-tol').addEventListener('change', e => {
 $('opt-nodir').addEventListener('change', e => { S.noDirPolicy = e.target.value; });
 $('opt-limit').addEventListener('change', e => { S.limit = parseInt(e.target.value, 10) || 0; });
 $('btn-start').addEventListener('click', startHud);
-$('btn-stop').addEventListener('click', () => { if(confirm('END NAVIGATION?')) stopHud(); });
-$('btn-mute').addEventListener('click', () => {
-  S.voice = !S.voice;
-  $('btn-mute').textContent = S.voice ? '◆ SND' : '◆ MUTE';
-  if(!S.voice && 'speechSynthesis' in window) speechSynthesis.cancel();
+
+/* ---------- HUD-кнопки (углы) ---------- */
+/* END — двойной тап, чтобы не завершить случайно */
+let stopTapCount = 0, stopTapTimer = null;
+$('btn-stop').addEventListener('click', () => {
+  stopTapCount++;
+  clearTimeout(stopTapTimer);
+  if(stopTapCount >= 2){
+    stopTapCount = 0;
+    if(confirm('Завершить поездку?')) stopHud();
+  } else {
+    stopTapTimer = setTimeout(() => { stopTapCount = 0; }, 800);
+  }
 });
-$('btn-reset').addEventListener('click', () => {
-  S.camWarned.clear();
-  S.startTs = Date.now();
-  S.distDone = 0;
+/* ⚙ — открыть настройки поверх HUD (в т.ч. для смены финиша на ходу) */
+$('btn-gear').addEventListener('click', () => {
+  $('setup').style.display = 'block';
+  $('setup').style.zIndex = '40';
 });
-$('btn-dest').addEventListener('click', openQuickFinish);
 $('qf-close').addEventListener('click', () => $('quickFinish').classList.remove('on'));
 
 /* ---------- Полноэкранный режим ---------- */
@@ -1531,16 +1810,11 @@ function toggleFullscreen(){
   }catch(e){}
 }
 $('btn-fs').addEventListener('click', toggleFullscreen);
-['fullscreenchange', 'webkitfullscreenchange'].forEach(ev =>
-  document.addEventListener(ev, () => {
-    $('btn-fs').textContent = isFullscreen() ? '◆ WIN' : '◆ FS';
-    layoutHud();
-  }));
 
-/* ---------- Адаптивная раскладка ---------- */
-window.addEventListener('resize', layoutHud);
-window.addEventListener('orientationchange', () => setTimeout(layoutHud, 200));
-layoutHud();
+/* при смене ориентации/размера дорожка перерисуется на ближайшем тике */
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => { if($('hud').classList.contains('on')) onTick(); }, 250);
+});
 
 /* выпадающие секции */
 function bindDrawer(btnId, drawerId){
@@ -1554,6 +1828,8 @@ bindDrawer('drawer-help-btn', 'drawer-help');
 
 window.addEventListener('load', () => { setTimeout(startGps, 400); });
 S.voice = $('opt-voice').checked;
+S.showPath = $('opt-path').checked;
+S.showCompass = $('opt-heading').checked;
 S.cams = $('opt-cams').checked;
 S.backOnly = $('opt-back-only').checked;
 S.tolerance = parseInt($('opt-tol').value, 10) || 45;
@@ -1767,16 +2043,16 @@ async function selectQuickFinish(id){
   if(!fav) return;
   S.finish = { lat: fav.lat, lon: fav.lon, label: fav.name };
   $('quickFinish').classList.remove('on');
-  $('corner-street').textContent = 'RECALC…';
+  $('mid-info').textContent = 'Пересчёт…';
   speak('Новый финиш ' + fav.name + '. Пересчёт маршрута');
   try{
     await buildRoute();
     await loadCameras();
     S.camWarned.clear();
-    onTickILS();
+    onTick();
   }catch(e){
     console.warn('Смена финиша не удалась:', e);
-    $('corner-street').textContent = 'RECALC FAIL';
+    $('mid-info').textContent = 'Ошибка пересчёта';
   }
 }
 
