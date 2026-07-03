@@ -605,6 +605,7 @@ const S = {
   smoothedHeading: null,
   fixPos: null,      // позиция последнего GPS-фикса (для интерполяции)
   fixAt: 0,          // время последнего фикса, performance.now()
+  measSpeed: null,   // скорость, вычисленная по перемещению (когда GPS не отдаёт speed)
   dispSpeed: 0,      // сглаженная отображаемая скорость (км/ч)
   rafId: null,       // id цикла плавной отрисовки
   voice: true,
@@ -816,15 +817,25 @@ function startGps(){
       const c = pos.coords;
       const next = {
         lat: c.latitude, lon: c.longitude,
-        speed: c.speed == null ? null : c.speed,
+        speed: (c.speed != null && !isNaN(c.speed) && c.speed >= 0) ? c.speed : null,
         heading: c.heading == null ? null : c.heading,
         acc: c.accuracy, ts: pos.timestamp
       };
       if(S.lastPos){
         const d = haversine(S.lastPos, next);
+        const dt = (next.ts - S.lastPos.ts) / 1000;
         if(d > 3 && d < 500) S.distDone += d;
         if((next.heading == null || isNaN(next.heading)) && d > 3){
           next.heading = bearing(S.lastPos, next);
+        }
+        // Fallback скорости: приёмник часто НЕ отдаёт coords.speed первые минуты
+        // (и на части Android — постоянно). Тогда считаем по перемещению между
+        // фиксами. Порог d>2.5 м гасит фантомную скорость от джиттера на стоянке.
+        if(next.speed == null && dt > 0.2 && dt < 10){
+          const meas = d > 2.5 && d < 500 ? d / dt : 0;
+          // лёгкое сглаживание, чтобы цифра/дорожка не дёргались
+          S.measSpeed = S.measSpeed == null ? meas : S.measSpeed * 0.6 + meas * 0.4;
+          next.speed = S.measSpeed;
         }
       }
       if(next.heading != null && !isNaN(next.heading)){
