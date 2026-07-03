@@ -377,17 +377,42 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
   const params = new URLSearchParams(location.search);
   if(params.get('sim') !== '1') return;
 
-  // Демо-маршрут по Москве: ЗАМКНУТОЕ кольцо (последняя точка = первой),
-  // чтобы зацикленная симуляция шла без телепорта и «пропаданий» дороги.
-  const WP = [
-    [55.75700, 37.61600],
-    [55.75700, 37.62800],
-    [55.75000, 37.62800],
-    [55.75000, 37.64000],
-    [55.74400, 37.64000],
-    [55.74400, 37.61600],
-    [55.75700, 37.61600]
+  // Демо-маршрут по Москве: ЗАМКНУТЫЙ контур с поворотами РАЗНОЙ крутизны
+  // и разворотом. Строим из «ног» (курс, длина): курс каждой следующей ноги
+  // отличается на заданный угол поворота. Последняя нога добирается обратно
+  // к старту (вектор = −сумма остальных), поэтому контур замыкается точно —
+  // зацикленная симуляция идёт без телепорта и «пропаданий» дороги.
+  const START = [55.75700, 37.61600];
+  const TURN_LEGS = [
+    // угол поворота В НАЧАЛЕ ноги (° , + вправо), длина ноги (м)
+    { turn: 0,    len: 380 },   // старт прямо
+    { turn: 30,   len: 300 },   // пологий вправо
+    { turn: -45,  len: 320 },   // средний влево
+    { turn: 90,   len: 300 },   // резкий вправо (90°)
+    { turn: -120, len: 340 },   // очень резкий влево
+    { turn: 175,  len: 260 },   // разворот
+    { turn: -60,  len: 320 },   // средний влево
+    { turn: 40,   len: 300 }    // пологий вправо
   ];
+  function legsToWaypoints(start, legs){
+    const rad = Math.PI / 180;
+    const kLat = 111320, kLon = 111320 * Math.cos(start[0] * rad);
+    // проходим ноги в метровых ENU-координатах
+    let hdg = 0, x = 0, y = 0;      // x — восток, y — север (м)
+    const enu = [[0, 0]];
+    let sumX = 0, sumY = 0;
+    for(const leg of legs){
+      hdg += leg.turn;
+      const h = hdg * rad;
+      const dx = Math.sin(h) * leg.len, dy = Math.cos(h) * leg.len;
+      x += dx; y += dy; sumX += dx; sumY += dy;
+      enu.push([x, y]);
+    }
+    // замыкающая нога: вектор обратно в старт
+    enu.push([0, 0]);
+    return enu.map(p => [start[0] + p[1] / kLat, start[1] + p[0] / kLon]);
+  }
+  const WP = legsToWaypoints(START, TURN_LEGS);
 
   // Плотный полилайн (шаг ~25 м) для маршрута и движения
   function densify(pts, stepM){
@@ -491,7 +516,13 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
         const bIn = bearingLL(WP[i - 1], WP[i]);
         const bOut = bearingLL(WP[i], WP[i + 1]);
         const diff = ((bOut - bIn + 540) % 360) - 180;
-        const mod = Math.abs(diff) < 15 ? 'straight' : (diff < 0 ? 'left' : 'right');
+        const a = Math.abs(diff), side = diff < 0 ? 'left' : 'right';
+        let mod;
+        if(a < 15) mod = 'straight';
+        else if(a > 150) mod = 'uturn';
+        else if(a < 35) mod = 'slight ' + side;
+        else if(a > 100) mod = 'sharp ' + side;
+        else mod = side;
         steps.push({ maneuver: { location: [WP[i][1], WP[i][0]], type: 'turn', modifier: mod },
           name: 'Демо-улица ' + i, distance: 300 });
       }
@@ -1235,9 +1266,10 @@ function toLocal(lat, lon, ctx){
   };
 }
 
-function localCtx(){
-  const hdg = effectiveHeading(), rad = Math.PI / 180;
-  if(hdg == null) return null;
+function localCtx(headingOverride){
+  const hdg = headingOverride != null ? headingOverride : effectiveHeading();
+  const rad = Math.PI / 180;
+  if(hdg == null || isNaN(hdg)) return null;
   return {
     lat: S.gps.lat, lon: S.gps.lon,
     kx: Math.cos(S.gps.lat * rad) * 111320, ky: 110540,
@@ -1245,6 +1277,17 @@ function localCtx(){
     // Раньше стояло −hdg → на курсах восток/запад инвертировались вперёд/зеркало.
     cosH: Math.cos(hdg * rad), sinH: Math.sin(hdg * rad)
   };
+}
+
+/* Геометрический курс маршрута в текущей снап-точке (независимо от GPS-курса).
+   Нужен как запасной курс для дороги на резких поворотах/развороте, когда
+   сглаженный GPS-курс сильно отстаёт и ближние точки уходят «назад». */
+function routeHeadingAt(near){
+  if(!S.route || !near) return null;
+  const c = S.route.coords;
+  const i = Math.min(near.idx, c.length - 2);
+  if(i < 0) return null;
+  return bearing({ lat: c[i][0], lon: c[i][1] }, { lat: c[i + 1][0], lon: c[i + 1][1] });
 }
 
 /* Эффективный курс: реальный сглаженный курс, а если его ещё нет
@@ -1263,14 +1306,8 @@ function effectiveHeading(){
   return null;
 }
 
-/* Осевая линия дороги впереди, ресемпл по длине дуги (шаг 5 м) */
-function getRoadCenterline(maxDist){
-  const md = maxDist || ROAD_MAX;
-  if(!S.route || !S.gps) return null;
-  const near = findNearestOnRoute();
-  if(!near) return null;
-  const ctx = localCtx();
-  if(!ctx) return null;
+/* Осевая линия дороги впереди в заданной локальной системе (ресемпл 5 м) */
+function centerlineWithCtx(near, ctx, md){
   const coords = S.route.coords;
   const raw = [{ x: 0, z: 0 }]; // старт от проекции мотоцикла
   for(let i = near.idx + 1; i < coords.length; i++){
@@ -1278,7 +1315,7 @@ function getRoadCenterline(maxDist){
     raw.push(p);
     if(p.z > md + 30) break;
   }
-  if(raw.length < 2) return null;
+  if(raw.length < 2) return [];
   const out = [raw[0]];
   const step = 5;
   let acc = 0, target = 0;
@@ -1294,6 +1331,27 @@ function getRoadCenterline(maxDist){
     acc += segLen;
   }
   return out.filter(p => p.z >= -2 && p.z <= md);
+}
+
+/* Осевая линия дороги впереди. Сначала по сглаженному GPS-курсу; если на резком
+   повороте/развороте линия почти вырождается (курс отстаёт → ближние точки
+   «уходят назад»), пересобираем по геометрическому курсу маршрута. */
+function getRoadCenterline(maxDist){
+  const md = maxDist || ROAD_MAX;
+  if(!S.route || !S.gps) return null;
+  const near = findNearestOnRoute();
+  if(!near) return null;
+  const ctx = localCtx();
+  let out = ctx ? centerlineWithCtx(near, ctx, md) : [];
+  if(out.length < 3){
+    const rh = routeHeadingAt(near);
+    const ctx2 = rh != null ? localCtx(rh) : null;
+    if(ctx2){
+      const out2 = centerlineWithCtx(near, ctx2, md);
+      if(out2.length > out.length) out = out2;
+    }
+  }
+  return out.length >= 2 ? out : null;
 }
 
 /* Знаковый угол поворота в точке манёвра (+ вправо, − влево) */
