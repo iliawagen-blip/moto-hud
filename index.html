@@ -599,6 +599,10 @@ const S = {
   distDone: 0,
   lastPos: null,
   smoothedHeading: null,
+  fixPos: null,      // позиция последнего GPS-фикса (для интерполяции)
+  fixAt: 0,          // время последнего фикса, performance.now()
+  dispSpeed: 0,      // сглаженная отображаемая скорость (км/ч)
+  rafId: null,       // id цикла плавной отрисовки
   voice: true,
   showPath: true,
   showCompass: false,
@@ -830,6 +834,8 @@ function startGps(){
       }
       S.lastPos = next;
       S.gps = next;
+      S.fixPos = { lat: next.lat, lon: next.lon };
+      S.fixAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
       $('s-gps').textContent = '✅ GPS ±' + Math.round(next.acc) + 'м';
       $('s-gps').className = 'chip ok';
       checkStartReady();
@@ -915,15 +921,82 @@ async function loadCameras(){
   }
 }
 
+/* ---------- Плавность: интерполяция позиции между GPS-фиксами ----------
+   Реальный GPS выдаёт ~1 фикс/сек, из-за чего дорога дёргается. Между фиксами
+   доводим («dead reckoning») позицию по текущему курсу и скорости, а рендер
+   гоним на requestAnimationFrame — движение выглядит плавным. Для логики
+   (озвучка, ETA, камеры) авторитетным остаётся сырой S.gps. */
+let RENDER_POS = null;
+function curPos(){ return RENDER_POS || S.gps; }
+
+function updateRenderPos(){
+  if(!S.gps){ RENDER_POS = null; return; }
+  const v = (S.gps.speed != null && S.gps.speed > 0.6) ? S.gps.speed : 0; // м/с
+  const hdg = (S.smoothedHeading != null && !isNaN(S.smoothedHeading))
+    ? S.smoothedHeading : S.gps.heading;
+  if(!v || hdg == null || isNaN(hdg) || !S.fixPos){ RENDER_POS = S.gps; return; }
+  const rad = Math.PI / 180;
+  const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1000)); // ограничиваем «занос»
+  const dist = v * dt;
+  RENDER_POS = {
+    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
+    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
+    speed: S.gps.speed, heading: S.gps.heading, acc: S.gps.acc
+  };
+}
+
+/* Плавное число скорости (лёгкая инерция, чтобы цифра не дёргалась) */
+function easeSpeed(){
+  const el = $('v-speed');
+  if(!el || !S.gps) return;
+  const target = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  S.dispSpeed += (target - S.dispSpeed) * 0.22;
+  if(Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
+  el.textContent = Math.round(S.dispSpeed);
+  el.classList.toggle('over', S.limit > 0 && target > S.limit + 3);
+}
+
+/* Цикл плавной отрисовки: позиция интерполируется каждый кадр, тяжёлая
+   прогноз-дорожка перестраивается не чаще ~30 fps (плавно, но без перегрева). */
+let _lastPathBuild = 0;
+function visualLoop(ts){
+  S.rafId = requestAnimationFrame(visualLoop);
+  if(!$('hud').classList.contains('on')) return;
+  updateRenderPos();
+  easeSpeed();
+  if(ts - _lastPathBuild >= 33){
+    _lastPathBuild = ts;
+    renderCompass();
+    renderPathway();
+  }
+}
+
+/* Ближайшая точка маршрута к текущей позиции.
+   Мемоизация на позицию + оконный поиск вокруг предыдущего индекса
+   (позиция растёт монотонно) — O(окна) вместо O(всего маршрута) на кадр;
+   при «прыжке»/сбое привязки — полный проход. */
+let _nearMemoPos = null, _nearMemoVal = null, _nearIdx = 0;
 function findNearestOnRoute(){
   if(!S.route) return null;
-  const c = S.route.coords;
-  let best = { idx: 0, dist: Infinity };
-  for(let i = 0; i < c.length - 1; i++){
-    const d = distToSegment(S.gps,
-      { lat: c[i][0], lon: c[i][1] }, { lat: c[i + 1][0], lon: c[i + 1][1] });
-    if(d < best.dist){ best.dist = d; best.idx = i; }
-  }
+  const pos = curPos();
+  if(!pos) return null;
+  if(_nearMemoPos === pos) return _nearMemoVal;
+  const c = S.route.coords, n = c.length;
+  const scan = (lo, hi) => {
+    let best = { idx: lo, dist: Infinity };
+    for(let i = lo; i < hi; i++){
+      const d = distToSegment(pos,
+        { lat: c[i][0], lon: c[i][1] }, { lat: c[i + 1][0], lon: c[i + 1][1] });
+      if(d < best.dist){ best.dist = d; best.idx = i; }
+    }
+    return best;
+  };
+  const lo = Math.max(0, _nearIdx - 8), hi = Math.min(n - 1, _nearIdx + 60);
+  let best = scan(lo, hi);
+  if(best.dist > 60) best = scan(0, n - 1); // ушли из окна — ищем по всему маршруту
+  _nearIdx = best.idx;
+  _nearMemoPos = pos; _nearMemoVal = best;
   return best;
 }
 
@@ -1267,12 +1340,13 @@ function toLocal(lat, lon, ctx){
 }
 
 function localCtx(headingOverride){
+  const pos = curPos();
   const hdg = headingOverride != null ? headingOverride : effectiveHeading();
   const rad = Math.PI / 180;
-  if(hdg == null || isNaN(hdg)) return null;
+  if(!pos || hdg == null || isNaN(hdg)) return null;
   return {
-    lat: S.gps.lat, lon: S.gps.lon,
-    kx: Math.cos(S.gps.lat * rad) * 111320, ky: 110540,
+    lat: pos.lat, lon: pos.lon,
+    kx: Math.cos(pos.lat * rad) * 111320, ky: 110540,
     // «курс вверх»: z(вперёд)=dE·sin(h)+dN·cos(h), x(вправо)=dE·cos(h)−dN·sin(h).
     // Раньше стояло −hdg → на курсах восток/запад инвертировались вперёд/зеркало.
     cosH: Math.cos(hdg * rad), sinH: Math.sin(hdg * rad)
@@ -1295,7 +1369,7 @@ function routeHeadingAt(near){
    сегмента маршрута. Благодаря этому дорога рисуется всегда, когда есть маршрут. */
 function effectiveHeading(){
   if(S.smoothedHeading != null && !isNaN(S.smoothedHeading)) return S.smoothedHeading;
-  if(S.route && S.gps){
+  if(S.route && curPos()){
     const near = findNearestOnRoute();
     if(near){
       const c = S.route.coords;
@@ -1338,7 +1412,7 @@ function centerlineWithCtx(near, ctx, md){
    «уходят назад»), пересобираем по геометрическому курсу маршрута. */
 function getRoadCenterline(maxDist){
   const md = maxDist || ROAD_MAX;
-  if(!S.route || !S.gps) return null;
+  if(!S.route || !curPos()) return null;
   const near = findNearestOnRoute();
   if(!near) return null;
   const ctx = localCtx();
@@ -1370,14 +1444,21 @@ function turnAngleAt(step){
   return ((bOut - bIn + 540) % 360) - 180;
 }
 
-/* Метки следующих 1–3 поворотов: шеврон в сторону, угол и дистанция */
-function renderTurns(g){
-  if(!S.route) return;
+/* Метки следующих 1–3 поворотов: шеврон в сторону, КРУПНЫЙ угол и дистанция.
+   Размеры масштабируются от текущего viewBox дорожки → градусы читаются при
+   любом зуме. Возвращает SVG-строку для батч-вставки (без правки DOM). */
+function renderTurnsStr(svg){
+  if(!S.route) return '';
   const ctx = localCtx();
-  if(!ctx) return;
+  if(!ctx) return '';
+  // масштаб/границы под фактический viewBox (после fitPathViewBox)
+  const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
+  const vb = bv && bv.width ? bv.width : L.W;
+  const vbX = bv ? bv.x : 0, vbY = bv ? bv.y : 0, vbW = vb, vbH = bv ? bv.height : L.H;
   const turns = S.route.steps.filter(st =>
     st.type !== 'depart' && st.type !== 'arrive' && st.modifier && st.modifier !== 'straight');
-  let shown = 0;
+  const pos = curPos();
+  let out = '', shown = 0;
   for(const st of turns){
     if(shown >= 3) break;
     const loc = toLocal(st.lat, st.lon, ctx);
@@ -1387,22 +1468,43 @@ function renderTurns(g){
     const ang = turnAngleAt(st);
     const dir = ang == null ? (st.modifier.includes('left') ? -1 : 1) : (ang < 0 ? -1 : 1);
     const deg = ang == null ? '' : Math.round(Math.abs(ang)) + '°';
-    const dist = Math.round(haversine(S.gps, st));
+    const dist = Math.round(haversine(pos, st));
     const col = shown === 0 ? '#ffd400' : '#00cc70';
-    const sz = shown === 0 ? 1 : 0.72;
-    const s = 32 * sz;
-    const tip = dir * s, base = -dir * s;
-    g.innerHTML +=
-      '<g transform="translate(' + P.x.toFixed(1) + ',' + P.y.toFixed(1) + ')">' +
-        '<path d="M ' + base + ' ' + (-s) + ' L ' + tip + ' 0 L ' + base + ' ' + s + '" ' +
-          'fill="none" stroke="' + col + '" stroke-width="' + (8 * sz) + '" stroke-linecap="round" stroke-linejoin="round"/>' +
-        '<text x="0" y="' + (-s - 14) + '" text-anchor="middle" font-family="Consolas,monospace" ' +
-          'font-size="' + (30 * sz) + '" font-weight="900" fill="' + col + '">' + deg + '</text>' +
-        '<text x="0" y="' + (s + 32) + '" text-anchor="middle" font-family="Consolas,monospace" ' +
-          'font-size="' + (22 * sz) + '" fill="' + col + '" opacity="0.85">' + dist + ' м</text>' +
+    const k = shown === 0 ? 1 : 0.72;                 // относительный размер метки
+    const degFont = vb * 0.12 * k;                    // крупные градусы (~12% ширины)
+    const distFont = vb * 0.05 * k;
+    const s = vb * 0.05 * k;                           // размер шеврона
+    const sw = Math.max(2, vb * 0.012 * k);
+    const halo = Math.max(3, degFont * 0.16);         // тёмная обводка для читаемости
+    const tip = (dir * s).toFixed(1), base = (-dir * s).toFixed(1);
+    // число градусов — СБОКУ от шеврона (в сторону поворота), на его уровне:
+    // так не обрезается верхом кадра (slice прижимает к низу). Позицию клампим
+    // в видимые границы viewBox с запасом на ширину надписи.
+    const degHalfW = degFont * (deg.length) * 0.34;
+    let degX = P.x + dir * (s + degHalfW + degFont * 0.25);
+    degX = Math.min(vbX + vbW - degHalfW - 4, Math.max(vbX + degHalfW + 4, degX));
+    let degY = P.y + degFont * 0.34;
+    degY = Math.min(vbY + vbH - 4, Math.max(vbY + degFont + 4, degY));
+    // дистанция — снизу под шевроном
+    let distY = P.y + s + distFont * 1.1;
+    distY = Math.min(vbY + vbH - 4, distY);
+    out +=
+      '<g font-family="Consolas,monospace" text-anchor="middle">' +
+        '<path d="M ' + (P.x + +base).toFixed(1) + ' ' + (P.y - s).toFixed(1) +
+          ' L ' + (P.x + +tip).toFixed(1) + ' ' + P.y.toFixed(1) +
+          ' L ' + (P.x + +base).toFixed(1) + ' ' + (P.y + s).toFixed(1) + '" ' +
+          'fill="none" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" ' +
+          'font-size="' + degFont.toFixed(1) + '" font-weight="900" ' +
+          'stroke="#000" stroke-width="' + halo.toFixed(1) + '" stroke-linejoin="round" fill="#000" opacity="0.65">' + deg + '</text>' +
+        '<text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" ' +
+          'font-size="' + degFont.toFixed(1) + '" font-weight="900" fill="' + col + '">' + deg + '</text>' +
+        '<text x="' + P.x.toFixed(1) + '" y="' + distY.toFixed(1) + '" ' +
+          'font-size="' + distFont.toFixed(1) + '" fill="' + col + '" opacity="0.9">' + dist + ' м</text>' +
       '</g>';
     shown++;
   }
+  return out;
 }
 
 function renderPathway(){
@@ -1425,9 +1527,8 @@ function renderPathway(){
   const rect = block.getBoundingClientRect();
   computePathLayout(rect.width || block.clientWidth || 300, rect.height || block.clientHeight || 200);
 
-  svg.innerHTML = '';
   const center = getRoadCenterline(maxDist);
-  if(!center || center.length < 2) return;
+  if(!center || center.length < 2){ if(svg.innerHTML) svg.innerHTML = ''; return; }
   const leftS = [], rightS = [], centerS = [];
   for(let i = 0; i < center.length; i++){
     const p = center[i];
@@ -1443,27 +1544,26 @@ function renderPathway(){
     if(cP) centerS.push(cP);
     if(lP && rP){ leftS.push(lP); rightS.push(rP); }
   }
+  const pts = arr => arr.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
   // если края ленты отбросились (резкий поворот у камеры) — покажем хотя бы осевую
   if(leftS.length < 2){
     if(centerS.length >= 2){
       fitPathViewBox(svg, [centerS]);
-      svg.innerHTML += '<polyline points="' + centerS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-        '" fill="none" stroke="#00ff88" stroke-width="6" opacity="0.9" stroke-linejoin="round"/>';
-      renderTurns(svg);
-    }
+      svg.innerHTML =
+        '<polyline points="' + pts(centerS) + '" fill="none" stroke="#00ff88" ' +
+        'stroke-width="6" opacity="0.9" stroke-linejoin="round"/>' + renderTurnsStr(svg);
+    } else if(svg.innerHTML){ svg.innerHTML = ''; }
     return;
   }
   fitPathViewBox(svg, [leftS, rightS, centerS]);
-  const poly = leftS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1))
-    .concat(rightS.slice().reverse().map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1))).join(' ');
-  svg.innerHTML += '<polygon points="' + poly + '" fill="#00ff88" fill-opacity="0.18" stroke="none"/>';
-  svg.innerHTML += '<polyline points="' + leftS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-    '" fill="none" stroke="#00ff88" stroke-width="6" opacity="0.95" stroke-linejoin="round"/>';
-  svg.innerHTML += '<polyline points="' + rightS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-    '" fill="none" stroke="#00ff88" stroke-width="6" opacity="0.95" stroke-linejoin="round"/>';
-  svg.innerHTML += '<polyline points="' + centerS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-    '" fill="none" stroke="#00ff88" stroke-width="4" stroke-dasharray="22,24" opacity="0.6"/>';
-  renderTurns(svg);
+  const poly = pts(leftS) + ' ' + pts(rightS.slice().reverse());
+  // единая сборка строки → один разбор SVG на кадр
+  svg.innerHTML =
+    '<polygon points="' + poly + '" fill="#00ff88" fill-opacity="0.18" stroke="none"/>' +
+    '<polyline points="' + pts(leftS) + '" fill="none" stroke="#00ff88" stroke-width="6" opacity="0.95" stroke-linejoin="round"/>' +
+    '<polyline points="' + pts(rightS) + '" fill="none" stroke="#00ff88" stroke-width="6" opacity="0.95" stroke-linejoin="round"/>' +
+    '<polyline points="' + pts(centerS) + '" fill="none" stroke="#00ff88" stroke-width="4" stroke-dasharray="22,24" opacity="0.6"/>' +
+    renderTurnsStr(svg);
 }
 
 const ILS_ARROWS = {
@@ -1603,14 +1703,10 @@ function onTick(){
   const dot = $('gps-dot');
   if(dot){ dot.classList.toggle('ok', !!S.gps); }
   $('gps-txt').textContent = 'GPS ±' + Math.round(S.gps.acc || 0) + 'м';
-  // скорость (крупно, всегда)
+  // скорость (крупно) — число сглаживается в цикле плавной отрисовки (easeSpeed).
   const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  $('v-speed').textContent = Math.round(kmh);
-  $('v-speed').classList.toggle('over', S.limit > 0 && kmh > S.limit + 3);
-  // компас (опционально)
-  renderCompass();
-  // прогноз-дорожка
-  renderPathway();
+  // компас и прогноз-дорожка рисуются в visualLoop (requestAnimationFrame),
+  // здесь остаётся только логика/тексты, обновляемые с частотой GPS.
 
   if(!S.route){ $('mid-info').textContent = '—'; return; }
 
@@ -1717,10 +1813,13 @@ async function startHud(){
     try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){}
   }
   speak('Маршрут построен. В пути ' + Math.round(S.route.duration / 60) + ' минут');
+  S.dispSpeed = S.gps && S.gps.speed > 0 ? S.gps.speed * 3.6 : 0;
   onTick();
+  if(!S.rafId) S.rafId = requestAnimationFrame(visualLoop); // плавная отрисовка
 }
 
 function stopHud(){
+  if(S.rafId){ cancelAnimationFrame(S.rafId); S.rafId = null; }
   $('hud').classList.remove('on');
   $('setup').style.display = 'block';
   $('btn-start').disabled = false;
