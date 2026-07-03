@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#000">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>Мото ИЛС</title>
 <style>
 :root{
@@ -853,34 +857,66 @@ function checkStartReady(){
   $('btn-start').disabled = !(S.gps && S.finish);
 }
 
+/* ---------- Кеш последней поездки (офлайн-устойчивость Фазы 1) ----------
+   Построенный онлайн маршрут и камеры сохраняются в localStorage. Если сети
+   нет, а финиш совпадает с прошлым — переигрываем сохранённый маршрут.
+   Полноценный офлайн-роутинг к произвольной точке — задача Фазы 4. */
+const RUN_KEY = 'moto-hud-last-run';
+function saveLastRun(){
+  try{
+    localStorage.setItem(RUN_KEY, JSON.stringify({
+      route: S.route, cameras: S.cameras, finish: S.finish, ts: Date.now()
+    }));
+  }catch(e){}
+}
+function loadLastRun(){
+  try{ const r = localStorage.getItem(RUN_KEY); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+
 async function buildRoute(){
+  S._usedCache = false;
   const url = 'https://router.project-osrm.org/route/v1/driving/' +
     `${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}` +
     '?overview=full&geometries=geojson&steps=true&annotations=false';
-  const r = await fetch(url);
-  if(!r.ok) throw new Error('OSRM HTTP ' + r.status);
-  const j = await r.json();
-  if(!j.routes || !j.routes.length) throw new Error('Маршрут не найден');
-  const rt = j.routes[0];
-  const coords = rt.geometry.coordinates.map(c => [c[1], c[0]]);
-  const steps = [];
-  rt.legs.forEach(leg => {
-    leg.steps.forEach(st => {
-      const loc = st.maneuver.location;
-      steps.push({
-        lat: loc[1], lon: loc[0],
-        type: st.maneuver.type,
-        modifier: st.maneuver.modifier,
-        name: st.name || '',
-        distance: st.distance
+  try{
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('OSRM HTTP ' + r.status);
+    const j = await r.json();
+    if(!j.routes || !j.routes.length) throw new Error('Маршрут не найден');
+    const rt = j.routes[0];
+    const coords = rt.geometry.coordinates.map(c => [c[1], c[0]]);
+    const steps = [];
+    rt.legs.forEach(leg => {
+      leg.steps.forEach(st => {
+        const loc = st.maneuver.location;
+        steps.push({
+          lat: loc[1], lon: loc[0],
+          type: st.maneuver.type,
+          modifier: st.maneuver.modifier,
+          name: st.name || '',
+          distance: st.distance
+        });
       });
     });
-  });
-  S.route = { coords, steps, distance: rt.distance, duration: rt.duration };
+    S.route = { coords, steps, distance: rt.distance, duration: rt.duration };
+  }catch(err){
+    // сети нет / OSRM недоступен — пробуем сохранённый маршрут к тому же финишу
+    const last = loadLastRun();
+    if(last && last.route && S.finish && last.finish &&
+       haversine(last.finish, S.finish) < 60){
+      S.route = last.route;
+      if(Array.isArray(last.cameras)) S.cameras = last.cameras;
+      S._usedCache = true;
+      return;
+    }
+    throw new Error('Нет сети и нет сохранённого маршрута к этой точке');
+  }
 }
 
 async function loadCameras(){
   if(!S.cams || !S.route){ S.cameras = []; return; }
+  if(S._usedCache) return; // офлайн: камеры уже взяты из сохранённой поездки
   let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
   S.route.coords.forEach(c => {
     if(c[0] < minLat) minLat = c[0];
@@ -1800,6 +1836,7 @@ async function startHud(){
     $('btn-start').textContent = '▶ СТАРТ';
     return;
   }
+  saveLastRun(); // офлайн-устойчивость: запоминаем маршрут и камеры
   S.startTs = Date.now();
   S.distDone = 0;
   S.camWarned.clear();
@@ -2218,6 +2255,14 @@ renderFavs();
 /* Автозапуск симуляции (?sim=1) */
 if(window.__SIM__ && typeof window.__SIM__.boot === 'function'){
   window.addEventListener('load', () => setTimeout(() => window.__SIM__.boot(), 700));
+}
+
+/* Регистрация service worker (PWA: установка + офлайн оболочки).
+   В режиме эмулятора (?sim=1) пропускаем, чтобы кеш не мешал итерациям. */
+if('serviceWorker' in navigator && !window.__SIM__ && location.protocol !== 'file:'){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
 }
 </script>
 </body>
