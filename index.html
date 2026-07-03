@@ -113,7 +113,7 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
 
 .ils-bar{
   position:absolute;left:0;right:0;bottom:0;
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
   background:#000;border-top:1px solid var(--hud-dim);
   padding-bottom:env(safe-area-inset-bottom)
 }
@@ -121,6 +121,11 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
   min-height:60px;background:#000;border:none;color:var(--hud);
   font-family:"Consolas",monospace;font-size:13px;font-weight:800;letter-spacing:1px;
   text-shadow:0 0 4px rgba(0,255,136,.5)
+}
+/* В альбомной ориентации панель ниже и компактнее */
+@media (orientation:landscape){
+  .ils-bar button{min-height:46px;font-size:12px}
+  .hud-bl,.hud-br{bottom:calc(env(safe-area-inset-bottom) + 60px)}
 }
 .ils-bar button:active{background:#001a10}
 .ils-bar .stop{color:var(--alert);text-shadow:0 0 4px rgba(255,45,45,.5)}
@@ -275,33 +280,24 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
 
 <!-- ============ HUD ИЛС ============ -->
 <div id="hud">
-  <svg id="ils" viewBox="0 0 1000 1600" preserveAspectRatio="xMidYMid slice">
-    <g id="heading-tape">
-      <rect x="200" y="60" width="600" height="60" fill="none" stroke="#00aa5c" stroke-width="1.5"/>
-      <polygon points="500,120 490,140 510,140" fill="#00ff88"/>
-      <g id="heading-ticks"></g>
-      <polygon id="heading-bug" points="0,60 -12,45 12,45" fill="#ffd400" transform="translate(500)"/>
-    </g>
-    <g id="speed-tape">
-      <rect x="30" y="500" width="90" height="600" fill="none" stroke="#00aa5c" stroke-width="1.5"/>
-      <rect x="20" y="790" width="110" height="60" fill="#000" stroke="#00ff88" stroke-width="2"/>
-      <text id="speed-current" x="75" y="838" text-anchor="middle" font-family="Consolas,monospace" font-size="42" font-weight="900" fill="#00ff88">0</text>
-      <text x="75" y="1120" text-anchor="middle" font-family="Consolas,monospace" font-size="16" fill="#00aa5c">KM/H</text>
-      <g id="speed-ticks"></g>
-      <line id="speed-limit" x1="30" y1="820" x2="120" y2="820" stroke="#ff2d2d" stroke-width="2" stroke-dasharray="4,4"/>
-    </g>
-    <g id="horizon-group">
-      <line id="horizon-line" x1="180" y1="520" x2="820" y2="520" stroke="#00aa5c" stroke-width="1.5" opacity="0.6"/>
-      <line x1="200" y1="515" x2="200" y2="525" stroke="#00aa5c" stroke-width="1"/>
-      <line x1="800" y1="515" x2="800" y2="525" stroke="#00aa5c" stroke-width="1"/>
-    </g>
-    <g id="waterline" transform="translate(500,1380)">
-      <path d="M -24 22 L 0 -14 L 24 22" fill="none" stroke="#00ff88" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    </g>
+  <svg id="ils" viewBox="0 0 1000 1600" preserveAspectRatio="xMidYMid meet">
+    <!-- статичный «хром» приборов рисуется из JS (layoutHud) под ориентацию -->
+    <g id="chrome"></g>
+    <g id="horizon-group"></g>
     <g id="pathway"></g>
+    <g id="heading-tape">
+      <g id="heading-ticks"></g>
+      <polygon id="heading-bug" points="0,0 -12,-15 12,-15" fill="#ffd400" transform="translate(500)"/>
+    </g>
+    <g id="speed-ticks"></g>
+    <text id="speed-current" x="75" y="838" text-anchor="middle" font-family="Consolas,monospace" font-size="42" font-weight="900" fill="#00ff88">0</text>
+    <line id="speed-limit" x1="30" y1="820" x2="120" y2="820" stroke="#ff2d2d" stroke-width="2" stroke-dasharray="4,4"/>
     <g id="maneuver-symbol" transform="translate(820,220)"></g>
     <text id="maneuver-dist" x="820" y="400" text-anchor="middle" font-family="Consolas,monospace" font-size="72" font-weight="900" fill="#ffd400">--</text>
     <text id="maneuver-unit" x="820" y="440" text-anchor="middle" font-family="Consolas,monospace" font-size="20" fill="#00aa5c">M</text>
+    <g id="waterline" transform="translate(500,1380)">
+      <path d="M -24 22 L 0 -14 L 24 22" fill="none" stroke="#00ff88" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
     <text id="gps-status" x="500" y="1550" text-anchor="middle" font-family="Consolas,monospace" font-size="14" fill="#00aa5c">GPS ACQUIRING</text>
   </svg>
 
@@ -334,12 +330,194 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
   <div class="ils-bar">
     <button id="btn-mute">◆ SND</button>
     <button id="btn-dest">◆ DEST</button>
+    <button id="btn-fs">◆ FS</button>
     <button id="btn-reset">◆ RST</button>
     <button class="stop" id="btn-stop">◆ END</button>
   </div>
 </div>
 
 <script>
+/* ============================================================
+   SIM — эмуляция движения и сети (активируется ?sim=1)
+   Позволяет тестировать HUD без реальной поездки и без интернета.
+   ============================================================ */
+(function initSim(){
+  const params = new URLSearchParams(location.search);
+  if(params.get('sim') !== '1') return;
+
+  // Демо-маршрут по Москве: набор поворотов (lat, lon)
+  const WP = [
+    [55.75700, 37.61600],
+    [55.75700, 37.62600],
+    [55.75200, 37.62600],
+    [55.75200, 37.64100],
+    [55.74400, 37.64100],
+    [55.74400, 37.62900],
+    [55.73700, 37.62900],
+    [55.73700, 37.61200]
+  ];
+
+  // Плотный полилайн (шаг ~25 м) для маршрута и движения
+  function densify(pts, stepM){
+    const R = 6371000, r = Math.PI / 180;
+    const out = [];
+    for(let i = 0; i < pts.length - 1; i++){
+      const a = pts[i], b = pts[i + 1];
+      const dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
+      const la = a[0] * r;
+      const dx = dLon * Math.cos(la) * R, dy = dLat * R;
+      const seg = Math.hypot(dx, dy);
+      const n = Math.max(1, Math.round(seg / stepM));
+      for(let k = 0; k < n; k++){
+        const t = k / n;
+        out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+      }
+    }
+    out.push(pts[pts.length - 1]);
+    return out;
+  }
+  const PATH = densify(WP, 25);
+
+  function bearingLL(a, b){
+    const r = Math.PI / 180, d = 180 / Math.PI;
+    const f1 = a[0] * r, f2 = b[0] * r, dl = (b[1] - a[1]) * r;
+    const y = Math.sin(dl) * Math.cos(f2);
+    const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+    return (Math.atan2(y, x) * d + 360) % 360;
+  }
+  function distLL(a, b){
+    const R = 6371000, r = Math.PI / 180;
+    const dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+  }
+
+  // Состояние симулятора
+  const sim = {
+    idx: 0, frac: 0, speed: 14, running: true,
+    cb: null, err: null, timer: null
+  };
+
+  function curPos(){
+    const a = PATH[Math.min(sim.idx, PATH.length - 1)];
+    const b = PATH[Math.min(sim.idx + 1, PATH.length - 1)];
+    const lat = a[0] + (b[0] - a[0]) * sim.frac;
+    const lon = a[1] + (b[1] - a[1]) * sim.frac;
+    const hdg = bearingLL(a, b);
+    return { lat, lon, hdg };
+  }
+  function advance(dt){
+    if(!sim.running) return;
+    let move = sim.speed * dt; // метры
+    while(move > 0 && sim.idx < PATH.length - 1){
+      const a = PATH[sim.idx], b = PATH[sim.idx + 1];
+      const seg = distLL(a, b) || 0.01;
+      const remain = seg * (1 - sim.frac);
+      if(move < remain){ sim.frac += move / seg; move = 0; }
+      else { move -= remain; sim.idx++; sim.frac = 0; }
+    }
+    if(sim.idx >= PATH.length - 1){ sim.idx = PATH.length - 1; sim.frac = 0; sim.running = false; }
+  }
+  function emit(){
+    if(!sim.cb) return;
+    const p = curPos();
+    sim.cb({
+      coords: {
+        latitude: p.lat, longitude: p.lon,
+        accuracy: 5, altitude: null, altitudeAccuracy: null,
+        heading: sim.running ? p.hdg : null,
+        speed: sim.running ? sim.speed : 0
+      },
+      timestamp: Date.now()
+    });
+  }
+
+  // Подмена геолокации
+  const geo = {
+    watchPosition(cb, err){
+      sim.cb = cb; sim.err = err;
+      emit();
+      if(sim.timer) clearInterval(sim.timer);
+      sim.timer = setInterval(() => { advance(0.5); emit(); }, 500);
+      return 1;
+    },
+    clearWatch(){ if(sim.timer){ clearInterval(sim.timer); sim.timer = null; } },
+    getCurrentPosition(cb){ const p = curPos(); cb({ coords: { latitude: p.lat, longitude: p.lon, accuracy: 5, heading: p.hdg, speed: sim.speed }, timestamp: Date.now() }); }
+  };
+  try{ Object.defineProperty(navigator, 'geolocation', { value: geo, configurable: true }); }
+  catch(e){ navigator.geolocation = geo; }
+
+  // Подмена сети: OSRM / Overpass / Nominatim
+  const realFetch = window.fetch ? window.fetch.bind(window) : null;
+  window.fetch = function(url, opts){
+    const u = String(url);
+    if(u.includes('router.project-osrm.org')){
+      const coordinates = PATH.map(p => [p[1], p[0]]); // [lon,lat]
+      const steps = [];
+      for(let i = 1; i < WP.length - 1; i++){
+        const bIn = bearingLL(WP[i - 1], WP[i]);
+        const bOut = bearingLL(WP[i], WP[i + 1]);
+        const diff = ((bOut - bIn + 540) % 360) - 180;
+        const mod = Math.abs(diff) < 15 ? 'straight' : (diff < 0 ? 'left' : 'right');
+        steps.push({ maneuver: { location: [WP[i][1], WP[i][0]], type: 'turn', modifier: mod },
+          name: 'Демо-улица ' + i, distance: 300 });
+      }
+      steps.unshift({ maneuver: { location: [WP[0][1], WP[0][0]], type: 'depart', modifier: 'straight' }, name: 'Старт', distance: 0 });
+      steps.push({ maneuver: { location: [WP[WP.length - 1][1], WP[WP.length - 1][0]], type: 'arrive', modifier: 'straight' }, name: 'Финиш', distance: 0 });
+      let dist = 0;
+      for(let i = 0; i < PATH.length - 1; i++) dist += distLL(PATH[i], PATH[i + 1]);
+      return Promise.resolve(new Response(JSON.stringify({
+        code: 'Ok',
+        routes: [{ geometry: { coordinates }, legs: [{ steps }], distance: dist, duration: dist / sim.speed }]
+      }), { headers: { 'Content-Type': 'application/json' } }));
+    }
+    if(u.includes('overpass-api.de')){
+      const mid = PATH[Math.floor(PATH.length * 0.4)];
+      const mid2 = PATH[Math.floor(PATH.length * 0.7)];
+      return Promise.resolve(new Response(JSON.stringify({ elements: [
+        { type: 'node', lat: mid[0], lon: mid[1], tags: { highway: 'speed_camera', direction: '90', maxspeed: '60' } },
+        { type: 'node', lat: mid2[0], lon: mid2[1], tags: { highway: 'speed_camera', maxspeed: '80' } }
+      ] }), { headers: { 'Content-Type': 'application/json' } }));
+    }
+    if(u.includes('nominatim.openstreetmap.org')){
+      const end = WP[WP.length - 1];
+      return Promise.resolve(new Response(JSON.stringify([
+        { lat: String(end[0]), lon: String(end[1]), display_name: 'Демо-финиш (симуляция), Москва' }
+      ]), { headers: { 'Content-Type': 'application/json' } }));
+    }
+    return realFetch ? realFetch(url, opts) : Promise.reject(new Error('no fetch'));
+  };
+
+  // Управление симулятором из родительского окна (sim.html)
+  window.__SIM__ = {
+    path: PATH,
+    setSpeed(v){ sim.speed = Math.max(0, v); },
+    play(){ sim.running = sim.idx < PATH.length - 1; },
+    pause(){ sim.running = false; },
+    reset(){ sim.idx = 0; sim.frac = 0; sim.running = true; emit(); },
+    isRunning(){ return sim.running; },
+    boot(){
+      const end = WP[WP.length - 1];
+      const inp = document.getElementById('finish-input');
+      if(inp){ inp.value = end[0].toFixed(5) + ', ' + end[1].toFixed(5); }
+      if(typeof applyCoordsOrLink === 'function') applyCoordsOrLink();
+      let tries = 0;
+      const t = setInterval(() => {
+        tries++;
+        const st = (typeof S !== 'undefined') ? S : null;
+        if(st && st.gps && st.finish){
+          clearInterval(t);
+          if(typeof startHud === 'function' && !document.getElementById('hud').classList.contains('on')){
+            startHud();
+          }
+        }
+        if(tries > 40) clearInterval(t);
+      }, 250);
+    }
+  };
+  document.documentElement.setAttribute('data-sim', '1');
+})();
+
 /* ============================================================
    МОТО ИЛС — HUD «прогноз-дорожка» в стиле истребителя
    ============================================================ */
@@ -366,10 +544,117 @@ const S = {
   lastVoiceTs: 0
 };
 
-const VB_W = 1000;
-const VB_H = 1600;
-const HORIZON_Y = 820;
-const CENTER_X = 500;
+/* ---------- Адаптивная раскладка HUD ----------
+   Ширина внутренней системы координат фиксирована (1000),
+   высота viewBox подгоняется под аспект экрана → preserveAspectRatio="meet"
+   рисует без обрезки и без чёрных полей. Приборы позиционируются из L. */
+const L = {
+  W: 1000, H: 1600, cx: 500, land: false,
+  hdgTop: 120, hdgPxPerDeg: 10, hdgHalf: 30,
+  horizonY: 520,
+  spX: 120, spCenterY: 820, spHalfH: 300, spPxPerKmh: 7.5,
+  camFocal: 1700, camVoff: 1200,
+  mnX: 820, mnSymY: 220, mnDistY: 400,
+  wlY: 1380, gpsY: 1550, fontK: 1
+};
+
+function computeLayout(){
+  const vw = Math.max(1, window.innerWidth);
+  const vh = Math.max(1, window.innerHeight);
+  const aspect = vw / vh;
+  const H = Math.round(L.W / aspect);           // высота viewBox = под аспект экрана
+  L.H = Math.max(480, Math.min(2200, H));
+  L.land = aspect > 1.15;
+  const Hh = L.H;
+  L.cx = L.W / 2;
+  // масштаб шрифтов: базово рассчитано на ~ширину экрана; крупнее на узких
+  L.fontK = L.land ? 1.15 : 1;
+
+  // Курсовая лента — сверху по центру
+  L.hdgTop = L.land ? 96 : 120;
+  L.hdgPxPerDeg = L.land ? 8 : 10;
+  L.hdgHalf = L.land ? 24 : 30;
+
+  // Лента скорости — слева
+  L.spX = L.land ? 110 : 120;
+  L.spCenterY = Hh * 0.52;
+  L.spHalfH = Hh * (L.land ? 0.26 : 0.19);
+  L.spPxPerKmh = L.spHalfH / 40;                // ±40 км/ч в полосе
+
+  // Проекция дороги: near-поле заполняет низ экрана (camVoff ≈ 0.8H),
+  // а линия горизонта вычисляется из реальной точки схода дороги
+  // vanishY = camVoff - focal*tan(pitch) — так дорога и горизонт совпадают.
+  L.camFocal = L.land ? 1250 : 1700;
+  L.camVoff = Hh * 0.80;
+  L.horizonY = L.camVoff - L.camFocal * Math.tan(22 * Math.PI / 180);
+
+  // Блок манёвра — справа сверху
+  L.mnX = L.W - (L.land ? 150 : 175);
+  L.mnSymY = Hh * (L.land ? 0.26 : 0.15);
+  L.mnDistY = Hh * (L.land ? 0.52 : 0.26);
+
+  // Символ мотоцикла (waterline) и статус GPS
+  L.wlY = Hh * (L.land ? 0.88 : 0.86);
+  L.gpsY = Hh * 0.975;
+}
+
+/* Перерисовка статичного «хрома» и перепозиционирование приборов */
+function layoutHud(){
+  computeLayout();
+  const svg = $('ils');
+  if(svg){
+    svg.setAttribute('viewBox', '0 0 ' + L.W + ' ' + L.H);
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  }
+  const F = L.fontK;
+  const chrome = $('chrome');
+  if(chrome){
+    const hdgW = L.hdgHalf * 2 * L.hdgPxPerDeg;
+    const hdgX = L.cx - hdgW / 2;
+    const hdgBoxTop = L.hdgTop - 60;
+    const spTop = L.spCenterY - L.spHalfH;
+    const spH = L.spHalfH * 2;
+    const boxH = 60, boxTop = L.spCenterY - boxH / 2;
+    chrome.innerHTML =
+      // рамка курсовой ленты
+      '<rect x="' + hdgX + '" y="' + hdgBoxTop + '" width="' + hdgW + '" height="60" fill="none" stroke="#00aa5c" stroke-width="1.5"/>' +
+      '<polygon points="' + L.cx + ',' + L.hdgTop + ' ' + (L.cx - 10) + ',' + (L.hdgTop + 20) + ' ' + (L.cx + 10) + ',' + (L.hdgTop + 20) + '" fill="#00ff88"/>' +
+      // рамка ленты скорости
+      '<rect x="30" y="' + spTop + '" width="90" height="' + spH + '" fill="none" stroke="#00aa5c" stroke-width="1.5"/>' +
+      '<rect x="20" y="' + boxTop + '" width="110" height="' + boxH + '" fill="#000" stroke="#00ff88" stroke-width="2"/>' +
+      '<text x="75" y="' + (L.spCenterY + spH * 0.5 + 44 * F) + '" text-anchor="middle" font-family="Consolas,monospace" font-size="' + (16 * F) + '" fill="#00aa5c">KM/H</text>';
+  }
+  // линия горизонта (в группе, которая кренится при поворотах);
+  // рисуем только если точка схода дороги попадает на экран
+  const hz = $('horizon-group');
+  if(hz){
+    if(L.horizonY > L.H * 0.08 && L.horizonY < L.H * 0.9){
+      const hw = L.land ? 420 : 320;
+      hz.innerHTML =
+        '<line x1="' + (L.cx - hw) + '" y1="' + L.horizonY + '" x2="' + (L.cx + hw) + '" y2="' + L.horizonY + '" stroke="#00aa5c" stroke-width="1.5" opacity="0.55"/>' +
+        '<line x1="' + (L.cx - hw + 20) + '" y1="' + (L.horizonY - 5) + '" x2="' + (L.cx - hw + 20) + '" y2="' + (L.horizonY + 5) + '" stroke="#00aa5c" stroke-width="1"/>' +
+        '<line x1="' + (L.cx + hw - 20) + '" y1="' + (L.horizonY - 5) + '" x2="' + (L.cx + hw - 20) + '" y2="' + (L.horizonY + 5) + '" stroke="#00aa5c" stroke-width="1"/>';
+    } else {
+      hz.innerHTML = '';
+    }
+  }
+  // текущая скорость — по центру бокса
+  const sc = $('speed-current');
+  if(sc){ sc.setAttribute('y', L.spCenterY + 15 * F); sc.setAttribute('font-size', 42 * F); }
+  // блок манёвра
+  const ms = $('maneuver-symbol');
+  if(ms) ms.setAttribute('transform', 'translate(' + L.mnX + ',' + L.mnSymY + ')');
+  const md = $('maneuver-dist');
+  if(md){ md.setAttribute('x', L.mnX); md.setAttribute('y', L.mnDistY); md.setAttribute('font-size', 72 * F); }
+  const mu = $('maneuver-unit');
+  if(mu){ mu.setAttribute('x', L.mnX); mu.setAttribute('y', L.mnDistY + 40 * F); mu.setAttribute('font-size', 20 * F); }
+  // waterline (символ мотоцикла)
+  const wl = $('waterline');
+  if(wl) wl.setAttribute('transform', 'translate(' + L.cx + ',' + L.wlY + ')');
+  // статус GPS
+  const gs = $('gps-status');
+  if(gs){ gs.setAttribute('x', L.cx); gs.setAttribute('y', L.gpsY); gs.setAttribute('font-size', 14 * F); }
+}
 
 const $ = id => document.getElementById(id);
 const pad = n => n < 10 ? '0' + n : '' + n;
@@ -621,34 +906,35 @@ function renderHeadingTape(){
   const hdg = S.smoothedHeading;
   const g = $('heading-ticks');
   g.innerHTML = '';
+  const boxTop = L.hdgTop - 60;
+  const bug = $('heading-bug');
   if(hdg == null || isNaN(hdg)){
     $('corner-tl').textContent = 'HDG ---';
     $('no-heading').classList.add('on');
+    if(bug) bug.style.display = 'none';
     return;
   }
   $('no-heading').classList.remove('on');
   $('corner-tl').textContent = 'HDG ' + pad3(Math.round(hdg));
-  const range = 30;
-  const pxPerDeg = 10;
+  const range = L.hdgHalf, px = L.hdgPxPerDeg, F = L.fontK;
   for(let d = -range; d <= range; d++){
     const val = (Math.round(hdg) + d + 360) % 360;
-    const x = CENTER_X + d * pxPerDeg;
+    const x = L.cx + d * px;
     const isBig = val % 10 === 0;
     const isMed = val % 5 === 0;
-    const y2 = isBig ? 105 : (isMed ? 95 : 88);
-    g.innerHTML += `<line x1="${x}" y1="80" x2="${x}" y2="${y2}" stroke="#00ff88" stroke-width="${isBig ? 2 : 1}"/>`;
+    const y2 = isBig ? boxTop + 45 : (isMed ? boxTop + 35 : boxTop + 28);
+    g.innerHTML += `<line x1="${x}" y1="${boxTop + 20}" x2="${x}" y2="${y2}" stroke="#00ff88" stroke-width="${isBig ? 2 : 1}"/>`;
     if(isBig && val % 30 === 0){
       const lbl = val === 0 ? 'N' : val === 90 ? 'E' : val === 180 ? 'S' : val === 270 ? 'W' : pad3(val);
-      g.innerHTML += `<text x="${x}" y="78" text-anchor="middle" font-family="Consolas,monospace" font-size="18" fill="#00ff88" font-weight="700">${lbl}</text>`;
+      g.innerHTML += `<text x="${x}" y="${boxTop + 16}" text-anchor="middle" font-family="Consolas,monospace" font-size="${18 * F}" fill="#00ff88" font-weight="700">${lbl}</text>`;
     }
   }
   const nm = findNextManeuver();
-  const bug = $('heading-bug');
   if(nm){
     const brg = bearing(S.gps, nm.step);
     let diff = ((brg - hdg + 540) % 360) - 180;
     diff = Math.max(-range, Math.min(range, diff));
-    bug.setAttribute('transform', `translate(${CENTER_X + diff * pxPerDeg})`);
+    bug.setAttribute('transform', `translate(${L.cx + diff * px},${boxTop})`);
     bug.style.display = '';
   } else {
     bug.style.display = 'none';
@@ -663,25 +949,27 @@ function renderSpeedTape(){
   curEl.setAttribute('fill', S.limit > 0 && kmh > S.limit + 3 ? '#ff2d2d' : '#00ff88');
   const g = $('speed-ticks');
   g.innerHTML = '';
-  const pxPerKmh = 7.5;
-  const centerY = 820;
+  const pxPerKmh = L.spPxPerKmh;
+  const centerY = L.spCenterY;
+  const F = L.fontK;
+  const top = centerY - L.spHalfH, bot = centerY + L.spHalfH;
   const cur = Math.round(kmh);
-  for(let v = cur - 40; v <= cur + 40; v++){
+  for(let v = cur - 45; v <= cur + 45; v++){
     if(v < 0) continue;
     const y = centerY - (v - cur) * pxPerKmh;
-    if(y < 500 || y > 1100) continue;
+    if(y < top || y > bot) continue;
     const isBig = v % 10 === 0;
     const isMed = v % 5 === 0;
     const x2 = isBig ? 100 : (isMed ? 90 : 80);
     g.innerHTML += `<line x1="120" y1="${y}" x2="${x2}" y2="${y}" stroke="#00aa5c" stroke-width="${isBig ? 2 : 1}"/>`;
     if(isBig){
-      g.innerHTML += `<text x="70" y="${y + 6}" text-anchor="middle" font-family="Consolas,monospace" font-size="18" fill="#00aa5c">${v}</text>`;
+      g.innerHTML += `<text x="70" y="${y + 6}" text-anchor="middle" font-family="Consolas,monospace" font-size="${18 * F}" fill="#00aa5c">${v}</text>`;
     }
   }
   const lim = $('speed-limit');
   if(S.limit > 0){
     const y = centerY - (S.limit - cur) * pxPerKmh;
-    if(y >= 500 && y <= 1100){
+    if(y >= top && y <= bot){
       lim.setAttribute('y1', y);
       lim.setAttribute('y2', y);
       lim.style.display = '';
@@ -704,7 +992,7 @@ function renderHorizon(){
     let diff = ((brg - S.smoothedHeading + 540) % 360) - 180;
     roll = Math.max(-20, Math.min(20, diff / 3));
   }
-  g.setAttribute('transform', `rotate(${roll} ${CENTER_X} 520)`);
+  g.setAttribute('transform', `rotate(${roll} ${L.cx} ${L.horizonY})`);
 }
 
 /* ---------- ИЛС: дорога в перспективе (вид сзади-сверху) ----------
@@ -716,22 +1004,20 @@ function renderHorizon(){
 const CAM_H = 6;             // высота камеры над дорогой, м
 const CAM_B = 10;            // отставание камеры назад, м
 const CAM_PITCH = 22 * Math.PI / 180; // наклон камеры вниз
-const CAM_FOCAL = 1700;      // фокус (подобран под viewBox 1000×1600)
-const CAM_VOFF = 1200;       // вертикальное смещение проекции
-const ROAD_VP_Y = 520;       // экранная линия горизонта дороги
 const ROAD_MAX = 250;        // дальность прорисовки дороги, м
-const ROAD_HALF = 3;         // половина ширины дороги, м
+const ROAD_HALF = 4.5;       // половина ширины дороги, м (шире для читаемости на HUD)
 
-/* Проекция точки на плоскости дороги (x — вбок, z — вперёд) на экран */
+/* Проекция точки на плоскости дороги (x — вбок, z — вперёд) на экран.
+   Фокус и вертикальное смещение берутся из адаптивной раскладки L. */
 function projectGround(x, z){
   const cp = Math.cos(CAM_PITCH), sp = Math.sin(CAM_PITCH);
   const dy = -CAM_H, dz = z + CAM_B;
   const Yc = dy * cp + dz * sp;
   const Zc = -dy * sp + dz * cp;      // всегда > 0 при z >= 0 — нет сингулярности
-  if(Zc < 0.5) return null;
-  let sx = CENTER_X + CAM_FOCAL * x / Zc;
-  const sy = CAM_VOFF - CAM_FOCAL * Yc / Zc;
-  sx = Math.max(-1500, Math.min(2500, sx)); // защита от абсурдных значений на резких поворотах
+  if(Zc < 1.5) return null;                 // отбрасываем точки у самой камеры (дают «разлёт»)
+  const sx = L.cx + L.camFocal * x / Zc;
+  const sy = L.camVoff - L.camFocal * Yc / Zc;
+  if(sx < -L.W * 0.4 || sx > L.W * 1.4) return null; // за пределами кадра — не рисуем
   return { x: sx, y: sy };
 }
 
@@ -746,7 +1032,8 @@ function toLocal(lat, lon, ctx){
 }
 
 function localCtx(){
-  const hdg = S.smoothedHeading, rad = Math.PI / 180;
+  const hdg = effectiveHeading(), rad = Math.PI / 180;
+  if(hdg == null) return null;
   return {
     lat: S.gps.lat, lon: S.gps.lon,
     kx: Math.cos(S.gps.lat * rad) * 111320, ky: 110540,
@@ -754,12 +1041,29 @@ function localCtx(){
   };
 }
 
+/* Эффективный курс: реальный сглаженный курс, а если его ещё нет
+   (стоим на месте / GPS не выдал heading) — направление ближайшего
+   сегмента маршрута. Благодаря этому дорога рисуется всегда, когда есть маршрут. */
+function effectiveHeading(){
+  if(S.smoothedHeading != null && !isNaN(S.smoothedHeading)) return S.smoothedHeading;
+  if(S.route && S.gps){
+    const near = findNearestOnRoute();
+    if(near){
+      const c = S.route.coords;
+      const i = Math.min(near.idx, c.length - 2);
+      if(i >= 0) return bearing({ lat: c[i][0], lon: c[i][1] }, { lat: c[i + 1][0], lon: c[i + 1][1] });
+    }
+  }
+  return null;
+}
+
 /* Осевая линия дороги впереди, ресемпл по длине дуги (шаг 5 м) */
 function getRoadCenterline(){
-  if(!S.route || !S.gps || S.smoothedHeading == null) return null;
+  if(!S.route || !S.gps) return null;
   const near = findNearestOnRoute();
   if(!near) return null;
   const ctx = localCtx();
+  if(!ctx) return null;
   const coords = S.route.coords;
   const raw = [{ x: 0, z: 0 }]; // старт от проекции мотоцикла
   for(let i = near.idx + 1; i < coords.length; i++){
@@ -805,6 +1109,7 @@ function turnAngleAt(step){
 function renderTurns(g){
   if(!S.route) return;
   const ctx = localCtx();
+  if(!ctx) return;
   const turns = S.route.steps.filter(st =>
     st.type !== 'depart' && st.type !== 'arrive' && st.modifier && st.modifier !== 'straight');
   let shown = 0;
@@ -855,16 +1160,24 @@ function renderPathway(){
     if(cP) centerS.push(cP);
     if(lP && rP){ leftS.push(lP); rightS.push(rP); }
   }
-  if(leftS.length < 2) return;
+  // если края ленты отбросились (резкий поворот у камеры) — покажем хотя бы осевую
+  if(leftS.length < 2){
+    if(centerS.length >= 2){
+      g.innerHTML += '<polyline points="' + centerS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
+        '" fill="none" stroke="#00ff88" stroke-width="4" opacity="0.9" stroke-linejoin="round"/>';
+      renderTurns(g);
+    }
+    return;
+  }
   const poly = leftS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1))
     .concat(rightS.slice().reverse().map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1))).join(' ');
-  g.innerHTML += '<polygon points="' + poly + '" fill="#00ff88" fill-opacity="0.10" stroke="none"/>';
+  g.innerHTML += '<polygon points="' + poly + '" fill="#00ff88" fill-opacity="0.16" stroke="none"/>';
   g.innerHTML += '<polyline points="' + leftS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-    '" fill="none" stroke="#00ff88" stroke-width="3" opacity="0.85" stroke-linejoin="round"/>';
+    '" fill="none" stroke="#00ff88" stroke-width="4" opacity="0.95" stroke-linejoin="round"/>';
   g.innerHTML += '<polyline points="' + rightS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-    '" fill="none" stroke="#00ff88" stroke-width="3" opacity="0.85" stroke-linejoin="round"/>';
+    '" fill="none" stroke="#00ff88" stroke-width="4" opacity="0.95" stroke-linejoin="round"/>';
   g.innerHTML += '<polyline points="' + centerS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') +
-    '" fill="none" stroke="#00ff88" stroke-width="2" stroke-dasharray="14,16" opacity="0.5"/>';
+    '" fill="none" stroke="#00ff88" stroke-width="3" stroke-dasharray="18,20" opacity="0.6"/>';
   renderTurns(g);
 }
 
@@ -1078,8 +1391,12 @@ async function startHud(){
   S.camWarned.clear();
   $('setup').style.display = 'none';
   $('hud').classList.add('on');
+  layoutHud();
   requestWakeLock();
-  try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){}
+  // в режиме эмуляции не разворачиваем на весь экран (иначе iframe перекроет стенд)
+  if(!window.__SIM__){
+    try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){}
+  }
   speak('Маршрут построен. В пути ' + Math.round(S.route.duration / 60) + ' минут');
   onTickILS();
 }
@@ -1200,6 +1517,30 @@ $('btn-reset').addEventListener('click', () => {
 });
 $('btn-dest').addEventListener('click', openQuickFinish);
 $('qf-close').addEventListener('click', () => $('quickFinish').classList.remove('on'));
+
+/* ---------- Полноэкранный режим ---------- */
+function isFullscreen(){ return document.fullscreenElement || document.webkitFullscreenElement; }
+function toggleFullscreen(){
+  try{
+    if(isFullscreen()){
+      (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
+    } else {
+      const el = document.documentElement;
+      (el.requestFullscreen || el.webkitRequestFullscreen || function(){}).call(el);
+    }
+  }catch(e){}
+}
+$('btn-fs').addEventListener('click', toggleFullscreen);
+['fullscreenchange', 'webkitfullscreenchange'].forEach(ev =>
+  document.addEventListener(ev, () => {
+    $('btn-fs').textContent = isFullscreen() ? '◆ WIN' : '◆ FS';
+    layoutHud();
+  }));
+
+/* ---------- Адаптивная раскладка ---------- */
+window.addEventListener('resize', layoutHud);
+window.addEventListener('orientationchange', () => setTimeout(layoutHud, 200));
+layoutHud();
 
 /* выпадающие секции */
 function bindDrawer(btnId, drawerId){
@@ -1440,6 +1781,11 @@ async function selectQuickFinish(id){
 }
 
 renderFavs();
+
+/* Автозапуск симуляции (?sim=1) */
+if(window.__SIM__ && typeof window.__SIM__.boot === 'function'){
+  window.addEventListener('load', () => setTimeout(() => window.__SIM__.boot(), 700));
+}
 </script>
 </body>
 </html>
