@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { $ } from './util.js';
 import { haversine } from './geo.js';
 import { getElevProfileLenM } from './elevation.js';
+import { geometryToLatLngs, latLngsSliceByS } from './route-geometry.js';
 import {
   MAP_PROVIDERS, getMapProviderId, saveMapProviderId, getMapProvider
 } from './map-providers.js';
@@ -26,8 +27,19 @@ function clearLayers(){
   _markers = [];
 }
 
-/** Участок маршрута [0 … maxM] для подсветки «окна HUD» */
-function latLngsForDistance(route, maxM){
+function routePolylineLatLngs(route){
+  if(route?.geometry?.n > 1) return geometryToLatLngs(route.geometry);
+  const coords = route?.coords;
+  if(!coords?.length) return [];
+  return coords.map(c => [c[0], c[1]]);
+}
+
+/** Участок маршрута [startS … startS+maxM] для подсветки «окна HUD» */
+function latLngsForDistance(route, maxM, startS){
+  const geom = route?.geometry;
+  if(geom?.n > 1){
+    return latLngsSliceByS(geom, startS || 0, (startS || 0) + maxM);
+  }
   const coords = route?.coords;
   if(!coords || coords.length < 2) return [];
   const out = [[coords[0][0], coords[0][1]]];
@@ -116,7 +128,7 @@ export function renderRouteMap(alternatives, selectedIdx, start, finish){
   const bounds = L.latLngBounds([]);
 
   alternatives.forEach((r, i) => {
-    const latlngs = r.coords.map(c => [c[0], c[1]]);
+    const latlngs = routePolylineLatLngs(r);
     latlngs.forEach(ll => bounds.extend(ll));
     const sel = i === selectedIdx;
     const layer = L.polyline(latlngs, {
@@ -131,7 +143,7 @@ export function renderRouteMap(alternatives, selectedIdx, start, finish){
 
     if(sel){
       const hudLenM = getElevProfileLenM();
-      const hudWin = latLngsForDistance(r, hudLenM);
+      const hudWin = latLngsForDistance(r, hudLenM, 0);
       if(hudWin.length > 1){
         const glow = L.polyline(hudWin, {
           color: '#ffffff',

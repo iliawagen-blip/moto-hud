@@ -64,12 +64,17 @@
 
   <div class="hint">
     Маршрут и движение эмулируются автоматически: HUD стартует сам через ~1 с.
-    Меняйте ориентацию и устройство — layout должен оставаться корректным.
-    На реальном телефоне откройте <code>index.html?sim=1</code> для той же демонстрации.
-    Если HUD выглядит «старым»: закройте вкладку, перезапустите <code>preview.bat</code> (Ctrl+Shift+R).
-    Метки «±N%» убраны; высота полоски — в настройках «Высота полоски (px)».
+    На телефоне откроется полноэкранный HUD; на ПК — рамка устройства и панель скорости.
+    Ссылку для друзей: <code id="share-link">…</code>
   </div>
 
+<script>
+  (function(){
+    const mob = window.matchMedia('(max-width:720px)').matches ||
+      /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+    if(mob) location.replace('index.html?sim=1');
+  })();
+</script>
 <script>
   const phone = document.getElementById('phone');
   const frame = document.getElementById('frame');
@@ -137,6 +142,8 @@
 
   applySize();
   frame.src = frameUrl();
+  const share = document.getElementById('share-link');
+  if(share) share.textContent = location.origin + location.pathname;
 </script>
 </body>
 </html>

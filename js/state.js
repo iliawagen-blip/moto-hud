@@ -33,8 +33,10 @@ export const S = {
   noDirPolicy: 'skip',
   limit: 60,
   lastVoiceTs: 0,
+  curveWarn: true,
+  curveStrict: 'normal', // relaxed | normal | strict
 
-  // Топливный ассистент (кнопка ⛽ на HUD)
+  // Топливный ассистент
   fuelStations: [],       // [{lat,lon,brand,name,osmId,status,distGps,offRoute,distAhead,aheadOnRoute}]
   fuelStatus: 'idle',     // idle | loading | ready | error
   fuelMode: 0,            // 0 выкл, 1 «по маршруту», 2 «ближайшая + маршрут»
@@ -60,6 +62,7 @@ export const ROAD_HALF = 4.5;
 export const RUN_KEY = 'moto-hud-last-run';
 export const FAV_KEY = 'moto-hud-favs';
 export const ELEV_OPTS_KEY = 'moto-hud-elev-opts';
+export const CURVE_OPTS_KEY = 'moto-hud-curve-opts';
 /** Усиление вертикали профиля высот по умолчанию */
 export const DEFAULT_ELEV_EXAG = 1.8;
 /** Высота полоски профиля в HUD, px (viewBox) */

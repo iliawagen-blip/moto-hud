@@ -11,6 +11,7 @@ import {
   computeRibbonSections, worldToCamXZ
 } from './route-geometry.js';
 import { renderElevProfile, getElevExag, getElevProfileH } from './elevation.js';
+import { ribbonCurveColor } from './curve-speed.js';
 
 const PROFILE_GAP = 6;
 const RIBBON_FILL = '#00aa5c';
@@ -62,8 +63,8 @@ function triArea2(a, b, c){
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
 
-/** Triangle strip: per-point Frenet → project → cull flipped tris */
-function buildStripMeshSvg(sections, snap, headingRad, geom){
+/** Triangle strip: per-point Frenet → project → cull flipped tris; окраска по curve speed */
+function buildStripMeshSvg(sections, snap, headingRad, geom, speedMps){
   if(sections.length < 2) return { fill: '', edges: '' };
   let fill = '';
   let edges = '';
@@ -78,22 +79,29 @@ function buildStripMeshSvg(sections, snap, headingRad, geom){
     const bR = projectWorld(b.rightLat, b.rightLon, b.elev, snap, headingRad);
     if(!aL || !aR || !bL || !bR) continue;
 
+    const sMid = (a.s + b.s) * 0.5;
+    const warnCol = ribbonCurveColor(sMid, geom, speedMps);
+    const fillCol = warnCol || RIBBON_FILL;
+    const edgeCol = warnCol || RIBBON_EDGE;
+    const fillOp = warnCol ? 0.48 : RIBBON_FILL_OP;
+    const edgeW = warnCol ? 7 : 5;
+
     if(triArea2(aL, bL, bR) > 1){
       fill += '<polygon points="' + pt(aL) + ' ' + pt(bL) + ' ' + pt(bR) +
-        '" fill="' + RIBBON_FILL + '" fill-opacity="' + RIBBON_FILL_OP + '" stroke="none"/>';
+        '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
     }
     if(triArea2(aL, bR, aR) > 1){
       fill += '<polygon points="' + pt(aL) + ' ' + pt(bR) + ' ' + pt(aR) +
-        '" fill="' + RIBBON_FILL + '" fill-opacity="' + RIBBON_FILL_OP + '" stroke="none"/>';
+        '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
     }
 
     edges +=
       '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) +
         '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) +
-        '" stroke="' + RIBBON_EDGE + '" stroke-width="5" stroke-linecap="round"/>' +
+        '" stroke="' + edgeCol + '" stroke-width="' + edgeW + '" stroke-linecap="round"/>' +
       '<line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) +
         '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) +
-        '" stroke="' + RIBBON_EDGE + '" stroke-width="5" stroke-linecap="round"/>';
+        '" stroke="' + edgeCol + '" stroke-width="' + edgeW + '" stroke-linecap="round"/>';
   }
   return { fill, edges };
 }
@@ -253,16 +261,24 @@ export function renderPathway(){
     return;
   }
 
-  const mesh = buildStripMeshSvg(sections, snap, headingRad, geomReady);
+  const speedMps = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
+  const mesh = buildStripMeshSvg(sections, snap, headingRad, geomReady, speedMps);
   let html = mesh.fill + mesh.edges;
 
   const centerS = sections
-    .map(sec => projectWorld(sec.lat, sec.lon, sec.elev, snap, headingRad))
-    .filter(Boolean);
-  if(centerS.length >= 2){
-    const pts = centerS.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
-    html += '<polyline points="' + pts + '" fill="none" stroke="#00ff88" stroke-width="3" ' +
-      'stroke-dasharray="18,20" opacity="0.45"/>';
+    .map(sec => ({ p: projectWorld(sec.lat, sec.lon, sec.elev, snap, headingRad), s: sec.s }))
+    .filter(x => x.p);
+  for(let ci = 0; ci < centerS.length - 1; ci++){
+    const a = centerS[ci];
+    const b = centerS[ci + 1];
+    const sMid = (a.s + b.s) * 0.5;
+    const warnCol = ribbonCurveColor(sMid, geomReady, speedMps);
+    const stroke = warnCol || '#00ff88';
+    const sw = warnCol ? 4.5 : 3;
+    const op = warnCol ? 0.85 : 0.45;
+    html += '<line x1="' + a.p.x.toFixed(1) + '" y1="' + a.p.y.toFixed(1) +
+      '" x2="' + b.p.x.toFixed(1) + '" y2="' + b.p.y.toFixed(1) +
+      '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" opacity="' + op + '"/>';
   }
   html += renderTurnsStr(svg, snap, headingRad);
   html += renderFuelStr(svg, snap, headingRad);

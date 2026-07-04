@@ -12,8 +12,8 @@ export const DENSE_STEP = 3;
 export const ARC_R_MIN = 12;
 /** Порог угла для вставки дуги, ° */
 export const ARC_ANGLE_THRESH = 15;
-/** Окно snap назад / вперёд по s, м */
-export const SNAP_BACK_M = 30;
+/** Окно snap назад / вперёд по s, м (симметричное ±150 для серпантинов) */
+export const SNAP_BACK_M = 150;
 export const SNAP_FWD_M = 150;
 /** Допуск отката s при GPS-шуме, м */
 export const SNAP_REVERSE_EPS = 5;
@@ -203,7 +203,8 @@ export function buildRouteGeometry(route){
   const grade = new Float64Array(n);
   const maneuvers = buildManeuvers(route.steps, route.coords, { s, n });
 
-  return { lat, lon, s, elev, grade, maneuvers, n, elevReady: false };
+  const geom = { lat, lon, s, elev, grade, maneuvers, n, elevReady: false, curveReady: false };
+  return geom;
 }
 
 /** Индекс сегмента, содержащего s */
@@ -488,7 +489,7 @@ export function frenetFrameAtS(geom, s){
 }
 
 /** Радиус кривизны и знак поворота (+ = влево) в точке s */
-function curvatureAtS(geom, s){
+export function radiusAtS(geom, s){
   const ds = 2;
   const total = geom.s[geom.n - 1];
   const s0 = Math.max(0, s - ds);
@@ -513,8 +514,10 @@ function curvatureAtS(geom, s){
   return { R, turnSign: cross > 0 ? 1 : -1 };
 }
 
+function curvatureAtS(geom, s){ return radiusAtS(geom, s); }
+
 function ribbonStepAtS(geom, s){
-  const { R } = curvatureAtS(geom, s);
+  const { R } = radiusAtS(geom, s);
   if(R < 15) return 1;
   if(R < 30) return 1.5;
   if(R < 80) return 2;
@@ -534,7 +537,7 @@ export function computeRibbonSections(geom, snap, maxDist, halfW){
     const p = interpolateAtS(geom, s);
     const { kx, ky } = meterScale(p.lat);
     const frame = frenetFrameAtS(geom, s);
-    const { R, turnSign } = curvatureAtS(geom, s);
+    const { R, turnSign } = radiusAtS(geom, s);
     let leftW = halfW;
     let rightW = halfW;
     if(R < Infinity && R < halfW * 4){
@@ -596,6 +599,50 @@ export function ribbonOffsets(pts, i, halfW){
     else rightW = Math.min(rightW, maxOff);
   }
   return { nx, nz, leftW, rightW };
+}
+
+/** Ближайшая проекция точки на dense polyline (s, lateral) */
+export function projectPointToRoute(geom, point){
+  if(!geom || geom.n < 2 || !point) return null;
+  let best = null;
+  for(let i = 0; i < geom.n - 1; i++){
+    const proj = projectOnSegment(point,
+      geom.lat[i], geom.lon[i], geom.lat[i + 1], geom.lon[i + 1]);
+    const segLen = geom.s[i + 1] - geom.s[i];
+    const s = geom.s[i] + proj.t * segLen;
+    if(!best || proj.lateral < best.lateral){
+      best = { s, segIdx: i, lateral: proj.lateral, lat: proj.lat, lon: proj.lon };
+    }
+  }
+  return best;
+}
+
+/** Участок polyline [sFrom … sTo] для Leaflet */
+export function latLngsSliceByS(geom, sFrom, sTo){
+  if(!geom || geom.n < 2) return [];
+  const total = geom.s[geom.n - 1];
+  const a = Math.max(0, Math.min(sFrom, total));
+  const b = Math.max(a, Math.min(sTo, total));
+  if(b - a < 0.5) return [];
+
+  const out = [];
+  const p0 = interpolateAtS(geom, a);
+  out.push([p0.lat, p0.lon]);
+
+  const i0 = findSegAtS(geom, a);
+  const i1 = findSegAtS(geom, b);
+  for(let i = i0 + 1; i <= i1 && i < geom.n; i++){
+    if(geom.s[i] > a + 0.01 && geom.s[i] < b - 0.01){
+      out.push([geom.lat[i], geom.lon[i]]);
+    }
+  }
+
+  const p1 = interpolateAtS(geom, b);
+  const last = out[out.length - 1];
+  if(!last || Math.abs(last[0] - p1.lat) > 1e-7 || Math.abs(last[1] - p1.lon) > 1e-7){
+    out.push([p1.lat, p1.lon]);
+  }
+  return out;
 }
 
 /** Polyline lat/lon для Leaflet из geometry */

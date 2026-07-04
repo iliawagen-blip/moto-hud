@@ -8,6 +8,7 @@ import {
   ELEV_OPTS_KEY
 } from './state.js';
 import { findSegAtS, interpolateAtS } from './route-geometry.js';
+import { computeCurveSpeed } from './curve-speed.js';
 
 const TERRARIUM_Z = 13;
 const SMOOTH_WINDOW_M = 75;
@@ -38,11 +39,6 @@ export function getElevProfileLenM(){
   return getElevProfileLenKm() * 1000;
 }
 
-function formatProfileAxisDist(m){
-  if(m < 1000) return Math.round(m) + 'm';
-  const km = m / 1000;
-  return (Math.abs(km - Math.round(km)) < 0.05 ? String(Math.round(km)) : km.toFixed(1)) + 'k';
-}
 
 export function loadElevOptsFromStorage(){
   try{
@@ -235,6 +231,7 @@ function injectSimElevation(geom){
   smoothElev(geom);
   computeGrade(geom);
   geom.elevReady = true;
+  computeCurveSpeed(geom, S.route);
   notifyElevationReady();
 }
 
@@ -272,6 +269,7 @@ export async function fetchElevationForGeometry(geom){
   smoothElev(geom);
   computeGrade(geom);
   geom.elevReady = true;
+  computeCurveSpeed(geom, S.route);
   notifyElevationReady();
 }
 
@@ -353,31 +351,10 @@ export function renderElevProfile(snap, geom, W, H){
       'y2="' + (my + ph) + '" stroke="#ffd400" stroke-width="1" opacity="0.5"/>';
   });
 
-  const rise = samples[samples.length - 1].elev - base;
-  const riseTxt = (rise >= 0 ? '↑ ' : '↓ ') + Math.abs(Math.round(rise)) + ' м / ' +
-    Math.round((s1 - s0) / 100) / 10 + ' км';
-
-  const legY = my + 11;
-  const midM = profileLenM * 0.5;
-  const axisMid = formatProfileAxisDist(midM);
-  const axisEnd = formatProfileAxisDist(profileLenM);
-  const legend =
-    '<circle cx="' + (mx + pw - 52) + '" cy="' + (legY - 3) + '" r="3" fill="' + gradeColor(0.02) + '"/>' +
-    '<text x="' + (mx + pw - 46) + '" y="' + legY + '" fill="#666" font-size="8" font-family="monospace">ровно</text>' +
-    '<circle cx="' + (mx + pw - 22) + '" cy="' + (legY - 3) + '" r="3" fill="' + gradeColor(0.06) + '"/>' +
-    '<text x="' + (mx + pw - 16) + '" y="' + legY + '" fill="#666" font-size="8" font-family="monospace">круто</text>';
-
   return '<g class="elev-profile">' +
     '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="rgba(0,0,0,0.55)"/>' +
     marks +
     pathSegs +
-    '<line x1="' + mx + '" y1="' + (my + ph) + '" x2="' + (mx + pw) + '" y2="' + (my + ph) + '" ' +
-      'stroke="#333" stroke-width="1"/>' +
-    '<text x="' + mx + '" y="' + legY + '" fill="#888" font-size="10" font-family="monospace">0</text>' +
-    '<text x="' + (mx + pw * 0.5).toFixed(0) + '" y="' + legY + '" text-anchor="middle" fill="#666" font-size="9" font-family="monospace">' + axisMid + '</text>' +
-    '<text x="' + (mx + pw).toFixed(0) + '" y="' + legY + '" text-anchor="end" fill="#666" font-size="9" font-family="monospace">' + axisEnd + '</text>' +
-    legend +
-    '<text x="' + (mx + 4) + '" y="' + (my + ph - 3) + '" fill="#66ccff" font-size="10" font-weight="700" font-family="monospace">' + riseTxt + '</text>' +
     '</g>';
 }
 

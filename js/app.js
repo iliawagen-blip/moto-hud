@@ -10348,7 +10348,10 @@ var S = {
   noDirPolicy: "skip",
   limit: 60,
   lastVoiceTs: 0,
-  // Топливный ассистент (кнопка ⛽ на HUD)
+  curveWarn: true,
+  curveStrict: "normal",
+  // relaxed | normal | strict
+  // Топливный ассистент
   fuelStations: [],
   // [{lat,lon,brand,name,osmId,status,distGps,offRoute,distAhead,aheadOnRoute}]
   fuelStatus: "idle",
@@ -10390,6 +10393,7 @@ var ROAD_HALF = 4.5;
 var RUN_KEY = "moto-hud-last-run";
 var FAV_KEY = "moto-hud-favs";
 var ELEV_OPTS_KEY = "moto-hud-elev-opts";
+var CURVE_OPTS_KEY = "moto-hud-curve-opts";
 var DEFAULT_ELEV_EXAG = 1.8;
 var DEFAULT_ELEV_PROFILE_H = 72;
 var MIN_ELEV_PROFILE_H = 36;
@@ -10872,7 +10876,7 @@ function updateCamStatusUI() {
 // js/route-geometry.js
 var DENSE_STEP = 3;
 var ARC_ANGLE_THRESH = 15;
-var SNAP_BACK_M = 30;
+var SNAP_BACK_M = 150;
 var SNAP_FWD_M = 150;
 var SNAP_REVERSE_EPS = 5;
 var SNAP_MIN_DOT = 0.3;
@@ -11040,7 +11044,8 @@ function buildRouteGeometry(route) {
   const elev = new Float64Array(n);
   const grade = new Float64Array(n);
   const maneuvers = buildManeuvers(route.steps, route.coords, { s: s2, n });
-  return { lat, lon, s: s2, elev, grade, maneuvers, n, elevReady: false };
+  const geom = { lat, lon, s: s2, elev, grade, maneuvers, n, elevReady: false, curveReady: false };
+  return geom;
 }
 function findSegAtS(geom, s2) {
   let lo = 0;
@@ -11258,7 +11263,7 @@ function frenetFrameAtS(geom, s2) {
   const len = Math.hypot(ex, ny) || 1;
   return { tx: ex / len, tz: ny / len, nx: -ny / len, nz: ex / len };
 }
-function curvatureAtS(geom, s2) {
+function radiusAtS(geom, s2) {
   const ds = 2;
   const total = geom.s[geom.n - 1];
   const s0 = Math.max(0, s2 - ds);
@@ -11283,7 +11288,7 @@ function curvatureAtS(geom, s2) {
   return { R, turnSign: cross > 0 ? 1 : -1 };
 }
 function ribbonStepAtS(geom, s2) {
-  const { R } = curvatureAtS(geom, s2);
+  const { R } = radiusAtS(geom, s2);
   if (R < 15) return 1;
   if (R < 30) return 1.5;
   if (R < 80) return 2;
@@ -11298,7 +11303,7 @@ function computeRibbonSections(geom, snap, maxDist, halfW) {
     const p = interpolateAtS(geom, s2);
     const { kx, ky } = meterScale(p.lat);
     const frame = frenetFrameAtS(geom, s2);
-    const { R, turnSign } = curvatureAtS(geom, s2);
+    const { R, turnSign } = radiusAtS(geom, s2);
     let leftW = halfW;
     let rightW = halfW;
     if (R < Infinity && R < halfW * 4) {
@@ -11332,9 +11337,300 @@ function worldToCamXZ(lat, lon, snap, headingRad) {
     z: dx * sinH + dy * cosH
   };
 }
+function projectPointToRoute(geom, point) {
+  if (!geom || geom.n < 2 || !point) return null;
+  let best = null;
+  for (let i = 0; i < geom.n - 1; i++) {
+    const proj = projectOnSegment(
+      point,
+      geom.lat[i],
+      geom.lon[i],
+      geom.lat[i + 1],
+      geom.lon[i + 1]
+    );
+    const segLen = geom.s[i + 1] - geom.s[i];
+    const s2 = geom.s[i] + proj.t * segLen;
+    if (!best || proj.lateral < best.lateral) {
+      best = { s: s2, segIdx: i, lateral: proj.lateral, lat: proj.lat, lon: proj.lon };
+    }
+  }
+  return best;
+}
+function latLngsSliceByS(geom, sFrom, sTo) {
+  if (!geom || geom.n < 2) return [];
+  const total = geom.s[geom.n - 1];
+  const a = Math.max(0, Math.min(sFrom, total));
+  const b = Math.max(a, Math.min(sTo, total));
+  if (b - a < 0.5) return [];
+  const out = [];
+  const p0 = interpolateAtS(geom, a);
+  out.push([p0.lat, p0.lon]);
+  const i0 = findSegAtS(geom, a);
+  const i1 = findSegAtS(geom, b);
+  for (let i = i0 + 1; i <= i1 && i < geom.n; i++) {
+    if (geom.s[i] > a + 0.01 && geom.s[i] < b - 0.01) {
+      out.push([geom.lat[i], geom.lon[i]]);
+    }
+  }
+  const p1 = interpolateAtS(geom, b);
+  const last = out[out.length - 1];
+  if (!last || Math.abs(last[0] - p1.lat) > 1e-7 || Math.abs(last[1] - p1.lon) > 1e-7) {
+    out.push([p1.lat, p1.lon]);
+  }
+  return out;
+}
+function geometryToLatLngs(geom) {
+  if (!geom) return [];
+  const out = [];
+  for (let i = 0; i < geom.n; i++) out.push([geom.lat[i], geom.lon[i]]);
+  return out;
+}
 function remainingDistanceS(geom, snap) {
   if (!geom || !snap) return 0;
   return Math.max(0, geom.s[geom.n - 1] - snap.s);
+}
+
+// js/curve-speed.js
+var CURVE_R_WARN = 100;
+var MIN_CURVE_LEN_M = 25;
+var G = 9.81;
+var PRESETS = {
+  relaxed: { aLat: 0.28 * G, yellow: 1, red: 1.12 },
+  normal: { aLat: 0.32 * G, yellow: 0.88, red: 1.02 },
+  strict: { aLat: 0.35 * G, yellow: 0.82, red: 0.96 }
+};
+function getCurveParams() {
+  return PRESETS[S.curveStrict] || PRESETS.normal;
+}
+function turnAngleAtS(geom, s2) {
+  const ds = 18;
+  const total = geom.s[geom.n - 1];
+  const s0 = Math.max(0, s2 - ds);
+  const s22 = Math.min(total, s2 + ds);
+  if (s22 - s0 < 8) return 0;
+  const p0 = interpolateAtS(geom, s0);
+  const p1 = interpolateAtS(geom, s2);
+  const p2 = interpolateAtS(geom, s22);
+  const bIn = bearing(p0, p1);
+  const bOut = bearing(p1, p2);
+  return (bOut - bIn + 540) % 360 - 180;
+}
+function vSafeFromR(R, params, gradeAt) {
+  if (!isFinite(R) || R >= CURVE_R_WARN * 2) return Infinity;
+  let v = Math.sqrt(params.aLat * Math.max(8, R));
+  const grade = gradeAt || 0;
+  if (grade < -0.02) v *= Math.max(0.72, 1 + grade * 2.2);
+  return v;
+}
+function applySafeSpeedAtS(geom, s2, vSafe) {
+  if (!isFinite(vSafe) || vSafe >= 80) return;
+  const i = findSegAtS(geom, s2);
+  if (!isFinite(geom.safeSpeed[i]) || geom.safeSpeed[i] > vSafe) {
+    geom.safeSpeed[i] = vSafe;
+  }
+}
+function computeCurveSpeed(geom, route) {
+  if (!geom || geom.n < 3) return;
+  const n = geom.n;
+  const params = getCurveParams();
+  geom.radius = new Float64Array(n);
+  geom.safeSpeed = new Float64Array(n);
+  for (let j = 0; j < n; j++) {
+    const { R } = radiusAtS(geom, geom.s[j]);
+    geom.radius[j] = R;
+    geom.safeSpeed[j] = vSafeFromR(R, params, geom.grade?.[j]);
+  }
+  let spans = buildCurveSpans(geom);
+  spans = spans.concat(buildManeuverCurveSpans(geom, route));
+  geom._curveSpans = mergeSpans(spans);
+  for (const sp of geom._curveSpans) {
+    const v = vSafeFromR(sp.minR, params, geom.grade?.[findSegAtS(geom, sp.sApex)]);
+    applySafeSpeedAtS(geom, sp.sApex, v);
+  }
+  geom.curveReady = true;
+}
+function buildCurveSpans(geom) {
+  const spans = [];
+  let active = false;
+  let sStart = 0;
+  let sMinR = 0;
+  let minR = Infinity;
+  for (let j = 0; j < geom.n; j++) {
+    const R = geom.radius[j];
+    const s2 = geom.s[j];
+    const tight = R < CURVE_R_WARN;
+    if (tight) {
+      if (!active) {
+        active = true;
+        sStart = s2;
+        minR = R;
+        sMinR = s2;
+      } else if (R < minR) {
+        minR = R;
+        sMinR = s2;
+      }
+    } else if (active) {
+      if (s2 - sStart >= MIN_CURVE_LEN_M) {
+        spans.push({ sEntry: sStart, sExit: s2, sApex: sMinR, minR });
+      }
+      active = false;
+      minR = Infinity;
+    }
+  }
+  if (active) {
+    const s2 = geom.s[geom.n - 1];
+    if (s2 - sStart >= MIN_CURVE_LEN_M) {
+      spans.push({ sEntry: sStart, sExit: s2, sApex: sMinR, minR });
+    }
+  }
+  return spans;
+}
+function buildManeuverCurveSpans(geom, route) {
+  const out = [];
+  const steps = route?.steps;
+  if (steps?.length) {
+    for (const st of steps) {
+      if (st.type === "depart" || st.type === "arrive") continue;
+      const m = geom.maneuvers?.find((mn) => mn.step === st);
+      if (!m) continue;
+      let turn = Math.abs(turnAngleAtS(geom, m.s));
+      if (turn < 12 && st.modifier) {
+        if (st.modifier === "uturn") turn = 160;
+        else if (st.modifier.includes("sharp")) turn = Math.max(turn, 55);
+        else if (st.modifier.includes("left") || st.modifier.includes("right")) turn = Math.max(turn, 28);
+      }
+      if (turn < 18) continue;
+      const estR = Math.max(10, 280 / (turn / 22));
+      if (estR >= CURVE_R_WARN) continue;
+      const arc = Math.max(MIN_CURVE_LEN_M, estR * 0.55);
+      out.push({
+        sEntry: Math.max(0, m.s - arc * 0.35),
+        sExit: m.s + arc * 0.65,
+        sApex: m.s,
+        minR: estR
+      });
+    }
+  }
+  if (out.length) return out;
+  for (const m of geom.maneuvers || []) {
+    const turn = Math.abs(turnAngleAtS(geom, m.s));
+    if (turn < 22) continue;
+    const estR = Math.max(10, 280 / (turn / 22));
+    if (estR >= CURVE_R_WARN) continue;
+    const arc = Math.max(MIN_CURVE_LEN_M, estR * 0.55);
+    out.push({
+      sEntry: Math.max(0, m.s - arc * 0.35),
+      sExit: m.s + arc * 0.65,
+      sApex: m.s,
+      minR: estR
+    });
+  }
+  return out;
+}
+function mergeSpans(spans) {
+  if (!spans.length) return [];
+  const sorted = spans.slice().sort((a, b) => a.sEntry - b.sEntry);
+  const out = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = out[out.length - 1];
+    const cur = sorted[i];
+    if (cur.sEntry <= prev.sExit + 30) {
+      prev.sExit = Math.max(prev.sExit, cur.sExit);
+      if (cur.minR < prev.minR) {
+        prev.minR = cur.minR;
+        prev.sApex = cur.sApex;
+      }
+    } else {
+      out.push(cur);
+    }
+  }
+  return out;
+}
+function curveSpanForApproach(s2, geom, leadM) {
+  if (!geom?._curveSpans?.length) return null;
+  let best = null;
+  let bestDist = Infinity;
+  for (const sp of geom._curveSpans) {
+    const zoneStart = sp.sEntry - leadM;
+    if (s2 >= zoneStart && s2 < sp.sEntry) {
+      const d = sp.sEntry - s2;
+      if (d < bestDist) {
+        bestDist = d;
+        best = sp;
+      }
+    }
+  }
+  return best;
+}
+function vSafeForSpan(geom, span) {
+  if (!geom?.safeSpeed || !span) return Infinity;
+  let vMin = Infinity;
+  const i0 = findSegAtS(geom, span.sEntry);
+  const i1 = findSegAtS(geom, Math.min(geom.s[geom.n - 1], span.sExit));
+  for (let j = i0; j <= i1 && j < geom.n; j++) {
+    const v = geom.safeSpeed[j];
+    if (isFinite(v) && v < vMin) vMin = v;
+  }
+  if (isFinite(vMin) && vMin < 80) return vMin;
+  const params = getCurveParams();
+  return vSafeFromR(span.minR, params, geom.grade?.[findSegAtS(geom, span.sApex)]);
+}
+function ribbonCurveColor(sMid, geom, speedMps) {
+  if (!S.curveWarn || !geom?.curveReady || speedMps < 3.5) return null;
+  const leadM = Math.max(60, Math.min(280, speedMps * 7));
+  const span = curveSpanForApproach(sMid, geom, leadM);
+  if (!span) return null;
+  const vSafe = vSafeForSpan(geom, span);
+  if (!isFinite(vSafe) || vSafe < 2) return null;
+  const ratio = speedMps / vSafe;
+  const { yellow, red } = getCurveParams();
+  if (ratio >= red) return "#ff6644";
+  if (ratio >= yellow) return "#ffd400";
+  return null;
+}
+function pickCurveVoiceWarn(geom, snapS, speedMps) {
+  if (!S.curveWarn || !geom?.curveReady || speedMps < 5 || !snapS) return null;
+  const params = getCurveParams();
+  for (const sp of geom._curveSpans || []) {
+    if (sp.sEntry <= snapS + 5) continue;
+    const dist = sp.sEntry - snapS;
+    if (dist > 320) break;
+    const vSafe = vSafeForSpan(geom, sp);
+    if (speedMps <= vSafe * params.yellow) continue;
+    const sec = dist / speedMps;
+    if (sec > 7 || sec < 2.5) continue;
+    return {
+      key: "curve_" + Math.round(sp.sEntry),
+      vSafeKmh: Math.round(vSafe * 3.6),
+      sec: Math.round(sec)
+    };
+  }
+  return null;
+}
+function loadCurveOptsFromStorage() {
+  try {
+    const raw = localStorage.getItem(CURVE_OPTS_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    if (typeof o.enabled === "boolean") {
+      const cb = document.getElementById("opt-curve-warn");
+      if (cb) cb.checked = o.enabled;
+    }
+    if (typeof o.strict === "string") {
+      const sel = document.getElementById("opt-curve-strict");
+      if (sel) sel.value = o.strict;
+    }
+  } catch (e) {
+  }
+}
+function saveCurveOptsToStorage() {
+  try {
+    localStorage.setItem(CURVE_OPTS_KEY, JSON.stringify({
+      enabled: !!S.curveWarn,
+      strict: S.curveStrict || "normal"
+    }));
+  } catch (e) {
+  }
 }
 
 // js/elevation.js
@@ -11359,11 +11655,6 @@ function getElevProfileLenKm() {
 }
 function getElevProfileLenM() {
   return getElevProfileLenKm() * 1e3;
-}
-function formatProfileAxisDist(m) {
-  if (m < 1e3) return Math.round(m) + "m";
-  const km = m / 1e3;
-  return (Math.abs(km - Math.round(km)) < 0.05 ? String(Math.round(km)) : km.toFixed(1)) + "k";
 }
 function loadElevOptsFromStorage() {
   try {
@@ -11543,6 +11834,7 @@ function injectSimElevation(geom) {
   smoothElev(geom);
   computeGrade(geom);
   geom.elevReady = true;
+  computeCurveSpeed(geom, S.route);
   notifyElevationReady();
 }
 async function fetchElevationForGeometry(geom) {
@@ -11575,6 +11867,7 @@ async function fetchElevationForGeometry(geom) {
   smoothElev(geom);
   computeGrade(geom);
   geom.elevReady = true;
+  computeCurveSpeed(geom, S.route);
   notifyElevationReady();
 }
 function loadRouteElevation() {
@@ -11643,22 +11936,198 @@ function renderElevProfile(snap, geom, W, H) {
     const x = toX(m.s - s0);
     marks += '<line x1="' + x.toFixed(1) + '" y1="' + my + '" x2="' + x.toFixed(1) + '" y2="' + (my + ph) + '" stroke="#ffd400" stroke-width="1" opacity="0.5"/>';
   });
-  const rise = samples[samples.length - 1].elev - base;
-  const riseTxt = (rise >= 0 ? "\u2191 " : "\u2193 ") + Math.abs(Math.round(rise)) + " \u043C / " + Math.round((s1 - s0) / 100) / 10 + " \u043A\u043C";
-  const legY = my + 11;
-  const midM = profileLenM * 0.5;
-  const axisMid = formatProfileAxisDist(midM);
-  const axisEnd = formatProfileAxisDist(profileLenM);
-  const legend = '<circle cx="' + (mx + pw - 52) + '" cy="' + (legY - 3) + '" r="3" fill="' + gradeColor(0.02) + '"/><text x="' + (mx + pw - 46) + '" y="' + legY + '" fill="#666" font-size="8" font-family="monospace">\u0440\u043E\u0432\u043D\u043E</text><circle cx="' + (mx + pw - 22) + '" cy="' + (legY - 3) + '" r="3" fill="' + gradeColor(0.06) + '"/><text x="' + (mx + pw - 16) + '" y="' + legY + '" fill="#666" font-size="8" font-family="monospace">\u043A\u0440\u0443\u0442\u043E</text>';
-  return '<g class="elev-profile"><rect x="0" y="0" width="' + W + '" height="' + H + '" fill="rgba(0,0,0,0.55)"/>' + marks + pathSegs + '<line x1="' + mx + '" y1="' + (my + ph) + '" x2="' + (mx + pw) + '" y2="' + (my + ph) + '" stroke="#333" stroke-width="1"/><text x="' + mx + '" y="' + legY + '" fill="#888" font-size="10" font-family="monospace">0</text><text x="' + (mx + pw * 0.5).toFixed(0) + '" y="' + legY + '" text-anchor="middle" fill="#666" font-size="9" font-family="monospace">' + axisMid + '</text><text x="' + (mx + pw).toFixed(0) + '" y="' + legY + '" text-anchor="end" fill="#666" font-size="9" font-family="monospace">' + axisEnd + "</text>" + legend + '<text x="' + (mx + 4) + '" y="' + (my + ph - 3) + '" fill="#66ccff" font-size="10" font-weight="700" font-family="monospace">' + riseTxt + "</text></g>";
+  return '<g class="elev-profile"><rect x="0" y="0" width="' + W + '" height="' + H + '" fill="rgba(0,0,0,0.55)"/>' + marks + pathSegs + "</g>";
+}
+
+// js/fuel.js
+var _fuelRouteKey = null;
+function fuelRouteKey() {
+  const r = S.route;
+  if (!r) return "";
+  return (r.distance || 0) + ":" + (r.coords?.length || 0) + ":" + (r.geometry?.n || 0);
+}
+function invalidateFuelRouteS() {
+  _fuelRouteKey = null;
+  S.fuelStations.forEach((st) => {
+    delete st.routeS;
+    delete st.offRoute;
+  });
+}
+function fuelColor(status) {
+  return FUEL_COLORS[status] || FUEL_COLORS.unknown;
+}
+function fuelStatusText(status) {
+  return { yes: "\u0435\u0441\u0442\u044C", queue: "\u043E\u0447\u0435\u0440\u0435\u0434\u044C", low: "\u043C\u0430\u043B\u043E", no: "\u043D\u0435\u0442 \u0442\u043E\u043F\u043B\u0438\u0432\u0430" }[status] || "\u043D\u0430\u043B\u0438\u0447\u0438\u0435 ?";
+}
+function routeBBox(bufDeg) {
+  const buf = bufDeg || 0.05;
+  if (S.route && S.route.coords.length) {
+    let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+    S.route.coords.forEach((c) => {
+      if (c[0] < minLat) minLat = c[0];
+      if (c[0] > maxLat) maxLat = c[0];
+      if (c[1] < minLon) minLon = c[1];
+      if (c[1] > maxLon) maxLon = c[1];
+    });
+    return [minLat - buf, minLon - buf, maxLat + buf, maxLon + buf];
+  }
+  const p = curPos() || S.gps;
+  if (!p) return null;
+  return [p.lat - buf, p.lon - buf, p.lat + buf, p.lon + buf];
+}
+async function loadFromOverpass() {
+  const bb = routeBBox();
+  if (!bb) return [];
+  const [minLat, minLon, maxLat, maxLon] = bb;
+  const q = `[out:json][timeout:25];
+    (node["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon});
+     way["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon}););
+    out center 300;`;
+  const r = await fetch(
+    "https://overpass-api.de/api/interpreter",
+    { method: "POST", body: "data=" + encodeURIComponent(q) }
+  );
+  if (!r.ok) throw new Error("Overpass " + r.status);
+  const j = await r.json();
+  return (j.elements || []).map((e) => {
+    const t = e.tags || {};
+    const lat = e.lat != null ? e.lat : e.center && e.center.lat;
+    const lon = e.lon != null ? e.lon : e.center && e.center.lon;
+    if (lat == null || lon == null) return null;
+    return {
+      osmId: String(e.id),
+      lat,
+      lon,
+      brand: t.brand || t.name || t.operator || "\u0410\u0417\u0421",
+      name: t.name || t.brand || "\u0410\u0417\u0421",
+      status: "unknown"
+    };
+  }).filter(Boolean);
+}
+async function enrichFromGdebenz(stations) {
+  const sim = !!window.__SIM__;
+  if (!isNative() && !sim) return;
+  const p = curPos() || S.gps;
+  if (!p) return;
+  let data;
+  try {
+    if (sim) {
+      const r = await fetch("https://gdebenz.ru/api/nearby?lat=" + p.lat + "&lon=" + p.lon + "&radius_km=40");
+      data = await r.json();
+    } else {
+      const { CapacitorHttp: CapacitorHttp2 } = await Promise.resolve().then(() => (init_dist(), dist_exports));
+      const resp = await CapacitorHttp2.get({
+        url: "https://gdebenz.ru/api/nearby",
+        params: { lat: String(p.lat), lon: String(p.lon), radius_km: "40" }
+      });
+      data = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
+    }
+  } catch (e) {
+    console.warn("\u0413\u0434\u0435\u0411\u0415\u041D\u0417 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e);
+    return;
+  }
+  if (!data || !Array.isArray(data.stations)) return;
+  const byId = /* @__PURE__ */ new Map();
+  data.stations.forEach((s2) => {
+    if (s2.osm_id) byId.set(String(s2.osm_id), s2);
+  });
+  stations.forEach((st) => {
+    const g = byId.get(st.osmId);
+    if (g && g.status) {
+      st.status = g.status;
+      if (g.brand) st.brand = g.brand;
+      st.confirmations = g.confirmations;
+      st.lastAt = g.last_at;
+    }
+  });
+  S.fuelSource = "gdebenz";
+}
+async function ensureFuelStations(force) {
+  if (S.fuelStatus === "loading") return;
+  if (!force && S.fuelStatus === "ready" && S.fuelStations.length) return;
+  S.fuelStatus = "loading";
+  S.fuelSource = "osm";
+  try {
+    const stations = await loadFromOverpass();
+    await enrichFromGdebenz(stations);
+    S.fuelStations = stations;
+    S.fuelStatus = "ready";
+  } catch (e) {
+    console.warn("\u0410\u0417\u0421 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C:", e);
+    S.fuelStatus = "error";
+    S.fuelStations = [];
+  }
+}
+function recomputeFuelGeometry() {
+  const pos = curPos() || S.gps;
+  if (!pos) return;
+  const key = fuelRouteKey();
+  if (key !== _fuelRouteKey) {
+    _fuelRouteKey = key;
+    S.fuelStations.forEach((st) => {
+      delete st.routeS;
+      delete st.offRoute;
+    });
+  }
+  const geom = S.route?.geometry?.n > 1 ? S.route.geometry : null;
+  const near = S.route ? findNearestOnRoute() : null;
+  const curS = near?.s;
+  S.fuelStations.forEach((st) => {
+    st.distGps = haversine(pos, st);
+    if (geom) {
+      if (st.routeS == null) {
+        const proj = projectPointToRoute(geom, st);
+        if (proj) {
+          st.routeS = proj.s;
+          st.offRoute = proj.lateral;
+        } else {
+          st.offRoute = Infinity;
+        }
+      }
+      st.aheadOnRoute = false;
+      st.distAhead = Infinity;
+      if (st.routeS != null && curS != null && st.offRoute <= FUEL_CORRIDOR && st.routeS >= curS - 20) {
+        st.aheadOnRoute = true;
+        st.distAhead = Math.max(0, st.routeS - curS);
+      }
+    } else {
+      st.offRoute = Infinity;
+      st.aheadOnRoute = false;
+      st.distAhead = Infinity;
+    }
+  });
+}
+function resetFuelRouteBinding() {
+  invalidateFuelRouteS();
+}
+function bestAlongRoute() {
+  recomputeFuelGeometry();
+  const cands = S.fuelStations.filter((s2) => s2.aheadOnRoute && s2.distAhead > 50);
+  cands.sort((a, b) => a.distAhead - b.distAhead);
+  return cands[0] || null;
+}
+function nearestOverall(exclude) {
+  recomputeFuelGeometry();
+  const cands = S.fuelStations.filter((s2) => s2.distGps > 50 && (!exclude || s2.osmId !== exclude.osmId));
+  cands.sort((a, b) => a.distGps - b.distGps);
+  return cands[0] || null;
+}
+function fuelStationsForRoad(maxDist) {
+  if (S.fuelMode === 0 || !S.fuelStations.length) return [];
+  recomputeFuelGeometry();
+  return S.fuelStations.filter((s2) => s2.aheadOnRoute && s2.distAhead <= (maxDist || 3e3)).sort((a, b) => a.distAhead - b.distAhead).slice(0, 4);
 }
 
 // js/route.js
 function ensureRouteGeometry(route) {
   if (!route) return null;
-  if (route.geometry?.n > 1) return route.geometry;
+  if (route.geometry?.n > 1) {
+    computeCurveSpeed(route.geometry, route);
+    return route.geometry;
+  }
   try {
     route.geometry = buildRouteGeometry(route);
+    if (route.geometry) computeCurveSpeed(route.geometry, route);
     loadRouteElevation();
     return route.geometry;
   } catch (e) {
@@ -11670,6 +12139,7 @@ function ensureRouteGeometry(route) {
 function attachRouteGeometry(route) {
   ensureRouteGeometry(route);
   resetRouteSnap();
+  resetFuelRouteBinding();
 }
 function scheduleGeometryBuild(routes, onDone) {
   if (!routes?.length) {
@@ -11747,6 +12217,7 @@ function selectRouteIndex(idx) {
   S.selectedRouteIdx = Math.max(0, Math.min(S.routeAlternatives.length - 1, idx));
   S.route = S.routeAlternatives[S.selectedRouteIdx];
   resetRouteSnap();
+  resetFuelRouteBinding();
 }
 async function buildRoute() {
   if (S.routeAlternatives.length) {
@@ -12026,172 +12497,6 @@ function isCameraBehind(cam, heading) {
   return angleDiff(cam.dir, heading) <= S.tolerance;
 }
 
-// js/fuel.js
-function fuelColor(status) {
-  return FUEL_COLORS[status] || FUEL_COLORS.unknown;
-}
-function fuelStatusText(status) {
-  return { yes: "\u0435\u0441\u0442\u044C", queue: "\u043E\u0447\u0435\u0440\u0435\u0434\u044C", low: "\u043C\u0430\u043B\u043E", no: "\u043D\u0435\u0442 \u0442\u043E\u043F\u043B\u0438\u0432\u0430" }[status] || "\u043D\u0430\u043B\u0438\u0447\u0438\u0435 ?";
-}
-function routeBBox(bufDeg) {
-  const buf = bufDeg || 0.05;
-  if (S.route && S.route.coords.length) {
-    let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
-    S.route.coords.forEach((c) => {
-      if (c[0] < minLat) minLat = c[0];
-      if (c[0] > maxLat) maxLat = c[0];
-      if (c[1] < minLon) minLon = c[1];
-      if (c[1] > maxLon) maxLon = c[1];
-    });
-    return [minLat - buf, minLon - buf, maxLat + buf, maxLon + buf];
-  }
-  const p = curPos() || S.gps;
-  if (!p) return null;
-  return [p.lat - buf, p.lon - buf, p.lat + buf, p.lon + buf];
-}
-async function loadFromOverpass() {
-  const bb = routeBBox();
-  if (!bb) return [];
-  const [minLat, minLon, maxLat, maxLon] = bb;
-  const q = `[out:json][timeout:25];
-    (node["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon});
-     way["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon}););
-    out center 300;`;
-  const r = await fetch(
-    "https://overpass-api.de/api/interpreter",
-    { method: "POST", body: "data=" + encodeURIComponent(q) }
-  );
-  if (!r.ok) throw new Error("Overpass " + r.status);
-  const j = await r.json();
-  return (j.elements || []).map((e) => {
-    const t = e.tags || {};
-    const lat = e.lat != null ? e.lat : e.center && e.center.lat;
-    const lon = e.lon != null ? e.lon : e.center && e.center.lon;
-    if (lat == null || lon == null) return null;
-    return {
-      osmId: String(e.id),
-      lat,
-      lon,
-      brand: t.brand || t.name || t.operator || "\u0410\u0417\u0421",
-      name: t.name || t.brand || "\u0410\u0417\u0421",
-      status: "unknown"
-    };
-  }).filter(Boolean);
-}
-async function enrichFromGdebenz(stations) {
-  const sim = !!window.__SIM__;
-  if (!isNative() && !sim) return;
-  const p = curPos() || S.gps;
-  if (!p) return;
-  let data;
-  try {
-    if (sim) {
-      const r = await fetch("https://gdebenz.ru/api/nearby?lat=" + p.lat + "&lon=" + p.lon + "&radius_km=40");
-      data = await r.json();
-    } else {
-      const { CapacitorHttp: CapacitorHttp2 } = await Promise.resolve().then(() => (init_dist(), dist_exports));
-      const resp = await CapacitorHttp2.get({
-        url: "https://gdebenz.ru/api/nearby",
-        params: { lat: String(p.lat), lon: String(p.lon), radius_km: "40" }
-      });
-      data = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
-    }
-  } catch (e) {
-    console.warn("\u0413\u0434\u0435\u0411\u0415\u041D\u0417 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e);
-    return;
-  }
-  if (!data || !Array.isArray(data.stations)) return;
-  const byId = /* @__PURE__ */ new Map();
-  data.stations.forEach((s2) => {
-    if (s2.osm_id) byId.set(String(s2.osm_id), s2);
-  });
-  stations.forEach((st) => {
-    const g = byId.get(st.osmId);
-    if (g && g.status) {
-      st.status = g.status;
-      if (g.brand) st.brand = g.brand;
-      st.confirmations = g.confirmations;
-      st.lastAt = g.last_at;
-    }
-  });
-  S.fuelSource = "gdebenz";
-}
-async function ensureFuelStations(force) {
-  if (S.fuelStatus === "loading") return;
-  if (!force && S.fuelStatus === "ready" && S.fuelStations.length) return;
-  S.fuelStatus = "loading";
-  S.fuelSource = "osm";
-  try {
-    const stations = await loadFromOverpass();
-    await enrichFromGdebenz(stations);
-    S.fuelStations = stations;
-    S.fuelStatus = "ready";
-  } catch (e) {
-    console.warn("\u0410\u0417\u0421 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C:", e);
-    S.fuelStatus = "error";
-    S.fuelStations = [];
-  }
-}
-function recomputeFuelGeometry() {
-  const pos = curPos() || S.gps;
-  if (!pos) return;
-  const near = S.route ? findNearestOnRoute() : null;
-  const coords = S.route ? S.route.coords : null;
-  S.fuelStations.forEach((st) => {
-    st.distGps = haversine(pos, st);
-    st.offRoute = Infinity;
-    st.aheadOnRoute = false;
-    st.distAhead = Infinity;
-    if (coords && near) {
-      let bi = 0, bd = Infinity;
-      for (let i = 0; i < coords.length - 1; i++) {
-        const d = distToSegment(
-          st,
-          { lat: coords[i][0], lon: coords[i][1] },
-          { lat: coords[i + 1][0], lon: coords[i + 1][1] }
-        );
-        if (d < bd) {
-          bd = d;
-          bi = i;
-        }
-      }
-      st.offRoute = bd;
-      if (bi >= near.idx) {
-        st.aheadOnRoute = bd <= FUEL_CORRIDOR;
-        let along = distToSegment(
-          pos,
-          { lat: coords[near.idx][0], lon: coords[near.idx][1] },
-          { lat: coords[near.idx + 1][0], lon: coords[near.idx + 1][1] }
-        );
-        for (let i = near.idx + 1; i <= bi; i++) {
-          along += haversine(
-            { lat: coords[i][0], lon: coords[i][1] },
-            { lat: coords[i + 1][0], lon: coords[i + 1][1] }
-          );
-        }
-        st.distAhead = along;
-      }
-    }
-  });
-}
-function bestAlongRoute() {
-  recomputeFuelGeometry();
-  const cands = S.fuelStations.filter((s2) => s2.aheadOnRoute && s2.distAhead > 50);
-  cands.sort((a, b) => a.distAhead - b.distAhead);
-  return cands[0] || null;
-}
-function nearestOverall(exclude) {
-  recomputeFuelGeometry();
-  const cands = S.fuelStations.filter((s2) => s2.distGps > 50 && (!exclude || s2.osmId !== exclude.osmId));
-  cands.sort((a, b) => a.distGps - b.distGps);
-  return cands[0] || null;
-}
-function fuelStationsForRoad(maxDist) {
-  if (S.fuelMode === 0 || !S.fuelStations.length) return [];
-  recomputeFuelGeometry();
-  return S.fuelStations.filter((s2) => s2.aheadOnRoute && s2.distAhead <= (maxDist || 3e3)).sort((a, b) => a.distAhead - b.distAhead).slice(0, 4);
-}
-
 // js/render.js
 var PROFILE_GAP = 6;
 var RIBBON_FILL = "#00aa5c";
@@ -12234,7 +12539,7 @@ function triArea2(a, b, c) {
   if (!a || !b || !c) return 0;
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
-function buildStripMeshSvg(sections, snap, headingRad, geom) {
+function buildStripMeshSvg(sections, snap, headingRad, geom, speedMps) {
   if (sections.length < 2) return { fill: "", edges: "" };
   let fill = "";
   let edges = "";
@@ -12247,13 +12552,19 @@ function buildStripMeshSvg(sections, snap, headingRad, geom) {
     const bL = projectWorld(b.leftLat, b.leftLon, b.elev, snap, headingRad);
     const bR = projectWorld(b.rightLat, b.rightLon, b.elev, snap, headingRad);
     if (!aL || !aR || !bL || !bR) continue;
+    const sMid = (a.s + b.s) * 0.5;
+    const warnCol = ribbonCurveColor(sMid, geom, speedMps);
+    const fillCol = warnCol || RIBBON_FILL;
+    const edgeCol = warnCol || RIBBON_EDGE;
+    const fillOp = warnCol ? 0.48 : RIBBON_FILL_OP;
+    const edgeW = warnCol ? 7 : 5;
     if (triArea2(aL, bL, bR) > 1) {
-      fill += '<polygon points="' + pt(aL) + " " + pt(bL) + " " + pt(bR) + '" fill="' + RIBBON_FILL + '" fill-opacity="' + RIBBON_FILL_OP + '" stroke="none"/>';
+      fill += '<polygon points="' + pt(aL) + " " + pt(bL) + " " + pt(bR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
     }
     if (triArea2(aL, bR, aR) > 1) {
-      fill += '<polygon points="' + pt(aL) + " " + pt(bR) + " " + pt(aR) + '" fill="' + RIBBON_FILL + '" fill-opacity="' + RIBBON_FILL_OP + '" stroke="none"/>';
+      fill += '<polygon points="' + pt(aL) + " " + pt(bR) + " " + pt(aR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
     }
-    edges += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + RIBBON_EDGE + '" stroke-width="5" stroke-linecap="round"/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + RIBBON_EDGE + '" stroke-width="5" stroke-linecap="round"/>';
+    edges += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + edgeW + '" stroke-linecap="round"/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + edgeW + '" stroke-linecap="round"/>';
   }
   return { fill, edges };
 }
@@ -12392,12 +12703,19 @@ function renderPathway() {
     svg.innerHTML = "";
     return;
   }
-  const mesh = buildStripMeshSvg(sections, snap, headingRad, geomReady);
+  const speedMps = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
+  const mesh = buildStripMeshSvg(sections, snap, headingRad, geomReady, speedMps);
   let html = mesh.fill + mesh.edges;
-  const centerS = sections.map((sec) => projectWorld(sec.lat, sec.lon, sec.elev, snap, headingRad)).filter(Boolean);
-  if (centerS.length >= 2) {
-    const pts = centerS.map((p) => p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ");
-    html += '<polyline points="' + pts + '" fill="none" stroke="#00ff88" stroke-width="3" stroke-dasharray="18,20" opacity="0.45"/>';
+  const centerS = sections.map((sec) => ({ p: projectWorld(sec.lat, sec.lon, sec.elev, snap, headingRad), s: sec.s })).filter((x) => x.p);
+  for (let ci = 0; ci < centerS.length - 1; ci++) {
+    const a = centerS[ci];
+    const b = centerS[ci + 1];
+    const sMid = (a.s + b.s) * 0.5;
+    const warnCol = ribbonCurveColor(sMid, geomReady, speedMps);
+    const stroke = warnCol || "#00ff88";
+    const sw = warnCol ? 4.5 : 3;
+    const op = warnCol ? 0.85 : 0.45;
+    html += '<line x1="' + a.p.x.toFixed(1) + '" y1="' + a.p.y.toFixed(1) + '" x2="' + b.p.x.toFixed(1) + '" y2="' + b.p.y.toFixed(1) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" opacity="' + op + '"/>';
   }
   html += renderTurnsStr(svg, snap, headingRad);
   html += renderFuelStr(svg, snap, headingRad);
@@ -12500,319 +12818,6 @@ function renderVisualFrame() {
   renderPathway();
 }
 
-// js/hud.js
-function checkCamerasILS() {
-  if (!S.cams || !S.cameras.length) return;
-  const now = Date.now();
-  const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  const heading = S.smoothedHeading;
-  const radius = Math.max(200, Math.min(1e3, kmh * 10));
-  let closest = null;
-  S.cameras.forEach((c, i) => {
-    const d = haversine(S.gps, c);
-    if (d > radius) return;
-    if (S.backOnly && !isCameraBehind(c, heading)) return;
-    if (heading != null && angleDiff(bearing(S.gps, c), heading) > 90) return;
-    if (!closest || d < closest.dist) closest = { cam: c, dist: d, id: i };
-  });
-  const alertEl = $("camAlert");
-  if (closest) {
-    $("cam-dist").textContent = Math.round(closest.dist) + " M";
-    $("cam-sub").textContent = closest.cam.speed ? "LIMIT " + closest.cam.speed + " KM/H" : closest.cam.dir != null ? "BRG " + String(Math.round(closest.cam.dir)).padStart(3, "0") : "DIR UNKNOWN";
-    alertEl.classList.add("on");
-    if (!S.camWarned.has(closest.id) && now - S.lastVoiceTs > 3e3) {
-      S.camWarned.add(closest.id);
-      S.lastVoiceTs = now;
-      const dm = closest.dist < 200 ? "\u043C\u0435\u043D\u0435\u0435 200 \u043C\u0435\u0442\u0440\u043E\u0432" : closest.dist < 400 ? "\u0447\u0435\u0440\u0435\u0437 300 \u043C\u0435\u0442\u0440\u043E\u0432" : closest.dist < 700 ? "\u0447\u0435\u0440\u0435\u0437 500 \u043C\u0435\u0442\u0440\u043E\u0432" : "\u0447\u0435\u0440\u0435\u0437 " + Math.round(closest.dist / 100) * 100 + " \u043C\u0435\u0442\u0440\u043E\u0432";
-      speak("\u041A\u0430\u043C\u0435\u0440\u0430 \u0432 \u0441\u043F\u0438\u043D\u0443 " + dm + (closest.cam.speed ? ", \u043B\u0438\u043C\u0438\u0442 " + closest.cam.speed : ""));
-    }
-  } else {
-    alertEl.classList.remove("on");
-    S.cameras.forEach((c, i) => {
-      if (S.camWarned.has(i) && haversine(S.gps, c) > 2e3) S.camWarned.delete(i);
-    });
-  }
-}
-function onTick() {
-  if (!S.gps) return;
-  const now = /* @__PURE__ */ new Date();
-  $("clock").textContent = fmtClock(now);
-  const dot = $("gps-dot");
-  if (dot) {
-    dot.classList.toggle("ok", !!S.gps);
-  }
-  $("gps-txt").textContent = "GPS \xB1" + Math.round(S.gps.acc || 0) + "\u043C";
-  const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  if (!S.route) {
-    $("mid-info").textContent = "\u2014";
-    return;
-  }
-  const remaining = getRemainingDistance();
-  const nm = findNextManeuver();
-  if (nm) {
-    $("arrow-box").innerHTML = buildArrowSVG(nm.step);
-    if (nm.dist < 1e3) {
-      $("v-mdist").textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
-      $("v-mdist-u").textContent = "\u043C";
-    } else {
-      $("v-mdist").textContent = (nm.dist / 1e3).toFixed(1);
-      $("v-mdist-u").textContent = "\u043A\u043C";
-    }
-    $("street").textContent = (nm.step.name || "").toUpperCase() || "\u2014";
-    const stIdx = S.route.steps.indexOf(nm.step);
-    const kFar = "st_" + stIdx + "_far";
-    const kNear = "st_" + stIdx + "_near";
-    if (isTurnStep(nm.step)) {
-      const txt = maneuverText(nm.step);
-      if (nm.dist < 300 && nm.dist > 200 && !S.camWarned.has(kFar) && txt) {
-        S.camWarned.add(kFar);
-        speak("\u0427\u0435\u0440\u0435\u0437 300 \u043C\u0435\u0442\u0440\u043E\u0432 " + txt);
-      }
-      if (nm.dist < 70 && !S.camWarned.has(kNear) && txt) {
-        S.camWarned.add(kNear);
-        speak(txt);
-      }
-    }
-  }
-  let midInfo = remaining < 1e3 ? Math.round(remaining) + " \u043C" : (remaining / 1e3).toFixed(1) + " \u043A\u043C";
-  if (kmh > 5) {
-    const eta = new Date(now.getTime() + remaining / (kmh / 3.6) * 1e3);
-    midInfo += " \xB7 " + fmtClock(eta);
-  }
-  if (S.startTs) midInfo += " \xB7 T+" + fmtTime((Date.now() - S.startTs) / 1e3);
-  $("mid-info").textContent = midInfo;
-  const near = findNearestOnRoute();
-  if (near && near.dist > 40) {
-    if (!S.offRouteSince) S.offRouteSince = Date.now();
-    else if (Date.now() - S.offRouteSince > 8e3) {
-      $("offRouteWarn").classList.add("on");
-      S.offRouteSince = null;
-      recalcRoute().then(() => {
-        setTimeout(() => $("offRouteWarn").classList.remove("on"), 2e3);
-      });
-    }
-  } else {
-    S.offRouteSince = null;
-    $("offRouteWarn").classList.remove("on");
-  }
-  if (remaining < 30 && !S.camWarned.has("arrived")) {
-    S.camWarned.add("arrived");
-    speak("\u0412\u044B \u043F\u0440\u0438\u0431\u044B\u043B\u0438");
-  }
-  checkCamerasILS();
-  refreshFuelPanel();
-}
-async function requestWakeLock() {
-  try {
-    if ("wakeLock" in navigator) S.wakeLock = await navigator.wakeLock.request("screen");
-  } catch (e) {
-  }
-}
-async function startHud() {
-  if (!S.route) {
-    alert("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
-    return;
-  }
-  saveLastRun();
-  S.startTs = Date.now();
-  S.distDone = 0;
-  S.camWarned.clear();
-  resetRouteSnap();
-  ensureRouteGeometry(S.route);
-  $("setup").style.display = "none";
-  $("setup").style.zIndex = "30";
-  $("hud").classList.add("on");
-  $("hud").classList.toggle("show-compass", !!S.showCompass);
-  updateCamStatusUI();
-  loadCameras();
-  requestWakeLock();
-  try {
-    await startNavigationGps();
-  } catch (e) {
-    console.warn("FGS GPS:", e);
-  }
-  if (!window.__SIM__) {
-    try {
-      document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
-    } catch (e) {
-    }
-  }
-  speak("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D. \u0412 \u043F\u0443\u0442\u0438 " + Math.round(S.route.duration / 60) + " \u043C\u0438\u043D\u0443\u0442");
-  S.dispSpeed = S.gps && S.gps.speed > 0 ? S.gps.speed * 3.6 : 0;
-  onTick();
-  startVisualLoop();
-}
-function stopHud() {
-  stopVisualLoop();
-  stopNavigationGps().catch(() => {
-  });
-  S.fuelMode = 0;
-  S.fuelSel = null;
-  S.fuelOrigFinish = null;
-  $("fuelPanel")?.classList.remove("on");
-  $("btn-fuel")?.classList.remove("active");
-  $("hud").classList.remove("on");
-  $("setup").style.display = "block";
-  const goBar = $("go-bar");
-  if (goBar) goBar.classList.toggle("hidden", !(S.route && S.route.coords?.length));
-  if (S.wakeLock) {
-    try {
-      S.wakeLock.release();
-    } catch (e) {
-    }
-    S.wakeLock = null;
-  }
-  try {
-    document.exitFullscreen && document.exitFullscreen();
-  } catch (e) {
-  }
-}
-var _fuelBusy = false;
-var _fuelPanelShownAt = 0;
-var FUEL_PANEL_MS = 9e3;
-function fmtDistPair(m) {
-  if (m == null || !isFinite(m)) return { v: "\u2013", u: "\u043A\u043C" };
-  if (m < 1e3) return { v: String(Math.round(m / 10) * 10), u: "\u043C" };
-  return { v: (m / 1e3).toFixed(1), u: "\u043A\u043C" };
-}
-function setFuelPanel({ title, dist, sub, hint, color, searching }) {
-  const panel = $("fuelPanel");
-  if (!panel) return;
-  panel.style.setProperty("--fuel-c", color || "#66ccff");
-  panel.classList.toggle("searching", !!searching);
-  if (title != null) $("fp-title").textContent = title;
-  if (dist !== void 0) {
-    const d = fmtDistPair(dist);
-    $("fp-dist").textContent = d.v;
-    $("fp-u").textContent = d.u;
-  }
-  if (sub != null) $("fp-sub").textContent = sub;
-  if (hint != null) $("fp-hint").textContent = hint;
-  panel.classList.add("on");
-  _fuelPanelShownAt = Date.now();
-}
-function updateFuelButton() {
-  const b = $("btn-fuel");
-  if (b) b.classList.toggle("active", S.fuelMode > 0);
-}
-async function rerouteToFuel() {
-  try {
-    S.routeAlternatives = [];
-    await buildRoute();
-    loadCameras();
-    S.camWarned.clear();
-  } catch (e) {
-    console.warn("\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043A \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0435 \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:", e);
-  }
-}
-function refreshFuelPanel() {
-  const panel = $("fuelPanel");
-  if (panel && panel.classList.contains("on") && _fuelPanelShownAt && Date.now() - _fuelPanelShownAt > FUEL_PANEL_MS) {
-    panel.classList.remove("on");
-  }
-  if (S.fuelMode === 0 || !S.fuelSel) return;
-  const sel = S.fuelSel;
-  const dist = S.fuelMode === 2 ? getRemainingDistance() : sel.distAhead != null && isFinite(sel.distAhead) ? sel.distAhead : sel.distGps;
-  const d = fmtDistPair(dist);
-  $("fp-dist").textContent = d.v;
-  $("fp-u").textContent = d.u;
-}
-async function cycleFuelAssist() {
-  if (_fuelBusy) return;
-  _fuelBusy = true;
-  const b = $("btn-fuel");
-  try {
-    if (S.fuelMode === 0 && S.fuelStatus !== "ready") {
-      setFuelPanel({ title: "\u26FD \u041F\u041E\u0418\u0421\u041A \u0417\u0410\u041F\u0420\u0410\u0412\u041E\u041A\u2026", dist: null, sub: "\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0430\u043D\u043D\u044B\u0445", hint: "", color: "#66ccff", searching: true });
-      await ensureFuelStations();
-    }
-    if (!S.fuelStations.length) {
-      setFuelPanel({ title: "\u26FD \u0410\u0417\u0421 \u041D\u0415 \u041D\u0410\u0419\u0414\u0415\u041D\u042B", dist: null, sub: "\u043D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438", hint: "\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u26FD \u0435\u0449\u0451 \u0440\u0430\u0437 \u2014 \u0441\u043A\u0440\u044B\u0442\u044C", color: "#ff3b30", searching: false });
-      if (S.fuelMode !== 0) {
-        await cancelFuelAssist(false);
-      }
-      S.fuelMode = 0;
-      return;
-    }
-    const next = (S.fuelMode + 1) % 3;
-    if (next === 1) {
-      let sel = bestAlongRoute();
-      let onRoute = !!sel;
-      if (!sel) sel = nearestOverall();
-      if (!sel) {
-        S.fuelMode = 0;
-        return;
-      }
-      S.fuelMode = 1;
-      S.fuelSel = sel;
-      const dist = onRoute ? sel.distAhead : sel.distGps;
-      setFuelPanel({
-        title: onRoute ? "\u26FD \u041F\u041E \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0423" : "\u26FD \u0420\u042F\u0414\u041E\u041C (\u043D\u0435\u0442 \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443)",
-        dist,
-        sub: sel.brand + " \xB7 " + fuelStatusText(sel.status),
-        hint: "\u26FD \u0435\u0449\u0451 \u0440\u0430\u0437 \u2014 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0430\u044F \u0441 \u0437\u0430\u0435\u0437\u0434\u043E\u043C",
-        color: fuelColor(sel.status)
-      });
-      const km = dist >= 1e3 ? Math.round(dist / 1e3) + " \u043A\u0438\u043B\u043E\u043C\u0435\u0442\u0440" : Math.round(dist / 100) * 100 + " \u043C\u0435\u0442\u0440\u043E\u0432";
-      speak("\u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0430 " + (onRoute ? "\u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443" : "\u0440\u044F\u0434\u043E\u043C") + " \u0447\u0435\u0440\u0435\u0437 " + km + ". " + sel.brand + (sel.status !== "unknown" ? ", " + fuelStatusText(sel.status) : ""));
-    } else if (next === 2) {
-      let sel = nearestOverall(S.fuelSel) || bestAlongRoute();
-      if (!sel) {
-        return;
-      }
-      if (!S.fuelOrigFinish) S.fuelOrigFinish = S.finish;
-      S.fuelMode = 2;
-      S.fuelSel = sel;
-      S.finish = { lat: sel.lat, lon: sel.lon, label: sel.brand || "\u0410\u0417\u0421" };
-      setFuelPanel({
-        title: "\u26FD \u0411\u041B\u0418\u0416\u0410\u0419\u0428\u0410\u042F \u2014 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u2026",
-        dist: sel.distGps,
-        sub: sel.brand + " \xB7 " + fuelStatusText(sel.status),
-        hint: "\u26FD \u0435\u0449\u0451 \u0440\u0430\u0437 \u2014 \u043E\u0442\u043C\u0435\u043D\u0430, \u0432\u0435\u0440\u043D\u0443\u0442\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442",
-        color: fuelColor(sel.status)
-      });
-      speak("\u0421\u0442\u0440\u043E\u044E \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u043A \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0439 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0435. " + sel.brand);
-      await rerouteToFuel();
-      setFuelPanel({ title: "\u26FD \u0411\u041B\u0418\u0416\u0410\u0419\u0428\u0410\u042F \u0417\u0410\u041F\u0420\u0410\u0412\u041A\u0410", dist: getRemainingDistance() });
-      onTick();
-    } else {
-      await cancelFuelAssist(true);
-    }
-  } finally {
-    updateFuelButton();
-    _fuelBusy = false;
-  }
-}
-async function cancelFuelAssist(reroute) {
-  const orig = S.fuelOrigFinish;
-  S.fuelMode = 0;
-  S.fuelSel = null;
-  S.fuelOrigFinish = null;
-  $("fuelPanel")?.classList.remove("on");
-  if (reroute && orig) {
-    S.finish = orig;
-    speak("\u041E\u0442\u043C\u0435\u043D\u0430. \u0412\u043E\u0437\u0432\u0440\u0430\u0442 \u043A \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443");
-    await rerouteToFuel();
-    onTick();
-  }
-}
-async function selectQuickFinish(id, loadFavs2, buildAndLoad) {
-  const fav = loadFavs2().find((f2) => f2.id === id);
-  if (!fav) return;
-  S.finish = { lat: fav.lat, lon: fav.lon, label: fav.name };
-  $("quickFinish").classList.remove("on");
-  $("mid-info").textContent = "\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u2026";
-  speak("\u041D\u043E\u0432\u044B\u0439 \u0444\u0438\u043D\u0438\u0448 " + fav.name + ". \u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430");
-  try {
-    await buildAndLoad();
-    S.camWarned.clear();
-    onTick();
-  } catch (e) {
-    console.warn("\u0421\u043C\u0435\u043D\u0430 \u0444\u0438\u043D\u0438\u0448\u0430 \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C:", e);
-    $("mid-info").textContent = "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430";
-  }
-}
-
 // js/route-map.js
 var import_leaflet = __toESM(require_leaflet_src());
 
@@ -12906,7 +12911,17 @@ function clearLayers() {
   _hudWindowLayers = [];
   _markers = [];
 }
-function latLngsForDistance(route, maxM) {
+function routePolylineLatLngs(route) {
+  if (route?.geometry?.n > 1) return geometryToLatLngs(route.geometry);
+  const coords = route?.coords;
+  if (!coords?.length) return [];
+  return coords.map((c) => [c[0], c[1]]);
+}
+function latLngsForDistance(route, maxM, startS) {
+  const geom = route?.geometry;
+  if (geom?.n > 1) {
+    return latLngsSliceByS(geom, startS || 0, (startS || 0) + maxM);
+  }
   const coords = route?.coords;
   if (!coords || coords.length < 2) return [];
   const out = [[coords[0][0], coords[0][1]]];
@@ -12983,7 +12998,7 @@ function renderRouteMap(alternatives, selectedIdx, start, finish) {
   clearLayers();
   const bounds = import_leaflet.default.latLngBounds([]);
   alternatives.forEach((r, i) => {
-    const latlngs = r.coords.map((c) => [c[0], c[1]]);
+    const latlngs = routePolylineLatLngs(r);
     latlngs.forEach((ll) => bounds.extend(ll));
     const sel = i === selectedIdx;
     const layer = import_leaflet.default.polyline(latlngs, {
@@ -12999,7 +13014,7 @@ function renderRouteMap(alternatives, selectedIdx, start, finish) {
     _routeLayers.push(layer);
     if (sel) {
       const hudLenM = getElevProfileLenM();
-      const hudWin = latLngsForDistance(r, hudLenM);
+      const hudWin = latLngsForDistance(r, hudLenM, 0);
       if (hudWin.length > 1) {
         const glow = import_leaflet.default.polyline(hudWin, {
           color: "#ffffff",
@@ -13150,7 +13165,6 @@ async function doBuildRoute() {
     loadCameras();
     $("s-finish").textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D \u2014 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB \u0432\u043D\u0438\u0437\u0443";
     $("s-finish").className = "status ok";
-    $("route-section")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     scheduleGeometryBuild(S.routeAlternatives, () => {
       renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
     });
@@ -13316,6 +13330,26 @@ function bindSetupUI() {
     saveElevOptsToStorage();
     if (S.routeAlternatives?.length) renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
   });
+  function syncCurveInputs() {
+    const on = S.curveWarn;
+    const sel = $("opt-curve-strict");
+    if (sel) sel.disabled = !on;
+  }
+  function recomputeCurveIfReady() {
+    const geom = S.route?.geometry;
+    if (geom) computeCurveSpeed(geom, S.route);
+  }
+  $("opt-curve-warn").addEventListener("change", (e) => {
+    S.curveWarn = e.target.checked;
+    syncCurveInputs();
+    saveCurveOptsToStorage();
+  });
+  $("opt-curve-strict").addEventListener("change", (e) => {
+    const v = e.target.value;
+    if (v === "relaxed" || v === "normal" || v === "strict") S.curveStrict = v;
+    saveCurveOptsToStorage();
+    recomputeCurveIfReady();
+  });
   $("opt-heading").addEventListener("change", (e) => {
     S.showCompass = e.target.checked;
     $("hud").classList.toggle("show-compass", S.showCompass);
@@ -13395,6 +13429,12 @@ function syncOptionsFromDom() {
   if ($("opt-elev-exag")) $("opt-elev-exag").disabled = !S.showElevProfile;
   if ($("opt-elev-profile-h")) $("opt-elev-profile-h").disabled = !S.showElevProfile;
   if ($("opt-elev-profile-len")) $("opt-elev-profile-len").disabled = !S.showElevProfile;
+  S.curveWarn = $("opt-curve-warn")?.checked ?? true;
+  const strictEl = $("opt-curve-strict");
+  if (strictEl) {
+    S.curveStrict = strictEl.value || "normal";
+    strictEl.disabled = !S.curveWarn;
+  }
   S.showCompass = $("opt-heading").checked;
   S.cams = $("opt-cams").checked;
   S.backOnly = $("opt-back-only").checked;
@@ -13415,16 +13455,47 @@ function initNativeHints() {
 
 // js/favorites.js
 var FAV_EMOJIS = ["\u{1F3E0}", "\u{1F3E2}", "\u26FD", "\u{1F354}", "\u{1F3CD}", "\u{1F3D4}", "\u{1F3D6}", "\u{1F6E0}", "\u{1F17F}", "\u2B50", "\u2764", "\u{1F4CD}"];
-function loadFavs() {
+var LEGACY_FAV_KEYS = ["moto-hud-favs", "moto-hud-places", "mh-favs"];
+function normalizeFav(raw, idx) {
+  if (!raw || typeof raw !== "object") return null;
+  const lat = typeof raw.lat === "number" ? raw.lat : parseFloat(raw.lat);
+  const lon = typeof raw.lon === "number" ? raw.lon : parseFloat(raw.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  const nameRaw = raw.name || raw.label || raw.title || raw.display_name;
+  const name = typeof nameRaw === "string" && nameRaw.trim() ? nameRaw.trim().slice(0, 60) : "\u041C\u0435\u0441\u0442\u043E";
+  return {
+    id: typeof raw.id === "string" && raw.id ? raw.id : "f" + idx + "_" + Math.round(lat * 1e5) + "_" + Math.round(lon * 1e5),
+    name,
+    emoji: typeof raw.emoji === "string" && raw.emoji ? raw.emoji : "\u2B50",
+    lat,
+    lon
+  };
+}
+function readFavsFromKey(key) {
   try {
-    const raw = localStorage.getItem(FAV_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr.filter(
-      (f2) => f2 && typeof f2.lat === "number" && typeof f2.lon === "number" && typeof f2.name === "string"
-    ) : [];
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.map((f2, i) => normalizeFav(f2, i)).filter(Boolean);
   } catch (e) {
     return [];
   }
+}
+function loadFavs() {
+  let list = readFavsFromKey(FAV_KEY);
+  if (!list.length) {
+    for (const key of LEGACY_FAV_KEYS) {
+      if (key === FAV_KEY) continue;
+      const legacy = readFavsFromKey(key);
+      if (legacy.length) {
+        list = legacy;
+        saveFavs(list);
+        break;
+      }
+    }
+  }
+  return list;
 }
 function saveFavs(list) {
   try {
@@ -13432,39 +13503,41 @@ function saveFavs(list) {
   } catch (e) {
   }
 }
+function favNameHtml(f2) {
+  return '<span class="fav-name"><span class="fav-emoji">' + (f2.emoji || "\u2B50") + "</span>" + escapeHtml(f2.name) + "</span>";
+}
+function refreshFavLists() {
+  renderFavs();
+  renderFavsEdit();
+}
 function renderFavs() {
   const box = $("favs-list");
+  if (!box) return;
   const list = loadFavs();
   if (!list.length) {
-    box.innerHTML = '<div class="favs-empty">\u041F\u0443\u0441\u0442\u043E. \u0417\u0430\u0434\u0430\u0439\u0442\u0435 \u0444\u0438\u043D\u0438\u0448 (\u{1F4BE}) \u0438\u043B\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u0442\u043E\u0447\u043A\u0443 GPS (\u{1F4CD}).</div>';
+    box.innerHTML = '<div class="favs-empty">\u041F\u0443\u0441\u0442\u043E. \u0414\u043E\u0431\u0430\u0432\u044C\u0442\u0435 \u043C\u0435\u0441\u0442\u0430 \u0432 \xAB\u2B50 \u0418\u0437\u0431\u0440\u0430\u043D\u043D\u043E\u0435 \u2014 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\xBB \u043D\u0438\u0436\u0435.</div>';
     return;
   }
   box.innerHTML = list.map(
-    (f2) => '<div class="fav-item"><button type="button" class="fav-apply" data-id="' + f2.id + '"><span class="fav-name"><span class="fav-emoji">' + (f2.emoji || "\u2B50") + "</span>" + escapeHtml(f2.name) + '</span><span class="fav-coords">' + f2.lat.toFixed(5) + ", " + f2.lon.toFixed(5) + '</span></button><button type="button" class="fav-del" data-del="' + f2.id + '" aria-label="\u0423\u0434\u0430\u043B\u0438\u0442\u044C" title="\u0423\u0434\u0430\u043B\u0438\u0442\u044C">\u2715</button></div>'
+    (f2) => '<div class="fav-item"><button type="button" class="fav-apply" data-id="' + f2.id + '">' + favNameHtml(f2) + "</button></div>"
   ).join("");
   box.querySelectorAll(".fav-apply").forEach((b) => {
     b.addEventListener("click", () => applyFav(b.getAttribute("data-id")));
-    let lp = null;
-    b.addEventListener("pointerdown", () => {
-      lp = setTimeout(() => {
-        lp = null;
-        const id = b.getAttribute("data-id");
-        const fav = loadFavs().find((x) => x.id === id);
-        if (fav && confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \xAB" + fav.name + "\xBB?")) deleteFav(id);
-      }, 700);
-    });
-    ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => {
-      b.addEventListener(ev, () => {
-        if (lp) {
-          clearTimeout(lp);
-          lp = null;
-        }
-      });
-    });
   });
+}
+function renderFavsEdit() {
+  const box = $("favs-edit-list");
+  if (!box) return;
+  const list = loadFavs();
+  if (!list.length) {
+    box.innerHTML = '<div class="favs-empty">\u041D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0445 \u043C\u0435\u0441\u0442.</div>';
+    return;
+  }
+  box.innerHTML = list.map(
+    (f2) => '<div class="fav-item-edit"><div class="fav-edit-info">' + favNameHtml(f2) + '</div><button type="button" class="fav-del" data-del="' + f2.id + '" aria-label="\u0423\u0434\u0430\u043B\u0438\u0442\u044C" title="\u0423\u0434\u0430\u043B\u0438\u0442\u044C">\u2715</button></div>'
+  ).join("");
   box.querySelectorAll(".fav-del").forEach((b) => {
-    b.addEventListener("click", (e) => {
-      e.stopPropagation();
+    b.addEventListener("click", () => {
       const id = b.getAttribute("data-del");
       const fav = loadFavs().find((x) => x.id === id);
       if (fav && confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \xAB" + fav.name + "\xBB?")) deleteFav(id);
@@ -13482,11 +13555,11 @@ function addFav(name, point, emoji) {
     lon: point.lon
   });
   saveFavs(list);
-  renderFavs();
+  refreshFavLists();
 }
 function deleteFav(id) {
   saveFavs(loadFavs().filter((f2) => f2.id !== id));
-  renderFavs();
+  refreshFavLists();
 }
 function applyFav(id) {
   const fav = loadFavs().find((f2) => f2.id === id);
@@ -13497,6 +13570,7 @@ function applyFav(id) {
   $("finish-input").value = fav.lat + ", " + fav.lon;
   $("search-results").style.display = "none";
   invalidateRoute();
+  checkStartReady();
 }
 var favModalState = { point: null, emoji: "\u2B50" };
 function openFavModal(defaultName, point) {
@@ -13544,14 +13618,14 @@ function openQuickFinish() {
   $("quickFinish").classList.add("on");
 }
 function initFavorites() {
-  renderFavs();
-  $("fav-modal-cancel").addEventListener("click", closeFavModal);
-  $("fav-modal-ok").addEventListener("click", () => {
+  refreshFavLists();
+  $("fav-modal-cancel")?.addEventListener("click", closeFavModal);
+  $("fav-modal-ok")?.addEventListener("click", () => {
     const name = $("fav-name-input").value.trim() || "\u041C\u0435\u0441\u0442\u043E";
     addFav(name, favModalState.point, favModalState.emoji);
     closeFavModal();
   });
-  $("btn-fav-save-finish").addEventListener("click", () => {
+  $("btn-fav-save-finish")?.addEventListener("click", () => {
     if (!S.finish) {
       $("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0434\u0430\u0439\u0442\u0435 \u0444\u0438\u043D\u0438\u0448, \u043F\u043E\u0442\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435";
       $("s-finish").className = "status err";
@@ -13560,7 +13634,7 @@ function initFavorites() {
     const defaultName = S.finish.label && !/^Финиш|^Координаты/.test(S.finish.label) ? S.finish.label.split(",")[0] : "";
     openFavModal(defaultName, { lat: S.finish.lat, lon: S.finish.lon });
   });
-  $("btn-fav-save-gps").addEventListener("click", () => {
+  $("btn-fav-save-gps")?.addEventListener("click", () => {
     if (S.gps) {
       openFavModal("", { lat: S.gps.lat, lon: S.gps.lon });
       return;
@@ -13576,7 +13650,7 @@ function initFavorites() {
     setTimeout(() => clearInterval(check), 2e4);
     startGps();
   });
-  $("btn-fav-export").addEventListener("click", () => {
+  $("btn-fav-export")?.addEventListener("click", () => {
     const list = loadFavs();
     if (!list.length) {
       alert("\u041D\u0435\u0442 \u043C\u0435\u0441\u0442 \u0434\u043B\u044F \u044D\u043A\u0441\u043F\u043E\u0440\u0442\u0430");
@@ -13592,16 +13666,16 @@ function initFavorites() {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1e3);
   });
-  $("btn-fav-import").addEventListener("click", () => $("fav-file").click());
-  $("fav-file").addEventListener("change", (e) => {
+  $("btn-fav-import")?.addEventListener("click", () => $("fav-file")?.click());
+  $("fav-file")?.addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const imported = JSON.parse(reader.result);
-        if (!Array.isArray(imported)) throw new Error("\u0444\u043E\u0440\u043C\u0430\u0442");
-        const valid = imported.filter((f2) => f2 && typeof f2.lat === "number" && typeof f2.lon === "number" && typeof f2.name === "string");
+        if (!Array.isArray(imported)) throw new Error("format");
+        const valid = imported.map((f2, i) => normalizeFav(f2, i)).filter(Boolean);
         if (!valid.length) {
           alert("\u0412 \u0444\u0430\u0439\u043B\u0435 \u043D\u0435\u0442 \u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0445 \u043C\u0435\u0441\u0442");
           return;
@@ -13613,17 +13687,11 @@ function initFavorites() {
           const key = f2.lat.toFixed(5) + "," + f2.lon.toFixed(5);
           if (seen.has(key)) return;
           seen.add(key);
-          cur.push({
-            id: "f" + Date.now() + "_" + Math.floor(Math.random() * 1e5),
-            name: String(f2.name).slice(0, 60),
-            emoji: typeof f2.emoji === "string" ? f2.emoji : "\u2B50",
-            lat: f2.lat,
-            lon: f2.lon
-          });
+          cur.push(f2);
           added++;
         });
         saveFavs(cur);
-        renderFavs();
+        refreshFavLists();
         alert("\u0418\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043E \u043C\u0435\u0441\u0442: " + added + (valid.length - added ? " (\u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u0434\u0443\u0431\u043B\u0435\u0439: " + (valid.length - added) + ")" : ""));
       } catch (err) {
         alert("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u0444\u0430\u0439\u043B: " + err.message);
@@ -13650,9 +13718,337 @@ function initFavorites() {
   }
 }
 
+// js/hud.js
+function checkCamerasILS() {
+  if (!S.cams || !S.cameras.length) return;
+  const now = Date.now();
+  const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const heading = S.smoothedHeading;
+  const radius = Math.max(200, Math.min(1e3, kmh * 10));
+  let closest = null;
+  S.cameras.forEach((c, i) => {
+    const d = haversine(S.gps, c);
+    if (d > radius) return;
+    if (S.backOnly && !isCameraBehind(c, heading)) return;
+    if (heading != null && angleDiff(bearing(S.gps, c), heading) > 90) return;
+    if (!closest || d < closest.dist) closest = { cam: c, dist: d, id: i };
+  });
+  const alertEl = $("camAlert");
+  if (closest) {
+    $("cam-dist").textContent = Math.round(closest.dist) + " M";
+    $("cam-sub").textContent = closest.cam.speed ? "LIMIT " + closest.cam.speed + " KM/H" : closest.cam.dir != null ? "BRG " + String(Math.round(closest.cam.dir)).padStart(3, "0") : "DIR UNKNOWN";
+    alertEl.classList.add("on");
+    if (!S.camWarned.has(closest.id) && now - S.lastVoiceTs > 3e3) {
+      S.camWarned.add(closest.id);
+      S.lastVoiceTs = now;
+      const dm = closest.dist < 200 ? "\u043C\u0435\u043D\u0435\u0435 200 \u043C\u0435\u0442\u0440\u043E\u0432" : closest.dist < 400 ? "\u0447\u0435\u0440\u0435\u0437 300 \u043C\u0435\u0442\u0440\u043E\u0432" : closest.dist < 700 ? "\u0447\u0435\u0440\u0435\u0437 500 \u043C\u0435\u0442\u0440\u043E\u0432" : "\u0447\u0435\u0440\u0435\u0437 " + Math.round(closest.dist / 100) * 100 + " \u043C\u0435\u0442\u0440\u043E\u0432";
+      speak("\u041A\u0430\u043C\u0435\u0440\u0430 \u0432 \u0441\u043F\u0438\u043D\u0443 " + dm + (closest.cam.speed ? ", \u043B\u0438\u043C\u0438\u0442 " + closest.cam.speed : ""));
+    }
+  } else {
+    alertEl.classList.remove("on");
+    S.cameras.forEach((c, i) => {
+      if (S.camWarned.has(i) && haversine(S.gps, c) > 2e3) S.camWarned.delete(i);
+    });
+  }
+}
+function onTick() {
+  if (!S.gps) return;
+  const now = /* @__PURE__ */ new Date();
+  $("clock").textContent = fmtClock(now);
+  const dot = $("gps-dot");
+  if (dot) {
+    dot.classList.toggle("ok", !!S.gps);
+  }
+  $("gps-txt").textContent = "GPS \xB1" + Math.round(S.gps.acc || 0) + "\u043C";
+  const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  if (!S.route) {
+    $("mid-info").textContent = "\u2014";
+    return;
+  }
+  const remaining = getRemainingDistance();
+  const nm = findNextManeuver();
+  if (nm) {
+    $("arrow-box").innerHTML = buildArrowSVG(nm.step);
+    if (nm.dist < 1e3) {
+      $("v-mdist").textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
+      $("v-mdist-u").textContent = "\u043C";
+    } else {
+      $("v-mdist").textContent = (nm.dist / 1e3).toFixed(1);
+      $("v-mdist-u").textContent = "\u043A\u043C";
+    }
+    $("street").textContent = (nm.step.name || "").toUpperCase() || "\u2014";
+    const stIdx = S.route.steps.indexOf(nm.step);
+    const kFar = "st_" + stIdx + "_far";
+    const kNear = "st_" + stIdx + "_near";
+    if (isTurnStep(nm.step)) {
+      const txt = maneuverText(nm.step);
+      if (nm.dist < 300 && nm.dist > 200 && !S.camWarned.has(kFar) && txt) {
+        S.camWarned.add(kFar);
+        speak("\u0427\u0435\u0440\u0435\u0437 300 \u043C\u0435\u0442\u0440\u043E\u0432 " + txt);
+      }
+      if (nm.dist < 70 && !S.camWarned.has(kNear) && txt) {
+        S.camWarned.add(kNear);
+        speak(txt);
+      }
+    }
+  }
+  let midInfo = remaining < 1e3 ? Math.round(remaining) + " \u043C" : (remaining / 1e3).toFixed(1) + " \u043A\u043C";
+  if (kmh > 5) {
+    const eta = new Date(now.getTime() + remaining / (kmh / 3.6) * 1e3);
+    midInfo += " \xB7 " + fmtClock(eta);
+  }
+  if (S.startTs) midInfo += " \xB7 T+" + fmtTime((Date.now() - S.startTs) / 1e3);
+  $("mid-info").textContent = midInfo;
+  const near = findNearestOnRoute();
+  if (near && near.dist > 40) {
+    if (!S.offRouteSince) S.offRouteSince = Date.now();
+    else if (Date.now() - S.offRouteSince > 8e3) {
+      $("offRouteWarn").classList.add("on");
+      S.offRouteSince = null;
+      recalcRoute().then(() => {
+        setTimeout(() => $("offRouteWarn").classList.remove("on"), 2e3);
+      });
+    }
+  } else {
+    S.offRouteSince = null;
+    $("offRouteWarn").classList.remove("on");
+  }
+  if (remaining < 30 && !S.camWarned.has("arrived")) {
+    S.camWarned.add("arrived");
+    speak("\u0412\u044B \u043F\u0440\u0438\u0431\u044B\u043B\u0438");
+  }
+  checkCamerasILS();
+  checkCurveSpeedWarn(kmh);
+  refreshFuelPanel();
+}
+function checkCurveSpeedWarn(kmh) {
+  if (!S.curveWarn || kmh < 20 || !S.route?.geometry?.curveReady) return;
+  const snap = getRouteSnapForNav(S.smoothedHeading);
+  if (!snap) return;
+  const speedMps = kmh / 3.6;
+  const warn = pickCurveVoiceWarn(S.route.geometry, snap.s, speedMps);
+  if (!warn || S.camWarned.has(warn.key)) return;
+  if (Date.now() - S.lastVoiceTs < 4e3) return;
+  S.camWarned.add(warn.key);
+  S.lastVoiceTs = Date.now();
+  speak("\u0421\u043D\u0438\u0437\u044C\u0442\u0435 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u043F\u0435\u0440\u0435\u0434 \u043F\u043E\u0432\u043E\u0440\u043E\u0442\u043E\u043C. \u0420\u0435\u043A\u043E\u043C\u0435\u043D\u0434\u0443\u0435\u0442\u0441\u044F " + warn.vSafeKmh + " \u043A\u0438\u043B\u043E\u043C\u0435\u0442\u0440\u043E\u0432 \u0432 \u0447\u0430\u0441");
+}
+async function requestWakeLock() {
+  try {
+    if ("wakeLock" in navigator) S.wakeLock = await navigator.wakeLock.request("screen");
+  } catch (e) {
+  }
+}
+async function startHud() {
+  if (!S.route) {
+    alert("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
+    return;
+  }
+  saveLastRun();
+  S.startTs = Date.now();
+  S.distDone = 0;
+  S.camWarned.clear();
+  resetRouteSnap();
+  ensureRouteGeometry(S.route);
+  $("setup").style.display = "none";
+  $("setup").style.zIndex = "30";
+  $("hud").classList.add("on");
+  $("hud").classList.toggle("show-compass", !!S.showCompass);
+  updateCamStatusUI();
+  loadCameras();
+  requestWakeLock();
+  try {
+    await startNavigationGps();
+  } catch (e) {
+    console.warn("FGS GPS:", e);
+  }
+  if (!window.__SIM__) {
+    try {
+      document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+    } catch (e) {
+    }
+  }
+  speak("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D. \u0412 \u043F\u0443\u0442\u0438 " + Math.round(S.route.duration / 60) + " \u043C\u0438\u043D\u0443\u0442");
+  S.dispSpeed = S.gps && S.gps.speed > 0 ? S.gps.speed * 3.6 : 0;
+  onTick();
+  startVisualLoop();
+}
+function stopHud() {
+  stopVisualLoop();
+  stopNavigationGps().catch(() => {
+  });
+  S.fuelMode = 0;
+  S.fuelSel = null;
+  S.fuelOrigFinish = null;
+  $("fuelPanel")?.classList.remove("on");
+  $("btn-fuel")?.classList.remove("active");
+  $("hud").classList.remove("on");
+  $("setup").style.display = "block";
+  renderFavs();
+  const goBar = $("go-bar");
+  if (goBar) goBar.classList.toggle("hidden", !(S.route && S.route.coords?.length));
+  if (S.wakeLock) {
+    try {
+      S.wakeLock.release();
+    } catch (e) {
+    }
+    S.wakeLock = null;
+  }
+  try {
+    document.exitFullscreen && document.exitFullscreen();
+  } catch (e) {
+  }
+}
+var _fuelBusy = false;
+var _fuelPanelShownAt = 0;
+var FUEL_PANEL_MS = 9e3;
+function fmtDistPair(m) {
+  if (m == null || !isFinite(m)) return { v: "\u2013", u: "\u043A\u043C" };
+  if (m < 1e3) return { v: String(Math.round(m / 10) * 10), u: "\u043C" };
+  return { v: (m / 1e3).toFixed(1), u: "\u043A\u043C" };
+}
+function setFuelPanel({ title, dist, sub, hint, color, searching }) {
+  const panel = $("fuelPanel");
+  if (!panel) return;
+  panel.style.setProperty("--fuel-c", color || "#66ccff");
+  panel.classList.toggle("searching", !!searching);
+  if (title != null) $("fp-title").textContent = title;
+  if (dist !== void 0) {
+    const d = fmtDistPair(dist);
+    $("fp-dist").textContent = d.v;
+    $("fp-u").textContent = d.u;
+  }
+  if (sub != null) $("fp-sub").textContent = sub;
+  if (hint != null) $("fp-hint").textContent = hint;
+  panel.classList.add("on");
+  _fuelPanelShownAt = Date.now();
+}
+function updateFuelButton() {
+  const b = $("btn-fuel");
+  if (b) b.classList.toggle("active", S.fuelMode > 0);
+}
+async function rerouteToFuel() {
+  try {
+    S.routeAlternatives = [];
+    await buildRoute();
+    loadCameras();
+    S.camWarned.clear();
+  } catch (e) {
+    console.warn("\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043A \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0435 \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:", e);
+  }
+}
+function refreshFuelPanel() {
+  const panel = $("fuelPanel");
+  if (panel && panel.classList.contains("on") && _fuelPanelShownAt && Date.now() - _fuelPanelShownAt > FUEL_PANEL_MS) {
+    panel.classList.remove("on");
+  }
+  if (S.fuelMode === 0 || !S.fuelSel) return;
+  const sel = S.fuelSel;
+  const dist = S.fuelMode === 2 ? getRemainingDistance() : sel.distAhead != null && isFinite(sel.distAhead) ? sel.distAhead : sel.distGps;
+  const d = fmtDistPair(dist);
+  $("fp-dist").textContent = d.v;
+  $("fp-u").textContent = d.u;
+}
+async function cycleFuelAssist() {
+  if (_fuelBusy) return;
+  _fuelBusy = true;
+  const b = $("btn-fuel");
+  try {
+    if (S.fuelMode === 0 && S.fuelStatus !== "ready") {
+      setFuelPanel({ title: "\u26FD \u041F\u041E\u0418\u0421\u041A \u0417\u0410\u041F\u0420\u0410\u0412\u041E\u041A\u2026", dist: null, sub: "\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0430\u043D\u043D\u044B\u0445", hint: "", color: "#66ccff", searching: true });
+      await ensureFuelStations();
+    }
+    if (!S.fuelStations.length) {
+      setFuelPanel({ title: "\u26FD \u0410\u0417\u0421 \u041D\u0415 \u041D\u0410\u0419\u0414\u0415\u041D\u042B", dist: null, sub: "\u043D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445 \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438", hint: "\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u26FD \u0435\u0449\u0451 \u0440\u0430\u0437 \u2014 \u0441\u043A\u0440\u044B\u0442\u044C", color: "#ff3b30", searching: false });
+      if (S.fuelMode !== 0) {
+        await cancelFuelAssist(false);
+      }
+      S.fuelMode = 0;
+      return;
+    }
+    const next = (S.fuelMode + 1) % 3;
+    if (next === 1) {
+      let sel = bestAlongRoute();
+      let onRoute = !!sel;
+      if (!sel) sel = nearestOverall();
+      if (!sel) {
+        S.fuelMode = 0;
+        return;
+      }
+      S.fuelMode = 1;
+      S.fuelSel = sel;
+      const dist = onRoute ? sel.distAhead : sel.distGps;
+      setFuelPanel({
+        title: onRoute ? "\u26FD \u041F\u041E \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0423" : "\u26FD \u0420\u042F\u0414\u041E\u041C (\u043D\u0435\u0442 \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443)",
+        dist,
+        sub: sel.brand + " \xB7 " + fuelStatusText(sel.status),
+        hint: "\u26FD \u0435\u0449\u0451 \u0440\u0430\u0437 \u2014 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0430\u044F \u0441 \u0437\u0430\u0435\u0437\u0434\u043E\u043C",
+        color: fuelColor(sel.status)
+      });
+      const km = dist >= 1e3 ? Math.round(dist / 1e3) + " \u043A\u0438\u043B\u043E\u043C\u0435\u0442\u0440" : Math.round(dist / 100) * 100 + " \u043C\u0435\u0442\u0440\u043E\u0432";
+      speak("\u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0430 " + (onRoute ? "\u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443" : "\u0440\u044F\u0434\u043E\u043C") + " \u0447\u0435\u0440\u0435\u0437 " + km + ". " + sel.brand + (sel.status !== "unknown" ? ", " + fuelStatusText(sel.status) : ""));
+    } else if (next === 2) {
+      let sel = nearestOverall(S.fuelSel) || bestAlongRoute();
+      if (!sel) {
+        return;
+      }
+      if (!S.fuelOrigFinish) S.fuelOrigFinish = S.finish;
+      S.fuelMode = 2;
+      S.fuelSel = sel;
+      S.finish = { lat: sel.lat, lon: sel.lon, label: sel.brand || "\u0410\u0417\u0421" };
+      setFuelPanel({
+        title: "\u26FD \u0411\u041B\u0418\u0416\u0410\u0419\u0428\u0410\u042F \u2014 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u2026",
+        dist: sel.distGps,
+        sub: sel.brand + " \xB7 " + fuelStatusText(sel.status),
+        hint: "\u26FD \u0435\u0449\u0451 \u0440\u0430\u0437 \u2014 \u043E\u0442\u043C\u0435\u043D\u0430, \u0432\u0435\u0440\u043D\u0443\u0442\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442",
+        color: fuelColor(sel.status)
+      });
+      speak("\u0421\u0442\u0440\u043E\u044E \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u043A \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0439 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0435. " + sel.brand);
+      await rerouteToFuel();
+      setFuelPanel({ title: "\u26FD \u0411\u041B\u0418\u0416\u0410\u0419\u0428\u0410\u042F \u0417\u0410\u041F\u0420\u0410\u0412\u041A\u0410", dist: getRemainingDistance() });
+      onTick();
+    } else {
+      await cancelFuelAssist(true);
+    }
+  } finally {
+    updateFuelButton();
+    _fuelBusy = false;
+  }
+}
+async function cancelFuelAssist(reroute) {
+  const orig = S.fuelOrigFinish;
+  S.fuelMode = 0;
+  S.fuelSel = null;
+  S.fuelOrigFinish = null;
+  $("fuelPanel")?.classList.remove("on");
+  if (reroute && orig) {
+    S.finish = orig;
+    speak("\u041E\u0442\u043C\u0435\u043D\u0430. \u0412\u043E\u0437\u0432\u0440\u0430\u0442 \u043A \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443");
+    await rerouteToFuel();
+    onTick();
+  }
+}
+async function selectQuickFinish(id, loadFavs2, buildAndLoad) {
+  const fav = loadFavs2().find((f2) => f2.id === id);
+  if (!fav) return;
+  S.finish = { lat: fav.lat, lon: fav.lon, label: fav.name };
+  $("quickFinish").classList.remove("on");
+  $("mid-info").textContent = "\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u2026";
+  speak("\u041D\u043E\u0432\u044B\u0439 \u0444\u0438\u043D\u0438\u0448 " + fav.name + ". \u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430");
+  try {
+    await buildAndLoad();
+    S.camWarned.clear();
+    onTick();
+  } catch (e) {
+    console.warn("\u0421\u043C\u0435\u043D\u0430 \u0444\u0438\u043D\u0438\u0448\u0430 \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C:", e);
+    $("mid-info").textContent = "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430";
+  }
+}
+
 // js/main.js
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
+loadCurveOptsFromStorage();
 syncOptionsFromDom();
 updateCamStatusUI();
 bindSetupUI();

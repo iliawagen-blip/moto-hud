@@ -39,6 +39,9 @@
   <div class="status" id="s-finish">🏁 Финиш не задан</div>
   <div id="search-results" class="search-results" style="display:none"></div>
 
+  <div class="lbl-in">⭐ Мои места</div>
+  <div class="favs-list" id="favs-list"></div>
+
   <button type="button" class="secondary" id="btn-build-route" disabled>🗺 Построить маршрут</button>
 
   <!-- Карта и выбор маршрута (только настройка, не в HUD) -->
@@ -52,16 +55,6 @@
     <div class="route-info" id="route-info"></div>
   </div>
 
-  <div class="lbl-in">⭐ Мои места</div>
-  <div class="favs-list" id="favs-list"></div>
-  <div class="btnrow c4">
-    <button type="button" class="ic-lbl" id="btn-fav-save-finish" title="Сохранить текущий финиш"><span class="ic">💾</span><span class="lbl">Финиш</span></button>
-    <button type="button" class="ic-lbl" id="btn-fav-save-gps" title="Сохранить точку GPS"><span class="ic">📍</span><span class="lbl">GPS</span></button>
-    <button type="button" class="ic-lbl" id="btn-fav-export" title="Экспорт в файл"><span class="ic">📤</span><span class="lbl">Экспорт</span></button>
-    <button type="button" class="ic-lbl" id="btn-fav-import" title="Импорт из файла"><span class="ic">📥</span><span class="lbl">Импорт</span></button>
-  </div>
-  <input type="file" id="fav-file" accept="application/json,.json" style="display:none">
-
   <!-- ОПЦИИ — нативный details (работает без JS) -->
   <details class="setup-details" id="drawer-opts">
     <summary>⚙ Опции</summary>
@@ -72,6 +65,15 @@
       <div class="toggle" style="margin-top:8px">⛰ Высота полоски (px) <input type="number" id="opt-elev-profile-h" value="72" min="36" max="160" step="4"></div>
       <div class="toggle" style="margin-top:8px">⛰ Дальность профиля (км) <input type="number" id="opt-elev-profile-len" value="3" min="1" max="5" step="1"></div>
       <div class="toggle" style="margin-top:8px">⛰ Усиление рельефа (×) <input type="number" id="opt-elev-exag" value="1.8" min="0.5" max="5" step="0.1"></div>
+      <div class="toggle" style="margin-top:8px">🏍 Предупреждение скорости в поворотах <input type="checkbox" id="opt-curve-warn" checked></div>
+      <div class="toggle" style="margin-top:8px">
+        🏍 Строгость поворотов
+        <select id="opt-curve-strict" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px">
+          <option value="relaxed">мягче</option>
+          <option value="normal" selected>норма</option>
+          <option value="strict">строже</option>
+        </select>
+      </div>
       <div class="toggle" style="margin-top:8px">🧭 Компас N/E/S/W <input type="checkbox" id="opt-heading"></div>
       <div class="toggle" style="margin-top:8px">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
       <div class="toggle" style="margin-top:8px">🎯 Только камеры в спину <input type="checkbox" id="opt-back-only" checked></div>
@@ -87,6 +89,21 @@
     </div>
   </details>
 
+  <details class="setup-details" id="drawer-favs">
+    <summary>⭐ Избранное — редактирование</summary>
+    <div class="drawer-body">
+      <div class="hint" style="margin-bottom:10px">Сохранение, удаление, импорт и экспорт. В списке у финиша — только быстрый выбор.</div>
+      <div class="favs-list favs-edit-list" id="favs-edit-list"></div>
+      <div class="btnrow c4" style="margin-top:8px">
+        <button type="button" class="ic-lbl" id="btn-fav-save-finish" title="Сохранить текущий финиш"><span class="ic">💾</span><span class="lbl">Финиш</span></button>
+        <button type="button" class="ic-lbl" id="btn-fav-save-gps" title="Сохранить точку GPS"><span class="ic">📍</span><span class="lbl">GPS</span></button>
+        <button type="button" class="ic-lbl" id="btn-fav-export" title="Экспорт в файл"><span class="ic">📤</span><span class="lbl">Экспорт</span></button>
+        <button type="button" class="ic-lbl" id="btn-fav-import" title="Импорт из файла"><span class="ic">📥</span><span class="lbl">Импорт</span></button>
+      </div>
+      <input type="file" id="fav-file" accept="application/json,.json" style="display:none">
+    </div>
+  </details>
+
   <!-- ПОМОЩЬ — нативный details -->
   <details class="setup-details" id="drawer-help">
     <summary>❓ Как пользоваться</summary>
@@ -95,7 +112,7 @@
       <b>2. Маршрут:</b> «🗺 Построить маршрут» — карта с реальными дорогами (OSRM) и варианты. Выберите подложку и маршрут. Жёлтая кнопка «▶ ПОЕХАЛИ» закреплена внизу экрана.<br>
       <b>3. В пути (HUD):</b> крупная стрелка, скорость, прогноз-дорожка. Карты в движении нет — только то, что нужно на скорости.<br>
       <b>Кнопки HUD:</b> «ЭКРАН» — полный экран · «НАСТР.» — вернуться сюда · «⛽ ЗАПР.» — поиск АЗС · «СТОП» — завершить (двойной тап).<br>
-      <b>Места ⭐:</b> тап — подставить финиш. Долгое нажатие — удалить. 💾/📍 — сохранить.<br>
+      <b>Места ⭐:</b> тап в списке у финиша — подставить точку. Редактирование — в «⭐ Избранное — редактирование».<br>
       <b>Камера «в спину»:</b> объектив смотрит вслед уходящему мотоциклу (direction ≈ курс).<br>
       Данные мест хранятся в браузере этого устройства.
     </div>
@@ -180,7 +197,7 @@
 </div>
 
 <script src="js/sim.js"></script>
-<script type="module" src="js/app.js"></script>
+<script type="module" src="js/app.js?v=mr6o8g46"></script>
 
 </body>
 </html>

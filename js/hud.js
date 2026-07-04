@@ -14,8 +14,10 @@ import {
   fuelColor, fuelStatusText
 } from './fuel.js';
 import { updateCamStatusUI } from './cam-status.js';
-import { resetRouteSnap } from './route-geometry.js';
+import { resetRouteSnap, getRouteSnapForNav } from './route-geometry.js';
 import { ensureRouteGeometry } from './route.js';
+import { pickCurveVoiceWarn } from './curve-speed.js';
+import { renderFavs } from './favorites.js';
 
 export function checkCamerasILS(){
   if(!S.cams || !S.cameras.length) return;
@@ -120,7 +122,21 @@ export function onTick(){
     speak('Вы прибыли');
   }
   checkCamerasILS();
+  checkCurveSpeedWarn(kmh);
   refreshFuelPanel();
+}
+
+function checkCurveSpeedWarn(kmh){
+  if(!S.curveWarn || kmh < 20 || !S.route?.geometry?.curveReady) return;
+  const snap = getRouteSnapForNav(S.smoothedHeading);
+  if(!snap) return;
+  const speedMps = kmh / 3.6;
+  const warn = pickCurveVoiceWarn(S.route.geometry, snap.s, speedMps);
+  if(!warn || S.camWarned.has(warn.key)) return;
+  if(Date.now() - S.lastVoiceTs < 4000) return;
+  S.camWarned.add(warn.key);
+  S.lastVoiceTs = Date.now();
+  speak('Снизьте скорость перед поворотом. Рекомендуется ' + warn.vSafeKmh + ' километров в час');
 }
 
 export async function requestWakeLock(){
@@ -167,6 +183,7 @@ export function stopHud(){
   $('btn-fuel')?.classList.remove('active');
   $('hud').classList.remove('on');
   $('setup').style.display = 'block';
+  renderFavs();
   const goBar = $('go-bar');
   if(goBar) goBar.classList.toggle('hidden', !(S.route && S.route.coords?.length));
   if(S.wakeLock){ try{ S.wakeLock.release(); }catch(e){} S.wakeLock = null; }
