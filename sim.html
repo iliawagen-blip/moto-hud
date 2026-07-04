@@ -103,6 +103,7 @@
     <button type="button" id="btn-theme-hitech" class="theme-demo" title="Быстрый тест: оранжевый хайтек">⚡ Хайтек</button>
     <button type="button" id="btn-theme-vintage" class="theme-demo" title="Быстрый тест: VFD винтаж">📟 Винтаж</button>
     <span class="status" id="theme-status">HUD: …</span>
+    <span class="status" id="offroute-debug" title="S.offRouteState из iframe">offRoute: —</span>
   </div>
 
   <div class="tel-bar hidden" id="tel-replay-bar">
@@ -156,6 +157,7 @@
   const simTheme = document.getElementById('sim-theme');
   const simMode = document.getElementById('sim-mode');
   const themeStatus = document.getElementById('theme-status');
+  const offrouteDebug = document.getElementById('offroute-debug');
   const btnThemeHitech = document.getElementById('btn-theme-hitech');
   const btnThemeVintage = document.getElementById('btn-theme-vintage');
   const spd = document.getElementById('spd');
@@ -181,6 +183,16 @@
       const pref = simMode?.value || '?';
       return (names[id] || id) + ' · ' + mode + (pref === 'auto' ? ' (авто)' : '');
     }catch(e){ return null; }
+  }
+
+  function updateOffRouteDebug(){
+    if(!offrouteDebug) return;
+    try{
+      const st = frame.contentWindow?.__motoHUD?.S?.offRouteState;
+      offrouteDebug.textContent = 'offRoute: ' + (st || '—');
+    }catch(e){
+      offrouteDebug.textContent = 'offRoute: —';
+    }
   }
 
   function updateThemeStatus(){
@@ -320,8 +332,11 @@
   frame.addEventListener('load', () => {
     applyThemeInFrame(simTheme.value, simMode.value);
     setTimeout(updateThemeStatus, 300);
+    setTimeout(updateOffRouteDebug, 300);
     setTimeout(() => { const s = sim(); if(s) s.setSpeed(Number(spd.value) / 3.6); }, 800);
   });
+
+  setInterval(() => { updateThemeStatus(); updateOffRouteDebug(); }, 500);
 
   applySize();
   frame.src = frameUrl();

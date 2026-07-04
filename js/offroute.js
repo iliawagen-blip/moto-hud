@@ -30,6 +30,8 @@ export const HEADING_DIVERGE_DEG = 60;
 export const HEADING_DIVERGE_MS = 3000;
 /** Минимальная скорость для критерия расхождения курса, м/с */
 export const HEADING_DIVERGE_MIN_SPD = 5;
+/** Шаг озвучки «до маршрута» в OFFLINE_GUIDE, м */
+export const OFFLINE_VOICE_STEP_M = 200;
 
 const OFF_ROUTE_WARN_OK = '◆ ПЕРЕСЧЁТ МАРШРУТА ◆';
 const OFF_ROUTE_WARN_FAIL = '◆ НЕТ СВЯЗИ — ВЕРНИТЕСЬ НА МАРШРУТ ◆';
@@ -129,6 +131,32 @@ function pickSuspectTrigger(now){
   return null;
 }
 
+function enterOfflineGuide(feed){
+  showOfflineWarn();
+  resetSuspectCtx();
+  resetOfflineCtx();
+  tickOfflineGuideVoice(feed.lateral);
+}
+
+function tickOfflineGuideVoice(lateral){
+  if(!S.voice || lateral == null) return;
+  if(!_ctx.offlineEntryVoice){
+    _ctx.offlineEntryVoice = true;
+    _ctx.offlineVoiceBucket = Math.ceil(lateral / OFFLINE_VOICE_STEP_M) * OFFLINE_VOICE_STEP_M;
+    speak('Нет связи. Возвращаю на маршрут');
+    S.lastVoiceTs = Date.now();
+    return;
+  }
+  const bucket = Math.ceil(lateral / OFFLINE_VOICE_STEP_M) * OFFLINE_VOICE_STEP_M;
+  if(_ctx.offlineVoiceBucket == null) _ctx.offlineVoiceBucket = bucket;
+  if(bucket <= _ctx.offlineVoiceBucket - OFFLINE_VOICE_STEP_M){
+    _ctx.offlineVoiceBucket = bucket;
+    if(Date.now() - S.lastVoiceTs < 3000) return;
+    speak('До маршрута ' + Math.round(lateral) + ' метров');
+    S.lastVoiceTs = Date.now();
+  }
+}
+
 function beginReroute(fromState, feed, trigger){
   if(_ctx.rerouteBusy || S.offRouteState === OffRouteState.REROUTING) return;
   _ctx.rerouteBusy = true;
@@ -142,8 +170,7 @@ function beginReroute(fromState, feed, trigger){
       showRerouteOk();
     } else {
       transition(OffRouteState.REROUTING, OffRouteState.OFFLINE_GUIDE, metaFromFeed(feed));
-      showOfflineWarn();
-      resetSuspectCtx();
+      enterOfflineGuide(feed);
     }
   });
 }
@@ -202,6 +229,7 @@ export function tickOffRouteMachine(feed){
   }
 
   if(S.offRouteState === OffRouteState.OFFLINE_GUIDE){
+    tickOfflineGuideVoice(feed.lateral);
     if(S.rerouteBackoffUntil && now >= S.rerouteBackoffUntil){
       transition(OffRouteState.OFFLINE_GUIDE, OffRouteState.SUSPECT, metaFromFeed(feed));
       beginReroute(OffRouteState.SUSPECT, { ...feed, trigger: 'backoff_retry' }, 'backoff_retry');
