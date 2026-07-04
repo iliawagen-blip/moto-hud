@@ -191,6 +191,23 @@ export function nearestOverall(exclude){
   return cands[0] || null;
 }
 
+/** Ближайшие АЗС по прямой (после ensureFuelStations + recomputeFuelGeometry) */
+export async function searchNearestFuelStations(limit){
+  await ensureFuelStations(true);
+  recomputeFuelGeometry();
+  return S.fuelStations
+    .filter(s => s.distGps != null && isFinite(s.distGps))
+    .sort((a, b) => a.distGps - b.distGps)
+    .slice(0, Math.max(1, limit || 5));
+}
+
+/** Форматирование расстояния до АЗС для списка планировщика */
+export function formatFuelDist(m){
+  if(m == null || !isFinite(m)) return '—';
+  if(m < 1000) return Math.round(m) + ' м';
+  return (m / 1000).toFixed(1).replace('.', ',') + ' км';
+}
+
 /** Предзагрузка АЗС для карты setup (не блокирует UI) */
 export async function prefetchFuelForMap(){
   try{

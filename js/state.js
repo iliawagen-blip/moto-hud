@@ -1,4 +1,10 @@
 /** Глобальное состояние приложения и раскладка HUD */
+
+/** Количество АЗС в списке планировщика по умолчанию */
+export const DEFAULT_FUEL_PLANNER_COUNT = 5;
+export const MIN_FUEL_PLANNER_COUNT = 1;
+export const MAX_FUEL_PLANNER_COUNT = 10;
+
 export const S = {
   gps: null,
   finish: null,
@@ -41,6 +47,9 @@ export const S = {
   showFinishDist: true,
   showFinishEta: true,
   showFinishTime: true,
+
+  /** Сколько ближайших АЗС показывать в планировщике (1–10) */
+  fuelPlannerCount: DEFAULT_FUEL_PLANNER_COUNT,
 
   // Топливный ассистент
   fuelStations: [],       // [{lat,lon,brand,name,osmId,status,distGps,offRoute,distAhead,aheadOnRoute}]

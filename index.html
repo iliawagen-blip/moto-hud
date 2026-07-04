@@ -36,7 +36,7 @@
 })();
 </script>
 <link rel="stylesheet" href="css/leaflet.css">
-<link rel="stylesheet" href="css/app.css?v=mr6yyocv">
+<link rel="stylesheet" href="css/app.css?v=mr6zw6t9">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -64,20 +64,22 @@
     <button type="button" class="ic-lbl" id="btn-parse" title="Координаты / ссылка"><span class="ic">📌</span><span class="lbl">Коорд.</span></button>
     <button type="button" class="ic-lbl" id="btn-paste" title="Вставить из буфера"><span class="ic">📋</span><span class="lbl">Буфер</span></button>
   </div>
+  <button type="button" class="secondary fuel-search-btn" id="btn-fuel-search">⛽ Ближайшие заправки</button>
   <div class="status" id="s-finish">🏁 Финиш не задан</div>
   <div id="search-results" class="search-results" style="display:none"></div>
 
   <div class="lbl-in">⭐ Мои места</div>
   <div class="favs-list" id="favs-list"></div>
 
+  <div class="map-provider-row">
+    <label class="map-provider-lbl" for="opt-map">🗺 Подложка карты</label>
+    <select id="opt-map" class="map-select" aria-label="Выбор подложки карты"></select>
+  </div>
+
   <button type="button" class="secondary" id="btn-build-route" disabled>🗺 Построить маршрут</button>
 
-  <!-- Карта и выбор маршрута (только настройка, не в HUD) -->
+  <!-- Карта маршрута и варианты (после построения) -->
   <div id="route-section" class="route-section hidden">
-    <div class="map-provider-row">
-      <label class="map-provider-lbl" for="opt-map">🗺 Подложка карты</label>
-      <select id="opt-map" class="map-select" aria-label="Выбор подложки карты"></select>
-    </div>
     <div id="route-map" class="route-map" aria-label="Карта маршрута"></div>
     <div id="route-alts" class="route-alts"></div>
     <div class="route-info" id="route-info"></div>
@@ -132,6 +134,7 @@
         <div class="hint" style="margin-top:6px;font-size:13px">На стоянке: медленная «восьмёрка» телефоном 15 с — снижает помехи от рамы/электрики.</div>
       </div>
       <div class="toggle" style="margin-top:8px">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
+      <div class="toggle" style="margin-top:8px">⛽ Заправок в списке <input type="number" id="opt-fuel-count" value="5" min="1" max="10" step="1"></div>
       <div class="toggle" style="margin-top:8px">🎯 Только камеры в спину <input type="checkbox" id="opt-back-only" checked></div>
       <div class="toggle" style="margin-top:8px">⚙ Допуск направления (°) <input type="number" id="opt-tol" value="45" min="10" max="90"></div>
       <div class="toggle" style="margin-top:8px">
@@ -274,7 +277,7 @@
 </div>
 
 <script src="js/sim.js"></script>
-<script type="module" src="js/app.js?v=mr6yyocv"></script>
+<script type="module" src="js/app.js?v=mr6zw6t9"></script>
 
 </body>
 </html>

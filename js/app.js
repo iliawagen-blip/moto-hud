@@ -10638,6 +10638,9 @@ function applyThemeCss() {
 }
 
 // js/state.js
+var DEFAULT_FUEL_PLANNER_COUNT = 5;
+var MIN_FUEL_PLANNER_COUNT = 1;
+var MAX_FUEL_PLANNER_COUNT = 10;
 var S = {
   gps: null,
   finish: null,
@@ -10683,6 +10686,8 @@ var S = {
   showFinishDist: true,
   showFinishEta: true,
   showFinishTime: true,
+  /** Сколько ближайших АЗС показывать в планировщике (1–10) */
+  fuelPlannerCount: DEFAULT_FUEL_PLANNER_COUNT,
   // Топливный ассистент
   fuelStations: [],
   // [{lat,lon,brand,name,osmId,status,distGps,offRoute,distAhead,aheadOnRoute}]
@@ -13128,6 +13133,16 @@ function nearestOverall(exclude) {
   cands.sort((a, b) => a.distGps - b.distGps);
   return cands[0] || null;
 }
+async function searchNearestFuelStations(limit) {
+  await ensureFuelStations(true);
+  recomputeFuelGeometry();
+  return S.fuelStations.filter((s2) => s2.distGps != null && isFinite(s2.distGps)).sort((a, b) => a.distGps - b.distGps).slice(0, Math.max(1, limit || 5));
+}
+function formatFuelDist(m) {
+  if (m == null || !isFinite(m)) return "\u2014";
+  if (m < 1e3) return Math.round(m) + " \u043C";
+  return (m / 1e3).toFixed(1).replace(".", ",") + " \u043A\u043C";
+}
 async function prefetchFuelForMap() {
   try {
     await ensureFuelStations(true);
@@ -14117,15 +14132,27 @@ function loadHudOptsFromStorage() {
       const el = $("opt-finish-eta");
       if (el) el.checked = o.showFinishEta;
     }
+    if (typeof o.fuelPlannerCount === "number") {
+      S.fuelPlannerCount = clampFuelPlannerCount(o.fuelPlannerCount);
+      const el = $("opt-fuel-count");
+      if (el) el.value = String(S.fuelPlannerCount);
+    }
   } catch (e) {
   }
+}
+function clampFuelPlannerCount(n) {
+  return Math.max(MIN_FUEL_PLANNER_COUNT, Math.min(
+    MAX_FUEL_PLANNER_COUNT,
+    parseInt(n, 10) || DEFAULT_FUEL_PLANNER_COUNT
+  ));
 }
 function saveHudOptsToStorage() {
   try {
     localStorage.setItem(HUD_OPTS_KEY, JSON.stringify({
       showFinishDist: !!S.showFinishDist,
       showFinishTime: !!S.showFinishTime,
-      showFinishEta: !!S.showFinishEta
+      showFinishEta: !!S.showFinishEta,
+      fuelPlannerCount: clampFuelPlannerCount(S.fuelPlannerCount)
     }));
   } catch (e) {
   }
@@ -14673,6 +14700,73 @@ async function doAddressSearch() {
     if (window.__motoHUD) window.__motoHUD._searchBusy = false;
   }
 }
+function applyFuelFinish(st) {
+  const brand = st.brand || st.name || "\u0410\u0417\u0421";
+  S.finish = { lat: st.lat, lon: st.lon, label: "\u26FD " + brand };
+  const inputVal = st.name && st.name !== st.brand ? brand + " \u2014 " + st.name : brand;
+  $("finish-input").value = inputVal;
+  $("finish-input").dataset.userEdited = "1";
+  $("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + inputVal + " \xB7 " + formatFuelDist(st.distGps);
+  $("s-finish").className = "status ok";
+  invalidateRoute();
+  checkStartReady();
+}
+function fuelStationMetaLine(st) {
+  const parts = ['<span class="fuel-st ' + (st.status || "unknown") + '">' + escapeHtml(fuelStatusText(st.status)) + "</span>"];
+  if (st.confirmations) parts.push("\u043E\u0442\u0447\u0451\u0442\u043E\u0432: " + st.confirmations);
+  if (st.lastAt) parts.push("\u0434\u0430\u043D\u043D\u044B\u0435: " + escapeHtml(String(st.lastAt).split(" ")[0]));
+  return parts.join(" \xB7 ");
+}
+async function doFuelSearch() {
+  if (!S.gps) {
+    $("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 GPS (\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u{1F4CD} GPS)";
+    $("s-finish").className = "status err";
+    return;
+  }
+  const btn = $("btn-fuel-search");
+  const prev = btn?.textContent;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0410\u0417\u0421\u2026";
+  }
+  $("s-finish").textContent = "\u23F3 \u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A\u2026";
+  $("s-finish").className = "status";
+  try {
+    syncOptionsFromDom();
+    const limit = clampFuelPlannerCount(S.fuelPlannerCount);
+    const list = await searchNearestFuelStations(limit);
+    const box = $("search-results");
+    box.innerHTML = "";
+    if (!list.length) {
+      $("s-finish").textContent = "\u274C \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438";
+      $("s-finish").className = "status err";
+      box.style.display = "none";
+      return;
+    }
+    list.forEach((st) => {
+      const row = document.createElement("div");
+      row.className = "fuel-item";
+      row.innerHTML = '<div class="fuel-title"><span>\u26FD ' + escapeHtml(st.brand || st.name || "\u0410\u0417\u0421") + '</span><span class="fuel-dist">' + formatFuelDist(st.distGps) + "</span></div>" + (st.name && st.name !== st.brand ? '<div class="fuel-meta">' + escapeHtml(st.name) + "</div>" : "") + '<div class="fuel-meta">' + fuelStationMetaLine(st) + "</div>";
+      row.addEventListener("click", () => {
+        applyFuelFinish(st);
+        box.style.display = "none";
+      });
+      box.appendChild(row);
+    });
+    box.style.display = "block";
+    box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    $("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")";
+    $("s-finish").className = "status";
+  } catch (e) {
+    $("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0410\u0417\u0421: " + e.message;
+    $("s-finish").className = "status err";
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = prev || "\u26FD \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0438";
+    }
+  }
+}
 function setFinishQuiet(lat, lon, label = "\u0422\u043E\u0447\u043A\u0430") {
   S.finish = { lat, lon, label };
   $("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + lat.toFixed(5) + ", " + lon.toFixed(5);
@@ -14718,6 +14812,7 @@ function bindSetupUI() {
   initMapProviderSelect();
   $("s-gps").addEventListener("click", startGps);
   $("btn-search").addEventListener("click", doAddressSearch);
+  $("btn-fuel-search")?.addEventListener("click", doFuelSearch);
   $("btn-parse").addEventListener("click", applyCoordsOrLink);
   $("btn-build-route").addEventListener("click", doBuildRoute);
   $("finish-input").addEventListener("input", () => {
@@ -14793,6 +14888,11 @@ function bindSetupUI() {
   bindFinishOpt("opt-finish-dist");
   bindFinishOpt("opt-finish-time");
   bindFinishOpt("opt-finish-eta");
+  $("opt-fuel-count")?.addEventListener("change", (e) => {
+    S.fuelPlannerCount = clampFuelPlannerCount(e.target.value);
+    e.target.value = String(S.fuelPlannerCount);
+    saveHudOptsToStorage();
+  });
   function syncElevInputs() {
     const on = S.showElevProfile;
     const exag = $("opt-elev-exag");
@@ -14917,6 +15017,8 @@ function syncOptionsFromDom() {
   S.showFinishTime = $("opt-finish-time")?.checked ?? true;
   S.showFinishEta = $("opt-finish-eta")?.checked ?? true;
   applyFinishInfoVisibility();
+  S.fuelPlannerCount = clampFuelPlannerCount($("opt-fuel-count")?.value);
+  if ($("opt-fuel-count")) $("opt-fuel-count").value = String(S.fuelPlannerCount);
   S.showElevProfile = $("opt-elev-profile").checked;
   S.elevExag = Math.max(0.5, Math.min(5, parseFloat($("opt-elev-exag").value) || DEFAULT_ELEV_EXAG));
   S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
