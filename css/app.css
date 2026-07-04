@@ -1,5 +1,6 @@
 @import "fonts.css";
 @import "tokens-base.css";
+@import "themes-bundle.css";
 
 html, body{background:var(--bg);color:var(--fg)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -213,6 +214,7 @@ html,body{height:100%;overflow:hidden}
 .corner-btn.fuel.active{background:rgba(255,149,0,.9);color:#000;border-color:#ff9500}
 .corner-btn.fuel.active .cb-lbl{color:#000}
 .btn-gear{top:calc(env(safe-area-inset-top) + 26px);right:6px}
+.btn-mode{top:calc(env(safe-area-inset-top) + 76px);left:6px}
 .btn-fs{top:calc(env(safe-area-inset-top) + 26px);left:6px}
 .btn-stop{bottom:calc(env(safe-area-inset-bottom) + 6px);right:6px}
 .btn-fuel{bottom:calc(env(safe-area-inset-bottom) + 6px);left:6px}

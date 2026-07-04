@@ -54,6 +54,23 @@
     <button id="btn-play" class="ok">⏸ Пауза</button>
     <button id="btn-reset">↺ Сброс</button>
     <button id="btn-reload">⟳ Перезагрузить</button>
+    <label>Тема
+      <select id="sim-theme">
+        <option value="avionics">Авионика</option>
+        <option value="hitech">Хайтек</option>
+        <option value="space">Космос</option>
+        <option value="sport">Спорт</option>
+        <option value="chopper">Чоппер</option>
+        <option value="vintage">Винтаж</option>
+      </select>
+    </label>
+    <label>Режим
+      <select id="sim-mode">
+        <option value="day">День</option>
+        <option value="night" selected>Ночь</option>
+        <option value="auto">Авто</option>
+      </select>
+    </label>
     <button id="btn-gpx-demo" title="Демо-трек с timestamps">📍 GPX демо</button>
     <label>GPX файл
       <input type="file" id="gpx-file" accept=".gpx,application/gpx+xml" style="max-width:180px;font-size:11px">
@@ -68,6 +85,7 @@
 
   <div class="hint">
     Маршрут и движение эмулируются автоматически: HUD стартует сам через ~1 с.
+    <strong>Адрес:</strong> «НАСТР.» → очистите поле финиша → «🔎 Найти» (демо-координаты не мешают поиску).
     <strong>GPX replay:</strong> загрузите файл или «GPX демо» — GPS идёт по треку; при timestamps скорость берётся из записи.
     URL: <code>?sim=1&amp;gpx=fixtures/serpentine-demo.gpx</code>.
     Авто-HUD: только если финиш пуст (демо) или <code>?autohud=1</code>.
@@ -91,6 +109,8 @@
   const btnReload = document.getElementById('btn-reload');
   const btnGpxDemo = document.getElementById('btn-gpx-demo');
   const gpxFile = document.getElementById('gpx-file');
+  const simTheme = document.getElementById('sim-theme');
+  const simMode = document.getElementById('sim-mode');
   const spd = document.getElementById('spd');
   const spdVal = document.getElementById('spd-val');
 
@@ -142,6 +162,27 @@
     const s = sim();
     if(s){ s.reset(); s.setSpeed(Number(spd.value) / 3.6); playing = true; btnPlay.textContent = '⏸ Пауза'; }
   });
+  function applyThemeInFrame(theme, mode){
+    try{
+      localStorage.setItem('moto-hud-theme', JSON.stringify({ theme, modePref: mode }));
+    }catch(e){}
+    const win = frame.contentWindow;
+    if(win?.applyTheme){
+      win.applyTheme(theme, mode);
+      return;
+    }
+    frame.src = frameUrl();
+  }
+
+  try{
+    const saved = JSON.parse(localStorage.getItem('moto-hud-theme')||'{}');
+    if(saved.theme) simTheme.value = saved.theme;
+    if(saved.modePref) simMode.value = saved.modePref;
+  }catch(e){}
+
+  simTheme?.addEventListener('change', () => applyThemeInFrame(simTheme.value, simMode.value));
+  simMode?.addEventListener('change', () => applyThemeInFrame(simTheme.value, simMode.value));
+
   btnReload.addEventListener('click', () => { frame.src = frameUrl(); });
 
   async function applyGpxInFrame(text, loop){
