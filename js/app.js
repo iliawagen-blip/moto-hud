@@ -761,6 +761,139 @@ var init_web2 = __esm({
   }
 });
 
+// node_modules/@capacitor-community/text-to-speech/dist/esm/definitions.js
+var QueueStrategy;
+var init_definitions = __esm({
+  "node_modules/@capacitor-community/text-to-speech/dist/esm/definitions.js"() {
+    (function(QueueStrategy2) {
+      QueueStrategy2[QueueStrategy2["Flush"] = 0] = "Flush";
+      QueueStrategy2[QueueStrategy2["Add"] = 1] = "Add";
+    })(QueueStrategy || (QueueStrategy = {}));
+  }
+});
+
+// node_modules/@capacitor-community/text-to-speech/dist/esm/web.js
+var web_exports3 = {};
+__export(web_exports3, {
+  TextToSpeechWeb: () => TextToSpeechWeb
+});
+var TextToSpeechWeb;
+var init_web3 = __esm({
+  "node_modules/@capacitor-community/text-to-speech/dist/esm/web.js"() {
+    init_dist();
+    TextToSpeechWeb = class extends WebPlugin {
+      constructor() {
+        super();
+        this.speechSynthesis = null;
+        if ("speechSynthesis" in window) {
+          this.speechSynthesis = window.speechSynthesis;
+          window.addEventListener("beforeunload", () => {
+            this.stop();
+          });
+        }
+      }
+      async speak(options) {
+        if (!this.speechSynthesis) {
+          this.throwUnsupportedError();
+        }
+        await this.stop();
+        const speechSynthesis2 = this.speechSynthesis;
+        const utterance = this.createSpeechSynthesisUtterance(options);
+        return new Promise((resolve, reject) => {
+          utterance.onend = () => {
+            resolve();
+          };
+          utterance.onerror = (event) => {
+            reject(event);
+          };
+          speechSynthesis2.speak(utterance);
+        });
+      }
+      async stop() {
+        if (!this.speechSynthesis) {
+          this.throwUnsupportedError();
+        }
+        this.speechSynthesis.cancel();
+      }
+      async getSupportedLanguages() {
+        const voices = this.getSpeechSynthesisVoices();
+        const languages = voices.map((voice) => voice.lang);
+        const filteredLanguages = languages.filter((v, i, a) => a.indexOf(v) == i);
+        return { languages: filteredLanguages };
+      }
+      async getSupportedVoices() {
+        const voices = this.getSpeechSynthesisVoices();
+        return { voices };
+      }
+      async isLanguageSupported(options) {
+        const result = await this.getSupportedLanguages();
+        const isLanguageSupported = result.languages.includes(options.lang);
+        return { supported: isLanguageSupported };
+      }
+      async openInstall() {
+        this.throwUnimplementedError();
+      }
+      createSpeechSynthesisUtterance(options) {
+        const voices = this.getSpeechSynthesisVoices();
+        const utterance = new SpeechSynthesisUtterance();
+        const { text, lang, rate, pitch, volume, voice } = options;
+        if (voice) {
+          utterance.voice = voices[voice];
+        }
+        if (volume) {
+          utterance.volume = volume >= 0 && volume <= 1 ? volume : 1;
+        }
+        if (rate) {
+          utterance.rate = rate >= 0.1 && rate <= 10 ? rate : 1;
+        }
+        if (pitch) {
+          utterance.pitch = pitch >= 0 && pitch <= 2 ? pitch : 2;
+        }
+        if (lang) {
+          utterance.lang = lang;
+        }
+        utterance.text = text;
+        return utterance;
+      }
+      getSpeechSynthesisVoices() {
+        if (!this.speechSynthesis) {
+          this.throwUnsupportedError();
+        }
+        if (!this.supportedVoices || this.supportedVoices.length < 1) {
+          this.supportedVoices = this.speechSynthesis.getVoices();
+        }
+        return this.supportedVoices;
+      }
+      throwUnsupportedError() {
+        throw this.unavailable("SpeechSynthesis API not available in this browser.");
+      }
+      throwUnimplementedError() {
+        throw this.unimplemented("Not implemented on web.");
+      }
+    };
+  }
+});
+
+// node_modules/@capacitor-community/text-to-speech/dist/esm/index.js
+var esm_exports = {};
+__export(esm_exports, {
+  QueueStrategy: () => QueueStrategy,
+  TextToSpeech: () => TextToSpeech
+});
+var TextToSpeech;
+var init_esm = __esm({
+  "node_modules/@capacitor-community/text-to-speech/dist/esm/index.js"() {
+    init_dist();
+    init_definitions();
+    TextToSpeech = registerPlugin("TextToSpeech", {
+      web: () => Promise.resolve().then(() => (init_web3(), web_exports3)).then((m) => new m.TextToSpeechWeb())
+    });
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis;
+    }
+  }
+});
+
 // node_modules/leaflet/dist/leaflet-src.js
 var require_leaflet_src = __commonJS({
   "node_modules/leaflet/dist/leaflet-src.js"(exports, module) {
@@ -10311,6 +10444,139 @@ var require_leaflet_src = __commonJS({
   }
 });
 
+// node_modules/@capacitor-community/keep-awake/dist/esm/definitions.js
+var init_definitions2 = __esm({
+  "node_modules/@capacitor-community/keep-awake/dist/esm/definitions.js"() {
+  }
+});
+
+// node_modules/@capacitor-community/keep-awake/dist/esm/web.js
+var web_exports4 = {};
+__export(web_exports4, {
+  KeepAwakeWeb: () => KeepAwakeWeb
+});
+var KeepAwakeWeb;
+var init_web4 = __esm({
+  "node_modules/@capacitor-community/keep-awake/dist/esm/web.js"() {
+    init_dist();
+    KeepAwakeWeb = class extends WebPlugin {
+      constructor() {
+        super(...arguments);
+        this.wakeLock = null;
+        this._isSupported = typeof navigator !== "undefined" && "wakeLock" in navigator;
+        this.handleVisibilityChange = () => {
+          if (document.visibilityState === "visible")
+            this.keepAwake();
+        };
+      }
+      async keepAwake() {
+        if (!this._isSupported) {
+          this.throwUnsupportedError();
+        }
+        if (this.wakeLock) {
+          await this.allowSleep();
+        }
+        this.wakeLock = await navigator.wakeLock.request("screen");
+        document.addEventListener("visibilitychange", this.handleVisibilityChange);
+        document.addEventListener("fullscreenchange", this.handleVisibilityChange);
+      }
+      async allowSleep() {
+        var _a;
+        if (!this._isSupported) {
+          this.throwUnsupportedError();
+        }
+        (_a = this.wakeLock) === null || _a === void 0 ? void 0 : _a.release();
+        this.wakeLock = null;
+        document.removeEventListener("visibilitychange", this.handleVisibilityChange);
+        document.removeEventListener("fullscreenchange", this.handleVisibilityChange);
+      }
+      async isSupported() {
+        const result = {
+          isSupported: this._isSupported
+        };
+        return result;
+      }
+      async isKeptAwake() {
+        if (!this._isSupported) {
+          this.throwUnsupportedError();
+        }
+        const result = {
+          isKeptAwake: !!this.wakeLock
+        };
+        return result;
+      }
+      throwUnsupportedError() {
+        throw this.unavailable("Screen Wake Lock API not available in this browser.");
+      }
+    };
+  }
+});
+
+// node_modules/@capacitor-community/keep-awake/dist/esm/index.js
+var esm_exports2 = {};
+__export(esm_exports2, {
+  KeepAwake: () => KeepAwake
+});
+var KeepAwake;
+var init_esm2 = __esm({
+  "node_modules/@capacitor-community/keep-awake/dist/esm/index.js"() {
+    init_dist();
+    init_definitions2();
+    KeepAwake = registerPlugin("KeepAwake", {
+      web: () => Promise.resolve().then(() => (init_web4(), web_exports4)).then((m) => new m.KeepAwakeWeb())
+    });
+  }
+});
+
+// js/theme.js
+var THEME = {
+  bg: "#000000",
+  fg: "#ffffff",
+  dim: "#8b9cb3",
+  accent: "#ffd400",
+  ok: "#39d353",
+  warn: "#ff6b6b",
+  alert: "#ff2d2d",
+  panel: "#0a0f16",
+  panel2: "#141d2a",
+  border: "#1a2332",
+  hud: "#00ff88",
+  hudDim: "#00aa5c",
+  ribbonFill: "#00aa5c",
+  curveYellow: "#ffd400",
+  curveRed: "#ff6644",
+  routeStart: "#39d353",
+  routeFinish: "#ffd400",
+  routeAlts: ["#00ff88", "#66ccff", "#ffd400"],
+  grade: { flat: "#00ff88", mid: "#ffd400", steep: "#ff6644" },
+  fuel: {
+    yes: "#39d353",
+    queue: "#ffd400",
+    low: "#ff9500",
+    no: "#ff3b30",
+    unknown: "#66ccff"
+  }
+};
+var FUEL_COLORS = THEME.fuel;
+function applyThemeCss() {
+  if (typeof document === "undefined") return;
+  const r = document.documentElement;
+  const t = THEME;
+  r.style.setProperty("--bg", t.bg);
+  r.style.setProperty("--fg", t.fg);
+  r.style.setProperty("--dim", t.dim);
+  r.style.setProperty("--accent", t.accent);
+  r.style.setProperty("--ok", t.ok);
+  r.style.setProperty("--warn", t.warn);
+  r.style.setProperty("--alert", t.alert);
+  r.style.setProperty("--panel", t.panel);
+  r.style.setProperty("--panel2", t.panel2);
+  r.style.setProperty("--border", t.border);
+  r.style.setProperty("--hud", t.hud);
+  r.style.setProperty("--hud-dim", t.hudDim);
+  r.style.setProperty("--amber", t.accent);
+}
+
 // js/state.js
 var S = {
   gps: null,
@@ -10401,18 +10667,6 @@ var MAX_ELEV_PROFILE_H = 160;
 var DEFAULT_ELEV_PROFILE_LEN_KM = 3;
 var MIN_ELEV_PROFILE_LEN_KM = 1;
 var MAX_ELEV_PROFILE_LEN_KM = 5;
-var FUEL_COLORS = {
-  yes: "#39d353",
-  // есть
-  queue: "#ffd400",
-  // очередь
-  low: "#ff9500",
-  // мало
-  no: "#ff3b30",
-  // нет
-  unknown: "#66ccff"
-  // нет данных о наличии — нейтральный
-};
 var FUEL_CORRIDOR = 600;
 
 // js/geo.js
@@ -10653,6 +10907,107 @@ async function stopNavGps() {
   }
 }
 
+// js/heading.js
+var sensorHeading = null;
+var sensorTs = 0;
+var listening = false;
+var forceGps = false;
+var disagreeSince = 0;
+var calibratingUntil = 0;
+var DISAGREE_DEG = 55;
+var DISAGREE_MS = 4500;
+var RECOVER_DEG = 28;
+function readOrientation(e) {
+  let h = null;
+  if (typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)) {
+    h = e.webkitCompassHeading;
+  } else if (e.absolute && e.alpha != null && !isNaN(e.alpha)) {
+    h = (360 - e.alpha) % 360;
+  }
+  if (h == null || isNaN(h)) return;
+  sensorHeading = (h + 360) % 360;
+  sensorTs = Date.now();
+}
+function blendAngles(a, b, wB) {
+  const r = Math.PI / 180;
+  const sx = Math.sin(a * r) * (1 - wB) + Math.sin(b * r) * wB;
+  const sy = Math.cos(a * r) * (1 - wB) + Math.cos(b * r) * wB;
+  return (Math.atan2(sx, sy) * 180 / Math.PI + 360) % 360;
+}
+function startHeadingSensors() {
+  if (listening || typeof window === "undefined") return;
+  window.addEventListener("deviceorientationabsolute", readOrientation, true);
+  window.addEventListener("deviceorientation", readOrientation, true);
+  listening = true;
+}
+async function requestHeadingPermission() {
+  const DO = window.DeviceOrientationEvent;
+  if (DO && typeof DO.requestPermission === "function") {
+    try {
+      const st = await DO.requestPermission();
+      return st === "granted";
+    } catch (e) {
+      return false;
+    }
+  }
+  return true;
+}
+function startCompassCalibration(durationMs = 15e3) {
+  calibratingUntil = Date.now() + durationMs;
+  forceGps = false;
+  disagreeSince = 0;
+  startHeadingSensors();
+}
+function isCalibrating() {
+  return Date.now() < calibratingUntil;
+}
+function getHeadingHealth() {
+  return {
+    forceGps,
+    calibrating: isCalibrating(),
+    interference: forceGps && !isCalibrating(),
+    sensorFresh: sensorHeading != null && Date.now() - sensorTs < 2500
+  };
+}
+function updateHeadingHealth(gpsHeading, speedMps) {
+  const spd = speedMps ?? 0;
+  const sensorFresh = sensorHeading != null && Date.now() - sensorTs < 2500;
+  if (isCalibrating()) {
+    forceGps = false;
+    disagreeSince = 0;
+    return getHeadingHealth();
+  }
+  if (!sensorFresh || gpsHeading == null || isNaN(gpsHeading)) {
+    disagreeSince = 0;
+    return getHeadingHealth();
+  }
+  const diff = angleDiff(gpsHeading, sensorHeading);
+  if (spd < 8 && diff > DISAGREE_DEG) {
+    if (!disagreeSince) disagreeSince = Date.now();
+    else if (Date.now() - disagreeSince > DISAGREE_MS) forceGps = true;
+  } else {
+    disagreeSince = 0;
+    if (diff < RECOVER_DEG && spd > 4) forceGps = false;
+  }
+  return getHeadingHealth();
+}
+function fuseHeading(gpsHeading, speedMps) {
+  const sensorFresh = sensorHeading != null && Date.now() - sensorTs < 2500;
+  const spd = speedMps ?? 0;
+  if (forceGps && !isCalibrating() && gpsHeading != null && !isNaN(gpsHeading) && spd >= 3.2) {
+    return gpsHeading;
+  }
+  if (!sensorFresh) return gpsHeading ?? null;
+  const gpsWeight = Math.min(1, Math.max(0, (spd - 1.5) / 8));
+  if (gpsHeading == null || isNaN(gpsHeading)) return sensorHeading;
+  if (gpsWeight >= 0.95) return gpsHeading;
+  if (gpsWeight <= 0.05) return sensorHeading;
+  if (angleDiff(gpsHeading, sensorHeading) > 45 && spd < 3) {
+    return sensorHeading;
+  }
+  return blendAngles(gpsHeading, sensorHeading, 1 - gpsWeight);
+}
+
 // js/gps.js
 var RENDER_POS = null;
 var _navMode = false;
@@ -10745,6 +11100,9 @@ function applyGpsFix(next) {
       next.speed = S.measSpeed;
     }
   }
+  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
+  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
+  if (fused != null && !isNaN(fused)) next.heading = fused;
   if (next.heading != null && !isNaN(next.heading)) {
     if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
     else {
@@ -10796,6 +11154,7 @@ function startWebGps() {
 }
 function startGps() {
   _navMode = false;
+  startHeadingSensors();
   if (isNative()) {
     $("s-gps").textContent = "\u23F3 GPS\u2026";
     $("s-gps").className = "chip";
@@ -11394,6 +11753,11 @@ function remainingDistanceS(geom, snap) {
 var CURVE_R_WARN = 100;
 var MIN_CURVE_LEN_M = 25;
 var G = 9.81;
+var RIBBON_HYST = 0.06;
+var _ribbonState = /* @__PURE__ */ new Map();
+function resetCurveRibbonState() {
+  _ribbonState.clear();
+}
 var PRESETS = {
   relaxed: { aLat: 0.28 * G, yellow: 1, red: 1.12 },
   normal: { aLat: 0.32 * G, yellow: 0.88, red: 1.02 },
@@ -11431,6 +11795,7 @@ function applySafeSpeedAtS(geom, s2, vSafe) {
 }
 function computeCurveSpeed(geom, route) {
   if (!geom || geom.n < 3) return;
+  resetCurveRibbonState();
   const n = geom.n;
   const params = getCurveParams();
   geom.radius = new Float64Array(n);
@@ -11584,8 +11949,20 @@ function ribbonCurveColor(sMid, geom, speedMps) {
   if (!isFinite(vSafe) || vSafe < 2) return null;
   const ratio = speedMps / vSafe;
   const { yellow, red } = getCurveParams();
-  if (ratio >= red) return "#ff6644";
-  if (ratio >= yellow) return "#ffd400";
+  const spanKey = Math.round(span.sEntry);
+  let state = _ribbonState.get(spanKey) || null;
+  if (state === "red") {
+    if (ratio < red - RIBBON_HYST) state = ratio >= yellow ? "yellow" : null;
+  } else if (state === "yellow") {
+    if (ratio >= red) state = "red";
+    else if (ratio < yellow - RIBBON_HYST) state = null;
+  } else {
+    if (ratio >= red) state = "red";
+    else if (ratio >= yellow) state = "yellow";
+  }
+  _ribbonState.set(spanKey, state);
+  if (state === "red") return THEME.curveRed;
+  if (state === "yellow") return THEME.curveYellow;
   return null;
 }
 function pickCurveVoiceWarn(geom, snapS, speedMps) {
@@ -11878,9 +12255,9 @@ function loadRouteElevation() {
 }
 function gradeColor(grade) {
   const g = Math.abs(grade || 0);
-  if (g < 0.04) return "#00ff88";
-  if (g < 0.08) return "#ffd400";
-  return "#ff6644";
+  if (g < 0.04) return THEME.grade.flat;
+  if (g < 0.08) return THEME.grade.mid;
+  return THEME.grade.steep;
 }
 function renderElevProfile(snap, geom, W, H) {
   if (!S.showElevProfile || !geom?.elevReady || !snap) return "";
@@ -12112,6 +12489,19 @@ function nearestOverall(exclude) {
   cands.sort((a, b) => a.distGps - b.distGps);
   return cands[0] || null;
 }
+async function prefetchFuelForMap() {
+  try {
+    await ensureFuelStations(true);
+    recomputeFuelGeometry();
+  } catch (e) {
+    console.warn("\u0410\u0417\u0421 \u043D\u0430 \u043A\u0430\u0440\u0442\u0435:", e);
+  }
+}
+function fuelStationsForMap(limit) {
+  if (!S.fuelStations.length) return [];
+  recomputeFuelGeometry();
+  return S.fuelStations.filter((s2) => s2.routeS != null && (s2.offRoute ?? Infinity) <= FUEL_CORRIDOR + 150).sort((a, b) => a.routeS - b.routeS).slice(0, limit || 48);
+}
 function fuelStationsForRoad(maxDist) {
   if (S.fuelMode === 0 || !S.fuelStations.length) return [];
   recomputeFuelGeometry();
@@ -12179,8 +12569,8 @@ function loadLastRun() {
   }
 }
 async function searchAddress(query) {
-  const url = "https://nominatim.openstreetmap.org/search?format=json&limit=6&q=" + encodeURIComponent(query);
-  const r = await fetch(url);
+  const url = "https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ru&q=" + encodeURIComponent(query) + "&email=moto-hud-dev@users.noreply.github.com";
+  const r = await fetch(url, { headers: { Accept: "application/json" } });
   if (!r.ok) throw new Error("Nominatim " + r.status);
   return r.json();
 }
@@ -12468,14 +12858,78 @@ function maneuverTurnAngle(step) {
 }
 
 // js/voice.js
-function speak(text) {
-  if (!S.voice || !("speechSynthesis" in window)) return;
+var _queue = [];
+var _busy = false;
+var MAX_QUEUE = 4;
+var _lastText = "";
+var _lastSpeakTs = 0;
+var DEDUPE_MS = 6500;
+async function speakNative(text) {
+  const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm(), esm_exports));
+  await TextToSpeech2.speak({
+    text,
+    lang: "ru-RU",
+    rate: 1.05,
+    pitch: 1,
+    volume: 1,
+    category: "playback"
+  });
+}
+function speakWeb(text) {
+  return new Promise((resolve, reject) => {
+    if (!("speechSynthesis" in window)) {
+      resolve();
+      return;
+    }
+    try {
+      speechSynthesis.cancel();
+      const u2 = new SpeechSynthesisUtterance(text);
+      u2.lang = "ru-RU";
+      u2.rate = 1.05;
+      u2.onend = () => resolve();
+      u2.onerror = () => reject(new Error("TTS"));
+      speechSynthesis.speak(u2);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+async function drainVoiceQueue() {
+  if (_busy || !_queue.length) return;
+  _busy = true;
+  const text = _queue.shift();
   try {
-    const u2 = new SpeechSynthesisUtterance(text);
-    u2.lang = "ru-RU";
-    u2.rate = 1.05;
-    speechSynthesis.speak(u2);
+    if (isNative()) await speakNative(text);
+    else await speakWeb(text);
   } catch (e) {
+    console.warn("\u041E\u0437\u0432\u0443\u0447\u043A\u0430:", e);
+    try {
+      await speakWeb(text);
+    } catch (e2) {
+    }
+  } finally {
+    _busy = false;
+    if (_queue.length) drainVoiceQueue();
+  }
+}
+function speak(text) {
+  if (!S.voice || !text) return;
+  const t = String(text);
+  const now = Date.now();
+  if (t === _lastText && now - _lastSpeakTs < DEDUPE_MS) return;
+  _lastText = t;
+  _lastSpeakTs = now;
+  _queue.push(t);
+  while (_queue.length > MAX_QUEUE) _queue.shift();
+  drainVoiceQueue();
+}
+function clearVoiceQueue() {
+  _queue.length = 0;
+  if ("speechSynthesis" in window) {
+    try {
+      speechSynthesis.cancel();
+    } catch (e) {
+    }
   }
 }
 function isTurnStep(step) {
@@ -12499,8 +12953,8 @@ function isCameraBehind(cam, heading) {
 
 // js/render.js
 var PROFILE_GAP = 6;
-var RIBBON_FILL = "#00aa5c";
-var RIBBON_EDGE = "#00ff88";
+var RIBBON_FILL = THEME.ribbonFill;
+var RIBBON_EDGE = THEME.hud;
 var RIBBON_FILL_OP = 0.22;
 function computePathLayout(w, h) {
   const aspect = Math.max(0.2, w / Math.max(1, h));
@@ -12712,7 +13166,7 @@ function renderPathway() {
     const b = centerS[ci + 1];
     const sMid = (a.s + b.s) * 0.5;
     const warnCol = ribbonCurveColor(sMid, geomReady, speedMps);
-    const stroke = warnCol || "#00ff88";
+    const stroke = warnCol || THEME.hud;
     const sw = warnCol ? 4.5 : 3;
     const op = warnCol ? 0.85 : 0.45;
     html += '<line x1="' + a.p.x.toFixed(1) + '" y1="' + a.p.y.toFixed(1) + '" x2="' + b.p.x.toFixed(1) + '" y2="' + b.p.y.toFixed(1) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" opacity="' + op + '"/>';
@@ -12781,7 +13235,7 @@ function renderParametricArrow(turnDeg) {
   return '<svg class="arrow-svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + line + head + "</svg>";
 }
 function arriveFlagSVG() {
-  return '<svg class="arrow-svg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet"><rect x="-28" y="-32" width="56" height="40" fill="none" stroke="#00ff88" stroke-width="5"/><path d="M-28 -32 L-28 8 L28 -12 Z" fill="#00ff88"/><line x1="-28" y1="8" x2="-28" y2="28" stroke="#00ff88" stroke-width="5"/></svg>';
+  return '<svg class="arrow-svg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet"><rect x="-28" y="-32" width="56" height="40" fill="none" stroke="' + THEME.hud + '" stroke-width="5"/><path d="M-28 -32 L-28 8 L28 -12 Z" fill="' + THEME.hud + '"/><line x1="-28" y1="8" x2="-28" y2="28" stroke="' + THEME.hud + '" stroke-width="5"/></svg>';
 }
 function buildArrowSVG(step) {
   if (!step) return "";
@@ -12901,7 +13355,7 @@ var _routeLayers = [];
 var _hudWindowLayers = [];
 var _markers = [];
 var _lastRender = null;
-var ROUTE_COLORS = ["#00ff88", "#66ccff", "#ffd400"];
+var ROUTE_COLORS = THEME.routeAlts;
 function clearLayers() {
   if (!_map) return;
   _routeLayers.forEach((l) => _map.removeLayer(l));
@@ -13040,7 +13494,7 @@ function renderRouteMap(alternatives, selectedIdx, start, finish) {
       radius: 9,
       color: "#000",
       weight: 2,
-      fillColor: "#39d353",
+      fillColor: THEME.routeStart,
       fillOpacity: 1
     }).addTo(map).bindTooltip("\u0412\u044B", { permanent: false, direction: "top" });
     bounds.extend([start.lat, start.lon]);
@@ -13051,12 +13505,25 @@ function renderRouteMap(alternatives, selectedIdx, start, finish) {
       radius: 9,
       color: "#000",
       weight: 2,
-      fillColor: "#ffd400",
+      fillColor: THEME.routeFinish,
       fillOpacity: 1
     }).addTo(map).bindTooltip("\u0424\u0438\u043D\u0438\u0448", { permanent: false, direction: "top" });
     bounds.extend([finish.lat, finish.lon]);
     _markers.push(m);
   }
+  const fuels = fuelStationsForMap(48);
+  fuels.forEach((st) => {
+    const col = fuelColor(st.status);
+    const m = import_leaflet.default.circleMarker([st.lat, st.lon], {
+      radius: 7,
+      color: "#000",
+      weight: 1,
+      fillColor: col,
+      fillOpacity: 0.92
+    }).addTo(map).bindTooltip("\u26FD " + (st.brand || "\u0410\u0417\u0421"), { direction: "top", opacity: 0.92 });
+    bounds.extend([st.lat, st.lon]);
+    _markers.push(m);
+  });
   if (bounds.isValid()) {
     map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });
   }
@@ -13109,6 +13576,104 @@ function clearRouteMap() {
 }
 function invalidateRouteMapSize() {
   if (_map) setTimeout(() => _map.invalidateSize(), 150);
+}
+
+// js/tts-health.js
+var TTS_LANG = "ru-RU";
+async function auditTtsHealth() {
+  if (!S.voice) {
+    return { ok: true, offlineVoice: true, platform: "off", hint: "" };
+  }
+  if (isNative()) {
+    try {
+      const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm(), esm_exports));
+      const { supported } = await TextToSpeech2.isLanguageSupported({ lang: TTS_LANG });
+      let offlineVoice = supported;
+      let voices2 = 0;
+      try {
+        const res = await TextToSpeech2.getSupportedVoices();
+        const list = res.voices || [];
+        voices2 = list.length;
+        const ru2 = list.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
+        if (ru2.length) {
+          offlineVoice = ru2.some((v) => v.network === false || v.networkConnectionRequired === false);
+        }
+      } catch (e) {
+      }
+      return {
+        ok: !!supported,
+        offlineVoice,
+        voices: voices2,
+        platform: "native",
+        hint: !supported ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u2014 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0431\u0443\u0434\u0435\u0442 \u0431\u0435\u0437 \u043E\u0437\u0432\u0443\u0447\u043A\u0438." : !offlineVoice ? "\u041D\u0435\u0442 \u043E\u0444\u043B\u0430\u0439\u043D-\u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \xAB\u0432 \u0441\u0430\u043C\u043E\u043B\u0451\u0442\u0435\xBB \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u043E\u0433\u0443\u0442 \u043D\u0435 \u0437\u0432\u0443\u0447\u0430\u0442\u044C." : ""
+      };
+    } catch (e) {
+      return { ok: false, offlineVoice: false, platform: "native", hint: String(e.message || e) };
+    }
+  }
+  if (!("speechSynthesis" in window)) {
+    return { ok: false, offlineVoice: false, platform: "web", hint: "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043E\u0437\u0432\u0443\u0447\u043A\u0443." };
+  }
+  const voices = speechSynthesis.getVoices();
+  const ru = voices.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
+  const localRu = ru.filter((v) => v.localService);
+  return {
+    ok: ru.length > 0,
+    offlineVoice: localRu.length > 0,
+    voices: ru.length,
+    platform: "web",
+    hint: !ru.length ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0438 \u0441\u0438\u0441\u0442\u0435\u043C\u044B/\u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430." : !localRu.length ? "\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0431\u043B\u0430\u0447\u043D\u044B\u0435 \u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0431\u0435\u0437 \u0441\u0435\u0442\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0430 \u043C\u043E\u0436\u0435\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C." : ""
+  };
+}
+async function openTtsInstall() {
+  if (!isNative()) return false;
+  try {
+    const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm(), esm_exports));
+    await TextToSpeech2.openInstall();
+    return true;
+  } catch (e) {
+    console.warn("TTS install:", e);
+    return false;
+  }
+}
+function renderBanner(health) {
+  const el = $("tts-banner");
+  if (!el) return;
+  if (!S.voice || health.ok && health.offlineVoice !== false) {
+    el.classList.add("hidden");
+    el.innerHTML = "";
+    return;
+  }
+  el.classList.remove("hidden");
+  let html = "<b>\u{1F50A} \u0413\u043E\u043B\u043E\u0441:</b> ";
+  if (!health.ok) {
+    html += health.hint || "\u0440\u0443\u0441\u0441\u043A\u0438\u0439 TTS \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.";
+  } else {
+    html += health.hint || "\u043E\u0444\u043B\u0430\u0439\u043D-\u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 \u044F\u0437\u044B\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043A\u0435\u0442.";
+  }
+  if (isNative()) {
+    html += ' <button type="button" class="linkish" id="btn-tts-install">\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0433\u043E\u043B\u043E\u0441\u0430</button>';
+  }
+  el.innerHTML = html;
+  $("btn-tts-install")?.addEventListener("click", () => {
+    openTtsInstall().then(() => setTimeout(refreshTtsBanner, 2e3));
+  });
+}
+function applyTtsBanner(health) {
+  renderBanner(health);
+}
+async function refreshTtsBanner() {
+  const health = await auditTtsHealth();
+  applyTtsBanner(health);
+  return health;
+}
+function initTtsHealth() {
+  if ("speechSynthesis" in window) {
+    speechSynthesis.addEventListener("voiceschanged", () => {
+      refreshTtsBanner();
+    }, { once: false });
+  }
+  refreshTtsBanner();
 }
 
 // js/setup.js
@@ -13168,6 +13733,9 @@ async function doBuildRoute() {
     scheduleGeometryBuild(S.routeAlternatives, () => {
       renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
     });
+    prefetchFuelForMap().then(() => {
+      renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+    });
   } catch (e) {
     $("route-info").textContent = "\u274C " + e.message;
     $("route-info").className = "route-info";
@@ -13189,6 +13757,8 @@ async function doAddressSearch() {
   }
   $("s-finish").textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0430\u0434\u0440\u0435\u0441\u2026";
   $("s-finish").className = "status";
+  S.finish = null;
+  invalidateRoute();
   try {
     const res = await searchAddress(q);
     if (!res.length) {
@@ -13213,6 +13783,7 @@ async function doAddressSearch() {
       box.appendChild(d);
     });
     box.style.display = "block";
+    box.scrollIntoView({ block: "nearest", behavior: "smooth" });
     $("s-finish").textContent = "\u{1F50E} \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430";
     $("s-finish").className = "status";
   } catch (e) {
@@ -13282,6 +13853,27 @@ function bindSetupUI() {
   });
   $("opt-voice").addEventListener("change", (e) => {
     S.voice = e.target.checked;
+    refreshTtsBanner();
+  });
+  $("btn-compass-cal")?.addEventListener("click", async () => {
+    const btn = $("btn-compass-cal");
+    const ok = await requestHeadingPermission();
+    if (!ok) {
+      alert("\u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u043A\u043E\u043C\u043F\u0430\u0441\u0443. \u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u0435 \u0434\u0430\u0442\u0447\u0438\u043A\u0438 \u043E\u0440\u0438\u0435\u043D\u0442\u0430\u0446\u0438\u0438 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430/\u0441\u0438\u0441\u0442\u0435\u043C\u044B.");
+      return;
+    }
+    startCompassCalibration(15e3);
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "\u23F3 \u0412\u043E\u0441\u044C\u043C\u0451\u0440\u043A\u0430\u2026 15 \u0441";
+    }
+    setTimeout(() => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "\u{1F9ED} \u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043C\u043F\u0430\u0441\u0430";
+      }
+      if (!isCalibrating()) speak("\u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430");
+    }, 15e3);
   });
   $("opt-path").addEventListener("change", (e) => {
     S.showPath = e.target.checked;
@@ -13450,7 +14042,7 @@ function initNativeHints() {
   if (!isAndroidNative()) return;
   const help = $("drawer-help")?.querySelector(".hint, .drawer-body");
   if (!help) return;
-  help.innerHTML += "<br><br><b>Android-\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435:</b> \u043F\u0440\u0438 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u0438 \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u0443\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435 \xAB\u041D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u0430\xBB \u2014 \u044D\u0442\u043E foreground-service GPS (\u0442\u0440\u0435\u0431\u043E\u0432\u0430\u043D\u0438\u0435 Android).<br><b>\u0411\u0430\u0442\u0430\u0440\u0435\u044F:</b> \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043E\u043F\u0442\u0438\u043C\u0438\u0437\u0430\u0446\u0438\u044E \u0431\u0430\u0442\u0430\u0440\u0435\u0438 \u0434\u043B\u044F \xAB\u041C\u043E\u0442\u043E \u0418\u041B\u0421\xBB (\u0411\u0430\u0442\u0430\u0440\u0435\u044F \u2192 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u2192 \u0431\u0435\u0437 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0438\u0439), \u0438\u043D\u0430\u0447\u0435 GPS \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u0432\u0430\u043B\u0438\u0432\u0430\u0442\u044C\u0441\u044F \u043D\u0430 \u043F\u0440\u043E\u0448\u0438\u0432\u043A\u0430\u0445 Samsung/Xiaomi/Huawei.";
+  help.innerHTML += "<br><br><b>Android-\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435:</b> \u043F\u0440\u0438 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u0438 \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u0443\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435 \xAB\u041D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u0430\xBB \u2014 \u044D\u0442\u043E foreground-service GPS (\u0442\u0440\u0435\u0431\u043E\u0432\u0430\u043D\u0438\u0435 Android).<br><b>\u0411\u0430\u0442\u0430\u0440\u0435\u044F:</b> \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043E\u043F\u0442\u0438\u043C\u0438\u0437\u0430\u0446\u0438\u044E \u0431\u0430\u0442\u0430\u0440\u0435\u0438 \u0434\u043B\u044F \xAB\u041C\u043E\u0442\u043E \u0418\u041B\u0421\xBB (\u0411\u0430\u0442\u0430\u0440\u0435\u044F \u2192 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u2192 \u0431\u0435\u0437 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0438\u0439), \u0438\u043D\u0430\u0447\u0435 GPS \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u0432\u0430\u043B\u0438\u0432\u0430\u0442\u044C\u0441\u044F \u043D\u0430 \u043F\u0440\u043E\u0448\u0438\u0432\u043A\u0430\u0445 Samsung/Xiaomi/Huawei.<br>\u0427\u0435\u043A-\u043B\u0438\u0441\u0442 OEM-\u0442\u0435\u0441\u0442\u043E\u0432: <code>docs/oem-gps-matrix.md</code>.";
 }
 
 // js/favorites.js
@@ -13718,7 +14310,61 @@ function initFavorites() {
   }
 }
 
+// js/wake-lock.js
+var _nativeAwake = false;
+async function acquireWakeLock() {
+  try {
+    if (isNative()) {
+      const { KeepAwake: KeepAwake2 } = await Promise.resolve().then(() => (init_esm2(), esm_exports2));
+      await KeepAwake2.keepAwake();
+      _nativeAwake = true;
+      return;
+    }
+    if ("wakeLock" in navigator) {
+      S.wakeLock = await navigator.wakeLock.request("screen");
+    }
+  } catch (e) {
+    console.warn("Wake-lock:", e);
+  }
+}
+async function releaseWakeLock() {
+  try {
+    if (_nativeAwake && isNative()) {
+      const { KeepAwake: KeepAwake2 } = await Promise.resolve().then(() => (init_esm2(), esm_exports2));
+      await KeepAwake2.allowSleep();
+      _nativeAwake = false;
+    }
+  } catch (e) {
+  }
+  if (S.wakeLock) {
+    try {
+      S.wakeLock.release();
+    } catch (e) {
+    }
+    S.wakeLock = null;
+  }
+}
+
 // js/hud.js
+function maneuverVoiceThresholds(kmh) {
+  const mps = Math.max(kmh / 3.6, 4);
+  return {
+    mps,
+    farM: Math.max(220, Math.min(850, mps * 9)),
+    nearM: Math.max(35, Math.min(110, mps * 2.5))
+  };
+}
+function formatManeuverLead(distM, mps) {
+  if (mps >= 6 && distM >= 120) {
+    const sec = Math.round(distM / mps);
+    if (sec <= 20) {
+      const w = sec === 1 ? "\u0441\u0435\u043A\u0443\u043D\u0434\u0443" : sec >= 2 && sec <= 4 ? "\u0441\u0435\u043A\u0443\u043D\u0434\u044B" : "\u0441\u0435\u043A\u0443\u043D\u0434";
+      return "\u0427\u0435\u0440\u0435\u0437 " + sec + " " + w;
+    }
+  }
+  const m = Math.max(50, Math.round(distM / 50) * 50);
+  return "\u0427\u0435\u0440\u0435\u0437 " + m + " \u043C\u0435\u0442\u0440\u043E\u0432";
+}
 function checkCamerasILS() {
   if (!S.cams || !S.cameras.length) return;
   const now = Date.now();
@@ -13761,6 +14407,12 @@ function onTick() {
   }
   $("gps-txt").textContent = "GPS \xB1" + Math.round(S.gps.acc || 0) + "\u043C";
   const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const hh = getHeadingHealth();
+  const hw = $("heading-warn");
+  if (hw) {
+    hw.classList.toggle("on", !!hh.interference && kmh < 25);
+    hw.textContent = hh.calibrating ? "\u{1F9ED} \u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043C\u043F\u0430\u0441\u0430 \u2014 \u0432\u043E\u0441\u044C\u043C\u0451\u0440\u043A\u0430 15 \u0441" : "\u26A0 \u041F\u043E\u043C\u0435\u0445\u0438 \u043A\u043E\u043C\u043F\u0430\u0441\u0430 \u2014 \u043A\u0443\u0440\u0441 \u043F\u043E GPS";
+  }
   if (!S.route) {
     $("mid-info").textContent = "\u2014";
     return;
@@ -13782,11 +14434,12 @@ function onTick() {
     const kNear = "st_" + stIdx + "_near";
     if (isTurnStep(nm.step)) {
       const txt = maneuverText(nm.step);
-      if (nm.dist < 300 && nm.dist > 200 && !S.camWarned.has(kFar) && txt) {
+      const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
+      if (nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt) {
         S.camWarned.add(kFar);
-        speak("\u0427\u0435\u0440\u0435\u0437 300 \u043C\u0435\u0442\u0440\u043E\u0432 " + txt);
+        speak(formatManeuverLead(nm.dist, mps) + " " + txt);
       }
-      if (nm.dist < 70 && !S.camWarned.has(kNear) && txt) {
+      if (nm.dist <= nearM && !S.camWarned.has(kNear) && txt) {
         S.camWarned.add(kNear);
         speak(txt);
       }
@@ -13833,12 +14486,6 @@ function checkCurveSpeedWarn(kmh) {
   S.lastVoiceTs = Date.now();
   speak("\u0421\u043D\u0438\u0437\u044C\u0442\u0435 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u043F\u0435\u0440\u0435\u0434 \u043F\u043E\u0432\u043E\u0440\u043E\u0442\u043E\u043C. \u0420\u0435\u043A\u043E\u043C\u0435\u043D\u0434\u0443\u0435\u0442\u0441\u044F " + warn.vSafeKmh + " \u043A\u0438\u043B\u043E\u043C\u0435\u0442\u0440\u043E\u0432 \u0432 \u0447\u0430\u0441");
 }
-async function requestWakeLock() {
-  try {
-    if ("wakeLock" in navigator) S.wakeLock = await navigator.wakeLock.request("screen");
-  } catch (e) {
-  }
-}
 async function startHud() {
   if (!S.route) {
     alert("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
@@ -13849,6 +14496,7 @@ async function startHud() {
   S.distDone = 0;
   S.camWarned.clear();
   resetRouteSnap();
+  resetCurveRibbonState();
   ensureRouteGeometry(S.route);
   $("setup").style.display = "none";
   $("setup").style.zIndex = "30";
@@ -13856,7 +14504,7 @@ async function startHud() {
   $("hud").classList.toggle("show-compass", !!S.showCompass);
   updateCamStatusUI();
   loadCameras();
-  requestWakeLock();
+  acquireWakeLock();
   try {
     await startNavigationGps();
   } catch (e) {
@@ -13887,13 +14535,8 @@ function stopHud() {
   renderFavs();
   const goBar = $("go-bar");
   if (goBar) goBar.classList.toggle("hidden", !(S.route && S.route.coords?.length));
-  if (S.wakeLock) {
-    try {
-      S.wakeLock.release();
-    } catch (e) {
-    }
-    S.wakeLock = null;
-  }
+  releaseWakeLock();
+  clearVoiceQueue();
   try {
     document.exitFullscreen && document.exitFullscreen();
   } catch (e) {
@@ -14046,6 +14689,7 @@ async function selectQuickFinish(id, loadFavs2, buildAndLoad) {
 }
 
 // js/main.js
+applyThemeCss();
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();
@@ -14054,6 +14698,7 @@ updateCamStatusUI();
 bindSetupUI();
 initFavorites();
 initNativeHints();
+initTtsHealth();
 window.__motoHUD = { S, applyCoordsOrLink, startHud, startGps, doBuildRoute };
 window.addEventListener("load", () => {
   setTimeout(startGps, 400);

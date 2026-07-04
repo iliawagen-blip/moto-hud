@@ -16,8 +16,33 @@ import {
 import { updateCamStatusUI } from './cam-status.js';
 import { resetRouteSnap, getRouteSnapForNav } from './route-geometry.js';
 import { ensureRouteGeometry } from './route.js';
-import { pickCurveVoiceWarn } from './curve-speed.js';
+import { pickCurveVoiceWarn, resetCurveRibbonState } from './curve-speed.js';
 import { renderFavs } from './favorites.js';
+import { acquireWakeLock, releaseWakeLock } from './wake-lock.js';
+import { clearVoiceQueue } from './voice.js';
+import { getHeadingHealth } from './heading.js';
+
+/** Пороги озвучки манёвра: дальняя ~9 с, ближняя ~2.5 с хода */
+function maneuverVoiceThresholds(kmh){
+  const mps = Math.max(kmh / 3.6, 4);
+  return {
+    mps,
+    farM: Math.max(220, Math.min(850, mps * 9)),
+    nearM: Math.max(35, Math.min(110, mps * 2.5))
+  };
+}
+
+function formatManeuverLead(distM, mps){
+  if(mps >= 6 && distM >= 120){
+    const sec = Math.round(distM / mps);
+    if(sec <= 20){
+      const w = sec === 1 ? 'секунду' : sec >= 2 && sec <= 4 ? 'секунды' : 'секунд';
+      return 'Через ' + sec + ' ' + w;
+    }
+  }
+  const m = Math.max(50, Math.round(distM / 50) * 50);
+  return 'Через ' + m + ' метров';
+}
 
 export function checkCamerasILS(){
   if(!S.cams || !S.cameras.length) return;
@@ -65,6 +90,14 @@ export function onTick(){
   if(dot){ dot.classList.toggle('ok', !!S.gps); }
   $('gps-txt').textContent = 'GPS ±' + Math.round(S.gps.acc || 0) + 'м';
   const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const hh = getHeadingHealth();
+  const hw = $('heading-warn');
+  if(hw){
+    hw.classList.toggle('on', !!hh.interference && kmh < 25);
+    hw.textContent = hh.calibrating
+      ? '🧭 Калибровка компаса — восьмёрка 15 с'
+      : '⚠ Помехи компаса — курс по GPS';
+  }
 
   if(!S.route){ $('mid-info').textContent = '—'; return; }
 
@@ -85,11 +118,12 @@ export function onTick(){
     const kNear = 'st_' + stIdx + '_near';
     if(isTurnStep(nm.step)){
       const txt = maneuverText(nm.step);
-      if(nm.dist < 300 && nm.dist > 200 && !S.camWarned.has(kFar) && txt){
+      const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
+      if(nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt){
         S.camWarned.add(kFar);
-        speak('Через 300 метров ' + txt);
+        speak(formatManeuverLead(nm.dist, mps) + ' ' + txt);
       }
-      if(nm.dist < 70 && !S.camWarned.has(kNear) && txt){
+      if(nm.dist <= nearM && !S.camWarned.has(kNear) && txt){
         S.camWarned.add(kNear);
         speak(txt);
       }
@@ -139,12 +173,6 @@ function checkCurveSpeedWarn(kmh){
   speak('Снизьте скорость перед поворотом. Рекомендуется ' + warn.vSafeKmh + ' километров в час');
 }
 
-export async function requestWakeLock(){
-  try{
-    if('wakeLock' in navigator) S.wakeLock = await navigator.wakeLock.request('screen');
-  }catch(e){}
-}
-
 export async function startHud(){
   if(!S.route){
     alert('Сначала постройте маршрут');
@@ -155,6 +183,7 @@ export async function startHud(){
   S.distDone = 0;
   S.camWarned.clear();
   resetRouteSnap();
+  resetCurveRibbonState();
   ensureRouteGeometry(S.route);
   $('setup').style.display = 'none';
   $('setup').style.zIndex = '30';
@@ -162,7 +191,7 @@ export async function startHud(){
   $('hud').classList.toggle('show-compass', !!S.showCompass);
   updateCamStatusUI();
   loadCameras(); // фоном, не блокирует старт
-  requestWakeLock();
+  acquireWakeLock();
   try{ await startNavigationGps(); }catch(e){ console.warn('FGS GPS:', e); }
   if(!window.__SIM__){
     try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){}
@@ -186,7 +215,8 @@ export function stopHud(){
   renderFavs();
   const goBar = $('go-bar');
   if(goBar) goBar.classList.toggle('hidden', !(S.route && S.route.coords?.length));
-  if(S.wakeLock){ try{ S.wakeLock.release(); }catch(e){} S.wakeLock = null; }
+  releaseWakeLock();
+  clearVoiceQueue();
   try{ document.exitFullscreen && document.exitFullscreen(); }catch(e){}
 }
 

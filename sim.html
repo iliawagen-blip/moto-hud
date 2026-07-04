@@ -54,6 +54,10 @@
     <button id="btn-play" class="ok">⏸ Пауза</button>
     <button id="btn-reset">↺ Сброс</button>
     <button id="btn-reload">⟳ Перезагрузить</button>
+    <button id="btn-gpx-demo" title="Демо-трек с timestamps">📍 GPX демо</button>
+    <label>GPX файл
+      <input type="file" id="gpx-file" accept=".gpx,application/gpx+xml" style="max-width:180px;font-size:11px">
+    </label>
   </div>
 
   <div class="frame-wrap">
@@ -64,7 +68,9 @@
 
   <div class="hint">
     Маршрут и движение эмулируются автоматически: HUD стартует сам через ~1 с.
-    На телефоне откроется полноэкранный HUD; на ПК — рамка устройства и панель скорости.
+    <strong>GPX replay:</strong> загрузите файл или «GPX демо» — GPS идёт по треку; при timestamps скорость берётся из записи.
+    URL: <code>?sim=1&amp;gpx=fixtures/serpentine-demo.gpx</code>.
+    Авто-HUD: только если финиш пуст (демо) или <code>?autohud=1</code>.
     Ссылку для друзей: <code id="share-link">…</code>
   </div>
 
@@ -83,6 +89,8 @@
   const btnPlay = document.getElementById('btn-play');
   const btnReset = document.getElementById('btn-reset');
   const btnReload = document.getElementById('btn-reload');
+  const btnGpxDemo = document.getElementById('btn-gpx-demo');
+  const gpxFile = document.getElementById('gpx-file');
   const spd = document.getElementById('spd');
   const spdVal = document.getElementById('spd-val');
 
@@ -135,6 +143,36 @@
     if(s){ s.reset(); s.setSpeed(Number(spd.value) / 3.6); playing = true; btnPlay.textContent = '⏸ Пауза'; }
   });
   btnReload.addEventListener('click', () => { frame.src = frameUrl(); });
+
+  async function applyGpxInFrame(text, loop){
+    const s = sim();
+    if(!s?.loadGpxReplay) return;
+    try{
+      const meta = s.loadGpxReplay(text, { loop: !!loop, useTimestamps: true });
+      s.setUseGpxSpeed(true);
+      if(window.__motoHUD?.doBuildRoute){
+        try{ await frame.contentWindow.__motoHUD.doBuildRoute(); }catch(e){}
+      }
+      console.log('GPX loaded:', meta);
+    }catch(e){ alert('GPX: ' + e.message); }
+  }
+
+  btnGpxDemo?.addEventListener('click', async () => {
+    try{
+      const res = await fetch('fixtures/serpentine-demo.gpx');
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      await applyGpxInFrame(await res.text(), true);
+    }catch(e){ alert('Демо GPX: ' + e.message); }
+  });
+
+  gpxFile?.addEventListener('change', () => {
+    const file = gpxFile.files?.[0];
+    if(!file) return;
+    const r = new FileReader();
+    r.onload = () => applyGpxInFrame(String(r.result || ''), false);
+    r.readAsText(file);
+    gpxFile.value = '';
+  });
 
   frame.addEventListener('load', () => {
     setTimeout(() => { const s = sim(); if(s) s.setSpeed(Number(spd.value) / 3.6); }, 800);

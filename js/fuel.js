@@ -191,6 +191,26 @@ export function nearestOverall(exclude){
   return cands[0] || null;
 }
 
+/** Предзагрузка АЗС для карты setup (не блокирует UI) */
+export async function prefetchFuelForMap(){
+  try{
+    await ensureFuelStations(true);
+    recomputeFuelGeometry();
+  }catch(e){
+    console.warn('АЗС на карте:', e);
+  }
+}
+
+/** Маркеры ⛽ на карте маршрута (в коридоре трассы) */
+export function fuelStationsForMap(limit){
+  if(!S.fuelStations.length) return [];
+  recomputeFuelGeometry();
+  return S.fuelStations
+    .filter(s => s.routeS != null && (s.offRoute ?? Infinity) <= FUEL_CORRIDOR + 150)
+    .sort((a, b) => a.routeS - b.routeS)
+    .slice(0, limit || 48);
+}
+
 /** АЗС для отрисовки на прогноз-дорожке (впереди, в разумном коридоре) */
 export function fuelStationsForRoad(maxDist){
   if(S.fuelMode === 0 || !S.fuelStations.length) return [];

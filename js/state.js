@@ -74,13 +74,6 @@ export const DEFAULT_ELEV_PROFILE_LEN_KM = 3;
 export const MIN_ELEV_PROFILE_LEN_KM = 1;
 export const MAX_ELEV_PROFILE_LEN_KM = 5;
 
-// Цвета статуса наличия топлива (семантика ГдеБЕНЗ: yes/queue/low/no)
-export const FUEL_COLORS = {
-  yes:     '#39d353',  // есть
-  queue:   '#ffd400',  // очередь
-  low:     '#ff9500',  // мало
-  no:      '#ff3b30',  // нет
-  unknown: '#66ccff'   // нет данных о наличии — нейтральный
-};
+export { FUEL_COLORS } from './theme.js';
 // Коридор вдоль маршрута (м): АЗС дальше него считается «не по маршруту»
 export const FUEL_CORRIDOR = 600;

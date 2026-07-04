@@ -68,9 +68,10 @@ export function loadLastRun(){
 }
 
 export async function searchAddress(query){
-  const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&q=' +
-    encodeURIComponent(query);
-  const r = await fetch(url);
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ru&q=' +
+    encodeURIComponent(query) +
+    '&email=moto-hud-dev@users.noreply.github.com';
+  const r = await fetch(url, { headers: { Accept: 'application/json' } });
   if(!r.ok) throw new Error('Nominatim ' + r.status);
   return r.json();
 }

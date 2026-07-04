@@ -21,8 +21,12 @@ import {
 
 } from './route-map.js';
 
-
-
+import { prefetchFuelForMap } from './fuel.js';
+import { refreshTtsBanner } from './tts-health.js';
+import {
+  startCompassCalibration, requestHeadingPermission, isCalibrating
+} from './heading.js';
+import { speak } from './voice.js';
 /** Синхронизация пути GPS-симулятора с построенным маршрутом */
 function syncSimPath(){
   if(window.__SIM__?.setRoutePath && S.route?.coords?.length){
@@ -135,6 +139,10 @@ export async function doBuildRoute(){
       renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
     });
 
+    prefetchFuelForMap().then(() => {
+      renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+    });
+
   }catch(e){
 
     $('route-info').textContent = '❌ ' + e.message;
@@ -178,6 +186,10 @@ export async function doAddressSearch(){
   $('s-finish').textContent = '⏳ Ищем адрес…';
 
   $('s-finish').className = 'status';
+
+  S.finish = null;
+
+  invalidateRoute();
 
   try{
 
@@ -226,6 +238,7 @@ export async function doAddressSearch(){
     });
 
     box.style.display = 'block';
+    box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
     $('s-finish').textContent = '🔎 Выберите вариант из списка';
 
@@ -365,7 +378,31 @@ export function bindSetupUI(){
 
 
 
-  $('opt-voice').addEventListener('change', e => { S.voice = e.target.checked; });
+  $('opt-voice').addEventListener('change', e => {
+    S.voice = e.target.checked;
+    refreshTtsBanner();
+  });
+
+  $('btn-compass-cal')?.addEventListener('click', async () => {
+    const btn = $('btn-compass-cal');
+    const ok = await requestHeadingPermission();
+    if(!ok){
+      alert('Нет доступа к компасу. Разрешите датчики ориентации в настройках браузера/системы.');
+      return;
+    }
+    startCompassCalibration(15000);
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = '⏳ Восьмёрка… 15 с';
+    }
+    setTimeout(() => {
+      if(btn){
+        btn.disabled = false;
+        btn.textContent = '🧭 Калибровка компаса';
+      }
+      if(!isCalibrating()) speak('Калибровка завершена');
+    }, 15000);
+  });
 
   $('opt-path').addEventListener('change', e => {
 
@@ -625,8 +662,8 @@ export function initNativeHints(){
 
     '<b>Батарея:</b> в настройках системы отключите оптимизацию батареи для «Мото ИЛС» ' +
 
-    '(Батарея → приложения → без ограничений), иначе GPS может отваливаться на прошивках Samsung/Xiaomi/Huawei.';
+    '(Батарея → приложения → без ограничений), иначе GPS может отваливаться на прошивках Samsung/Xiaomi/Huawei.<br>' +
+
+    'Чек-лист OEM-тестов: <code>docs/oem-gps-matrix.md</code>.';
 
 }
-
-

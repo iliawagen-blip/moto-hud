@@ -44,6 +44,9 @@
 4. Через 1–2 минуты сайт будет доступен:
    `https://iliawagen-blip.github.io/moto-hud/`
 
+**План подготовки к RuStore / APK / web-тестам:**  
+[docs/release-plan.html](https://iliawagen-blip.github.io/moto-hud/docs/release-plan.html) (локально: `docs/release-plan.html`).
+
 ## Демо для друзей (симуляция)
 
 Одна ссылка для рассылки — **HTTPS**, работает с телефона и ПК:
