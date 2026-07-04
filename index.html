@@ -63,6 +63,10 @@
     <div class="drawer-body">
       <div class="toggle">🔊 Голос <input type="checkbox" id="opt-voice" checked></div>
       <div class="toggle" style="margin-top:8px">🛣 Прогноз-дорожка <input type="checkbox" id="opt-path" checked></div>
+      <div class="toggle" style="margin-top:12px;font-size:14px;color:var(--dim)">До финиша в HUD</div>
+      <div class="toggle" style="margin-top:6px">📍 Расстояние <input type="checkbox" id="opt-finish-dist" checked></div>
+      <div class="toggle" style="margin-top:6px">⏱ Оставшееся время <input type="checkbox" id="opt-finish-time" checked></div>
+      <div class="toggle" style="margin-top:6px">🕐 ETA (прибытие) <input type="checkbox" id="opt-finish-eta" checked></div>
       <div class="toggle" style="margin-top:8px">⛰ Профиль высот <input type="checkbox" id="opt-elev-profile" checked></div>
       <div class="toggle" style="margin-top:8px">⛰ Высота полоски (px) <input type="number" id="opt-elev-profile-h" value="72" min="36" max="160" step="4"></div>
       <div class="toggle" style="margin-top:8px">⛰ Дальность профиля (км) <input type="number" id="opt-elev-profile-len" value="3" min="1" max="5" step="1"></div>
@@ -166,6 +170,12 @@
 
   <!-- скорость -->
   <div class="block block-speed">
+    <div class="finish-info" id="finish-info">
+      <div class="fi-line" id="fi-dist-line"><span class="fi-k">Осталось</span><span class="fi-v" id="fi-dist-val">—</span></div>
+      <div class="fi-line" id="fi-time-line"><span class="fi-k">В пути</span><span class="fi-v" id="fi-time-val">—</span></div>
+      <div class="fi-line" id="fi-eta-line"><span class="fi-k">Прибытие</span><span class="fi-v" id="fi-eta-val">—</span></div>
+    </div>
+    <div class="speed-ghost" id="speed-ghost" aria-hidden="true">888</div>
     <div class="speed-val" id="v-speed">0</div>
     <div class="speed-unit">км/ч</div>
   </div>
@@ -204,7 +214,7 @@
 </div>
 
 <script src="js/sim.js"></script>
-<script type="module" src="js/app.js?v=mr6vgqyd"></script>
+<script type="module" src="js/app.js?v=mr6xkdre"></script>
 
 </body>
 </html>

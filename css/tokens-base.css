@@ -1,0 +1,70 @@
+/**
+ * Базовые токены и семантика (не переопределяются темами).
+ * Значения по умолчанию = текущий вид приложения до выбора темы.
+ */
+:root,
+html.theme-avionics {
+  /* --- семантика (единая для всех тем) --- */
+  --sem-warn: #FFB000;
+  --sem-danger: #E10600;
+  --sem-ok: #33CC66;
+
+  /* --- оформление (переопределяется темами) --- */
+  --bg: #000000;
+  --bg-panel: #0a0f16;
+  --fg: #ffffff;
+  --fg-dim: #8b9cb3;
+  --fg-label: var(--fg-dim);
+  --accent: #ffd400;
+  --accent-on: #000000;
+  --line: #1a2332;
+
+  --font-num: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-label: var(--font-num);
+  --num-weight: 900;
+  --num-style: normal;
+  --label-transform: uppercase;
+  --font-feature-num: normal;
+
+  --radius: 10px;
+  --stroke-w: 3px;
+  --arrow-style: filled;
+  --path-fill: #00aa5c;
+  --path-fill-opacity: 0.22;
+  --path-edge: #00ff88;
+  --path-edge-w: 5px;
+  --path-center-opacity: 0.45;
+  --path-dash: none;
+  --compass-style: tape;
+  --glow: none;
+  --glow-opacity: 0;
+
+  --svg-halo: #000000;
+  --svg-bg-overlay: rgba(0, 0, 0, 0.72);
+  --turn-primary: var(--accent);
+  --turn-secondary: #00cc70;
+  --curve-yellow: var(--sem-warn);
+  --curve-red: var(--sem-danger);
+  --grade-flat: var(--path-edge);
+  --grade-mid: var(--sem-warn);
+  --grade-steep: var(--sem-danger);
+  --route-start: var(--sem-ok);
+  --route-finish: var(--accent);
+  --route-alt-0: #00ff88;
+  --route-alt-1: #66ccff;
+  --route-alt-2: #ffd400;
+  --map-bg: #0a1218;
+  --speed-ghost-opacity: 0;
+
+  /* --- legacy aliases (setup / старый код) --- */
+  --dim: var(--fg-dim);
+  --panel: var(--bg-panel);
+  --panel2: #141d2a;
+  --border: var(--line);
+  --ok: var(--sem-ok);
+  --warn: var(--sem-warn);
+  --alert: var(--sem-danger);
+  --hud: var(--path-edge);
+  --hud-dim: #00aa5c;
+  --amber: var(--accent);
+}

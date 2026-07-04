@@ -6,18 +6,15 @@ import { maneuverTurnAngle } from './route.js';
 import { fuelStationsForRoad, fuelColor } from './fuel.js';
 import { ensureRouteGeometry } from './route.js';
 import {
-  getRouteSnapForNav, updateCamHeading, getCamHeadingRad,
+  getRouteSnapForNav, getDisplaySnap, updateCamHeading, getCamHeadingRad,
   updateCamPitch, getCamPitchRad,
-  computeRibbonSections, worldToCamXZ
+  computeRibbonSectionsCam, worldToCamXZ
 } from './route-geometry.js';
 import { renderElevProfile, getElevExag, getElevProfileH } from './elevation.js';
 import { ribbonCurveColor } from './curve-speed.js';
-import { THEME } from './theme.js';
+import { getThemeTokens } from './theme-tokens.js';
 
 const PROFILE_GAP = 6;
-const RIBBON_FILL = THEME.ribbonFill;
-const RIBBON_EDGE = THEME.hud;
-const RIBBON_FILL_OP = 0.22;
 
 export function computePathLayout(w, h){
   const aspect = Math.max(0.2, w / Math.max(1, h));
@@ -64,45 +61,88 @@ function triArea2(a, b, c){
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
 
-/** Triangle strip: per-point Frenet → project → cull flipped tris; окраска по curve speed */
-function buildStripMeshSvg(sections, snap, headingRad, geom, speedMps){
+function screenDist2(a, b){
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return dx * dx + dy * dy;
+}
+
+/** Отсечение «иголок» и bow-tie четырёхугольников */
+function quadValid(aL, aR, bL, bR){
+  if(!aL || !aR || !bL || !bR) return false;
+  const maxD2 = (L.W * 0.28) ** 2;
+  const edges = [
+    screenDist2(aL, aR), screenDist2(bL, bR),
+    screenDist2(aL, bL), screenDist2(aR, bR)
+  ];
+  if(Math.max(...edges) > maxD2) return false;
+  if(screenDist2(aL, bR) > maxD2 * 1.8 || screenDist2(aR, bL) > maxD2 * 1.8) return false;
+  const t1 = triArea2(aL, bL, bR);
+  const t2 = triArea2(aL, bR, aR);
+  if(t1 <= 0.5 || t2 <= 0.5) return false;
+  if(t1 * t2 <= 0) return false;
+  return true;
+}
+
+function projectCam(x, z, elev){
+  return projectGround(x, z, elev);
+}
+
+/** Triangle strip в камерной системе + cull битых quad */
+function buildStripMeshSvg(sections, geom, speedMps){
   if(sections.length < 2) return { fill: '', edges: '' };
+  const tok = getThemeTokens();
+  const fillNone = tok.pathFill === 'none' || tok.pathFill === 'transparent';
   let fill = '';
   let edges = '';
   const pt = p => p.x.toFixed(1) + ',' + p.y.toFixed(1);
+  const edgeW = tok.pathEdgeW;
+  const glowExtra = tok.glow !== 'none' ? ' opacity="' + Math.max(0.1, tok.glowOpacity || 0.25) + '"' : '';
 
   for(let i = sections.length - 2; i >= 0; i--){
     const a = sections[i];
     const b = sections[i + 1];
-    const aL = projectWorld(a.leftLat, a.leftLon, a.elev, snap, headingRad);
-    const aR = projectWorld(a.rightLat, a.rightLon, a.elev, snap, headingRad);
-    const bL = projectWorld(b.leftLat, b.leftLon, b.elev, snap, headingRad);
-    const bR = projectWorld(b.rightLat, b.rightLon, b.elev, snap, headingRad);
-    if(!aL || !aR || !bL || !bR) continue;
+    if(b.cz <= a.cz + 0.05) continue;
+
+    const aL = projectCam(a.lx, a.lz, a.elev);
+    const aR = projectCam(a.rx, a.rz, a.elev);
+    const bL = projectCam(b.lx, b.lz, b.elev);
+    const bR = projectCam(b.rx, b.rz, b.elev);
+    if(!quadValid(aL, aR, bL, bR)) continue;
 
     const sMid = (a.s + b.s) * 0.5;
     const warnCol = ribbonCurveColor(sMid, geom, speedMps);
-    const fillCol = warnCol || RIBBON_FILL;
-    const edgeCol = warnCol || RIBBON_EDGE;
-    const fillOp = warnCol ? 0.48 : RIBBON_FILL_OP;
-    const edgeW = warnCol ? 7 : 5;
+    const fillCol = warnCol || tok.pathFill;
+    const edgeCol = warnCol || tok.pathEdge;
+    const fillOp = warnCol ? 0.48 : tok.pathFillOpacity;
+    const ew = warnCol ? edgeW + 2 : edgeW;
 
-    if(triArea2(aL, bL, bR) > 1){
+    if(!fillNone){
       fill += '<polygon points="' + pt(aL) + ' ' + pt(bL) + ' ' + pt(bR) +
         '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
-    }
-    if(triArea2(aL, bR, aR) > 1){
       fill += '<polygon points="' + pt(aL) + ' ' + pt(bR) + ' ' + pt(aR) +
         '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
     }
 
+    const dash = tok.pathDash !== 'none' ? ' stroke-dasharray="' + tok.pathDash + '"' : '';
     edges +=
       '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) +
         '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) +
-        '" stroke="' + edgeCol + '" stroke-width="' + edgeW + '" stroke-linecap="round"/>' +
+        '" stroke="' + edgeCol + '" stroke-width="' + ew + '" stroke-linecap="round"' + dash + glowExtra + '/>' +
       '<line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) +
         '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) +
-        '" stroke="' + edgeCol + '" stroke-width="' + edgeW + '" stroke-linecap="round"/>';
+        '" stroke="' + edgeCol + '" stroke-width="' + ew + '" stroke-linecap="round"' + dash + glowExtra + '/>';
+    if(tok.glow !== 'none'){
+      edges +=
+        '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) +
+          '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) +
+          '" stroke="' + tok.glow + '" stroke-width="' + (ew + 4) + '" stroke-linecap="round" opacity="' +
+          (tok.glowOpacity || 0.25) + '"/>' +
+        '<line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) +
+          '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) +
+          '" stroke="' + tok.glow + '" stroke-width="' + (ew + 4) + '" stroke-linecap="round" opacity="' +
+          (tok.glowOpacity || 0.25) + '"/>';
+    }
   }
   return { fill, edges };
 }
@@ -132,6 +172,7 @@ function turnAngleAt(step){
 
 function renderTurnsStr(svg, snap, headingRad){
   if(!S.route || !snap) return '';
+  const tok = getThemeTokens();
   const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
   const vb = bv && bv.width ? bv.width : L.W;
   const vbX = bv ? bv.x : 0;
@@ -153,7 +194,7 @@ function renderTurnsStr(svg, snap, headingRad){
     const dir = ang == null ? (st.modifier.includes('left') ? -1 : 1) : (ang < 0 ? -1 : 1);
     const deg = ang == null ? '' : Math.round(Math.abs(ang)) + '°';
     const dist = Math.round(haversine(pos, st));
-    const col = shown === 0 ? '#ffd400' : '#00cc70';
+    const col = shown === 0 ? tok.turnPrimary : tok.turnSecondary;
     const k = shown === 0 ? 1 : 0.72;
     const degFont = vb * 0.12 * k;
     const distFont = vb * 0.05 * k;
@@ -170,13 +211,13 @@ function renderTurnsStr(svg, snap, headingRad){
     let distY = P.y + s + distFont * 1.1;
     distY = Math.min(vbY + vbH - 4, distY);
     out +=
-      '<g font-family="Consolas,monospace" text-anchor="middle">' +
+      '<g font-family="' + tok.fontNum + ',monospace" text-anchor="middle">' +
         '<path d="M ' + (P.x + +base).toFixed(1) + ' ' + (P.y - s).toFixed(1) +
           ' L ' + (P.x + +tip).toFixed(1) + ' ' + P.y.toFixed(1) +
           ' L ' + (P.x + +base).toFixed(1) + ' ' + (P.y + s).toFixed(1) + '" ' +
           'fill="none" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '" stroke-linecap="round" stroke-linejoin="round"/>' +
         '<text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" font-size="' + degFont.toFixed(1) + '" font-weight="900" ' +
-          'stroke="#000" stroke-width="' + halo.toFixed(1) + '" stroke-linejoin="round" fill="#000" opacity="0.65">' + deg + '</text>' +
+          'stroke="' + tok.svgHalo + '" stroke-width="' + halo.toFixed(1) + '" stroke-linejoin="round" fill="' + tok.svgHalo + '" opacity="0.65">' + deg + '</text>' +
         '<text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" font-size="' + degFont.toFixed(1) + '" font-weight="900" fill="' + col + '">' + deg + '</text>' +
         '<text x="' + P.x.toFixed(1) + '" y="' + distY.toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" fill="' + col + '" opacity="0.9">' + dist + ' м</text>' +
       '</g>';
@@ -187,6 +228,7 @@ function renderTurnsStr(svg, snap, headingRad){
 
 function renderFuelStr(svg, snap, headingRad){
   if(S.fuelMode === 0 || !snap) return '';
+  const tok = getThemeTokens();
   const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
   const vb = bv && bv.width ? bv.width : L.W;
   const vbX = bv ? bv.x : 0;
@@ -212,13 +254,13 @@ function renderFuelStr(svg, snap, headingRad){
     let cx = Math.min(vbX + vbW - r - 2, Math.max(vbX + r + 2, P.x));
     let cy = Math.min(vbY + vbH - r - distFont - 4, Math.max(vbY + r + 2, P.y));
     out +=
-      '<g text-anchor="middle" font-family="Consolas,monospace">' +
+      '<g text-anchor="middle" font-family="' + tok.fontNum + ',monospace">' +
         '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" ' +
-          'fill="rgba(0,0,0,0.72)" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '"/>' +
+          'fill="' + tok.svgBgOverlay + '" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '"/>' +
         '<text x="' + cx.toFixed(1) + '" y="' + (cy + emoji * 0.36).toFixed(1) + '" font-size="' + emoji.toFixed(1) + '">\u26FD</text>' +
         '<text x="' + cx.toFixed(1) + '" y="' + (cy + r + distFont * 1.05).toFixed(1) + '" ' +
           'font-size="' + distFont.toFixed(1) + '" font-weight="900" fill="' + col + '" ' +
-          'stroke="#000" stroke-width="' + (distFont * 0.14).toFixed(1) + '" paint-order="stroke">' + distTxt + '</text>' +
+          'stroke="' + tok.svgHalo + '" stroke-width="' + (distFont * 0.14).toFixed(1) + '" paint-order="stroke">' + distTxt + '</text>' +
       '</g>';
   }
   return out;
@@ -239,12 +281,18 @@ export function renderPathway(){
   block.classList.remove('hidden');
   hud.classList.remove('no-path');
 
-  const geom = S.route?.geometry;
   const gpsHdg = S.smoothedHeading;
-  if(S.route && !geom) ensureRouteGeometry(S.route);
-  const snap = getRouteSnapForNav(gpsHdg);
+  if(S.route && !S.route.geometry) ensureRouteGeometry(S.route);
+
+  const rawSnap = getRouteSnapForNav(gpsHdg);
   const geomReady = S.route?.geometry;
-  if(!geomReady || !snap){
+  if(!geomReady || !rawSnap){
+    if(svg.innerHTML) svg.innerHTML = '';
+    return;
+  }
+  const speedMps = Math.max(0, S.dispSpeed / 3.6);
+  const snap = getDisplaySnap(rawSnap, geomReady, speedMps, gpsHdg);
+  if(!snap){
     if(svg.innerHTML) svg.innerHTML = '';
     return;
   }
@@ -256,27 +304,27 @@ export function renderPathway(){
 
   const headingRad = updateCamHeading(geomReady, snap);
   updateCamPitch(geomReady, snap, getElevExag(), S.showElevProfile);
-  const sections = computeRibbonSections(geomReady, snap, maxDist, ROAD_HALF);
+  const sections = computeRibbonSectionsCam(geomReady, snap, maxDist, ROAD_HALF, headingRad);
   if(sections.length < 2){
     svg.innerHTML = '';
     return;
   }
 
-  const speedMps = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
-  const mesh = buildStripMeshSvg(sections, snap, headingRad, geomReady, speedMps);
+  const mesh = buildStripMeshSvg(sections, geomReady, speedMps);
   let html = mesh.fill + mesh.edges;
+  const tok = getThemeTokens();
 
   const centerS = sections
-    .map(sec => ({ p: projectWorld(sec.lat, sec.lon, sec.elev, snap, headingRad), s: sec.s }))
+    .map(sec => ({ p: projectCam(sec.cx, sec.cz, sec.elev), s: sec.s }))
     .filter(x => x.p);
   for(let ci = 0; ci < centerS.length - 1; ci++){
     const a = centerS[ci];
     const b = centerS[ci + 1];
     const sMid = (a.s + b.s) * 0.5;
     const warnCol = ribbonCurveColor(sMid, geomReady, speedMps);
-    const stroke = warnCol || THEME.hud;
-    const sw = warnCol ? 4.5 : 3;
-    const op = warnCol ? 0.85 : 0.45;
+    const stroke = warnCol || tok.pathEdge;
+    const sw = warnCol ? tok.strokeW + 1.5 : tok.strokeW;
+    const op = warnCol ? 0.85 : tok.pathCenterOpacity;
     html += '<line x1="' + a.p.x.toFixed(1) + '" y1="' + a.p.y.toFixed(1) +
       '" x2="' + b.p.x.toFixed(1) + '" y2="' + b.p.y.toFixed(1) +
       '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" opacity="' + op + '"/>';
@@ -291,12 +339,14 @@ export function renderPathway(){
 }
 
 function renderParametricArrow(turnDeg){
+  const tok = getThemeTokens();
   const H = 120;
   const stemLen = H / 3;
   const exitLen = H / 3;
   const R = Math.abs(turnDeg) > 150 ? H / 3.2 : H / 4;
-  const sw = Math.round(H * 0.12);
-  const col = '#ffd400';
+  const sw = Math.round(H * 0.12 * (tok.strokeW / 3));
+  const col = tok.accent;
+  const outline = tok.arrowStyle === 'outline';
   const dirVec = aDeg => { const a = aDeg * Math.PI / 180; return [Math.sin(a), -Math.cos(a)]; };
   let a = 0, x = 0, y = 0;
   const pts = [[x, y]];
@@ -321,16 +371,25 @@ function renderParametricArrow(turnDeg){
   const vb = minX.toFixed(1) + ' ' + minY.toFixed(1) + ' ' + (maxX - minX).toFixed(1) + ' ' + (maxY - minY).toFixed(1);
   const line = '<polyline points="' + stem.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ') +
     '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round"/>';
-  const head = '<polygon points="' + tip[0].toFixed(1) + ',' + tip[1].toFixed(1) + ' ' +
+  const head = outline ? '' :
+    '<polygon points="' + tip[0].toFixed(1) + ',' + tip[1].toFixed(1) + ' ' +
     wingA[0].toFixed(1) + ',' + wingA[1].toFixed(1) + ' ' + wingB[0].toFixed(1) + ',' + wingB[1].toFixed(1) + '" fill="' + col + '"/>';
-  return '<svg class="arrow-svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + line + head + '</svg>';
+  const headOutline = outline ?
+    '<polyline points="' + tip[0].toFixed(1) + ',' + tip[1].toFixed(1) + ' ' +
+      wingA[0].toFixed(1) + ',' + wingA[1].toFixed(1) + ' ' + wingB[0].toFixed(1) + ',' + wingB[1].toFixed(1) +
+      ' ' + tip[0].toFixed(1) + ',' + tip[1].toFixed(1) +
+      '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linejoin="round"/>' : '';
+  return '<svg class="arrow-svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + line + head + headOutline + '</svg>';
 }
 
 function arriveFlagSVG(){
+  const tok = getThemeTokens();
+  const sw = Math.max(4, tok.strokeW + 2);
+  const col = tok.pathEdge;
   return '<svg class="arrow-svg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet">' +
-    '<rect x="-28" y="-32" width="56" height="40" fill="none" stroke="' + THEME.hud + '" stroke-width="5"/>' +
-    '<path d="M-28 -32 L-28 8 L28 -12 Z" fill="' + THEME.hud + '"/>' +
-    '<line x1="-28" y1="8" x2="-28" y2="28" stroke="' + THEME.hud + '" stroke-width="5"/>' +
+    '<rect x="-28" y="-32" width="56" height="40" fill="none" stroke="' + col + '" stroke-width="' + sw + '"/>' +
+    '<path d="M-28 -32 L-28 8 L28 -12 Z" fill="' + (tok.arrowStyle === 'outline' ? 'none' : col) + '" stroke="' + col + '" stroke-width="' + (sw * 0.5) + '"/>' +
+    '<line x1="-28" y1="8" x2="-28" y2="28" stroke="' + col + '" stroke-width="' + sw + '"/>' +
     '</svg>';
 }
 
@@ -350,8 +409,9 @@ export function buildArrowSVG(step){
 export function renderCompass(){
   const el = $('compass-svg');
   if(!el) return;
+  const tok = getThemeTokens();
   const W = 400, H = 36, cx = W / 2, px = 1.8;
-  let html = '<line x1="' + cx + '" y1="2" x2="' + cx + '" y2="' + H + '" stroke="#ffd400" stroke-width="2"/>';
+  let html = '<line x1="' + cx + '" y1="2" x2="' + cx + '" y2="' + H + '" stroke="' + tok.accent + '" stroke-width="2"/>';
   const hdg = effectiveHeading();
   if(hdg != null && !isNaN(hdg)){
     [['N',0],['E',90],['S',180],['W',270]].forEach(d => {
@@ -360,8 +420,8 @@ export function renderCompass(){
       if(x < 14 || x > W - 14) return;
       const near = Math.abs(diff) < 12;
       html += '<text x="' + x.toFixed(1) + '" y="29" text-anchor="middle" ' +
-        'font-family="-apple-system,Segoe UI,sans-serif" font-size="27" font-weight="900" ' +
-        'fill="' + (near ? '#ffd400' : '#fff') + '">' + d[0] + '</text>';
+        'font-family="' + tok.fontLabel + ',sans-serif" font-size="27" font-weight="900" ' +
+        'fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + '</text>';
     });
   }
   el.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
