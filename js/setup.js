@@ -1,6 +1,7 @@
 import { S, DEFAULT_ELEV_EXAG, DEFAULT_ELEV_PROFILE_H, MIN_ELEV_PROFILE_H, MAX_ELEV_PROFILE_H, DEFAULT_ELEV_PROFILE_LEN_KM, MIN_ELEV_PROFILE_LEN_KM, MAX_ELEV_PROFILE_LEN_KM } from './state.js';
 
 import { $ } from './util.js';
+import { parseInput } from './geo.js';
 
 import { startGps, checkStartReady } from './gps.js';
 
@@ -11,6 +12,7 @@ import { onTick, startHud, stopHud, cycleFuelAssist } from './hud.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { loadRouteElevation, saveElevOptsToStorage } from './elevation.js';
 import { computeCurveSpeed, saveCurveOptsToStorage } from './curve-speed.js';
+import { saveHudOptsToStorage, applyFinishInfoVisibility } from './hud-opts.js';
 
 import { isAndroidNative } from './platform.js';
 
@@ -183,6 +185,14 @@ export async function doAddressSearch(){
 
   }
 
+  if(parseInput(q)){
+
+    applyCoordsOrLink();
+
+    return;
+
+  }
+
   $('s-finish').textContent = '⏳ Ищем адрес…';
 
   $('s-finish').className = 'status';
@@ -190,6 +200,8 @@ export async function doAddressSearch(){
   S.finish = null;
 
   invalidateRoute();
+
+  if(window.__motoHUD) window.__motoHUD._searchBusy = true;
 
   try{
 
@@ -250,13 +262,28 @@ export async function doAddressSearch(){
 
     $('s-finish').className = 'status err';
 
+  }finally{
+
+    if(window.__motoHUD) window.__motoHUD._searchBusy = false;
+
   }
 
 }
 
 
 
-export function applyCoordsOrLink(){
+export function setFinishQuiet(lat, lon, label = 'Точка'){
+  S.finish = { lat, lon, label };
+  $('s-finish').textContent = '✅ Финиш: ' + lat.toFixed(5) + ', ' + lon.toFixed(5);
+  $('s-finish').className = 'status ok';
+  checkStartReady();
+}
+
+
+
+export function applyCoordsOrLink(opts = {}){
+
+  const hideSearch = opts.hideSearch !== false;
 
   const raw = $('finish-input').value.trim();
 
@@ -278,7 +305,7 @@ export function applyCoordsOrLink(){
 
   $('s-finish').className = 'status ok';
 
-  $('search-results').style.display = 'none';
+  if(hideSearch) $('search-results').style.display = 'none';
 
   invalidateRoute();
 
@@ -335,6 +362,18 @@ export function bindSetupUI(){
   $('btn-parse').addEventListener('click', applyCoordsOrLink);
 
   $('btn-build-route').addEventListener('click', doBuildRoute);
+
+  $('finish-input').addEventListener('input', () => {
+    $('finish-input').dataset.userEdited = '1';
+  });
+
+  $('finish-input').addEventListener('focus', () => {
+    if(window.__motoHUD) window.__motoHUD._finishFocused = true;
+  });
+
+  $('finish-input').addEventListener('blur', () => {
+    if(window.__motoHUD) window.__motoHUD._finishFocused = false;
+  });
 
   $('finish-input').addEventListener('keydown', e => {
 
@@ -423,6 +462,17 @@ export function bindSetupUI(){
     }
 
   });
+
+  const bindFinishOpt = id => {
+    $(id)?.addEventListener('change', () => {
+      syncOptionsFromDom();
+      saveHudOptsToStorage();
+      applyFinishInfoVisibility();
+    });
+  };
+  bindFinishOpt('opt-finish-dist');
+  bindFinishOpt('opt-finish-time');
+  bindFinishOpt('opt-finish-eta');
 
   function syncElevInputs(){
     const on = S.showElevProfile;
@@ -597,6 +647,11 @@ export function syncOptionsFromDom(){
   S.voice = $('opt-voice').checked;
 
   S.showPath = $('opt-path').checked;
+
+  S.showFinishDist = $('opt-finish-dist')?.checked ?? true;
+  S.showFinishTime = $('opt-finish-time')?.checked ?? true;
+  S.showFinishEta = $('opt-finish-eta')?.checked ?? true;
+  applyFinishInfoVisibility();
 
   S.showElevProfile = $('opt-elev-profile').checked;
 

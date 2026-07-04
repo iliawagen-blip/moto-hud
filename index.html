@@ -15,6 +15,13 @@
     var theme=themes.indexOf(p.theme)>=0?p.theme:'avionics';
     var modes=['day','night','auto'];
     var mp=modes.indexOf(p.modePref)>=0?p.modePref:'night';
+    var q=new URLSearchParams(location.search);
+    if(q.get('sim')==='1'){
+      var qt=q.get('theme');
+      if(qt&&themes.indexOf(qt)>=0) theme=qt;
+      var qm=q.get('mode');
+      if(qm&&modes.indexOf(qm)>=0) mp=qm;
+    }
     var r=document.documentElement;
     r.classList.add('theme-'+theme);
     if(mp!=='auto') r.setAttribute('data-mode', mp);
@@ -29,7 +36,7 @@
 })();
 </script>
 <link rel="stylesheet" href="css/leaflet.css">
-<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/app.css?v=mr6xr2su">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -254,7 +261,7 @@
 </div>
 
 <script src="js/sim.js"></script>
-<script type="module" src="js/app.js?v=mr6xm5tf"></script>
+<script type="module" src="js/app.js?v=mr6xr2su"></script>
 
 </body>
 </html>

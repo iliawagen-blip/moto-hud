@@ -4,6 +4,7 @@
 import { S } from './state.js';
 import { $ } from './util.js';
 import { isNative } from './platform.js';
+import { initRuVoice, refreshRuVoice, scoreRuVoice } from './tts-ru.js';
 
 const TTS_LANG = 'ru-RU';
 
@@ -54,6 +55,10 @@ export async function auditTtsHealth(){
   const voices = speechSynthesis.getVoices();
   const ru = voices.filter(v => (v.lang || '').toLowerCase().startsWith('ru'));
   const localRu = ru.filter(v => v.localService);
+  const best = ru.reduce((acc, v) => {
+    const sc = scoreRuVoice(v);
+    return sc > acc.score ? { score: sc, name: v.name } : acc;
+  }, { score: -1, name: '' });
   return {
     ok: ru.length > 0,
     offlineVoice: localRu.length > 0,
@@ -63,7 +68,9 @@ export async function auditTtsHealth(){
       ? 'Русский голос не найден — проверьте настройки озвучки системы/браузера.'
       : !localRu.length
         ? 'Только облачные голоса — без сети озвучка может не работать.'
-        : ''
+        : best.name
+          ? 'Голос: ' + best.name
+          : ''
   };
 }
 
@@ -118,8 +125,12 @@ export async function refreshTtsBanner(){
 
 /** Запуск при старте + после смены опции «Голос» */
 export function initTtsHealth(){
+  initRuVoice();
   if('speechSynthesis' in window){
-    speechSynthesis.addEventListener('voiceschanged', () => { refreshTtsBanner(); }, { once: false });
+    speechSynthesis.addEventListener('voiceschanged', () => {
+      refreshRuVoice();
+      refreshTtsBanner();
+    }, { once: false });
   }
   refreshTtsBanner();
 }

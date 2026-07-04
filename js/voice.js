@@ -1,6 +1,7 @@
 import { S } from './state.js';
 import { angleDiff } from './geo.js';
 import { isNative } from './platform.js';
+import { getNativeRuVoiceIdx, getWebRuVoice, refreshRuVoice } from './tts-ru.js';
 
 const _queue = [];
 let _busy = false;
@@ -9,16 +10,23 @@ let _lastText = '';
 let _lastSpeakTs = 0;
 const DEDUPE_MS = 6500;
 
+const TTS_RATE = 0.98;
+const TTS_PITCH = 1.0;
+
 async function speakNative(text){
+  await refreshRuVoice();
+  const voiceIdx = getNativeRuVoiceIdx();
   const { TextToSpeech } = await import('@capacitor-community/text-to-speech');
-  await TextToSpeech.speak({
+  const opts = {
     text,
     lang: 'ru-RU',
-    rate: 1.05,
-    pitch: 1.0,
+    rate: TTS_RATE,
+    pitch: TTS_PITCH,
     volume: 1.0,
     category: 'playback'
-  });
+  };
+  if(voiceIdx >= 0) opts.voice = voiceIdx;
+  await TextToSpeech.speak(opts);
 }
 
 function speakWeb(text){
@@ -28,7 +36,15 @@ function speakWeb(text){
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'ru-RU';
-      u.rate = 1.05;
+      u.rate = TTS_RATE;
+      u.pitch = TTS_PITCH;
+      let voice = getWebRuVoice();
+      if(!voice){
+        const list = speechSynthesis.getVoices().filter(v =>
+          (v.lang || '').toLowerCase().startsWith('ru'));
+        voice = list[0] || null;
+      }
+      if(voice) u.voice = voice;
       u.onend = () => resolve();
       u.onerror = () => reject(new Error('TTS'));
       speechSynthesis.speak(u);

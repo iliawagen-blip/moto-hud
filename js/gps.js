@@ -45,22 +45,18 @@ export function easeSpeed(){
 
 let _onTick = () => {};
 let _onVisual = () => {};
-let _lastPathBuild = 0;
 
 export function initGps(callbacks){
   _onTick = callbacks.onTick || _onTick;
   _onVisual = callbacks.onVisual || _onVisual;
 }
 
-export function visualLoop(ts){
+export function visualLoop(){
   S.rafId = requestAnimationFrame(visualLoop);
   if(!$('hud').classList.contains('on')) return;
   updateRenderPos();
   easeSpeed();
-  if(ts - _lastPathBuild >= 33){
-    _lastPathBuild = ts;
-    _onVisual();
-  }
+  _onVisual();
 }
 
 export function startVisualLoop(){
@@ -105,8 +101,8 @@ export function applyGpsFix(next){
     if(S.smoothedHeading == null) S.smoothedHeading = next.heading;
     else {
       const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * 0.7 + Math.sin(next.heading * r) * 0.3;
-      const sy = Math.cos(S.smoothedHeading * r) * 0.7 + Math.cos(next.heading * r) * 0.3;
+      const sx = Math.sin(S.smoothedHeading * r) * 0.82 + Math.sin(next.heading * r) * 0.18;
+      const sy = Math.cos(S.smoothedHeading * r) * 0.82 + Math.cos(next.heading * r) * 0.18;
       S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
     }
   }

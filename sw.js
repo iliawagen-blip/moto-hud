@@ -6,7 +6,7 @@
 
    НЕ перехватываются — ими управляет само приложение. */
 
-const CACHE = 'moto-hud-shell-v14';
+const CACHE = 'moto-hud-shell-v15';
 
 const SHELL = [
 
@@ -104,7 +104,8 @@ self.addEventListener('fetch', event => {
 
 
 
-  if(url.pathname.endsWith('/js/app.js') || url.pathname.endsWith('/js/app.js.map')){
+  if(url.pathname.endsWith('/js/app.js') || url.pathname.endsWith('/js/app.js.map') ||
+     url.pathname.includes('/css/')){
 
     event.respondWith(respondNetworkFirst(req));
 
