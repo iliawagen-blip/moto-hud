@@ -16259,6 +16259,30 @@ function initTelemetryUI() {
   refreshSessionsList();
 }
 
+// js/sw-register.js
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator) || window.__SIM__ || location.protocol === "file:") return;
+  const raw = window.__BUILD_ID__;
+  const buildId = raw && raw !== "__BUILD_ID__" ? raw : "dev";
+  const url = "sw.js?v=" + encodeURIComponent(buildId);
+  navigator.serviceWorker.register(url, { scope: "./" }).then((reg) => {
+    const reloadIfWaiting = (worker) => {
+      if (!worker) return;
+      worker.postMessage({ type: "SKIP_WAITING" });
+      if (navigator.serviceWorker.controller) location.reload();
+    };
+    if (reg.waiting) reloadIfWaiting(reg.waiting);
+    reg.addEventListener("updatefound", () => {
+      const nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener("statechange", () => {
+        if (nw.state === "installed") reloadIfWaiting(nw);
+      });
+    });
+  }).catch(() => {
+  });
+}
+
 // js/main.js
 applyThemeCss();
 initThemeManager();
@@ -16287,17 +16311,12 @@ window.__motoHUD = {
 window.applyTheme = applyTheme;
 window.addEventListener("load", () => {
   setTimeout(startGps, 400);
+  registerServiceWorker();
   if (window.__SIM__?.boot && !window.__SIM__._bootScheduled) {
     window.__SIM__._bootScheduled = true;
     setTimeout(() => window.__SIM__.boot(), 500);
   }
 });
-if ("serviceWorker" in navigator && !window.__SIM__ && location.protocol !== "file:") {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(() => {
-    });
-  });
-}
 /*! Bundled license information:
 
 @capacitor/core/dist/index.js:

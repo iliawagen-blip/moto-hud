@@ -4,6 +4,7 @@ import esbuild from 'esbuild';
 
 const ROOT = process.cwd();
 const WWW = path.join(ROOT, 'www');
+const BUILD_ID = Date.now().toString(36);
 
 const STATIC_FILES = ['index.html', 'sim.html', 'manifest.json', 'icon.svg', 'sw.js', 'serve.json', 'preview.bat'];
 const STATIC_DIRS = ['css', 'js', 'fixtures'];
@@ -28,6 +29,13 @@ function cpDir(srcDir, dstDir, filter){
   }
 }
 
+function stampBuildId(filePath){
+  if(!fs.existsSync(filePath)) return;
+  let text = fs.readFileSync(filePath, 'utf8');
+  text = text.replace(/__BUILD_ID__/g, BUILD_ID);
+  fs.writeFileSync(filePath, text);
+}
+
 // бандл: резолвит @capacitor/* для нативного приложения и PWA
 await esbuild.build({
   entryPoints: [path.join(ROOT, 'js', 'main.js')],
@@ -50,6 +58,11 @@ await esbuild.build({
   logLevel: 'info'
 });
 
+// Версия SW, manifest, cache-bust в index.html
+for(const rel of ['sw.js', 'manifest.json', 'index.html']){
+  stampBuildId(path.join(ROOT, rel));
+}
+
 // www/ для Capacitor sync
 rmrf(WWW);
 fs.mkdirSync(WWW, { recursive: true });
@@ -65,19 +78,9 @@ STATIC_DIRS.forEach(d => {
   }
 });
 
+stampBuildId(path.join(WWW, 'index.html'));
+stampBuildId(path.join(WWW, 'manifest.json'));
+stampBuildId(path.join(WWW, 'sw.js'));
+
 console.log('build OK: js/app.js + www/');
-
-function bumpCacheBustTags(){
-  const buildId = Date.now().toString(36);
-  for(const rel of ['index.html', path.join(WWW, 'index.html')]){
-    const f = path.join(ROOT, rel);
-    if(!fs.existsSync(f)) continue;
-    let html = fs.readFileSync(f, 'utf8');
-    html = html.replace(/src="js\/app\.js(\?v=[^"]*)?"/, `src="js/app.js?v=${buildId}"`);
-    html = html.replace(/href="css\/app\.css(\?v=[^"]*)?"/, `href="css/app.css?v=${buildId}"`);
-    fs.writeFileSync(f, html);
-  }
-  console.log('cache-bust: ?v=' + buildId);
-}
-
-bumpCacheBustTags();
+console.log('build-id: ' + BUILD_ID);
