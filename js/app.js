@@ -10650,6 +10650,12 @@ var S = {
   // idle | loading | ok | err | off
   camWarned: /* @__PURE__ */ new Set(),
   offRouteSince: null,
+  offRouteSuspect: false,
+  rerouting: false,
+  rerouteBackoffStep: 0,
+  rerouteBackoffUntil: 0,
+  rerouteNetworkWarn: false,
+  rerouteFailVoiceAt: 0,
   watchId: null,
   wakeLock: null,
   startTs: null,
@@ -13248,13 +13254,23 @@ function selectRouteIndex(idx) {
   resetRouteSnap();
   resetFuelRouteBinding();
 }
-async function buildRoute() {
+async function buildRoute(opts = {}) {
+  const { reroute = false, allowCache = true } = opts;
   if (S.routeAlternatives.length) {
     selectRouteIndex(S.selectedRouteIdx);
     return;
   }
   S._usedCache = false;
-  const url = `https://router.project-osrm.org/route/v1/driving/${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}?overview=full&geometries=geojson&steps=true&annotations=false`;
+  let url = `https://router.project-osrm.org/route/v1/driving/${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}?overview=full&geometries=geojson&steps=true&annotations=false`;
+  if (reroute) {
+    const spd = S.gps.speed != null ? S.gps.speed : 0;
+    const hdg = S.smoothedHeading;
+    if (spd > 3 && hdg != null && !isNaN(hdg)) {
+      const brg = Math.round(hdg);
+      const rad = Math.max(30, Math.round(S.gps.acc || 30));
+      url += "&bearings=" + brg + ",45;&radiuses=" + rad + ";";
+    }
+  }
   try {
     const r = await fetch(url);
     if (!r.ok) throw new Error("OSRM HTTP " + r.status);
@@ -13262,8 +13278,11 @@ async function buildRoute() {
     if (!j.routes || !j.routes.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     S.route = parseOsrmRoute(j.routes[0]);
     attachRouteGeometry(S.route);
-    telemetry_default.log("nav", { sub: "route_built" });
+    if (!reroute) telemetry_default.log("nav", { sub: "route_built" });
   } catch (err) {
+    if (!allowCache) {
+      throw err;
+    }
     const last = loadLastRun();
     if (last && last.route && S.finish && last.finish && haversine(last.finish, S.finish) < 60) {
       S.route = last.route;
@@ -13274,6 +13293,51 @@ async function buildRoute() {
       return;
     }
     throw new Error("\u041D\u0435\u0442 \u0441\u0435\u0442\u0438 \u0438 \u043D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 \u043A \u044D\u0442\u043E\u0439 \u0442\u043E\u0447\u043A\u0435");
+  }
+}
+function classifyRerouteError(err) {
+  const msg = String(err?.message || err || "");
+  if (err instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg)) {
+    return "network";
+  }
+  if (/не найден|no route|NoRoute/i.test(msg)) return "no_route";
+  if (/OSRM HTTP/i.test(msg)) return "osrm_error";
+  return "network";
+}
+async function recalcRoute() {
+  if (S.rerouting) return false;
+  S.rerouting = true;
+  const t0 = Date.now();
+  try {
+    S.routeAlternatives = [];
+    await buildRoute({ reroute: true, allowCache: false });
+    telemetry_default.log("nav", { sub: "reroute" });
+    Array.from(S.camWarned).forEach((k) => {
+      if (typeof k === "string" && k.startsWith("st_")) S.camWarned.delete(k);
+    });
+    await loadCameras();
+    if (S.camLoadStatus === "err") {
+      console.warn("\u041A\u0430\u043C\u0435\u0440\u044B \u043F\u043E\u0441\u043B\u0435 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C");
+      telemetry_default.log("nav", { sub: "cameras_reload_failed" });
+    }
+    S.rerouteBackoffStep = 0;
+    S.rerouteBackoffUntil = 0;
+    return true;
+  } catch (e) {
+    console.warn("\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:", e);
+    const reason = classifyRerouteError(e);
+    telemetry_default.log("nav", {
+      sub: "reroute_failed",
+      reason,
+      dur_ms: Date.now() - t0
+    });
+    const delays = [5e3, 15e3, 6e4];
+    const step = Math.min(S.rerouteBackoffStep, 2);
+    S.rerouteBackoffUntil = Date.now() + delays[step];
+    S.rerouteBackoffStep = Math.min(S.rerouteBackoffStep + 1, 2);
+    return false;
+  } finally {
+    S.rerouting = false;
   }
 }
 async function loadCameras() {
@@ -13454,18 +13518,6 @@ function getRemainingDistance() {
     remaining = haversine(S.gps, S.finish);
   }
   return remaining;
-}
-async function recalcRoute() {
-  try {
-    S.routeAlternatives = [];
-    await buildRoute();
-    telemetry_default.log("nav", { sub: "reroute" });
-    Array.from(S.camWarned).forEach((k) => {
-      if (typeof k === "string" && k.startsWith("st_")) S.camWarned.delete(k);
-    });
-  } catch (e) {
-    console.warn("\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:", e);
-  }
 }
 function maneuverTurnAngle(step) {
   if (!S.route || !step) return 0;
@@ -15381,6 +15433,80 @@ function initThemeManager() {
 }
 
 // js/hud.js
+var OFF_ROUTE_WARN_OK = "\u25C6 \u041F\u0415\u0420\u0415\u0421\u0427\u0401\u0422 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0410 \u25C6";
+var OFF_ROUTE_WARN_FAIL = "\u25C6 \u041D\u0415\u0422 \u0421\u0412\u042F\u0417\u0418 \u2014 \u0412\u0415\u0420\u041D\u0418\u0422\u0415\u0421\u042C \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422 \u25C6";
+var OFF_ROUTE_ENTER_M = 50;
+var OFF_ROUTE_EXIT_M = 25;
+var OFF_ROUTE_CONFIRM_MS = 8e3;
+var GPS_ACC_GATE_M = 30;
+var ACC_FACTOR = 1.5;
+function clearOffRouteWarn() {
+  const el = $("offRouteWarn");
+  if (!el) return;
+  el.classList.remove("on");
+  el.textContent = OFF_ROUTE_WARN_OK;
+  S.rerouteNetworkWarn = false;
+}
+function showRerouteOk() {
+  const el = $("offRouteWarn");
+  if (!el) return;
+  el.textContent = OFF_ROUTE_WARN_OK;
+  el.classList.add("on");
+  setTimeout(() => clearOffRouteWarn(), 2e3);
+}
+function showRerouteFail() {
+  const el = $("offRouteWarn");
+  if (!el) return;
+  el.textContent = OFF_ROUTE_WARN_FAIL;
+  el.classList.add("on");
+  S.rerouteNetworkWarn = true;
+  const now = Date.now();
+  if (!S.rerouteFailVoiceAt || now - S.rerouteFailVoiceAt > 6e4) {
+    S.rerouteFailVoiceAt = now;
+    speak("\u041D\u0435\u0442 \u0441\u0432\u044F\u0437\u0438. \u0412\u0435\u0440\u043D\u0438\u0442\u0435\u0441\u044C \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
+  }
+}
+function tickOffRouteDetector(near) {
+  if (S.rerouting || !near) return;
+  const acc = S.gps.acc || 0;
+  if (acc > GPS_ACC_GATE_M) return;
+  const dist = near.dist;
+  const enterM = Math.max(OFF_ROUTE_ENTER_M, ACC_FACTOR * acc);
+  const inDeadZone = dist >= OFF_ROUTE_EXIT_M && dist <= OFF_ROUTE_ENTER_M;
+  const spd = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  if (dist > enterM) {
+    if (!S.offRouteSuspect) {
+      S.offRouteSuspect = true;
+      S.offRouteSince = Date.now();
+      telemetry_default.log("nav", { sub: "off_route_suspect", lateral: dist, acc, spd });
+    }
+  } else if (dist < OFF_ROUTE_EXIT_M) {
+    if (S.offRouteSuspect) {
+      const dur = S.offRouteSince ? Date.now() - S.offRouteSince : 0;
+      telemetry_default.log("nav", { sub: "off_route_cancel", dur_ms: dur });
+    }
+    S.offRouteSuspect = false;
+    S.offRouteSince = null;
+    S.rerouteBackoffStep = 0;
+    S.rerouteBackoffUntil = 0;
+    clearOffRouteWarn();
+    return;
+  }
+  if (!S.offRouteSuspect || inDeadZone) return;
+  if (!S.offRouteSince) S.offRouteSince = Date.now();
+  else if (Date.now() - S.offRouteSince > OFF_ROUTE_CONFIRM_MS) {
+    if (S.rerouteBackoffUntil && Date.now() < S.rerouteBackoffUntil) return;
+    S.offRouteSince = null;
+    recalcRoute().then((ok) => {
+      if (ok) {
+        S.offRouteSuspect = false;
+        showRerouteOk();
+      } else {
+        showRerouteFail();
+      }
+    });
+  }
+}
 function maneuverVoiceThresholds(kmh) {
   const mps = Math.max(kmh / 3.6, 4);
   return {
@@ -15522,19 +15648,7 @@ function onTick() {
   updateFinishInfo(remaining, kmh, now);
   $("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
   const near = findNearestOnRoute();
-  if (near && near.dist > 40) {
-    if (!S.offRouteSince) S.offRouteSince = Date.now();
-    else if (Date.now() - S.offRouteSince > 8e3) {
-      $("offRouteWarn").classList.add("on");
-      S.offRouteSince = null;
-      recalcRoute().then(() => {
-        setTimeout(() => $("offRouteWarn").classList.remove("on"), 2e3);
-      });
-    }
-  } else {
-    S.offRouteSince = null;
-    $("offRouteWarn").classList.remove("on");
-  }
+  tickOffRouteDetector(near);
   if (remaining < 30 && !S.camWarned.has("arrived")) {
     S.camWarned.add("arrived");
     speak("\u0412\u044B \u043F\u0440\u0438\u0431\u044B\u043B\u0438");

@@ -188,6 +188,11 @@ export async function recalcRoute(){
     Array.from(S.camWarned).forEach(k => {
       if(typeof k === 'string' && k.startsWith('st_')) S.camWarned.delete(k);
     });
+    await loadCameras();
+    if(S.camLoadStatus === 'err'){
+      console.warn('Камеры после пересчёта не загрузились');
+      telemetry.log('nav', { sub: 'cameras_reload_failed' });
+    }
     S.rerouteBackoffStep = 0;
     S.rerouteBackoffUntil = 0;
     return true;
