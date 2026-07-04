@@ -44,6 +44,9 @@
 4. Через 1–2 минуты сайт будет доступен:
    `https://iliawagen-blip.github.io/moto-hud/`
 
+**План развития продукта:**  
+[docs/plan.html](https://iliawagen-blip.github.io/moto-hud/docs/plan.html) (локально: `docs/plan.html`).
+
 **План подготовки к RuStore / APK / web-тестам:**  
 [docs/release-plan.html](https://iliawagen-blip.github.io/moto-hud/docs/release-plan.html) (локально: `docs/release-plan.html`).
 

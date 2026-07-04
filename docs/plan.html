@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мото ИЛС — план развития</title>
+<style>
+:root{
+  --bg:#000; --fg:#e8eef5; --dim:#8b9cb3;
+  --accent:#00ff66; --accent2:#ffd400;
+  --ok:#39d353; --warn:#ffb000; --danger:#e10600;
+  --panel:#0a0f16; --panel2:#141d2a; --border:#1a2332;
+  --link:#6eb5ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--fg);
+  font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  padding:24px 16px 64px;
+  max-width:960px; margin:0 auto;
+}
+h1{font-size:1.75rem;color:var(--accent);margin-bottom:6px;line-height:1.25;letter-spacing:-.02em}
+.sub{color:var(--dim);font-size:.95rem;margin-bottom:24px;line-height:1.5}
+h2{font-size:1.2rem;color:var(--accent2);margin:36px 0 14px;padding-top:10px;border-top:1px solid var(--border)}
+h3{font-size:1.02rem;color:var(--fg);margin:22px 0 10px}
+h4{font-size:.95rem;color:var(--dim);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.06em}
+p,li{margin-bottom:.45em}
+ul,ol{padding-left:1.35em;margin-bottom:1em}
+a{color:var(--link)}
+table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:.9rem}
+th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--panel2);color:var(--accent2);font-weight:700}
+tr:nth-child(even) td{background:rgba(20,29,42,.4)}
+code,pre{background:var(--panel2);border:1px solid var(--border);border-radius:6px}
+code{padding:2px 6px;font-size:.86em;color:#c5e8ff}
+pre{padding:12px 14px;overflow-x:auto;font-size:.84rem;line-height:1.45;margin:12px 0}
+.note,.warn,.ok-box{
+  border-radius:10px;padding:12px 14px;margin:14px 0;font-size:.93rem;
+  border:1px solid var(--border);
+}
+.note{background:var(--panel);border-left:3px solid var(--link)}
+.warn{background:rgba(255,176,0,.07);border-left:3px solid var(--warn)}
+.ok-box{background:rgba(57,211,83,.07);border-left:3px solid var(--ok)}
+nav.toc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:28px}
+nav.toc ol{margin-bottom:0;columns:2;column-gap:24px}
+nav.toc a{text-decoration:none}
+nav.toc a:hover{text-decoration:underline}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color:var(--dim);font-size:.85rem}
+.badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:800;margin-right:4px;vertical-align:middle}
+.b-done{background:rgba(57,211,83,.15);color:var(--ok);border:1px solid rgba(57,211,83,.35)}
+.b-part{background:rgba(255,176,0,.12);color:var(--warn);border:1px solid rgba(255,176,0,.3)}
+.b-todo{background:rgba(139,156,179,.12);color:var(--dim);border:1px solid var(--border)}
+.b-next{background:rgba(0,255,102,.1);color:var(--accent);border:1px solid rgba(0,255,102,.3)}
+.phase{
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;margin:16px 0;
+}
+.phase-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:10px}
+.phase-head h3{margin:0;flex:1 1 auto}
+.checklist{list-style:none;padding-left:0;margin-bottom:0}
+.checklist li{padding:5px 0 5px 1.7em;position:relative;font-size:.94rem}
+.checklist li::before{position:absolute;left:0;font-weight:700}
+.checklist li.done::before{content:"✓";color:var(--ok)}
+.checklist li.part::before{content:"◐";color:var(--warn)}
+.checklist li.todo::before{content:"○";color:var(--dim)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+@media(max-width:640px){nav.toc ol{columns:1}.grid2{grid-template-columns:1fr}}
+.theme-chip{display:inline-block;padding:3px 8px;border-radius:4px;font-size:.78rem;margin:2px 4px 2px 0;border:1px solid var(--border);background:var(--panel2)}
+.progress-bar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin:8px 0 4px}
+.progress-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px}
+.legend{font-size:.82rem;color:var(--dim);margin-bottom:20px}
+.legend span{margin-right:14px}
+.milestone{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.milestone:last-child{border-bottom:0}
+.milestone-id{min-width:52px;font-weight:800;color:var(--accent2);font-size:.85rem}
+</style>
+</head>
+<body>
+
+<h1>🏍 Мото ИЛС — план развития</h1>
+<p class="sub">
+  Живой документ продукта · HUD-навигатор для мотоцикла<br>
+  Обновлено: <strong>2026-07-05</strong> · package: <code>ru.vagin.motohud</code> ·
+  исходник: <a href="../MASTERPLAN.md">MASTERPLAN.md</a>
+</p>
+
+<p class="legend">
+  <span><span class="badge b-done">✓</span> сделано</span>
+  <span><span class="badge b-part">◐</span> частично</span>
+  <span><span class="badge b-todo">○</span> в плане</span>
+  <span><span class="badge b-next">→</span> ближайший фокус</span>
+</p>
+
+<nav class="toc" aria-label="Содержание">
+<strong>Содержание</strong>
+<ol>
+  <li><a href="#vision">Видение</a></li>
+  <li><a href="#status">Текущее состояние</a></li>
+  <li><a href="#principles">Принципы</a></li>
+  <li><a href="#stack">Стек</a></li>
+  <li><a href="#phases">Дорожная карта (фазы 0–8)</a></li>
+  <li><a href="#themes">Система тем</a></li>
+  <li><a href="#milestones">Вехи релизов</a></li>
+  <li><a href="#integration">Сосуществование с другими приложениями</a></li>
+  <li><a href="#risks">Риски</a></li>
+  <li><a href="#metrics">Метрики</a></li>
+  <li><a href="#scope">Вне скоупа</a></li>
+  <li><a href="#next">Ближайший шаг</a></li>
+  <li><a href="#docs">Связанные документы</a></li>
+</ol>
+</nav>
+
+<div class="ok-box">
+  <strong>Сводка прогресса:</strong> прототип HUD и прогноз-дорожка v2 готовы;
+  PWA-оболочка и Capacitor Android — в основном собраны;
+  офлайн-навигация и гарантированный голос в гарнитуру — ключевые разрывы до «настоящего мотонавигатора».
+</div>
+
+<!-- ===== VISION ===== -->
+<h2 id="vision">1. Видение продукта</h2>
+<p>
+  <strong>Мото-ИЛС</strong> — навигатор-«стеклянная кабина» для мотоцикла: крупный HUD
+  (манёвр, дистанция, скорость, прогноз-дорожка, курс), голос в гарнитуру шлема,
+  работа <strong>без сети</strong> и в фоне.
+</p>
+<ul>
+  <li>Считывается за долю секунды на скорости и через тонированный визор</li>
+  <li>Голос манёвров в BT-гарнитуру без «танцев с бубном»</li>
+  <li>Офлайн-карты и маршрут — связь в горах часто отсутствует</li>
+  <li>Учитывает мото: извилистость, камеры «в спину», крупная моторика в перчатках</li>
+  <li>Кооперативность с Яндекс Навигатором, антирадаром, музыкой — не война за ресурсы</li>
+</ul>
+<p><strong>Целевая платформа №1 — Android.</strong> iOS — после вехи M6.</p>
+
+<!-- ===== STATUS ===== -->
+<h2 id="status">2. Текущее состояние</h2>
+
+<div class="grid2">
+  <div class="note">
+    <h4>Уже есть</h4>
+    <ul class="checklist">
+      <li class="done">HUD: grid, стрелка, дорожка, компас, finish-info</li>
+      <li class="done">RouteGeometry + профиль высот + curve speed warning</li>
+      <li class="done">rAF, dead reckoning, GPX-replay в <a href="../sim.html">sim.html</a></li>
+      <li class="done">PWA: manifest, service worker, кеш оболочки</li>
+      <li class="done">Capacitor Android, фоновый GPS, keep-awake</li>
+      <li class="done">Нативный TTS (MVP), TTS-health, упреждение по времени</li>
+      <li class="done">Топливный ассистент ⛽ (OSM + ГдеБЕНЗ в native)</li>
+      <li class="done">6 тем оформления × день/ночь/авто</li>
+      <li class="done">Модули esbuild → <code>js/app.js</code>, деплой GitHub Pages</li>
+    </ul>
+  </div>
+  <div class="warn">
+    <h4>Критичные разрывы</h4>
+    <ul class="checklist">
+      <li class="todo">Офлайн: маршрут OSRM, POI Overpass, поиск Nominatim — всё онлайн</li>
+      <li class="todo">Фоновый GPS в браузере умирает через 30–60 с</li>
+      <li class="todo">Audio focus / BT-маршрутизация в гарнитуру не гарантированы</li>
+      <li class="todo">OEM-тесты фонового сервиса (≥ 3 вендора)</li>
+      <li class="todo">Closed testing Play Console</li>
+      <li class="part">Курс: sensor fusion MVP, полный ROTATION_VECTOR — далее</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== PRINCIPLES ===== -->
+<h2 id="principles">3. Стратегические принципы</h2>
+<ol>
+  <li><strong>Два трека:</strong> (A) платформа/оболочка и (B) карты+роутинг — параллельно; для мотонавигатора (B) важнее.</li>
+  <li><strong>Ничего не выбрасываем:</strong> PWA → Capacitor → точечный натив. Flutter — только если продукт «взлетит».</li>
+  <li><strong>Соло-темп:</strong> каждая фаза даёт работающий результат.</li>
+  <li><strong>Безопасность &gt; фичи:</strong> в движении — только крупная моторика и «да/нет» голосом.</li>
+  <li><strong>Тестируемость:</strong> любая фича — сначала <a href="../sim.html">sim.html</a> и реальные GPX-фикстуры.</li>
+</ol>
+
+<!-- ===== STACK ===== -->
+<h2 id="stack">4. Стек (решения)</h2>
+<table>
+<thead><tr><th>Слой</th><th>Решение</th><th>Зачем</th></tr></thead>
+<tbody>
+<tr><td>Оболочка</td><td><strong>Capacitor</strong></td><td>90% веб-кода; стор; нативные плагины точечно</td></tr>
+<tr><td>UI / рендер</td><td><strong>HTML + SVG + rAF</strong></td><td>Уже плавно (~0.5 мс/кадр); без тяжёлого WebGL в HUD</td></tr>
+<tr><td>Карты офлайн</td><td><strong>MapLibre GL + PMTiles</strong></td><td>Свободные векторные тайлы, self-host</td></tr>
+<tr><td>Роутинг офлайн</td><td><strong>Valhalla / GraphHopper / BRouter</strong></td><td>Спайк-выбор; мото-профили, round-trip</td></tr>
+<tr><td>Голос</td><td>TTS Capacitor + <strong>audio focus</strong></td><td>Доставка в гарнитуру, ducking музыки</td></tr>
+<tr><td>Темы</td><td>CSS custom properties</td><td>6 тем × день/ночь; семантика warn/danger/ok единая</td></tr>
+</tbody>
+</table>
+
+<!-- ===== PHASES ===== -->
+<h2 id="phases">5. Дорожная карта по фазам</h2>
+
+<div class="phase">
+  <div class="phase-head">
+    <h3>Фаза 0 — Стабилизация прототипа</h3>
+    <span class="badge b-done">✓ в основном</span>
+  </div>
+  <div class="progress-bar"><i style="width:92%"></i></div>
+  <ul class="checklist">
+    <li class="done">Grid-HUD, стрелка, прогноз-дорожка, компас, адаптив, fullscreen</li>
+    <li class="done">RouteGeometry ROADPATH этапы 1–4 (snap, Frenet, elev, curve warning)</li>
+    <li class="done">GPX-replay, синтетический маршрут в sim, голос только на поворотах</li>
+    <li class="done">Единые токены оформления, кэш для SVG</li>
+    <li class="part">Регресс на полном наборе GPX-треков — расширять по мере выездов</li>
+  </ul>
+  <p class="note" style="margin-top:10px;margin-bottom:0"><strong>Готово когда:</strong> HUD стабилен в sim на всех типах манёвров и на записанных треках.</p>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <h3>Фаза 1 — PWA-обвязка</h3>
+    <span class="badge b-done">✓</span>
+  </div>
+  <div class="progress-bar"><i style="width:100%"></i></div>
+  <ul class="checklist">
+    <li class="done">manifest.json, SW precache, offline UI</li>
+    <li class="done">Кеш последней поездки (localStorage MVP)</li>
+    <li class="todo">Миграция кеша → IndexedDB (перенесено в фазу 4)</li>
+  </ul>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <h3>Фаза 2 — Capacitor Android</h3>
+    <span class="badge b-part">◐ ~75%</span>
+    <span class="badge b-next">→ фокус</span>
+  </div>
+  <div class="progress-bar"><i style="width:75%"></i></div>
+  <ul class="checklist">
+    <li class="done">Модуляризация, esbuild, <code>www/</code>, cap sync</li>
+    <li class="done">Background geolocation, foreground service, wake-lock</li>
+    <li class="done">Разрешения, онбординг «отключите оптимизацию батареи»</li>
+    <li class="todo">OEM-матрица ≥ 3 вендоров — <a href="oem-gps-matrix.md">oem-gps-matrix.md</a></li>
+    <li class="todo">Closed testing Play Console — <a href="play-console-closed-testing.md">чек-лист</a></li>
+  </ul>
+  <p class="warn" style="margin-top:10px;margin-bottom:0"><strong>Риск:</strong> Xiaomi/Huawei/Samsung убивают фон — тестировать в первую очередь.</p>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <h3>Фаза 3 — Голос в гарнитуру + стабильный курс</h3>
+    <span class="badge b-part">◐ ~55%</span>
+  </div>
+  <div class="progress-bar"><i style="width:55%"></i></div>
+  <ul class="checklist">
+    <li class="done">Нативный TTS, очередь, антиспам, TTS-health / офлайн-голоса</li>
+    <li class="done">DeviceOrientation + GPS (MVP), калибровка «восьмёрка», fallback</li>
+    <li class="done">Упреждение подсказок по времени (секунды, не метры)</li>
+    <li class="todo">Кооперативный audio focus (ducking, очередь при занятом фокусе)</li>
+    <li class="todo">Проверка A2DP/HFP на реальной гарнитуре шлема</li>
+    <li class="todo">ROTATION_VECTOR нативно, приоритезация антиспама</li>
+  </ul>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <h3>Фаза 4 — Офлайн-карты и офлайн-роутинг</h3>
+    <span class="badge b-todo">○ ключевая ценность</span>
+    <span class="badge b-next">→ спайк</span>
+  </div>
+  <div class="progress-bar"><i style="width:8%"></i></div>
+  <ul class="checklist">
+    <li class="part">Спайк CLI: <code>npm run spike:routers</code> — <a href="router-spike.md">router-spike.md</a></li>
+    <li class="todo">Выбор роутера: Valhalla vs GraphHopper vs BRouter</li>
+    <li class="todo">MapLibre + PMTiles, пайплайн Planetiler, менеджер регионов</li>
+    <li class="todo">Мото-профиль: веса surface/smoothness, профили «быстро/извилисто/красиво»</li>
+    <li class="todo">Абстракция OSRM ↔ офлайн; пересчёт при сходе ≤ 3 с</li>
+    <li class="todo">IndexedDB для кеша поездок и метаданных регионов</li>
+  </ul>
+  <p class="note" style="margin-top:10px;margin-bottom:0">Пробки — только онлайн-планирование. В офлайн-навигации пробок нет и не обещаем.</p>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <h3>Фаза 5 — Мото-функции</h3>
+    <span class="badge b-part">◐ ~15%</span>
+  </div>
+  <div class="progress-bar"><i style="width:15%"></i></div>
+  <ul class="checklist">
+    <li class="done">Топливный ассистент ⛽ (3 тапа: по маршруту / перестроить / отмена)</li>
+    <li class="todo">Камеры офлайн (OSM + ФВФ ГИБДД + открытые данные; geo-toggle для ЕС)</li>
+    <li class="todo">Запись треков (SQLite/JSONL 1 Гц → GPX через SAF)</li>
+    <li class="todo">POI по интересам (еда, кемпинг, сервис, виды) + голос «заправка/кофе/сервис»</li>
+    <li class="todo">Профили поездки и покрытия (асфальт / смешанный / бездорожье)</li>
+    <li class="todo">Round-trip «N часов / M км, поизвилистее»</li>
+    <li class="todo">Статистика поездки, опц. сенсоры, закат</li>
+  </ul>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <h3>Фаза 6 — Планировщик многодневных путешествий</h3>
+    <span class="badge b-todo">○</span>
+  </div>
+  <div class="progress-bar"><i style="width:0%"></i></div>
+  <ul class="checklist">
+    <li class="todo">MVP: маршрут + коридорный POI + разбивка по дням (лимит км)</li>
+    <li class="todo">Модель Trip → Day → Segment; базы, радиалки, бюджеты отклонения</li>
+    <li class="todo">Ручное редактирование, экспорт GPX / yandexnavi:// / текст</li>
+    <li class="todo">HUD: «день N, до ночёвки X км», следующий POI дня</li>
+  </ul>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <h3>Фаза 7 — UX-полировка и настройки</h3>
+    <span class="badge b-part">◐ ~40%</span>
+  </div>
+  <div class="progress-bar"><i style="width:40%"></i></div>
+  <ul class="checklist">
+    <li class="done">6 тем × день/ночь/авто (NOAA + гистерезис ±20 мин)</li>
+    <li class="done">Переключатель тем в настройках + быстрая кнопка 🌓 на HUD (≥48 px)</li>
+    <li class="done">Крупные тач-зоны, finish-info (ETA / время / дистанция)</li>
+    <li class="todo">Яркость/контраст под визор, единицы, ru/en</li>
+    <li class="todo">Деградация при потере GPS, «нет маршрута»</li>
+    <li class="todo">Локальные шрифты woff2 (сейчас @font-face-заглушки)</li>
+  </ul>
+</div>
+
+<div class="phase">
+  <div class="phase-head">
+    <h3>Фаза 8 — Релиз и рост</h3>
+    <span class="badge b-todo">○</span>
+  </div>
+  <div class="progress-bar"><i style="width:5%"></i></div>
+  <ul class="checklist">
+    <li class="part">Три канала: Web PWA · APK sideload · RuStore — <a href="release-plan.html">release-plan.html</a></li>
+    <li class="todo">Play Store открытый релиз, privacy policy, скриншоты</li>
+    <li class="todo">Крэш/аналитика (минимально, приватно)</li>
+    <li class="todo">Free/premium: «красиво», round-trip, планировщик, ИИ-ассистент</li>
+    <li class="todo">Android Auto / внешний дисплей — перспектива</li>
+  </ul>
+</div>
+
+<!-- ===== THEMES ===== -->
+<h2 id="themes">6. Система тем оформления</h2>
+<p>Реализовано 2026-07-05. Тема меняет только оформление, не grid/геометрию. Семантика единая: warn <code>#FFB000</code>, danger <code>#E10600</code>, ok <code>#33CC66</code>.</p>
+<table>
+<thead><tr><th>Тема</th><th>Характер</th><th>Цифры</th><th>Особенности</th></tr></thead>
+<tbody>
+<tr><td><span class="theme-chip">avionics</span> дефолт</td><td>контур, тики</td><td>B612 Mono</td><td>outline-стрелка, tape-компас, speed box</td></tr>
+<tr><td><span class="theme-chip">hitech</span></td><td>заливка, радиусы</td><td>Inter tabular</td><td>оранжевый акцент, filled-стрелка</td></tr>
+<tr><td><span class="theme-chip">space</span></td><td>скобки, glow</td><td>Exo 2</td><td>статичное свечение (без SVG-фильтров)</td></tr>
+<tr><td><span class="theme-chip">sport</span></td><td>скосы 45°</td><td>Saira Condensed</td><td>красный акцент F1-red</td></tr>
+<tr><td><span class="theme-chip">chopper</span></td><td>безели, янтарь</td><td>IBM Plex Mono</td><td>compass rose (частично), тёплый градиент дорожки</td></tr>
+<tr><td><span class="theme-chip">vintage</span></td><td>VFD/LCD</td><td>DSEG7</td><td>ghost «888», пунктир дорожки; pixel-стрелка — TODO</td></tr>
+</tbody>
+</table>
+<p>Проверка: <a href="../sim.html">sim.html</a> → панель «🎨 Проверка тем HUD». Чек-лист: <a href="THEMING-CHECKLIST.md">THEMING-CHECKLIST.md</a>.</p>
+
+<!-- ===== MILESTONES ===== -->
+<h2 id="milestones">7. Вехи (releases)</h2>
+
+<div class="milestone"><div class="milestone-id">M1</div><div><strong>Installable</strong> — фазы 0–1<br><span class="badge b-done">✓</span> PWA на домашнем экране, UI офлайн</div></div>
+<div class="milestone"><div class="milestone-id">M2</div><div><strong>Real app</strong> — фаза 2<br><span class="badge b-part">◐</span> APK, фон GPS; нужны OEM-тесты + closed testing</div></div>
+<div class="milestone"><div class="milestone-id">M3</div><div><strong>Helmet-ready</strong> — фаза 3<br><span class="badge b-part">◐</span> Голос в гарнитуру без наложения + стабильный курс</div></div>
+<div class="milestone"><div class="milestone-id">M4</div><div><strong>Offline nav</strong> — фаза 4<br><span class="badge b-todo">○</span> Маршрут в авиарежиме на скачанном регионе</div></div>
+<div class="milestone"><div class="milestone-id">M5</div><div><strong>Moto product</strong> — фазы 5 + 7<br><span class="badge b-part">◐</span> POI, профили, промышленный UX</div></div>
+<div class="milestone"><div class="milestone-id">M5a</div><div><strong>Trip planner MVP</strong> — фаза 6<br><span class="badge b-todo">○</span> План онлайн → поездка офлайн</div></div>
+<div class="milestone"><div class="milestone-id">M6</div><div><strong>Public</strong> — фаза 8<br><span class="badge b-todo">○</span> Открытый релиз Play Store / RuStore</div></div>
+
+<!-- ===== INTEGRATION ===== -->
+<h2 id="integration">8. Сосуществование с другими приложениями</h2>
+<ul>
+  <li><strong>Audio focus:</strong> ducking музыки только на время фразы; очередь, если говорит Стрелка/Яндекс</li>
+  <li><strong>HUD-оверлей</strong> (<code>SYSTEM_ALERT_WINDOW</code>): скорость + манёвр поверх чужого навигатора</li>
+  <li><strong>Режим спидометр + камеры</strong> без активного маршрута</li>
+  <li><strong>yandexnavi://</strong> — легальный экспорт точки/маршрута во внешний навигатор</li>
+  <li><strong>Запрет:</strong> парсинг данных Яндекса (карты, пробки, камеры) — только MapKit как альтернатива всему стеку</li>
+</ul>
+
+<!-- ===== RISKS ===== -->
+<h2 id="risks">9. Риски и меры</h2>
+<table>
+<thead><tr><th>Риск</th><th>Мера</th></tr></thead>
+<tbody>
+<tr><td>OEM убивают foreground-service</td><td>Матрица ≥3 вендоров; онбординг dontkillmyapp; уведомление «навигация активна»</td></tr>
+<tr><td>Голос не в гарнитуру / нет audio focus</td><td>Нативный TTS + тест BT-шлема (фаза 3)</td></tr>
+<tr><td>Наложение голосов (Стрелка, Яндекс)</td><td>Кооперативный audio focus, очередь</td></tr>
+<tr><td>Термотроттлинг на руле под солнцем</td><td>Стресс-тест; снижение яркости/FPS при перегреве</td></tr>
+<tr><td>Размер офлайн-тайлов</td><td>PMTiles по регионам, показ размера до скачивания</td></tr>
+<tr><td>Камеры запрещены в ЕС</td><td>Geo-toggle авто-отключения</td></tr>
+<tr><td>Пробелы POI в OSM по РФ</td><td>Ручное добавление точек в план; не обещать полноту</td></tr>
+</tbody>
+</table>
+
+<!-- ===== METRICS ===== -->
+<h2 id="metrics">10. Метрики успеха</h2>
+<table>
+<thead><tr><th>Метрика</th><th>Цель</th></tr></thead>
+<tbody>
+<tr><td>Читаемость HUD</td><td>ключевая информация ≤ 0.5 с на выезде</td></tr>
+<tr><td>Батарея</td><td>≤ 10% / час активной навигации</td></tr>
+<tr><td>Фон GPS</td><td>2 ч, 0 разрывов &gt; 5 с на 3 вендорах</td></tr>
+<tr><td>Голос</td><td>100% манёвров; не позже N с до поворота; без потери на музыке</td></tr>
+<tr><td>Офлайн-пересчёт</td><td>≤ 3 с на скачанном регионе</td></tr>
+</tbody>
+</table>
+
+<!-- ===== SCOPE ===== -->
+<h2 id="scope">11. Вне скоупа (сейчас)</h2>
+<ul>
+  <li>iOS до M6 · групповые поездки · краудсорсинг камер · CAN/OBD</li>
+  <li>Мобильные засады (радар) — пользователь запускает антирадар параллельно</li>
+  <li>ИИ-диалог в движении — запрещён; только на остановке</li>
+</ul>
+
+<!-- ===== NEXT ===== -->
+<h2 id="next">12. Ближайший шаг</h2>
+<div class="ok-box">
+  <ol style="margin-bottom:0">
+    <li><strong>OEM-полевые тесты</strong> фонового GPS (Xiaomi / Samsung / Huawei+) — <a href="oem-gps-matrix.md">матрица</a></li>
+    <li><strong>Closed testing</strong> Play Console — <a href="play-console-closed-testing.md">чек-лист</a></li>
+    <li><strong>Спайк офлайн-роутеров</strong> — <code>npm run spike:routers</code></li>
+    <li><strong>Audio focus</strong> + реальная BT-гарнитура шлема</li>
+    <li><strong>Шрифты woff2</strong> в <code>/fonts</code> (сейчас fallback на системные)</li>
+  </ol>
+</div>
+
+<h3>Бэклог «на потом»</h3>
+<ul>
+  <li>ИИ-ассистент планирования (premium, только на остановке)</li>
+  <li>Импорт GPX/ссылок, шаринг треков</li>
+  <li>«Пора заправиться» по запасу хода и расходу</li>
+  <li>Калибровка <code>a_lat</code> по GPX для curve warning</li>
+  <li>Vintage pixel-стрелка манёвра</li>
+</ul>
+
+<!-- ===== DOCS ===== -->
+<h2 id="docs">13. Связанные документы</h2>
+<table>
+<thead><tr><th>Документ</th><th>Назначение</th></tr></thead>
+<tbody>
+<tr><td><a href="../MASTERPLAN.md">MASTERPLAN.md</a></td><td>Полный мастер-план (исходник, markdown)</td></tr>
+<tr><td><a href="release-plan.html">release-plan.html</a></td><td>RuStore · APK · Web — каналы релиза</td></tr>
+<tr><td><a href="ROADPATH-PLAN.md">ROADPATH-PLAN.md</a></td><td>Прогноз-дорожка v2</td></tr>
+<tr><td><a href="route-geometry.md">route-geometry.md</a></td><td>RouteGeometry API</td></tr>
+<tr><td><a href="THEMING-CHECKLIST.md">THEMING-CHECKLIST.md</a></td><td>Чек-лист тем 6×2</td></tr>
+<tr><td><a href="router-spike.md">router-spike.md</a></td><td>Спайк Valhalla / GraphHopper / BRouter</td></tr>
+<tr><td><a href="oem-gps-matrix.md">oem-gps-matrix.md</a></td><td>Матрица OEM-тестов GPS</td></tr>
+<tr><td><a href="../sim.html">sim.html</a></td><td>Эмулятор HUD и тем</td></tr>
+<tr><td><a href="../preview.bat">preview.bat</a></td><td>Локальное превью :3456</td></tr>
+</tbody>
+</table>
+
+<footer>
+  Мото ИЛС · план развития · Вагин И.А. · 2026<br>
+  Синхронизировать с <code>MASTERPLAN.md</code> при существенных изменениях roadmap.
+</footer>
+
+</body>
+</html>
