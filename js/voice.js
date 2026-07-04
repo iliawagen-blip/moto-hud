@@ -2,9 +2,11 @@ import { S } from './state.js';
 import { angleDiff } from './geo.js';
 import { isNative } from './platform.js';
 import { getNativeRuVoiceIdx, getWebRuVoice, refreshRuVoice } from './tts-ru.js';
+import telemetry from './telemetry.js';
 
 const _queue = [];
 let _busy = false;
+let _phraseId = 0;
 const MAX_QUEUE = 4;
 let _lastText = '';
 let _lastSpeakTs = 0;
@@ -13,10 +15,11 @@ const DEDUPE_MS = 6500;
 const TTS_RATE = 0.98;
 const TTS_PITCH = 1.0;
 
-async function speakNative(text){
+async function speakNative(text, phraseId){
   await refreshRuVoice();
   const voiceIdx = getNativeRuVoiceIdx();
   const { TextToSpeech } = await import('@capacitor-community/text-to-speech');
+  telemetry.log('audio', { sub: 'started', id: phraseId });
   const opts = {
     text,
     lang: 'ru-RU',
@@ -29,7 +32,7 @@ async function speakNative(text){
   await TextToSpeech.speak(opts);
 }
 
-function speakWeb(text){
+function speakWeb(text, phraseId){
   return new Promise((resolve, reject) => {
     if(!('speechSynthesis' in window)){ resolve(); return; }
     try{
@@ -45,6 +48,7 @@ function speakWeb(text){
         voice = list[0] || null;
       }
       if(voice) u.voice = voice;
+      u.onstart = () => telemetry.log('audio', { sub: 'started', id: phraseId });
       u.onend = () => resolve();
       u.onerror = () => reject(new Error('TTS'));
       speechSynthesis.speak(u);
@@ -55,13 +59,15 @@ function speakWeb(text){
 async function drainVoiceQueue(){
   if(_busy || !_queue.length) return;
   _busy = true;
-  const text = _queue.shift();
+  const item = _queue.shift();
+  const text = item.text;
+  const phraseId = item.id;
   try{
-    if(isNative()) await speakNative(text);
-    else await speakWeb(text);
+    if(isNative()) await speakNative(text, phraseId);
+    else await speakWeb(text, phraseId);
   }catch(e){
     console.warn('Озвучка:', e);
-    try{ await speakWeb(text); }catch(e2){}
+    try{ await speakWeb(text, phraseId); }catch(e2){}
   }finally{
     _busy = false;
     if(_queue.length) drainVoiceQueue();
@@ -76,7 +82,9 @@ export function speak(text){
   if(t === _lastText && now - _lastSpeakTs < DEDUPE_MS) return;
   _lastText = t;
   _lastSpeakTs = now;
-  _queue.push(t);
+  const phraseId = ++_phraseId;
+  telemetry.log('audio', { sub: 'queued', id: phraseId });
+  _queue.push({ text: t, id: phraseId });
   while(_queue.length > MAX_QUEUE) _queue.shift();
   drainVoiceQueue();
 }

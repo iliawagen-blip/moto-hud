@@ -11,9 +11,12 @@ import { loadHudOptsFromStorage } from './hud-opts.js';
 import { applyThemeCss } from './theme.js';
 import { initThemeManager, applyTheme } from './theme-manager.js';
 import { initTtsHealth } from './tts-health.js';
+import { initTelemetry } from './telemetry.js';
+import { initTelemetryUI } from './telemetry-ui.js';
 
 applyThemeCss();
 initThemeManager();
+initTelemetry().then(() => initTelemetryUI());
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();

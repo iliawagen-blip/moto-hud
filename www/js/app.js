@@ -2693,7 +2693,7 @@ var require_leaflet_src = __commonJS({
         }
         return this;
       }
-      function stop(e) {
+      function stop2(e) {
         preventDefault(e);
         stopPropagation(e);
         return this;
@@ -2772,7 +2772,7 @@ var require_leaflet_src = __commonJS({
         disableScrollPropagation,
         disableClickPropagation,
         preventDefault,
-        stop,
+        stop: stop2,
         getPropagationPath,
         getMousePosition,
         getWheelDelta,
@@ -3081,8 +3081,8 @@ var require_leaflet_src = __commonJS({
           var w0 = Math.max(size.x, size.y), w1 = w0 * this.getZoomScale(startZoom, targetZoom), u1 = to.distanceTo(from) || 1, rho = 1.42, rho2 = rho * rho;
           function r(i) {
             var s1 = i ? -1 : 1, s2 = i ? w1 : w0, t1 = w1 * w1 - w0 * w0 + s1 * rho2 * rho2 * u1 * u1, b1 = 2 * s2 * rho2 * u1, b = t1 / b1, sq = Math.sqrt(b * b + 1) - b;
-            var log = sq < 1e-9 ? -18 : Math.log(sq);
-            return log;
+            var log2 = sq < 1e-9 ? -18 : Math.log(sq);
+            return log2;
           }
           function sinh(n) {
             return (Math.exp(n) - Math.exp(-n)) / 2;
@@ -3103,9 +3103,9 @@ var require_leaflet_src = __commonJS({
           function easeOut(t) {
             return 1 - Math.pow(1 - t, 1.5);
           }
-          var start = Date.now(), S2 = (r(1) - r0) / rho, duration = options.duration ? 1e3 * options.duration : 1e3 * S2 * 0.8;
+          var start2 = Date.now(), S2 = (r(1) - r0) / rho, duration = options.duration ? 1e3 * options.duration : 1e3 * S2 * 0.8;
           function frame() {
-            var t = (Date.now() - start) / duration, s2 = easeOut(t) * S2;
+            var t = (Date.now() - start2) / duration, s2 = easeOut(t) * S2;
             if (t <= 1) {
               this._flyToFrame = requestAnimFrame(frame, this);
               this._move(
@@ -4522,7 +4522,7 @@ var require_leaflet_src = __commonJS({
           link.setAttribute("role", "button");
           link.setAttribute("aria-label", title);
           disableClickPropagation(link);
-          on(link, "click", stop);
+          on(link, "click", stop2);
           on(link, "click", fn, this);
           on(link, "click", this._refocusOnMap, this);
           return link;
@@ -6278,7 +6278,7 @@ var require_leaflet_src = __commonJS({
           this._updateBounds();
         },
         _updateBounds: function() {
-          var r = this._radius, r2 = this._radiusY || r, w = this._clickTolerance(), p = [r + w, r2 + w];
+          var r = this._radius, r23 = this._radiusY || r, w = this._clickTolerance(), p = [r + w, r23 + w];
           this._pxBounds = new Bounds(this._point.subtract(p), this._point.add(p));
         },
         _update: function() {
@@ -7770,7 +7770,7 @@ var require_leaflet_src = __commonJS({
           if (!this._popup || !this._map) {
             return;
           }
-          stop(e);
+          stop2(e);
           var target = e.layer || e.target;
           if (this._popup._source === target && !(target instanceof Path)) {
             if (this._map.hasLayer(this._popup)) {
@@ -9528,8 +9528,8 @@ var require_leaflet_src = __commonJS({
           }
         },
         _updateCircle: function(layer) {
-          var p = layer._point.round(), r = Math.round(layer._radius), r2 = Math.round(layer._radiusY || r);
-          this._setPath(layer, layer._empty() ? "M0 0" : "AL " + p.x + "," + p.y + " " + r + "," + r2 + " 0," + 65535 * 360);
+          var p = layer._point.round(), r = Math.round(layer._radius), r23 = Math.round(layer._radiusY || r);
+          this._setPath(layer, layer._empty() ? "M0 0" : "AL " + p.x + "," + p.y + " " + r + "," + r23 + " 0," + 65535 * 360);
         },
         _setPath: function(layer, path) {
           layer._path.v = path;
@@ -9635,7 +9635,7 @@ var require_leaflet_src = __commonJS({
           this._setPath(layer, pointsToPath(layer._parts, closed));
         },
         _updateCircle: function(layer) {
-          var p = layer._point, r = Math.max(Math.round(layer._radius), 1), r2 = Math.max(Math.round(layer._radiusY), 1) || r, arc = "a" + r + "," + r2 + " 0 1,0 ";
+          var p = layer._point, r = Math.max(Math.round(layer._radius), 1), r23 = Math.max(Math.round(layer._radiusY), 1) || r, arc = "a" + r + "," + r23 + " 0 1,0 ";
           var d = layer._empty() ? "M0 0" : "M" + (p.x - r) + "," + p.y + arc + r * 2 + ",0 " + arc + -r * 2 + ",0 ";
           this._setPath(layer, d);
         },
@@ -9764,7 +9764,7 @@ var require_leaflet_src = __commonJS({
           disableImageDrag();
           this._startPoint = this._map.mouseEventToContainerPoint(e);
           on(document, {
-            contextmenu: stop,
+            contextmenu: stop2,
             mousemove: this._onMouseMove,
             mouseup: this._onMouseUp,
             keydown: this._onKeyDown
@@ -9791,7 +9791,7 @@ var require_leaflet_src = __commonJS({
           enableTextSelection();
           enableImageDrag();
           off(document, {
-            contextmenu: stop,
+            contextmenu: stop2,
             mousemove: this._onMouseMove,
             mouseup: this._onMouseUp,
             keydown: this._onKeyDown
@@ -10131,7 +10131,7 @@ var require_leaflet_src = __commonJS({
           } else {
             return;
           }
-          stop(e);
+          stop2(e);
         }
       });
       Map2.addInitHook("addHandler", "keyboard", Keyboard);
@@ -10170,7 +10170,7 @@ var require_leaflet_src = __commonJS({
           var left = Math.max(debounce - (+/* @__PURE__ */ new Date() - this._startTime), 0);
           clearTimeout(this._timer);
           this._timer = setTimeout(bind(this._performZoom, this), left);
-          stop(e);
+          stop2(e);
         },
         _performZoom: function() {
           var map = this._map, zoom2 = map.getZoom(), snap = this._map.options.zoomSnap || 0;
@@ -11095,225 +11095,451 @@ function fuseHeading(gpsHeading, speedMps) {
   return blendAngles(gpsHeading, sensorHeading, 1 - gpsWeight);
 }
 
-// js/gps.js
-var RENDER_POS = null;
-var _navMode = false;
-function curPos() {
-  return RENDER_POS || S.gps;
+// js/telemetry.js
+var DB_NAME = "moto-telemetry";
+var DB_VER = 1;
+var MAX_SESSIONS = 20;
+var FLUSH_MS = 15e3;
+var ENABLE_KEY = "moto-hud-telemetry-enabled";
+var APP_VERSION = "1.0.0";
+var _db = null;
+var _active = false;
+var _sessionId = null;
+var _sessionStart = 0;
+var _buffer = [];
+var _flushTimer = null;
+var _batteryTimer = null;
+var _perfTimer = null;
+var _lastSnapS0 = null;
+var _perfFrames = 0;
+var _perfSum = 0;
+var _perfOver32 = 0;
+var _perfLastTs = 0;
+function r6(n) {
+  if (n == null || !Number.isFinite(n)) return null;
+  return Math.round(n * 1e6) / 1e6;
 }
-function updateRenderPos() {
-  if (!S.gps) {
-    RENDER_POS = null;
-    return;
-  }
-  const v = S.gps.speed != null && S.gps.speed > 0.6 ? S.gps.speed : 0;
-  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
-  if (!v || hdg == null || isNaN(hdg) || !S.fixPos) {
-    RENDER_POS = S.gps;
-    return;
-  }
-  const rad = Math.PI / 180;
-  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1e3));
-  const dist = v * dt;
-  RENDER_POS = {
-    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
-    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
-    speed: S.gps.speed,
-    heading: S.gps.heading,
-    acc: S.gps.acc
-  };
+function r2(n) {
+  if (n == null || !Number.isFinite(n)) return null;
+  return Math.round(n * 100) / 100;
 }
-function easeSpeed() {
-  const el = $("v-speed");
-  if (!el || !S.gps) return;
-  const target = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  S.dispSpeed += (target - S.dispSpeed) * 0.22;
-  if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
-  const shown = Math.round(S.dispSpeed);
-  el.textContent = shown;
-  el.classList.toggle("over", S.limit > 0 && target > S.limit + 3);
-  el.classList.toggle("speed-3", shown >= 100);
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
 }
-var _onTick = () => {
-};
-var _onVisual = () => {
-};
-function initGps(callbacks) {
-  _onTick = callbacks.onTick || _onTick;
-  _onVisual = callbacks.onVisual || _onVisual;
-}
-function visualLoop() {
-  S.rafId = requestAnimationFrame(visualLoop);
-  if (!$("hud").classList.contains("on")) return;
-  updateRenderPos();
-  easeSpeed();
-  _onVisual();
-}
-function startVisualLoop() {
-  if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
-}
-function stopVisualLoop() {
-  if (S.rafId) {
-    cancelAnimationFrame(S.rafId);
-    S.rafId = null;
+function isEnabledPref() {
+  try {
+    if (new URLSearchParams(location.search).get("telemetry") === "1") return true;
+    return localStorage.getItem(ENABLE_KEY) === "1";
+  } catch (e) {
+    return false;
   }
 }
-function checkStartReady() {
-  const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
-  $("btn-start").disabled = !(S.gps && S.finish && hasRoute);
-  const buildBtn = $("btn-build-route");
-  if (buildBtn) buildBtn.disabled = !(S.gps && S.finish);
+function setEnabledPref(on) {
+  try {
+    localStorage.setItem(ENABLE_KEY, on ? "1" : "0");
+  } catch (e) {
+  }
 }
-function onGpsError() {
-  $("s-gps").textContent = "\u274C GPS";
-  $("s-gps").className = "chip err";
+function openDb() {
+  if (_db) return Promise.resolve(_db);
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("sessions")) {
+        db.createObjectStore("sessions", { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains("events")) {
+        const ev = db.createObjectStore("events", { keyPath: "id", autoIncrement: true });
+        ev.createIndex("sessionId", "sessionId", { unique: false });
+      }
+    };
+    req.onsuccess = () => {
+      _db = req.result;
+      resolve(_db);
+    };
+    req.onerror = () => reject(req.error);
+  });
 }
-function applyGpsFix(next) {
-  if (S.lastPos) {
-    const d = haversine(S.lastPos, next);
-    const dt = (next.ts - S.lastPos.ts) / 1e3;
-    if (d > 3 && d < 500) S.distDone += d;
-    if ((next.heading == null || isNaN(next.heading)) && d > 3) {
-      next.heading = bearing(S.lastPos, next);
+function tx(store, mode) {
+  return _db.transaction(store, mode).objectStore(store);
+}
+async function putSession(rec) {
+  await openDb();
+  return new Promise((resolve, reject) => {
+    const r = tx("sessions", "readwrite").put(rec);
+    r.onsuccess = () => resolve();
+    r.onerror = () => reject(r.error);
+  });
+}
+async function getSession(id) {
+  await openDb();
+  return new Promise((resolve, reject) => {
+    const r = tx("sessions", "readonly").get(id);
+    r.onsuccess = () => resolve(r.result || null);
+    r.onerror = () => reject(r.error);
+  });
+}
+async function listSessionsRaw() {
+  await openDb();
+  return new Promise((resolve, reject) => {
+    const r = tx("sessions", "readonly").getAll();
+    r.onsuccess = () => resolve(r.result || []);
+    r.onerror = () => reject(r.error);
+  });
+}
+async function deleteSessionData(id) {
+  await openDb();
+  return new Promise((resolve, reject) => {
+    const t = _db.transaction(["sessions", "events"], "readwrite");
+    t.objectStore("sessions").delete(id);
+    const idx = t.objectStore("events").index("sessionId");
+    const range = IDBKeyRange.only(id);
+    const cur = idx.openCursor(range);
+    cur.onsuccess = (e) => {
+      const c = e.target.result;
+      if (c) {
+        c.delete();
+        c.continue();
+      }
+    };
+    t.oncomplete = () => resolve();
+    t.onerror = () => reject(t.error);
+  });
+}
+async function pruneOldSessions() {
+  const all = await listSessionsRaw();
+  all.sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
+  while (all.length > MAX_SESSIONS) {
+    const drop = all.pop();
+    if (drop?.id) await deleteSessionData(drop.id);
+  }
+}
+async function markDirtyIncomplete() {
+  try {
+    const all = await listSessionsRaw();
+    for (const s2 of all) {
+      if (!s2.endedAt && !s2.dirty) {
+        s2.dirty = true;
+        await putSession(s2);
+      }
     }
-    if (next.speed == null && dt > 0.2 && dt < 10) {
-      const meas = d > 2.5 && d < 500 ? d / dt : 0;
-      S.measSpeed = S.measSpeed == null ? meas : S.measSpeed * 0.6 + meas * 0.4;
-      next.speed = S.measSpeed;
-    }
-  }
-  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
-  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
-  if (fused != null && !isNaN(fused)) next.heading = fused;
-  if (next.heading != null && !isNaN(next.heading)) {
-    if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
-    else {
-      const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * 0.82 + Math.sin(next.heading * r) * 0.18;
-      const sy = Math.cos(S.smoothedHeading * r) * 0.82 + Math.cos(next.heading * r) * 0.18;
-      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
-    }
-  }
-  S.lastPos = next;
-  S.gps = next;
-  S.fixPos = { lat: next.lat, lon: next.lon };
-  S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
-  $("s-gps").textContent = "\u2705 GPS \xB1" + Math.round(next.acc) + "\u043C";
-  $("s-gps").className = "chip ok";
-  checkStartReady();
-  if ($("hud").classList.contains("on")) _onTick();
-}
-function stopWebGps() {
-  if (S.watchId !== null && navigator.geolocation) {
-    navigator.geolocation.clearWatch(S.watchId);
-    S.watchId = null;
+  } catch (e) {
+    console.warn("telemetry dirty scan:", e);
   }
 }
-function startWebGps() {
-  if (!navigator.geolocation) {
-    $("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
-    $("s-gps").className = "chip err";
-    return;
+async function flushBuffer(force) {
+  if (!_buffer.length && !force) return;
+  const batch = _buffer.splice(0, _buffer.length);
+  if (!batch.length) return;
+  await openDb();
+  await new Promise((resolve, reject) => {
+    const t = _db.transaction("events", "readwrite");
+    const st = t.objectStore("events");
+    for (const row of batch) {
+      st.add({ sessionId: row.sessionId, ...row.ev });
+    }
+    t.oncomplete = () => resolve();
+    t.onerror = () => reject(t.error);
+  });
+  if (_sessionId) {
+    const sess = await getSession(_sessionId);
+    if (sess) {
+      sess.eventCount = (sess.eventCount || 0) + batch.length;
+      const marks = batch.filter((b) => b.ev.type === "mark").length;
+      if (marks) sess.markCount = (sess.markCount || 0) + marks;
+      await putSession(sess);
+    }
   }
-  stopWebGps();
-  $("s-gps").textContent = "\u23F3 GPS\u2026";
-  $("s-gps").className = "chip";
-  S.watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      const c = pos.coords;
-      applyGpsFix({
-        lat: c.latitude,
-        lon: c.longitude,
-        speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
-        heading: c.heading == null ? null : c.heading,
-        acc: c.accuracy,
-        ts: pos.timestamp
+}
+function scheduleFlush() {
+  if (_flushTimer) return;
+  _flushTimer = setInterval(() => {
+    flushBuffer(false).catch((e) => console.warn("telemetry flush:", e));
+  }, FLUSH_MS);
+}
+function stopTimers() {
+  if (_flushTimer) {
+    clearInterval(_flushTimer);
+    _flushTimer = null;
+  }
+  if (_batteryTimer) {
+    clearInterval(_batteryTimer);
+    _batteryTimer = null;
+  }
+  if (_perfTimer) {
+    clearInterval(_perfTimer);
+    _perfTimer = null;
+  }
+}
+function startSysTimers() {
+  stopTimers();
+  scheduleFlush();
+  _batteryTimer = setInterval(() => {
+    if (!_active) return;
+    if (navigator.getBattery) {
+      navigator.getBattery().then((b) => {
+        log("sys", { sub: "battery", level: r2(b.level * 100), charging: !!b.charging });
+      }).catch(() => {
       });
-    },
-    onGpsError,
-    { enableHighAccuracy: true, timeout: 15e3, maximumAge: 1e3 }
-  );
+    }
+  }, 6e4);
+  _perfTimer = setInterval(() => flushPerfAggregate(), 3e4);
 }
-function startGps() {
-  _navMode = false;
-  startHeadingSensors();
-  if (isNative()) {
-    $("s-gps").textContent = "\u23F3 GPS\u2026";
-    $("s-gps").className = "chip";
-    stopWebGps();
-    startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
-    return;
+function relT() {
+  return _sessionStart ? Date.now() - _sessionStart : 0;
+}
+function pushEvent(type, data) {
+  if (!_active || !_sessionId) return;
+  const ev = { t: relT(), type, ...data };
+  _buffer.push({ sessionId: _sessionId, ev });
+}
+function log(type, data) {
+  if (!_active) return;
+  pushEvent(type, data || {});
+}
+function flushPerfAggregate() {
+  if (!_active || !_perfFrames) return;
+  log("perf", {
+    frames: _perfFrames,
+    avg_ms: r2(_perfSum / _perfFrames),
+    frames_over_32ms: _perfOver32
+  });
+  _perfFrames = 0;
+  _perfSum = 0;
+  _perfOver32 = 0;
+  _perfLastTs = 0;
+}
+function tickPerfFrame() {
+  if (!_active) return;
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  if (_perfLastTs) {
+    const dt = now - _perfLastTs;
+    _perfFrames++;
+    _perfSum += dt;
+    if (dt > 32) _perfOver32++;
   }
-  startWebGps();
+  _perfLastTs = now;
 }
-async function startNavigationGps() {
-  if (!isNative()) return;
-  _navMode = true;
-  await startNavGps(applyGpsFix, onGpsError);
+function logSnapFromResult(snap) {
+  if (!_active || !snap) return;
+  const s0 = r2(snap.s);
+  const latOff = r2(snap.lateral);
+  let jump = false;
+  if (_lastSnapS0 != null && s0 != null && Math.abs(s0 - _lastSnapS0) > 50) jump = true;
+  if (s0 != null) _lastSnapS0 = s0;
+  log("snap", { s0, lat_off: latOff, jump });
 }
-async function stopNavigationGps() {
-  if (!isNative()) return;
-  _navMode = false;
-  await stopNavGps();
-  await startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+async function start(meta) {
+  if (_active) return _sessionId;
+  if (!isEnabledPref()) return null;
+  await openDb();
+  await markDirtyIncomplete();
+  _sessionId = uid();
+  _sessionStart = Date.now();
+  _lastSnapS0 = null;
+  _active = true;
+  const rec = {
+    id: _sessionId,
+    startedAt: _sessionStart,
+    endedAt: null,
+    userAgent: navigator.userAgent || "",
+    appVersion: APP_VERSION,
+    dirty: false,
+    eventCount: 0,
+    markCount: 0,
+    meta: meta || {}
+  };
+  await putSession(rec);
+  await pruneOldSessions();
+  startSysTimers();
+  document.documentElement.classList.add("telemetry-on");
+  log("meta", { sub: "start", appVersion: APP_VERSION, ...meta || {} });
+  return _sessionId;
 }
-
-// js/cam-status.js
-function updateCamStatusUI() {
-  const st = S.camLoadStatus || "idle";
-  const n = S.cameras?.length || 0;
-  const enabled = !!S.cams;
-  const chip = $("s-cams");
-  if (chip) {
-    if (!enabled) {
-      chip.textContent = "\u{1F4F7} \u0432\u044B\u043A\u043B";
-      chip.className = "chip";
-      chip.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043E\u0442\u043A\u043B\u044E\u0447\u0435\u043D\u044B \u0432 \u043E\u043F\u0446\u0438\u044F\u0445";
-    } else if (st === "loading") {
-      chip.textContent = "\u{1F4F7} \u2026";
-      chip.className = "chip";
-      chip.title = "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043A\u0430\u043C\u0435\u0440 \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443\u2026";
-    } else if (st === "ok") {
-      chip.textContent = "\u{1F4F7} " + n;
-      chip.className = "chip ok";
-      chip.title = "\u041A\u0430\u043C\u0435\u0440 \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0435: " + n;
-    } else if (st === "err") {
-      chip.textContent = "\u{1F4F7} \u2715";
-      chip.className = "chip err";
-      chip.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C";
-    } else {
-      chip.textContent = "\u{1F4F7} \u2014";
-      chip.className = "chip";
-      chip.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443";
+async function stop() {
+  if (!_active) return;
+  flushPerfAggregate();
+  log("meta", { sub: "stop" });
+  await flushBuffer(true);
+  const id = _sessionId;
+  const ended = Date.now();
+  if (id) {
+    const sess = await getSession(id);
+    if (sess) {
+      sess.endedAt = ended;
+      await putSession(sess);
     }
   }
-  const wrap = $("cam-status-wrap");
-  const dot = $("cam-dot");
-  const txt = $("cam-txt");
-  if (!wrap || !dot || !txt) return;
-  if (!enabled) {
-    wrap.classList.add("hidden");
-    return;
-  }
-  wrap.classList.remove("hidden");
-  dot.classList.remove("ok", "err");
-  if (st === "loading") {
-    txt.textContent = "CAM\u2026";
-    wrap.title = "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043A\u0430\u043C\u0435\u0440\u2026";
-  } else if (st === "ok") {
-    dot.classList.add("ok");
-    txt.textContent = "CAM " + n;
-    wrap.title = "\u041A\u0430\u043C\u0435\u0440 \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0435: " + n;
-  } else if (st === "err") {
-    dot.classList.add("err");
-    txt.textContent = "CAM \u2715";
-    wrap.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C";
-  } else {
-    txt.textContent = "CAM";
-    wrap.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443";
+  _active = false;
+  _sessionId = null;
+  _sessionStart = 0;
+  _lastSnapS0 = null;
+  document.documentElement.classList.remove("telemetry-on");
+  stopTimers();
+}
+function mark(note) {
+  if (!_active) return;
+  log("mark", note ? { note } : {});
+}
+function isActive() {
+  return _active;
+}
+function isEnabled() {
+  return isEnabledPref();
+}
+async function setEnabled(on) {
+  setEnabledPref(!!on);
+  if (!on && _active) await stop();
+  document.documentElement.classList.toggle("telemetry-on", !!on && _active);
+  updateMarkButtonVisibility();
+}
+function updateMarkButtonVisibility() {
+  const btn = document.getElementById("btn-telemetry-mark");
+  const show = isEnabledPref() && _active;
+  if (btn) btn.classList.toggle("hidden", !show);
+}
+async function listSessions() {
+  const all = await listSessionsRaw();
+  all.sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
+  return all.map((s2) => ({
+    id: s2.id,
+    startedAt: s2.startedAt,
+    endedAt: s2.endedAt,
+    dirty: !!s2.dirty,
+    eventCount: s2.eventCount || 0,
+    markCount: s2.markCount || 0,
+    durationMs: (s2.endedAt || Date.now()) - (s2.startedAt || 0)
+  }));
+}
+async function getSessionEvents(sessionId) {
+  await openDb();
+  return new Promise((resolve, reject) => {
+    const idx = tx("events", "readonly").index("sessionId");
+    const r = idx.getAll(IDBKeyRange.only(sessionId));
+    r.onsuccess = () => {
+      const rows = (r.result || []).map((row) => {
+        const { id, sessionId: _sid, ...ev } = row;
+        return ev;
+      });
+      rows.sort((a, b) => (a.t || 0) - (b.t || 0));
+      resolve(rows);
+    };
+    r.onerror = () => reject(r.error);
+  });
+}
+function formatExportFilename(startedAt) {
+  const d = new Date(startedAt || Date.now());
+  const p = (n) => String(n).padStart(2, "0");
+  return "telemetry_" + d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "_" + p(d.getHours()) + "-" + p(d.getMinutes()) + ".jsonl";
+}
+async function exportSession(sessionId) {
+  const sess = await getSession(sessionId);
+  if (!sess) throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
+  const events = await getSessionEvents(sessionId);
+  const head = {
+    type: "session",
+    id: sess.id,
+    startedAt: sess.startedAt,
+    endedAt: sess.endedAt,
+    dirty: !!sess.dirty,
+    userAgent: sess.userAgent,
+    appVersion: sess.appVersion,
+    eventCount: events.length,
+    markCount: sess.markCount || 0
+  };
+  const lines = [JSON.stringify(head), ...events.map((e) => JSON.stringify(e))];
+  const blob = new Blob([lines.join("\n") + "\n"], { type: "application/x-ndjson" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = formatExportFilename(sess.startedAt);
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5e3);
+}
+async function deleteSession(sessionId) {
+  if (_active && _sessionId === sessionId) await stop();
+  await deleteSessionData(sessionId);
+}
+async function storageStats() {
+  const all = await listSessionsRaw();
+  let events = 0;
+  for (const s2 of all) events += s2.eventCount || 0;
+  return { sessions: all.length, events, maxSessions: MAX_SESSIONS };
+}
+function onVisibility() {
+  if (!_active) return;
+  log("sys", { sub: "visibility", state: document.visibilityState });
+  if (document.visibilityState === "hidden") {
+    flushBuffer(true).catch(() => {
+    });
   }
 }
+function bindGlobalHandlers() {
+  window.addEventListener("visibilitychange", onVisibility);
+  window.addEventListener("pagehide", () => {
+    if (_active) flushBuffer(true).catch(() => {
+    });
+  });
+  window.addEventListener("error", (e) => {
+    log("sys", {
+      sub: "error",
+      message: String(e.message || e.error || "").slice(0, 200),
+      stack: (e.error?.stack || "").split("\n")[0]?.slice(0, 200) || ""
+    });
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const reason = e.reason;
+    log("sys", {
+      sub: "error",
+      message: String(reason?.message || reason || "").slice(0, 200),
+      stack: (reason?.stack || "").split("\n")[0]?.slice(0, 200) || ""
+    });
+  });
+}
+async function initTelemetry() {
+  if (typeof indexedDB === "undefined") return;
+  if (new URLSearchParams(location.search).get("telemetry") === "1") {
+    setEnabledPref(true);
+  }
+  bindGlobalHandlers();
+  try {
+    await openDb();
+    await markDirtyIncomplete();
+  } catch (e) {
+    console.warn("telemetry init:", e);
+  }
+}
+var telemetry = {
+  start,
+  stop,
+  log,
+  mark,
+  export: exportSession,
+  listSessions,
+  deleteSession,
+  storageStats,
+  isActive,
+  isEnabled,
+  setEnabled,
+  tickPerfFrame,
+  logSnapFromResult,
+  updateMarkButtonVisibility,
+  /** @param {object} fix */
+  logFix(fix) {
+    if (!_active) return;
+    log("fix", {
+      lat: r6(fix.lat),
+      lon: r6(fix.lon),
+      acc: r2(fix.acc),
+      spd: r2(fix.speed),
+      hdg: r2(fix.heading),
+      alt: fix.alt != null ? r2(fix.alt) : null,
+      ts: fix.ts,
+      rcv: fix.rcv ?? Date.now()
+    });
+  }
+};
+var telemetry_default = telemetry;
 
 // js/route-geometry.js
 var DENSE_STEP = 3;
@@ -11810,14 +12036,14 @@ function computeRibbonSectionsCam(geom, snap, maxDist, halfW, headingRad) {
     if (cur.z < 1) continue;
     const i0 = Math.max(0, i - 1);
     const i1 = Math.min(samples.length - 1, i + 1);
-    let tx = samples[i1].x - samples[i0].x;
+    let tx2 = samples[i1].x - samples[i0].x;
     let tz = samples[i1].z - samples[i0].z;
-    const tl = Math.hypot(tx, tz);
+    const tl = Math.hypot(tx2, tz);
     if (tl < 0.08) continue;
-    tx /= tl;
+    tx2 /= tl;
     tz /= tl;
     let nx = -tz;
-    let nz = tx;
+    let nz = tx2;
     if (prevNx != null && nx * prevNx + nz * prevNz < 0) {
       nx = -nx;
       nz = -nz;
@@ -11909,6 +12135,252 @@ function geometryToLatLngs(geom) {
 function remainingDistanceS(geom, snap) {
   if (!geom || !snap) return 0;
   return Math.max(0, geom.s[geom.n - 1] - snap.s);
+}
+
+// js/gps.js
+var RENDER_POS = null;
+var _navMode = false;
+var _gpsLost = false;
+function curPos() {
+  return RENDER_POS || S.gps;
+}
+function updateRenderPos() {
+  if (!S.gps) {
+    RENDER_POS = null;
+    return;
+  }
+  const v = S.gps.speed != null && S.gps.speed > 0.6 ? S.gps.speed : 0;
+  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
+  if (!v || hdg == null || isNaN(hdg) || !S.fixPos) {
+    RENDER_POS = S.gps;
+    return;
+  }
+  const rad = Math.PI / 180;
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1e3));
+  const dist = v * dt;
+  RENDER_POS = {
+    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
+    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
+    speed: S.gps.speed,
+    heading: S.gps.heading,
+    acc: S.gps.acc
+  };
+}
+function easeSpeed() {
+  const el = $("v-speed");
+  if (!el || !S.gps) return;
+  const target = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  S.dispSpeed += (target - S.dispSpeed) * 0.22;
+  if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
+  const shown = Math.round(S.dispSpeed);
+  el.textContent = shown;
+  el.classList.toggle("over", S.limit > 0 && target > S.limit + 3);
+  el.classList.toggle("speed-3", shown >= 100);
+}
+var _onTick = () => {
+};
+var _onVisual = () => {
+};
+function initGps(callbacks) {
+  _onTick = callbacks.onTick || _onTick;
+  _onVisual = callbacks.onVisual || _onVisual;
+}
+function visualLoop() {
+  S.rafId = requestAnimationFrame(visualLoop);
+  if (!$("hud").classList.contains("on")) return;
+  telemetry_default.tickPerfFrame();
+  updateRenderPos();
+  easeSpeed();
+  _onVisual();
+}
+function startVisualLoop() {
+  if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
+}
+function stopVisualLoop() {
+  if (S.rafId) {
+    cancelAnimationFrame(S.rafId);
+    S.rafId = null;
+  }
+}
+function checkStartReady() {
+  const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
+  $("btn-start").disabled = !(S.gps && S.finish && hasRoute);
+  const buildBtn = $("btn-build-route");
+  if (buildBtn) buildBtn.disabled = !(S.gps && S.finish);
+}
+function onGpsError() {
+  $("s-gps").textContent = "\u274C GPS";
+  $("s-gps").className = "chip err";
+  if (!_gpsLost) {
+    _gpsLost = true;
+    telemetry_default.log("nav", { sub: "gps_lost" });
+  }
+}
+function applyGpsFix(next) {
+  if (S.lastPos) {
+    const d = haversine(S.lastPos, next);
+    const dt = (next.ts - S.lastPos.ts) / 1e3;
+    if (d > 3 && d < 500) S.distDone += d;
+    if ((next.heading == null || isNaN(next.heading)) && d > 3) {
+      next.heading = bearing(S.lastPos, next);
+    }
+    if (next.speed == null && dt > 0.2 && dt < 10) {
+      const meas = d > 2.5 && d < 500 ? d / dt : 0;
+      S.measSpeed = S.measSpeed == null ? meas : S.measSpeed * 0.6 + meas * 0.4;
+      next.speed = S.measSpeed;
+    }
+  }
+  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
+  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
+  if (fused != null && !isNaN(fused)) next.heading = fused;
+  if (next.heading != null && !isNaN(next.heading)) {
+    if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
+    else {
+      const r = Math.PI / 180, d = 180 / Math.PI;
+      const sx = Math.sin(S.smoothedHeading * r) * 0.82 + Math.sin(next.heading * r) * 0.18;
+      const sy = Math.cos(S.smoothedHeading * r) * 0.82 + Math.cos(next.heading * r) * 0.18;
+      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
+    }
+  }
+  S.lastPos = next;
+  S.gps = next;
+  S.fixPos = { lat: next.lat, lon: next.lon };
+  S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
+  $("s-gps").textContent = "\u2705 GPS \xB1" + Math.round(next.acc) + "\u043C";
+  $("s-gps").className = "chip ok";
+  checkStartReady();
+  if ($("hud").classList.contains("on")) _onTick();
+  const rcv = Date.now();
+  if (_gpsLost) {
+    _gpsLost = false;
+    telemetry_default.log("nav", { sub: "gps_restored" });
+  }
+  telemetry_default.logFix({
+    lat: next.lat,
+    lon: next.lon,
+    acc: next.acc,
+    speed: next.speed,
+    heading: next.heading,
+    alt: next.alt,
+    ts: next.ts,
+    rcv
+  });
+  if ($("hud").classList.contains("on") && S.route?.geometry) {
+    const snap = getRouteSnapForNav(S.smoothedHeading);
+    telemetry_default.logSnapFromResult(snap);
+  }
+}
+function stopWebGps() {
+  if (S.watchId !== null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(S.watchId);
+    S.watchId = null;
+  }
+}
+function startWebGps() {
+  if (!navigator.geolocation) {
+    $("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
+    $("s-gps").className = "chip err";
+    return;
+  }
+  stopWebGps();
+  $("s-gps").textContent = "\u23F3 GPS\u2026";
+  $("s-gps").className = "chip";
+  S.watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const c = pos.coords;
+      applyGpsFix({
+        lat: c.latitude,
+        lon: c.longitude,
+        speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
+        heading: c.heading == null ? null : c.heading,
+        acc: c.accuracy,
+        alt: c.altitude != null && !isNaN(c.altitude) ? c.altitude : null,
+        ts: pos.timestamp
+      });
+    },
+    onGpsError,
+    { enableHighAccuracy: true, timeout: 15e3, maximumAge: 1e3 }
+  );
+}
+function startGps() {
+  _navMode = false;
+  startHeadingSensors();
+  if (isNative()) {
+    $("s-gps").textContent = "\u23F3 GPS\u2026";
+    $("s-gps").className = "chip";
+    stopWebGps();
+    startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+    return;
+  }
+  startWebGps();
+}
+async function startNavigationGps() {
+  if (!isNative()) return;
+  _navMode = true;
+  await startNavGps(applyGpsFix, onGpsError);
+}
+async function stopNavigationGps() {
+  if (!isNative()) return;
+  _navMode = false;
+  await stopNavGps();
+  await startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+}
+
+// js/cam-status.js
+function updateCamStatusUI() {
+  const st = S.camLoadStatus || "idle";
+  const n = S.cameras?.length || 0;
+  const enabled = !!S.cams;
+  const chip = $("s-cams");
+  if (chip) {
+    if (!enabled) {
+      chip.textContent = "\u{1F4F7} \u0432\u044B\u043A\u043B";
+      chip.className = "chip";
+      chip.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043E\u0442\u043A\u043B\u044E\u0447\u0435\u043D\u044B \u0432 \u043E\u043F\u0446\u0438\u044F\u0445";
+    } else if (st === "loading") {
+      chip.textContent = "\u{1F4F7} \u2026";
+      chip.className = "chip";
+      chip.title = "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043A\u0430\u043C\u0435\u0440 \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443\u2026";
+    } else if (st === "ok") {
+      chip.textContent = "\u{1F4F7} " + n;
+      chip.className = "chip ok";
+      chip.title = "\u041A\u0430\u043C\u0435\u0440 \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0435: " + n;
+    } else if (st === "err") {
+      chip.textContent = "\u{1F4F7} \u2715";
+      chip.className = "chip err";
+      chip.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C";
+    } else {
+      chip.textContent = "\u{1F4F7} \u2014";
+      chip.className = "chip";
+      chip.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443";
+    }
+  }
+  const wrap = $("cam-status-wrap");
+  const dot = $("cam-dot");
+  const txt = $("cam-txt");
+  if (!wrap || !dot || !txt) return;
+  if (!enabled) {
+    wrap.classList.add("hidden");
+    return;
+  }
+  wrap.classList.remove("hidden");
+  dot.classList.remove("ok", "err");
+  if (st === "loading") {
+    txt.textContent = "CAM\u2026";
+    wrap.title = "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043A\u0430\u043C\u0435\u0440\u2026";
+  } else if (st === "ok") {
+    dot.classList.add("ok");
+    txt.textContent = "CAM " + n;
+    wrap.title = "\u041A\u0430\u043C\u0435\u0440 \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0435: " + n;
+  } else if (st === "err") {
+    dot.classList.add("err");
+    txt.textContent = "CAM \u2715";
+    wrap.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C";
+  } else {
+    txt.textContent = "CAM";
+    wrap.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443";
+  }
 }
 
 // js/curve-speed.js
@@ -12790,6 +13262,7 @@ async function buildRoute() {
     if (!j.routes || !j.routes.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     S.route = parseOsrmRoute(j.routes[0]);
     attachRouteGeometry(S.route);
+    telemetry_default.log("nav", { sub: "route_built" });
   } catch (err) {
     const last = loadLastRun();
     if (last && last.route && S.finish && last.finish && haversine(last.finish, S.finish) < 60) {
@@ -12986,6 +13459,7 @@ async function recalcRoute() {
   try {
     S.routeAlternatives = [];
     await buildRoute();
+    telemetry_default.log("nav", { sub: "reroute" });
     Array.from(S.camWarned).forEach((k) => {
       if (typeof k === "string" && k.startsWith("st_")) S.camWarned.delete(k);
     });
@@ -13101,16 +13575,18 @@ function getWebRuVoice() {
 // js/voice.js
 var _queue = [];
 var _busy = false;
+var _phraseId = 0;
 var MAX_QUEUE = 4;
 var _lastText = "";
 var _lastSpeakTs = 0;
 var DEDUPE_MS = 6500;
 var TTS_RATE = 0.98;
 var TTS_PITCH = 1;
-async function speakNative(text) {
+async function speakNative(text, phraseId) {
   await refreshRuVoice();
   const voiceIdx = getNativeRuVoiceIdx();
   const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm(), esm_exports));
+  telemetry_default.log("audio", { sub: "started", id: phraseId });
   const opts = {
     text,
     lang: "ru-RU",
@@ -13122,7 +13598,7 @@ async function speakNative(text) {
   if (voiceIdx >= 0) opts.voice = voiceIdx;
   await TextToSpeech2.speak(opts);
 }
-function speakWeb(text) {
+function speakWeb(text, phraseId) {
   return new Promise((resolve, reject) => {
     if (!("speechSynthesis" in window)) {
       resolve();
@@ -13140,6 +13616,7 @@ function speakWeb(text) {
         voice = list[0] || null;
       }
       if (voice) u2.voice = voice;
+      u2.onstart = () => telemetry_default.log("audio", { sub: "started", id: phraseId });
       u2.onend = () => resolve();
       u2.onerror = () => reject(new Error("TTS"));
       speechSynthesis.speak(u2);
@@ -13151,14 +13628,16 @@ function speakWeb(text) {
 async function drainVoiceQueue() {
   if (_busy || !_queue.length) return;
   _busy = true;
-  const text = _queue.shift();
+  const item = _queue.shift();
+  const text = item.text;
+  const phraseId = item.id;
   try {
-    if (isNative()) await speakNative(text);
-    else await speakWeb(text);
+    if (isNative()) await speakNative(text, phraseId);
+    else await speakWeb(text, phraseId);
   } catch (e) {
     console.warn("\u041E\u0437\u0432\u0443\u0447\u043A\u0430:", e);
     try {
-      await speakWeb(text);
+      await speakWeb(text, phraseId);
     } catch (e2) {
     }
   } finally {
@@ -13173,7 +13652,9 @@ function speak(text) {
   if (t === _lastText && now - _lastSpeakTs < DEDUPE_MS) return;
   _lastText = t;
   _lastSpeakTs = now;
-  _queue.push(t);
+  const phraseId = ++_phraseId;
+  telemetry_default.log("audio", { sub: "queued", id: phraseId });
+  _queue.push({ text: t, id: phraseId });
   while (_queue.length > MAX_QUEUE) _queue.shift();
   drainVoiceQueue();
 }
@@ -13770,7 +14251,7 @@ function initMapProviderSelect(onChange) {
     if (onChange) onChange(sel.value);
   });
 }
-function renderRouteMap(alternatives, selectedIdx, start, finish) {
+function renderRouteMap(alternatives, selectedIdx, start2, finish) {
   const section = $("route-section");
   if (!section) return;
   if (!alternatives || !alternatives.length) {
@@ -13779,7 +14260,7 @@ function renderRouteMap(alternatives, selectedIdx, start, finish) {
     _lastRender = null;
     return;
   }
-  _lastRender = { alternatives, selectedIdx, start, finish };
+  _lastRender = { alternatives, selectedIdx, start: start2, finish };
   section.classList.remove("hidden");
   const map = ensureMap();
   if (!map) return;
@@ -13823,15 +14304,15 @@ function renderRouteMap(alternatives, selectedIdx, start, finish) {
       }
     }
   });
-  if (start) {
-    const m = import_leaflet.default.circleMarker([start.lat, start.lon], {
+  if (start2) {
+    const m = import_leaflet.default.circleMarker([start2.lat, start2.lon], {
       radius: 9,
       color: "#000",
       weight: 2,
       fillColor: THEME.routeStart,
       fillOpacity: 1
     }).addTo(map).bindTooltip("\u0412\u044B", { permanent: false, direction: "top" });
-    bounds.extend([start.lat, start.lon]);
+    bounds.extend([start2.lat, start2.lon]);
     _markers.push(m);
   }
   if (finish) {
@@ -14068,6 +14549,7 @@ async function doBuildRoute() {
     syncSimPath();
     setGoBarVisible(true);
     loadCameras();
+    telemetry_default.log("nav", { sub: "route_built", variants: S.routeAlternatives.length });
     $("s-finish").textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D \u2014 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB \u0432\u043D\u0438\u0437\u0443";
     $("s-finish").className = "status ok";
     scheduleGeometryBuild(S.routeAlternatives, () => {
@@ -14699,6 +15181,9 @@ async function acquireWakeLock() {
     }
     if ("wakeLock" in navigator) {
       S.wakeLock = await navigator.wakeLock.request("screen");
+      S.wakeLock.addEventListener?.("release", () => {
+        telemetry_default.log("sys", { sub: "wakelock_lost" });
+      });
     }
   } catch (e) {
     console.warn("Wake-lock:", e);
@@ -15024,10 +15509,12 @@ function onTick() {
       const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
       if (nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt) {
         S.camWarned.add(kFar);
+        telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "far" });
         speak(formatManeuverLead(nm.dist, mps) + " " + txt);
       }
       if (nm.dist <= nearM && !S.camWarned.has(kNear) && txt) {
         S.camWarned.add(kNear);
+        telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "near" });
         speak(txt);
       }
     }
@@ -15069,6 +15556,9 @@ function checkCurveSpeedWarn(kmh) {
   S.lastVoiceTs = Date.now();
   speak("\u0421\u043D\u0438\u0437\u044C\u0442\u0435 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u043F\u0435\u0440\u0435\u0434 \u043F\u043E\u0432\u043E\u0440\u043E\u0442\u043E\u043C. \u0420\u0435\u043A\u043E\u043C\u0435\u043D\u0434\u0443\u0435\u0442\u0441\u044F " + warn.vSafeKmh + " \u043A\u0438\u043B\u043E\u043C\u0435\u0442\u0440\u043E\u0432 \u0432 \u0447\u0430\u0441");
 }
+function r22(n) {
+  return n != null && Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
+}
 async function startHud() {
   applyFinishInfoVisibility();
   if (!S.route) {
@@ -15076,6 +15566,10 @@ async function startHud() {
     return;
   }
   saveLastRun();
+  if (telemetry_default.isEnabled()) {
+    telemetry_default.start({ routeKm: S.route?.distance ? r22(S.route.distance / 1e3) : null });
+    telemetry_default.updateMarkButtonVisibility();
+  }
   S.startTs = Date.now();
   S.distDone = 0;
   S.camWarned.clear();
@@ -15106,6 +15600,9 @@ async function startHud() {
   startVisualLoop();
 }
 function stopHud() {
+  telemetry_default.stop().catch(() => {
+  });
+  telemetry_default.updateMarkButtonVisibility();
   stopVisualLoop();
   stopNavigationGps().catch(() => {
   });
@@ -15272,9 +15769,123 @@ async function selectQuickFinish(id, loadFavs2, buildAndLoad) {
   }
 }
 
+// js/telemetry-ui.js
+var _lastMarkTap = 0;
+var MARK_DBL_MS = 400;
+function bindMarkButton() {
+  const btn = $("btn-telemetry-mark");
+  if (!btn || btn.dataset.bound) return;
+  btn.dataset.bound = "1";
+  btn.addEventListener("click", () => {
+    const now = Date.now();
+    const dbl = now - _lastMarkTap < MARK_DBL_MS;
+    _lastMarkTap = now;
+    if (dbl) {
+      telemetry_default.mark("critical");
+      btn.classList.add("critical-flash");
+      setTimeout(() => btn.classList.remove("critical-flash"), 400);
+    } else {
+      telemetry_default.mark();
+    }
+    try {
+      navigator.vibrate?.(dbl ? [30, 40, 30] : 25);
+    } catch (e) {
+    }
+    btn.classList.add("flash");
+    setTimeout(() => btn.classList.remove("flash"), 200);
+  });
+}
+function fmtDur(ms) {
+  if (!ms || ms < 0) return "\u2014";
+  const s2 = Math.floor(ms / 1e3);
+  const m = Math.floor(s2 / 60);
+  const h = Math.floor(m / 60);
+  if (h > 0) return h + "\u0447 " + m % 60 + "\u043C";
+  if (m > 0) return m + "\u043C " + s2 % 60 + "\u0441";
+  return s2 + "\u0441";
+}
+function fmtDate(ts) {
+  if (!ts) return "\u2014";
+  const d = new Date(ts);
+  const p = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+async function refreshSessionsList() {
+  const list = $("telemetry-sessions");
+  const stats = $("telemetry-stats");
+  if (!list) return;
+  try {
+    const sessions = await telemetry_default.listSessions();
+    const st = await telemetry_default.storageStats();
+    if (stats) {
+      stats.textContent = "\u0421\u0435\u0441\u0441\u0438\u0439: " + st.sessions + " / " + st.maxSessions + " \xB7 \u0441\u043E\u0431\u044B\u0442\u0438\u0439: ~" + st.events;
+    }
+    if (!sessions.length) {
+      list.innerHTML = '<div class="hint">\u0417\u0430\u043F\u0438\u0441\u0435\u0439 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442. \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u0442\u0435\u043B\u0435\u043C\u0435\u0442\u0440\u0438\u044E \u0438 \u043D\u0430\u0447\u043D\u0438\u0442\u0435 \u043F\u043E\u0435\u0437\u0434\u043A\u0443.</div>';
+      return;
+    }
+    list.innerHTML = sessions.map((s2) => {
+      const dirty = s2.dirty ? ' <span class="tel-dirty">dirty</span>' : "";
+      return '<div class="tel-row" data-id="' + s2.id + '"><div class="tel-main"><strong>' + fmtDate(s2.startedAt) + "</strong>" + dirty + '<span class="tel-meta">' + fmtDur(s2.durationMs) + " \xB7 " + s2.eventCount + " \u0441\u043E\u0431. \xB7 \u043C\u0435\u0442\u043E\u043A " + s2.markCount + '</span></div><div class="tel-actions"><button type="button" class="tel-btn" data-act="export" data-id="' + s2.id + '">\u{1F4E4}</button><button type="button" class="tel-btn" data-act="delete" data-id="' + s2.id + '">\u{1F5D1}</button></div></div>';
+    }).join("");
+  } catch (e) {
+    list.innerHTML = '<div class="hint err">IndexedDB: ' + e.message + "</div>";
+  }
+}
+function bindSessionsList() {
+  const list = $("telemetry-sessions");
+  if (!list || list.dataset.bound) return;
+  list.dataset.bound = "1";
+  list.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.act === "export") {
+      try {
+        await telemetry_default.export(id);
+      } catch (err) {
+        alert(err.message);
+      }
+    } else if (btn.dataset.act === "delete") {
+      if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F?")) return;
+      await telemetry_default.deleteSession(id);
+      await refreshSessionsList();
+    }
+  });
+  $("btn-telemetry-export-all")?.addEventListener("click", async () => {
+    const sessions = await telemetry_default.listSessions();
+    for (const s2 of sessions) {
+      try {
+        await telemetry_default.export(s2.id);
+      } catch (e) {
+        console.warn(e);
+      }
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  });
+}
+function initTelemetryUI() {
+  bindMarkButton();
+  bindSessionsList();
+  const toggle = $("opt-telemetry");
+  if (toggle) {
+    toggle.checked = telemetry_default.isEnabled();
+    toggle.addEventListener("change", async () => {
+      await telemetry_default.setEnabled(toggle.checked);
+      telemetry_default.updateMarkButtonVisibility();
+      await refreshSessionsList();
+    });
+  }
+  document.getElementById("drawer-telemetry")?.addEventListener("toggle", (e) => {
+    if (e.target.open) refreshSessionsList();
+  });
+  refreshSessionsList();
+}
+
 // js/main.js
 applyThemeCss();
 initThemeManager();
+initTelemetry().then(() => initTelemetryUI());
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();

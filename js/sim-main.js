@@ -175,6 +175,22 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     return loadGpxReplay(await res.text(), opts);
   }
 
+  function injectFix(fix){
+    if(!sim.cb || !fix) return;
+    sim.cb({
+      coords: {
+        latitude: fix.lat,
+        longitude: fix.lon,
+        accuracy: fix.acc != null ? fix.acc : 5,
+        altitude: fix.alt != null ? fix.alt : null,
+        altitudeAccuracy: null,
+        heading: fix.heading != null ? fix.heading : null,
+        speed: fix.speed != null && fix.speed >= 0 ? fix.speed : null
+      },
+      timestamp: fix.ts || Date.now()
+    });
+  }
+
   const geo = {
     watchPosition(cb, err){
       sim.cb = cb; sim.err = err;
@@ -221,6 +237,7 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     pause(){ sim.running = false; },
     reset(){ sim.idx = 0; sim.frac = 0; sim.running = true; emit(); },
     isRunning(){ return sim.running; },
+    injectFix,
     boot(){
       const inp = document.getElementById('finish-input');
       const hud = window.__motoHUD;

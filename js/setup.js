@@ -29,6 +29,7 @@ import {
   startCompassCalibration, requestHeadingPermission, isCalibrating
 } from './heading.js';
 import { speak } from './voice.js';
+import telemetry from './telemetry.js';
 /** Синхронизация пути GPS-симулятора с построенным маршрутом */
 function syncSimPath(){
   if(window.__SIM__?.setRoutePath && S.route?.coords?.length){
@@ -132,6 +133,7 @@ export async function doBuildRoute(){
     syncSimPath();
     setGoBarVisible(true);
     loadCameras();
+    telemetry.log('nav', { sub: 'route_built', variants: S.routeAlternatives.length });
 
     $('s-finish').textContent = '✅ Маршрут построен — выберите вариант и нажмите «ПОЕХАЛИ» внизу';
 

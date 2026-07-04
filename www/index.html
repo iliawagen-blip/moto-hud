@@ -36,7 +36,7 @@
 })();
 </script>
 <link rel="stylesheet" href="css/leaflet.css">
-<link rel="stylesheet" href="css/app.css?v=mr6xr2su">
+<link rel="stylesheet" href="css/app.css?v=mr6yyocv">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -142,6 +142,18 @@
         </select>
       </div>
       <div class="toggle" style="margin-top:8px">🚧 Лимит скорости (км/ч) <input type="number" id="opt-limit" value="60" min="0" max="200"></div>
+      <div class="toggle" style="margin-top:12px;font-size:14px;color:var(--fg-dim)">Тестовая телеметрия</div>
+      <div class="toggle" style="margin-top:6px">📊 Запись сессии (JSONL) <input type="checkbox" id="opt-telemetry"></div>
+      <div class="hint" style="margin-top:4px;font-size:12px">Локально в IndexedDB. Экспорт в разделе ниже. URL: <code>?telemetry=1</code></div>
+    </div>
+  </details>
+
+  <details class="setup-details" id="drawer-telemetry">
+    <summary>📊 Сессии телеметрии</summary>
+    <div class="drawer-body">
+      <div class="hint" id="telemetry-stats" style="margin-bottom:8px">—</div>
+      <div id="telemetry-sessions"></div>
+      <button type="button" class="secondary" id="btn-telemetry-export-all" style="margin-top:10px">📤 Экспортировать все сессии</button>
     </div>
   </details>
 
@@ -258,10 +270,11 @@
   <button type="button" class="corner-btn btn-gear" id="btn-gear"><span class="cb-icon">⚙</span><span class="cb-lbl">НАСТР.</span></button>
   <button type="button" class="corner-btn fuel btn-fuel" id="btn-fuel"><span class="cb-icon">⛽</span><span class="cb-lbl">ЗАПР.</span></button>
   <button type="button" class="corner-btn stop btn-stop" id="btn-stop"><span class="cb-icon">■</span><span class="cb-lbl">СТОП</span></button>
+  <button type="button" class="corner-btn btn-telemetry-mark hidden" id="btn-telemetry-mark" title="Метка (двойной тап — critical)" aria-label="Метка">📍</button>
 </div>
 
 <script src="js/sim.js"></script>
-<script type="module" src="js/app.js?v=mr6xr2su"></script>
+<script type="module" src="js/app.js?v=mr6yyocv"></script>
 
 </body>
 </html>

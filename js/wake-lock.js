@@ -3,6 +3,7 @@
  */
 import { S } from './state.js';
 import { isNative } from './platform.js';
+import telemetry from './telemetry.js';
 
 let _nativeAwake = false;
 
@@ -16,6 +17,9 @@ export async function acquireWakeLock(){
     }
     if('wakeLock' in navigator){
       S.wakeLock = await navigator.wakeLock.request('screen');
+      S.wakeLock.addEventListener?.('release', () => {
+        telemetry.log('sys', { sub: 'wakelock_lost' });
+      });
     }
   }catch(e){
     console.warn('Wake-lock:', e);
