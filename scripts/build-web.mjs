@@ -59,7 +59,7 @@ STATIC_FILES.forEach(f => {
 });
 STATIC_DIRS.forEach(d => {
   if(d === 'js'){
-    cpDir(path.join(ROOT, 'js'), path.join(WWW, 'js'), n => n === 'sim.js' || n === 'app.js' || n === 'app.js.map');
+    cpDir(path.join(ROOT, 'js'), path.join(WWW, 'js'), n => n === 'sim.js' || n === 'app.js' || n === 'app.js.map' || n === 'sim-replay.js');
   } else {
     cpDir(path.join(ROOT, d), path.join(WWW, d));
   }
