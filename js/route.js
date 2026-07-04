@@ -122,13 +122,14 @@ export function selectRouteIndex(idx){
   resetFuelRouteBinding();
 }
 
-export async function buildRoute(){
+export async function buildRoute(opts = {}){
+  const { reroute = false, allowCache = true } = opts;
   if(S.routeAlternatives.length){
     selectRouteIndex(S.selectedRouteIdx);
     return;
   }
   S._usedCache = false;
-  const url = 'https://router.project-osrm.org/route/v1/driving/' +
+  let url = 'https://router.project-osrm.org/route/v1/driving/' +
     `${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}` +
     '?overview=full&geometries=geojson&steps=true&annotations=false';
   try{
@@ -138,8 +139,11 @@ export async function buildRoute(){
     if(!j.routes || !j.routes.length) throw new Error('Маршрут не найден');
     S.route = parseOsrmRoute(j.routes[0]);
     attachRouteGeometry(S.route);
-    telemetry.log('nav', { sub: 'route_built' });
+    if(!reroute) telemetry.log('nav', { sub: 'route_built' });
   }catch(err){
+    if(!allowCache){
+      throw err;
+    }
     const last = loadLastRun();
     if(last && last.route && S.finish && last.finish &&
        haversine(last.finish, S.finish) < 60){
@@ -151,6 +155,48 @@ export async function buildRoute(){
       return;
     }
     throw new Error('Нет сети и нет сохранённого маршрута к этой точке');
+  }
+}
+
+function classifyRerouteError(err){
+  const msg = String(err?.message || err || '');
+  if(err instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg)){
+    return 'network';
+  }
+  if(/не найден|no route|NoRoute/i.test(msg)) return 'no_route';
+  if(/OSRM HTTP/i.test(msg)) return 'osrm_error';
+  return 'network';
+}
+
+export async function recalcRoute(){
+  if(S.rerouting) return false;
+  S.rerouting = true;
+  const t0 = Date.now();
+  try{
+    S.routeAlternatives = [];
+    await buildRoute({ reroute: true, allowCache: false });
+    telemetry.log('nav', { sub: 'reroute' });
+    Array.from(S.camWarned).forEach(k => {
+      if(typeof k === 'string' && k.startsWith('st_')) S.camWarned.delete(k);
+    });
+    S.rerouteBackoffStep = 0;
+    S.rerouteBackoffUntil = 0;
+    return true;
+  }catch(e){
+    console.warn('Пересчёт не удался:', e);
+    const reason = classifyRerouteError(e);
+    telemetry.log('nav', {
+      sub: 'reroute_failed',
+      reason,
+      dur_ms: Date.now() - t0
+    });
+    const delays = [5000, 15000, 60000];
+    const step = Math.min(S.rerouteBackoffStep, 2);
+    S.rerouteBackoffUntil = Date.now() + delays[step];
+    S.rerouteBackoffStep = Math.min(S.rerouteBackoffStep + 1, 2);
+    return false;
+  }finally{
+    S.rerouting = false;
   }
 }
 
@@ -305,17 +351,6 @@ export function getRemainingDistance(){
     remaining = haversine(S.gps, S.finish);
   }
   return remaining;
-}
-
-export async function recalcRoute(){
-  try{
-    S.routeAlternatives = [];
-    await buildRoute();
-    telemetry.log('nav', { sub: 'reroute' });
-    Array.from(S.camWarned).forEach(k => {
-      if(typeof k === 'string' && k.startsWith('st_')) S.camWarned.delete(k);
-    });
-  }catch(e){ console.warn('Пересчёт не удался:', e); }
 }
 
 export function maneuverTurnAngle(step){

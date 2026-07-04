@@ -25,6 +25,38 @@ import { tickAutoMode } from './theme-manager.js';
 import { applyFinishInfoVisibility } from './hud-opts.js';
 import telemetry from './telemetry.js';
 
+const OFF_ROUTE_WARN_OK = '◆ ПЕРЕСЧЁТ МАРШРУТА ◆';
+const OFF_ROUTE_WARN_FAIL = '◆ НЕТ СВЯЗИ — ВЕРНИТЕСЬ НА МАРШРУТ ◆';
+
+function clearOffRouteWarn(){
+  const el = $('offRouteWarn');
+  if(!el) return;
+  el.classList.remove('on');
+  el.textContent = OFF_ROUTE_WARN_OK;
+  S.rerouteNetworkWarn = false;
+}
+
+function showRerouteOk(){
+  const el = $('offRouteWarn');
+  if(!el) return;
+  el.textContent = OFF_ROUTE_WARN_OK;
+  el.classList.add('on');
+  setTimeout(() => clearOffRouteWarn(), 2000);
+}
+
+function showRerouteFail(){
+  const el = $('offRouteWarn');
+  if(!el) return;
+  el.textContent = OFF_ROUTE_WARN_FAIL;
+  el.classList.add('on');
+  S.rerouteNetworkWarn = true;
+  const now = Date.now();
+  if(!S.rerouteFailVoiceAt || now - S.rerouteFailVoiceAt > 60000){
+    S.rerouteFailVoiceAt = now;
+    speak('Нет связи. Вернитесь на маршрут');
+  }
+}
+
 /** Пороги озвучки манёвра: дальняя ~9 с, ближняя ~2.5 с хода */
 function maneuverVoiceThresholds(kmh){
   const mps = Math.max(kmh / 3.6, 4);
@@ -186,18 +218,25 @@ export function onTick(){
   $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
 
   const near = findNearestOnRoute();
-  if(near && near.dist > 40){
-    if(!S.offRouteSince) S.offRouteSince = Date.now();
-    else if(Date.now() - S.offRouteSince > 8000){
-      $('offRouteWarn').classList.add('on');
+  if(!S.rerouting){
+    if(near && near.dist > 40){
+      if(!S.offRouteSince) S.offRouteSince = Date.now();
+      else if(Date.now() - S.offRouteSince > 8000){
+        if(S.rerouteBackoffUntil && Date.now() < S.rerouteBackoffUntil) { /* backoff */ }
+        else {
+          S.offRouteSince = null;
+          recalcRoute().then(ok => {
+            if(ok) showRerouteOk();
+            else showRerouteFail();
+          });
+        }
+      }
+    } else if(near){
       S.offRouteSince = null;
-      recalcRoute().then(() => {
-        setTimeout(() => $('offRouteWarn').classList.remove('on'), 2000);
-      });
+      S.rerouteBackoffStep = 0;
+      S.rerouteBackoffUntil = 0;
+      clearOffRouteWarn();
     }
-  } else {
-    S.offRouteSince = null;
-    $('offRouteWarn').classList.remove('on');
   }
   if(remaining < 30 && !S.camWarned.has('arrived')){
     S.camWarned.add('arrived');

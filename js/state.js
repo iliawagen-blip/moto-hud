@@ -9,6 +9,12 @@ export const S = {
   camLoadStatus: 'idle',  // idle | loading | ok | err | off
   camWarned: new Set(),
   offRouteSince: null,
+  offRouteSuspect: false,
+  rerouting: false,
+  rerouteBackoffStep: 0,
+  rerouteBackoffUntil: 0,
+  rerouteNetworkWarn: false,
+  rerouteFailVoiceAt: 0,
   watchId: null,
   wakeLock: null,
   startTs: null,
