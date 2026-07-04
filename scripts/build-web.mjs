@@ -56,3 +56,17 @@ STATIC_DIRS.forEach(d => {
 });
 
 console.log('build OK: js/app.js + www/');
+
+function bumpAppScriptTag(){
+  const buildId = Date.now().toString(36);
+  for(const rel of ['index.html', path.join(WWW, 'index.html')]){
+    const f = path.join(ROOT, rel);
+    if(!fs.existsSync(f)) continue;
+    let html = fs.readFileSync(f, 'utf8');
+    html = html.replace(/src="js\/app\.js(\?v=[^"]*)?"/, `src="js/app.js?v=${buildId}"`);
+    fs.writeFileSync(f, html);
+  }
+  console.log('app.js cache-bust: ?v=' + buildId);
+}
+
+bumpAppScriptTag();

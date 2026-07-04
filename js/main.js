@@ -6,9 +6,11 @@ import { bindSetupUI, syncOptionsFromDom, applyCoordsOrLink, initNativeHints, do
 import { initFavorites } from './favorites.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { loadElevOptsFromStorage } from './elevation.js';
+import { loadCurveOptsFromStorage } from './curve-speed.js';
 
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
+loadCurveOptsFromStorage();
 syncOptionsFromDom();
 updateCamStatusUI();
 bindSetupUI();

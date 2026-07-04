@@ -1,8 +1,22 @@
 import { S, FUEL_COLORS, FUEL_CORRIDOR } from './state.js';
-import { haversine, distToSegment } from './geo.js';
+import { haversine } from './geo.js';
 import { curPos } from './gps.js';
 import { findNearestOnRoute } from './route.js';
+import { projectPointToRoute } from './route-geometry.js';
 import { isNative } from './platform.js';
+
+let _fuelRouteKey = null;
+
+function fuelRouteKey(){
+  const r = S.route;
+  if(!r) return '';
+  return (r.distance || 0) + ':' + (r.coords?.length || 0) + ':' + (r.geometry?.n || 0);
+}
+
+function invalidateFuelRouteS(){
+  _fuelRouteKey = null;
+  S.fuelStations.forEach(st => { delete st.routeS; delete st.offRoute; });
+}
 
 export function fuelColor(status){
   return FUEL_COLORS[status] || FUEL_COLORS.unknown;
@@ -116,41 +130,49 @@ export async function ensureFuelStations(force){
   }
 }
 
-/** Пересчёт геометрии: прямое расстояние, отклонение от маршрута, «впереди по маршруту». */
+/** Пересчёт геометрии: прямое расстояние, отклонение от маршрута, «впереди по маршруту» (s). */
 export function recomputeFuelGeometry(){
   const pos = curPos() || S.gps;
   if(!pos) return;
+
+  const key = fuelRouteKey();
+  if(key !== _fuelRouteKey){
+    _fuelRouteKey = key;
+    S.fuelStations.forEach(st => { delete st.routeS; delete st.offRoute; });
+  }
+
+  const geom = S.route?.geometry?.n > 1 ? S.route.geometry : null;
   const near = S.route ? findNearestOnRoute() : null;
-  const coords = S.route ? S.route.coords : null;
+  const curS = near?.s;
+
   S.fuelStations.forEach(st => {
     st.distGps = haversine(pos, st);
-    st.offRoute = Infinity;
-    st.aheadOnRoute = false;
-    st.distAhead = Infinity;
-    if(coords && near){
-      let bi = 0, bd = Infinity;
-      for(let i = 0; i < coords.length - 1; i++){
-        const d = distToSegment(st,
-          { lat: coords[i][0], lon: coords[i][1] },
-          { lat: coords[i + 1][0], lon: coords[i + 1][1] });
-        if(d < bd){ bd = d; bi = i; }
-      }
-      st.offRoute = bd;
-      if(bi >= near.idx){
-        st.aheadOnRoute = bd <= FUEL_CORRIDOR;
-        // расстояние по маршруту от текущей позиции до проекции АЗС
-        let along = distToSegment(pos,
-          { lat: coords[near.idx][0], lon: coords[near.idx][1] },
-          { lat: coords[near.idx + 1][0], lon: coords[near.idx + 1][1] });
-        for(let i = near.idx + 1; i <= bi; i++){
-          along += haversine(
-            { lat: coords[i][0], lon: coords[i][1] },
-            { lat: coords[i + 1][0], lon: coords[i + 1][1] });
+    if(geom){
+      if(st.routeS == null){
+        const proj = projectPointToRoute(geom, st);
+        if(proj){
+          st.routeS = proj.s;
+          st.offRoute = proj.lateral;
+        }else{
+          st.offRoute = Infinity;
         }
-        st.distAhead = along;
       }
+      st.aheadOnRoute = false;
+      st.distAhead = Infinity;
+      if(st.routeS != null && curS != null && st.offRoute <= FUEL_CORRIDOR && st.routeS >= curS - 20){
+        st.aheadOnRoute = true;
+        st.distAhead = Math.max(0, st.routeS - curS);
+      }
+    }else{
+      st.offRoute = Infinity;
+      st.aheadOnRoute = false;
+      st.distAhead = Infinity;
     }
   });
+}
+
+export function resetFuelRouteBinding(){
+  invalidateFuelRouteS();
 }
 
 /** Лучшая АЗС по маршруту впереди (в коридоре), ближайшая по ходу движения */

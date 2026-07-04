@@ -44,6 +44,22 @@
 4. Через 1–2 минуты сайт будет доступен:
    `https://iliawagen-blip.github.io/moto-hud/`
 
+## Демо для друзей (симуляция)
+
+Одна ссылка для рассылки — **HTTPS**, работает с телефона и ПК:
+
+**https://iliawagen-blip.github.io/moto-hud/sim.html**
+
+| Устройство | Что откроется |
+|------------|----------------|
+| **Телефон** | полноэкранный HUD с симулированным GPS (`index.html?sim=1`) |
+| **ПК** | эмулятор в рамке телефона + регулятор скорости |
+
+Прямая ссылка только на HUD (без рамки):  
+`https://iliawagen-blip.github.io/moto-hud/index.html?sim=1`
+
+> Нужен интернет: маршрут строится через OSRM, карта — OSM. Комментарии можно прислать автору в мессенджер или issue на GitHub.
+
 > Если workflow `Deploy to GitHub Pages` падает с `Get Pages site failed` — Pages ещё не включён
 > (шаг 3). После включения перезапустите workflow: **Actions → Deploy to GitHub Pages → Re-run jobs**.
 

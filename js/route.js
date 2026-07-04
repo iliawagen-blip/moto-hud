@@ -6,13 +6,19 @@ import {
   buildRouteGeometry, resetRouteSnap, getRouteSnapForNav, remainingDistanceS
 } from './route-geometry.js';
 import { loadRouteElevation } from './elevation.js';
+import { computeCurveSpeed } from './curve-speed.js';
+import { resetFuelRouteBinding } from './fuel.js';
 
 /** Построение RouteGeometry и запуск загрузки высот (не блокирует UI) */
 export function ensureRouteGeometry(route){
   if(!route) return null;
-  if(route.geometry?.n > 1) return route.geometry;
+  if(route.geometry?.n > 1){
+    computeCurveSpeed(route.geometry, route);
+    return route.geometry;
+  }
   try{
     route.geometry = buildRouteGeometry(route);
+    if(route.geometry) computeCurveSpeed(route.geometry, route);
     loadRouteElevation();
     return route.geometry;
   }catch(e){
@@ -25,6 +31,7 @@ export function ensureRouteGeometry(route){
 function attachRouteGeometry(route){
   ensureRouteGeometry(route);
   resetRouteSnap();
+  resetFuelRouteBinding();
 }
 
 /** Фоновая сборка geometry для всех вариантов после открытия карты */
@@ -107,6 +114,7 @@ export function selectRouteIndex(idx){
   S.selectedRouteIdx = Math.max(0, Math.min(S.routeAlternatives.length - 1, idx));
   S.route = S.routeAlternatives[S.selectedRouteIdx];
   resetRouteSnap();
+  resetFuelRouteBinding();
 }
 
 export async function buildRoute(){

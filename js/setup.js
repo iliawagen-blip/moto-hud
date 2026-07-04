@@ -10,6 +10,7 @@ import { onTick, startHud, stopHud, cycleFuelAssist } from './hud.js';
 
 import { updateCamStatusUI } from './cam-status.js';
 import { loadRouteElevation, saveElevOptsToStorage } from './elevation.js';
+import { computeCurveSpeed, saveCurveOptsToStorage } from './curve-speed.js';
 
 import { isAndroidNative } from './platform.js';
 
@@ -129,8 +130,6 @@ export async function doBuildRoute(){
     $('s-finish').textContent = '✅ Маршрут построен — выберите вариант и нажмите «ПОЕХАЛИ» внизу';
 
     $('s-finish').className = 'status ok';
-
-    $('route-section')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     scheduleGeometryBuild(S.routeAlternatives, () => {
       renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
@@ -426,6 +425,30 @@ export function bindSetupUI(){
     if(S.routeAlternatives?.length) renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
   });
 
+  function syncCurveInputs(){
+    const on = S.curveWarn;
+    const sel = $('opt-curve-strict');
+    if(sel) sel.disabled = !on;
+  }
+
+  function recomputeCurveIfReady(){
+    const geom = S.route?.geometry;
+    if(geom) computeCurveSpeed(geom, S.route);
+  }
+
+  $('opt-curve-warn').addEventListener('change', e => {
+    S.curveWarn = e.target.checked;
+    syncCurveInputs();
+    saveCurveOptsToStorage();
+  });
+
+  $('opt-curve-strict').addEventListener('change', e => {
+    const v = e.target.value;
+    if(v === 'relaxed' || v === 'normal' || v === 'strict') S.curveStrict = v;
+    saveCurveOptsToStorage();
+    recomputeCurveIfReady();
+  });
+
   $('opt-heading').addEventListener('change', e => {
 
     S.showCompass = e.target.checked;
@@ -552,6 +575,13 @@ export function syncOptionsFromDom(){
   if($('opt-elev-exag')) $('opt-elev-exag').disabled = !S.showElevProfile;
   if($('opt-elev-profile-h')) $('opt-elev-profile-h').disabled = !S.showElevProfile;
   if($('opt-elev-profile-len')) $('opt-elev-profile-len').disabled = !S.showElevProfile;
+
+  S.curveWarn = $('opt-curve-warn')?.checked ?? true;
+  const strictEl = $('opt-curve-strict');
+  if(strictEl){
+    S.curveStrict = strictEl.value || 'normal';
+    strictEl.disabled = !S.curveWarn;
+  }
 
   S.showCompass = $('opt-heading').checked;
 

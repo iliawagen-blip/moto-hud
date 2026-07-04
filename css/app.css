@@ -276,28 +276,38 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
 @keyframes blink{50%{opacity:.4}}
 
 /* ---------- Избранное ---------- */
-.favs-empty{font-size:13px;color:var(--dim);padding:10px 4px;line-height:1.4}
-.favs-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
-.fav-item{display:flex;gap:6px;position:relative}
+.favs-empty{font-size:13px;color:var(--dim);padding:6px 2px;line-height:1.4;width:100%}
+.favs-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;align-items:flex-start}
+.fav-item{display:inline-flex;max-width:100%}
 .fav-apply{
-  flex:1;min-height:52px;padding:10px 14px;padding-right:28px;
+  width:auto;max-width:min(100%,280px);min-height:44px;padding:8px 14px;
   border-radius:12px;border:1px solid var(--border);
   background:var(--panel2);color:var(--fg);
   font-size:15px;font-weight:700;text-align:left;
-  display:flex;flex-direction:column;justify-content:center;cursor:pointer
+  display:inline-flex;align-items:center;cursor:pointer;white-space:nowrap
 }
 .fav-apply:active{background:var(--panel)}
-.fav-name{font-size:16px;color:var(--fg)}
-.fav-coords{font-size:11px;color:var(--dim);margin-top:3px;font-weight:600}
-.fav-del{
-  position:absolute;right:4px;top:50%;transform:translateY(-50%);
-  width:22px;height:22px;min-height:0;padding:0;
-  border-radius:6px;border:1px solid transparent;
-  background:transparent;color:var(--dim);
-  font-size:13px;font-weight:700;cursor:pointer;opacity:.45;line-height:1
+.fav-name{font-size:15px;color:var(--fg);line-height:1.2}
+.fav-emoji{font-size:20px;margin-right:6px}
+/* редактирование (настройки) */
+.favs-edit-list .fav-item-edit{
+  display:flex;align-items:stretch;gap:8px
 }
-.fav-del:active{background:#2a1010;color:var(--warn);opacity:1;border-color:var(--warn)}
-.fav-emoji{font-size:22px;margin-right:2px}
+.favs-edit-list .fav-edit-info{
+  flex:1;min-height:44px;padding:8px 14px;
+  border-radius:12px;border:1px solid var(--border);
+  background:var(--panel2);
+  display:flex;align-items:center
+}
+.favs-edit-list .fav-del{
+  flex:0 0 48px;width:48px;min-height:52px;height:auto;
+  padding:0;margin:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:12px;border:1px solid var(--border);
+  background:var(--panel2);color:var(--dim);
+  font-size:18px;font-weight:700;line-height:1;cursor:pointer
+}
+.favs-edit-list .fav-del:active{background:#2a1010;color:var(--warn);border-color:var(--warn)}
 
 /* ---------- Быстрая смена финиша в ИЛС ---------- */
 #quickFinish{position:absolute;inset:0;background:rgba(0,10,6,.96);z-index:6;display:none;
