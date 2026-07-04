@@ -6,6 +6,8 @@ import { geometryToLatLngs, latLngsSliceByS } from './route-geometry.js';
 import {
   MAP_PROVIDERS, getMapProviderId, saveMapProviderId, getMapProvider
 } from './map-providers.js';
+import { fuelStationsForMap, fuelColor } from './fuel.js';
+import { THEME } from './theme.js';
 
 let _onSelect = null;
 let _map = null;
@@ -15,7 +17,7 @@ let _hudWindowLayers = [];
 let _markers = [];
 let _lastRender = null;
 
-const ROUTE_COLORS = ['#00ff88', '#66ccff', '#ffd400'];
+const ROUTE_COLORS = THEME.routeAlts;
 
 function clearLayers(){
   if(!_map) return;
@@ -168,7 +170,7 @@ export function renderRouteMap(alternatives, selectedIdx, start, finish){
   if(start){
     const m = L.circleMarker([start.lat, start.lon], {
       radius: 9, color: '#000', weight: 2,
-      fillColor: '#39d353', fillOpacity: 1
+      fillColor: THEME.routeStart, fillOpacity: 1
     }).addTo(map).bindTooltip('Вы', { permanent: false, direction: 'top' });
     bounds.extend([start.lat, start.lon]);
     _markers.push(m);
@@ -176,11 +178,22 @@ export function renderRouteMap(alternatives, selectedIdx, start, finish){
   if(finish){
     const m = L.circleMarker([finish.lat, finish.lon], {
       radius: 9, color: '#000', weight: 2,
-      fillColor: '#ffd400', fillOpacity: 1
+      fillColor: THEME.routeFinish, fillOpacity: 1
     }).addTo(map).bindTooltip('Финиш', { permanent: false, direction: 'top' });
     bounds.extend([finish.lat, finish.lon]);
     _markers.push(m);
   }
+
+  const fuels = fuelStationsForMap(48);
+  fuels.forEach(st => {
+    const col = fuelColor(st.status);
+    const m = L.circleMarker([st.lat, st.lon], {
+      radius: 7, color: '#000', weight: 1,
+      fillColor: col, fillOpacity: 0.92
+    }).addTo(map).bindTooltip('⛽ ' + (st.brand || 'АЗС'), { direction: 'top', opacity: 0.92 });
+    bounds.extend([st.lat, st.lon]);
+    _markers.push(m);
+  });
 
   if(bounds.isValid()){
     map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });

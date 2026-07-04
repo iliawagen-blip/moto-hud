@@ -5,6 +5,9 @@ import { isNative } from './platform.js';
 import {
   startSetupGps, stopSetupGps, startNavGps, stopNavGps, stopAllNativeGps
 } from './native-gps.js';
+import {
+  fuseHeading, startHeadingSensors, stopHeadingSensors, updateHeadingHealth
+} from './heading.js';
 
 let RENDER_POS = null;
 let _navMode = false;
@@ -94,6 +97,10 @@ export function applyGpsFix(next){
       next.speed = S.measSpeed;
     }
   }
+  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
+  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
+  if(fused != null && !isNaN(fused)) next.heading = fused;
+
   if(next.heading != null && !isNaN(next.heading)){
     if(S.smoothedHeading == null) S.smoothedHeading = next.heading;
     else {
@@ -147,6 +154,7 @@ function startWebGps(){
 /** GPS на экране настройки (без foreground-service) */
 export function startGps(){
   _navMode = false;
+  startHeadingSensors();
   if(isNative()){
     $('s-gps').textContent = '⏳ GPS…';
     $('s-gps').className = 'chip';
@@ -176,5 +184,6 @@ export function isNavGpsMode(){ return _navMode; }
 
 export async function stopAllGps(){
   stopWebGps();
+  stopHeadingSensors();
   if(isNative()) await stopAllNativeGps();
 }

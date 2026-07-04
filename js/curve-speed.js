@@ -3,12 +3,17 @@
  * @module curve-speed
  */
 import { S, CURVE_OPTS_KEY } from './state.js';
+import { THEME } from './theme.js';
 import { bearing } from './geo.js';
 import { findSegAtS, interpolateAtS, radiusAtS } from './route-geometry.js';
 
 export const CURVE_R_WARN = 100;
 export const MIN_CURVE_LEN_M = 25;
 const G = 9.81;
+const RIBBON_HYST = 0.06;
+const _ribbonState = new Map();
+
+export function resetCurveRibbonState(){ _ribbonState.clear(); }
 
 const PRESETS = {
   relaxed: { aLat: 0.28 * G, yellow: 1.0, red: 1.12 },
@@ -53,6 +58,7 @@ function applySafeSpeedAtS(geom, s, vSafe){
 /** Построение radius[], safeSpeed[] и списка шпилек для зон подхода */
 export function computeCurveSpeed(geom, route){
   if(!geom || geom.n < 3) return;
+  resetCurveRibbonState();
   const n = geom.n;
   const params = getCurveParams();
   geom.radius = new Float64Array(n);
@@ -224,8 +230,22 @@ export function ribbonCurveColor(sMid, geom, speedMps){
 
   const ratio = speedMps / vSafe;
   const { yellow, red } = getCurveParams();
-  if(ratio >= red) return '#ff6644';
-  if(ratio >= yellow) return '#ffd400';
+  const spanKey = Math.round(span.sEntry);
+  let state = _ribbonState.get(spanKey) || null;
+
+  if(state === 'red'){
+    if(ratio < red - RIBBON_HYST) state = ratio >= yellow ? 'yellow' : null;
+  } else if(state === 'yellow'){
+    if(ratio >= red) state = 'red';
+    else if(ratio < yellow - RIBBON_HYST) state = null;
+  } else {
+    if(ratio >= red) state = 'red';
+    else if(ratio >= yellow) state = 'yellow';
+  }
+  _ribbonState.set(spanKey, state);
+
+  if(state === 'red') return THEME.curveRed;
+  if(state === 'yellow') return THEME.curveYellow;
   return null;
 }
 

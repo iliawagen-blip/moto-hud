@@ -8,6 +8,7 @@ import {
   ELEV_OPTS_KEY
 } from './state.js';
 import { findSegAtS, interpolateAtS } from './route-geometry.js';
+import { THEME } from './theme.js';
 import { computeCurveSpeed } from './curve-speed.js';
 
 const TERRARIUM_Z = 13;
@@ -282,9 +283,9 @@ export function loadRouteElevation(){
 
 export function gradeColor(grade){
   const g = Math.abs(grade || 0);
-  if(g < 0.04) return '#00ff88';
-  if(g < 0.08) return '#ffd400';
-  return '#ff6644';
+  if(g < 0.04) return THEME.grade.flat;
+  if(g < 0.08) return THEME.grade.mid;
+  return THEME.grade.steep;
 }
 
 export function renderElevProfile(snap, geom, W, H){

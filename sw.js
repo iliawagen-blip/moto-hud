@@ -6,7 +6,7 @@
 
    НЕ перехватываются — ими управляет само приложение. */
 
-const CACHE = 'moto-hud-shell-v13';
+const CACHE = 'moto-hud-shell-v14';
 
 const SHELL = [
 
@@ -22,7 +22,9 @@ const SHELL = [
 
   './css/app.css',
 
-  './js/sim.js'
+  './js/sim.js',
+
+  './fixtures/serpentine-demo.gpx'
 
 ];
 

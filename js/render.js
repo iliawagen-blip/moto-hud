@@ -12,10 +12,11 @@ import {
 } from './route-geometry.js';
 import { renderElevProfile, getElevExag, getElevProfileH } from './elevation.js';
 import { ribbonCurveColor } from './curve-speed.js';
+import { THEME } from './theme.js';
 
 const PROFILE_GAP = 6;
-const RIBBON_FILL = '#00aa5c';
-const RIBBON_EDGE = '#00ff88';
+const RIBBON_FILL = THEME.ribbonFill;
+const RIBBON_EDGE = THEME.hud;
 const RIBBON_FILL_OP = 0.22;
 
 export function computePathLayout(w, h){
@@ -273,7 +274,7 @@ export function renderPathway(){
     const b = centerS[ci + 1];
     const sMid = (a.s + b.s) * 0.5;
     const warnCol = ribbonCurveColor(sMid, geomReady, speedMps);
-    const stroke = warnCol || '#00ff88';
+    const stroke = warnCol || THEME.hud;
     const sw = warnCol ? 4.5 : 3;
     const op = warnCol ? 0.85 : 0.45;
     html += '<line x1="' + a.p.x.toFixed(1) + '" y1="' + a.p.y.toFixed(1) +
@@ -327,9 +328,9 @@ function renderParametricArrow(turnDeg){
 
 function arriveFlagSVG(){
   return '<svg class="arrow-svg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet">' +
-    '<rect x="-28" y="-32" width="56" height="40" fill="none" stroke="#00ff88" stroke-width="5"/>' +
-    '<path d="M-28 -32 L-28 8 L28 -12 Z" fill="#00ff88"/>' +
-    '<line x1="-28" y1="8" x2="-28" y2="28" stroke="#00ff88" stroke-width="5"/>' +
+    '<rect x="-28" y="-32" width="56" height="40" fill="none" stroke="' + THEME.hud + '" stroke-width="5"/>' +
+    '<path d="M-28 -32 L-28 8 L28 -12 Z" fill="' + THEME.hud + '"/>' +
+    '<line x1="-28" y1="8" x2="-28" y2="28" stroke="' + THEME.hud + '" stroke-width="5"/>' +
     '</svg>';
 }
 

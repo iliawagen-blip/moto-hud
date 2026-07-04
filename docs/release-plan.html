@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мото ИЛС — план подготовки и тестирования</title>
+<style>
+:root{
+  --bg:#000; --fg:#e8eef5; --dim:#8b9cb3;
+  --accent:#ffd400; --ok:#39d353; --warn:#ff9f43;
+  --panel:#0a0f16; --panel2:#141d2a; --border:#1a2332;
+  --link:#6eb5ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--fg);
+  font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  padding:24px 16px 48px;
+  max-width:920px; margin:0 auto;
+}
+h1{font-size:1.65rem;color:var(--accent);margin-bottom:6px;line-height:1.25}
+.sub{color:var(--dim);font-size:.95rem;margin-bottom:28px}
+h2{font-size:1.15rem;color:var(--accent);margin:32px 0 12px;padding-top:8px;border-top:1px solid var(--border)}
+h3{font-size:1rem;color:var(--fg);margin:20px 0 8px}
+p,li{margin-bottom:.5em}
+ul,ol{padding-left:1.35em;margin-bottom:1em}
+a{color:var(--link)}
+table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:.92rem}
+th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--panel2);color:var(--accent);font-weight:700}
+tr:nth-child(even) td{background:rgba(20,29,42,.45)}
+code,pre{background:var(--panel2);border:1px solid var(--border);border-radius:6px}
+code{padding:2px 6px;font-size:.88em}
+pre{padding:12px 14px;overflow-x:auto;font-size:.85rem;line-height:1.45;margin:12px 0}
+.note,.warn,.ok-box{
+  border-radius:10px;padding:12px 14px;margin:14px 0;font-size:.94rem;
+  border:1px solid var(--border);
+}
+.note{background:var(--panel);border-left:3px solid var(--link)}
+.warn{background:rgba(255,159,67,.08);border-left:3px solid var(--warn)}
+.ok-box{background:rgba(57,211,83,.08);border-left:3px solid var(--ok)}
+.tag{display:inline-block;background:var(--panel2);border:1px solid var(--border);
+  border-radius:6px;padding:2px 8px;font-size:.8rem;color:var(--dim);margin-right:6px}
+nav.toc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:28px}
+nav.toc ol{margin-bottom:0}
+nav.toc a{text-decoration:none}
+nav.toc a:hover{text-decoration:underline}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);color:var(--dim);font-size:.85rem}
+.checklist{list-style:none;padding-left:0}
+.checklist li{padding:4px 0 4px 1.6em;position:relative}
+.checklist li::before{content:"☐";position:absolute;left:0;color:var(--dim)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0;font-size:.9rem}
+.flow span{background:var(--panel2);border:1px solid var(--border);padding:6px 10px;border-radius:8px}
+.flow .arr{color:var(--dim)}
+</style>
+</head>
+<body>
+
+<h1>🏍 Мото ИЛС — план подготовки и тестирования</h1>
+<p class="sub">RuStore · APK для друзей (Android) · Web для друзей (iPhone)<br>
+Обновлено: 2026-07-05 · package: <code>ru.vagin.motohud</code></p>
+
+<nav class="toc" aria-label="Содержание">
+<strong>Содержание</strong>
+<ol>
+  <li><a href="#strategy">Стратегия: три канала</a></li>
+  <li><a href="#stage0">Этап 0 — общая подготовка</a></li>
+  <li><a href="#stage1">Этап 1 — Web для iPhone</a></li>
+  <li><a href="#stage2">Этап 2 — APK для Android</a></li>
+  <li><a href="#stage3">Этап 3 — RuStore</a></li>
+  <li><a href="#calendar">Сводный календарь</a></li>
+  <li><a href="#defer">Что отложить</a></li>
+  <li><a href="#links">Ссылки</a></li>
+</ol>
+</nav>
+
+<h2 id="strategy">1. Стратегия: три канала, один код</h2>
+
+<table>
+<thead>
+<tr><th>Канал</th><th>Кому</th><th>Когда</th><th>Формат</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Web (PWA)</strong></td><td>Друзья с iPhone + быстрый демо всем</td><td><strong>Сейчас</strong></td><td>GitHub Pages</td></tr>
+<tr><td><strong>APK sideload</strong></td><td>Друзья с Android (полевой тест)</td><td><strong>1–2 недели</strong></td><td>Подписанный release APK</td></tr>
+<tr><td><strong>RuStore</strong></td><td>Публичная раздача в РФ</td><td><strong>После альфа-теста</strong></td><td>APK или AAB + карточка</td></tr>
+</tbody>
+</table>
+
+<p>Все три канала собираются из одного <code>npm run build</code>. Android — Capacitor; iPhone — только браузер (нативного iOS-приложения пока нет).</p>
+
+<h2 id="stage0">2. Этап 0 — общая подготовка (3–5 дней)</h2>
+
+<h3>0.1 Release-ключ (один раз, до первого APK)</h3>
+<p>Создать <strong>keystore</strong>, хранить отдельно от репозитория (бэкап обязателен).</p>
+<ul>
+  <li>Один ключ → sideload APK → RuStore → все обновления</li>
+  <li>Потеря ключа = невозможность обновлять <code>ru.vagin.motohud</code></li>
+</ul>
+
+<h3>0.2 Версионирование</h3>
+<p>В <code>android/app/build.gradle</code>:</p>
+<ul>
+  <li><code>versionName</code>: <code>0.1.0-alpha.1</code>, <code>0.1.0-alpha.2</code> …</li>
+  <li><code>versionCode</code>: монотонно растёт (2, 3, 4 …)</li>
+</ul>
+<p>В каждом тесте фиксировать: <strong>версия + git commit + дата</strong>.</p>
+
+<h3>0.3 Политика конфиденциальности</h3>
+<p>Нужна для RuStore; полезна и для web. Страница на GitHub Pages, например:</p>
+<p><code>https://iliawagen-blip.github.io/moto-hud/privacy.html</code></p>
+<p>Минимум:</p>
+<ul>
+  <li>что собирается: GPS (на устройстве), избранное (localStorage), запросы к OSRM / Nominatim / Overpass;</li>
+  <li>что <strong>не</strong> собирается: аккаунты, серверная аналитика (если так);</li>
+  <li>зачем геолокация и уведомление «Навигация активна»;</li>
+  <li>контакт разработчика (email / Telegram).</li>
+</ul>
+
+<h3>0.4 Материалы для RuStore (параллельно, не блокирует APK)</h3>
+<table>
+<thead><tr><th>Артефакт</th><th>Требование RuStore</th></tr></thead>
+<tbody>
+<tr><td>Иконка</td><td>512×512 PNG/JPG, без прозрачных краёв</td></tr>
+<tr><td>Скриншоты</td><td>1–10 шт., телефон, вертикаль/горизонт</td></tr>
+<tr><td>Название</td><td>≤ 30 символов, уникальное («Мото ИЛС»)</td></tr>
+<tr><td>Описание</td><td>HUD, маршрут, камеры, голос; без «лучший / единственный»</td></tr>
+<tr><td>Контакты</td><td>email или сайт (обязательно одно)</td></tr>
+<tr><td>FAQ</td><td>до 10 пар (опционально)</td></tr>
+</tbody>
+</table>
+<p>Скриншоты: setup с картой, HUD в движении, sim, опции, баннер TTS.</p>
+
+<h2 id="stage1">3. Этап 1 — Web для друзей с iPhone (1–2 дня)</h2>
+
+<h3>URL для рассылки</h3>
+<ul>
+  <li><strong>Демо без GPS:</strong> <a href="https://iliawagen-blip.github.io/moto-hud/sim.html">sim.html</a></li>
+  <li><strong>Реальный GPS (ограниченно):</strong> <a href="https://iliawagen-blip.github.io/moto-hud/">index.html</a></li>
+  <li><strong>HUD с автозапуском:</strong> <a href="https://iliawagen-blip.github.io/moto-hud/index.html?sim=1">index.html?sim=1</a></li>
+</ul>
+
+<div class="warn">
+<strong>iPhone (Safari) — честные ограничения</strong>
+<table style="margin-top:10px;margin-bottom:0">
+<thead><tr><th>Функция</th><th>iPhone (web)</th><th>Android (APK)</th></tr></thead>
+<tbody>
+<tr><td>GPS в движении</td><td>✅ экран включён</td><td>✅ + фон</td></tr>
+<tr><td>GPS с выключенным экраном</td><td>❌</td><td>✅ (FGS)</td></tr>
+<tr><td>Wake Lock</td><td>⚠️ нестабильно</td><td>✅</td></tr>
+<tr><td>Голос</td><td>⚠️ web TTS</td><td>✅ нативный TTS</td></tr>
+<tr><td>«Как приложение»</td><td>«На экран Домой»</td><td>APK / RuStore</td></tr>
+</tbody>
+</table>
+<p style="margin-top:10px;margin-bottom:0"><strong>Рекомендация:</strong> sim для знакомства; для реальной поездки — экран не гасить, Safari на переднем плане.</p>
+</div>
+
+<h3>Чек-лист web-теста (iPhone)</h3>
+<ol>
+  <li>Открыть sim → маршрут → HUD → повороты, голос (если не mute).</li>
+  <li>Основной URL → разрешить геолокацию → маршрут рядом с домом.</li>
+  <li>«Поделиться» → «На экран Домой» — полноэкранный запуск.</li>
+  <li>Короткая поездка 10–15 мин с <strong>включённым экраном</strong>.</li>
+  <li>Фидбек по шаблону: что сломалось / не слышно / курс плавает.</li>
+</ol>
+
+<h3>Доработки web до рассылки</h3>
+<ul class="checklist">
+  <li>Страница <code>privacy.html</code> + ссылка в «Как пользоваться»</li>
+  <li>Короткая <code>friends.html</code> — Android: APK, iPhone: sim + ограничения</li>
+  <li>Проверить деплoy: push → gh-pages → ссылка живая</li>
+</ul>
+
+<h2 id="stage2">4. Этап 2 — APK для себя и друзей на Android (3–7 дней)</h2>
+
+<h3>Сборка</h3>
+<pre>npm run build
+npx cap sync android</pre>
+<p>Android Studio → <strong>Build → Generate Signed App Bundle or APK</strong> → <strong>APK</strong> → release → подписать keystore.</p>
+<p>APK: например <code>releases/motohud-0.1.0-alpha.1.apk</code> (Google Drive / Telegram, не обязательно в git).</p>
+
+<h3>Раздача друзьям</h3>
+<ol>
+  <li>Файл APK + инструкция: скачать → «неизвестные источники» → геолокация + уведомления → батарея без ограничений (Samsung/Xiaomi).</li>
+  <li>Список тестеров: имя, модель, Android, версия APK.</li>
+  <li>Канал фидбека: Telegram-чат или Google Form.</li>
+</ol>
+
+<h3>Smoke-тест (до раздачи)</h3>
+<table>
+<thead><tr><th>#</th><th>Сценарий</th><th>OK</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Установка чистого APK</td><td>☐</td></tr>
+<tr><td>2</td><td>Маршрут → ПОЕХАЛИ → HUD</td><td>☐</td></tr>
+<tr><td>3</td><td>Экран off 10 мин → GPS жив</td><td>☐</td></tr>
+<tr><td>4</td><td>Свёрнуто 10 min → уведомление FGS</td><td>☐</td></tr>
+<tr><td>5</td><td>Голос + музыка в фоне</td><td>☐</td></tr>
+<tr><td>6</td><td>TTS-баннер / установка голоса</td><td>☐</td></tr>
+<tr><td>7</td><td>Калибровка компаса</td><td>☐</td></tr>
+<tr><td>8</td><td>СТОП → повторный старт</td><td>☐</td></tr>
+</tbody>
+</table>
+
+<h3>Полевой тест (2–4 недели, ≥ 3 устройства)</h3>
+<p>Сценарии — <code>docs/oem-gps-matrix.md</code>:</p>
+<ul>
+  <li><strong>A:</strong> экран погашен 30 мин</li>
+  <li><strong>B:</strong> приложение свёрнуто 30 мин</li>
+  <li><strong>C:</strong> поездка 2 ч суммарно</li>
+</ul>
+<div class="ok-box">
+<strong>Критерий перехода к RuStore:</strong> GPS стабилен на ≥ 3 вендорах, нет крашей на старте HUD.
+</div>
+
+<h2 id="stage3">5. Этап 3 — RuStore (после альфа, ~1–2 недели)</h2>
+
+<h3>5.1 Аккаунт разработчика</h3>
+<ul>
+  <li><a href="https://console.rustore.ru">RuStore Консоль</a> → VK ID</li>
+  <li><strong>Физлицо</strong> — достаточно для бесплатного приложения без монетизации</li>
+  <li>ИП/юрлицо + УКЭП — для монетизации через RuStore</li>
+</ul>
+
+<h3>5.2 Загрузка сборки</h3>
+<p>RuStore принимает <strong>APK и AAB</strong> (см. <a href="https://www.rustore.ru/help/developers/publishing-and-verifying-apps/app-publication">инструкцию публикации</a>):</p>
+<table>
+<thead><tr><th></th><th>APK друзьям</th><th>RuStore</th></tr></thead>
+<tbody>
+<tr><td>Подпись</td><td>release keystore</td><td><strong>та же</strong></td></tr>
+<tr><td>Package</td><td><code>ru.vagin.motohud</code></td><td>тот же</td></tr>
+<tr><td>versionCode</td><td>больше предыдущего</td><td>строго больше</td></tr>
+</tbody>
+</table>
+<p>Для первой публикации проще <strong>APK</strong> (как у друзей). AAB — когда понадобится оптimизация размера.</p>
+
+<h3>5.3 Декларация разрешений</h3>
+<table>
+<thead><tr><th>Разрешение</th><th>Зачем</th></tr></thead>
+<tbody>
+<tr><td><code>ACCESS_FINE_LOCATION</code></td><td>навигация, маршрут, камеры</td></tr>
+<tr><td><code>FOREGROUND_SERVICE</code> + <code>LOCATION</code></td><td>GPS при выключенном экране</td></tr>
+<tr><td><code>POST_NOTIFICATIONS</code></td><td>статус «Навигация активна»</td></tr>
+<tr><td><code>WAKE_LOCK</code></td><td>экран не гаснет в HUD</td></tr>
+</tbody>
+</table>
+
+<h3>5.4 Комментарий модератору (шаблон)</h3>
+<pre>Авторизация не требуется.
+1. Разрешить геолокацию и уведомления.
+2. Дождаться GPS (чип «GPS» зелёный).
+3. Финиш: 55.758, 37.618 или поиск «Кремль».
+4. «Построить маршрут» → «ПОЕХАЛИ».
+Демо без GPS: sim в браузере (ссылка в описании).
+Политика: https://iliawagen-blip.github.io/moto-hud/privacy.html</pre>
+
+<h3>5.5 Риск модерации: «просто WebView»</h3>
+<div class="note">
+RuStore не принимает приложения, которые <strong>только</strong> ведут на сайт. У Мото ИЛС есть нативное: FGS GPS, TTS, keep-awake, уведомления — это нужно явно описать в карточке. Основной UI не должен открывать внешний сайт.
+</div>
+
+<h3>5.6 Порядок публикации</h3>
+<div class="flow">
+  <span>VK ID</span><span class="arr">→</span>
+  <span>Создать приложение</span><span class="arr">→</span>
+  <span>Загрузить signed APK</span><span class="arr">→</span>
+  <span>Обработка</span><span class="arr">→</span>
+  <span>Карточка + privacy</span><span class="arr">→</span>
+  <span>Декларация GPS</span><span class="arr">→</span>
+  <span>Модерация</span><span class="arr">→</span>
+  <span>Релиз</span>
+</div>
+<p>Обработанный файл хранится <strong>14 дней</strong> — за это время отправить на модерацию или сохранить черновик.</p>
+
+<h2 id="calendar">6. Сводный календарь</h2>
+<table>
+<thead><tr><th>Неделя</th><th>Действие</th><th>Результат</th></tr></thead>
+<tbody>
+<tr><td><strong>1</strong></td><td>privacy + web smoke + ссылка iPhone → sim</td><td>iPhone-демо работает</td></tr>
+<tr><td><strong>1–2</strong></td><td>keystore + release APK + smoke + 1–2 друга Android</td><td><code>alpha.1</code> в поле</td></tr>
+<tr><td><strong>2–4</strong></td><td>OEM-матрица, багфиксы, <code>alpha.2…N</code></td><td>стабильный GPS</td></tr>
+<tr><td><strong>4–5</strong></td><td>скрины, карточка, RuStore консоль</td><td>черновик в RuStore</td></tr>
+<tr><td><strong>5–6</strong></td><td>модерация → первая версия</td><td>публичная установка</td></tr>
+</tbody>
+</table>
+
+<h2 id="defer">7. Что отложить</h2>
+<table>
+<thead><tr><th>Можно в RuStore alpha</th><th>Лучше до широкого релиза</th></tr></thead>
+<tbody>
+<tr><td>Нет audio focus / шлем</td><td>Тест BT-гарнитуры</td></tr>
+<tr><td>OSRM онлайн</td><td>Офлайн — отдельная фаза</td></tr>
+<tr><td>Не все OEM в матрице</td><td>≥ 3 вендора</td></tr>
+<tr><td>iPhone только web</td><td>Не обещать «iOS-приложение» в карточке</td></tr>
+</tbody>
+</table>
+
+<h2 id="links">8. Ссылки и файлы проекта</h2>
+<ul>
+  <li><a href="https://www.rustore.ru/help/developers/publishing-and-verifying-apps/app-publication">RuStore — публикация приложений</a></li>
+  <li><a href="https://www.rustore.ru/help/developers/publishing-and-verifying-apps/requirement-apps">RuStore — требования к приложениям</a></li>
+  <li><a href="https://www.rustore.ru/help/developers/developer-account/registration-developer">RuStore — регистрация разработчика</a></li>
+  <li><code>docs/oem-gps-matrix.md</code> — полевые тесты GPS</li>
+  <li><code>docs/play-console-closed-testing.md</code> — чек-лист (аналог для Play; применимо к alpha)</li>
+  <li><code>MASTERPLAN.md</code> — дорожная карта продукта</li>
+</ul>
+
+<h3>Ближайшие шаги</h3>
+<ol>
+  <li><strong>Сегодня:</strong> разослать iPhone-друзьям <code>sim.html</code> + disclaimer про Safari.</li>
+  <li><strong>На неделе:</strong> keystore + первый signed APK + smoke у себя.</li>
+  <li><strong>Параллельно:</strong> <code>privacy.html</code> (блокирует RuStore, не блокирует APK).</li>
+</ol>
+
+<footer>
+Мото ИЛС · ru.vagin.motohud · Вагин Илья Александрович · 2026
+</footer>
+
+</body>
+</html>

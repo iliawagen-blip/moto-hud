@@ -6,7 +6,7 @@ const ROOT = process.cwd();
 const WWW = path.join(ROOT, 'www');
 
 const STATIC_FILES = ['index.html', 'sim.html', 'manifest.json', 'icon.svg', 'sw.js', 'serve.json', 'preview.bat'];
-const STATIC_DIRS = ['css', 'js'];
+const STATIC_DIRS = ['css', 'js', 'fixtures'];
 
 function rmrf(p){
   if(fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });
@@ -37,6 +37,16 @@ await esbuild.build({
   platform: 'browser',
   target: ['es2020'],
   sourcemap: true,
+  logLevel: 'info'
+});
+
+await esbuild.build({
+  entryPoints: [path.join(ROOT, 'js', 'sim-main.js')],
+  outfile: path.join(ROOT, 'js', 'sim.js'),
+  bundle: true,
+  format: 'iife',
+  platform: 'browser',
+  target: ['es2020'],
   logLevel: 'info'
 });
 

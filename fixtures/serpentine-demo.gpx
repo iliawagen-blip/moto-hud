@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="moto-hud"
+  xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Демо серпантин (Москва)</name>
+    <desc>Регрессионная фикстура: повороты разной крутизны + разворот</desc>
+    <trkseg>
+      <trkpt lat="55.75700" lon="37.61600"><time>2026-07-04T07:00:00Z</time></trkpt>
+      <trkpt lat="55.75941" lon="37.61850"><time>2026-07-04T07:00:32Z</time></trkpt>
+      <trkpt lat="55.76150" lon="37.62180"><time>2026-07-04T07:01:04Z</time></trkpt>
+      <trkpt lat="55.76280" lon="37.62550"><time>2026-07-04T07:01:36Z</time></trkpt>
+      <trkpt lat="55.76220" lon="37.62920"><time>2026-07-04T07:02:08Z</time></trkpt>
+      <trkpt lat="55.76050" lon="37.63180"><time>2026-07-04T07:02:40Z</time></trkpt>
+      <trkpt lat="55.75820" lon="37.63250"><time>2026-07-04T07:03:12Z</time></trkpt>
+      <trkpt lat="55.75600" lon="37.63080"><time>2026-07-04T07:03:44Z</time></trkpt>
+      <trkpt lat="55.75480" lon="37.62750"><time>2026-07-04T07:04:16Z</time></trkpt>
+      <trkpt lat="55.75520" lon="37.62380"><time>2026-07-04T07:04:48Z</time></trkpt>
+      <trkpt lat="55.75680" lon="37.62050"><time>2026-07-04T07:05:20Z</time></trkpt>
+      <trkpt lat="55.75850" lon="37.61800"><time>2026-07-04T07:05:52Z</time></trkpt>
+      <trkpt lat="55.75700" lon="37.61600"><time>2026-07-04T07:06:24Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

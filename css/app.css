@@ -265,6 +265,17 @@ html,body{height:100%;background:var(--bg);overflow:hidden}
 #fuelPanel .fp-hint{font-size:min(3.4vw,14px);color:var(--dim);letter-spacing:1px;margin-top:8px;font-weight:700}
 #fuelPanel.searching{--fuel-c:#66ccff;animation:blink .8s infinite alternate}
 
+.setup-banner{
+  margin:0 12px 10px;padding:10px 14px;border-radius:10px;
+  background:rgba(255,140,0,.12);border:1px solid var(--amber);
+  font-size:14px;line-height:1.45;color:var(--fg);
+}
+.setup-banner.hidden{display:none}
+.setup-banner .linkish{
+  background:none;border:none;color:var(--amber);font:inherit;
+  font-weight:700;text-decoration:underline;cursor:pointer;padding:0;margin-left:4px;
+}
+
 .no-heading{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   color:var(--amber);font-size:14px;letter-spacing:2px;

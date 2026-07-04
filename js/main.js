@@ -7,7 +7,10 @@ import { initFavorites } from './favorites.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { loadElevOptsFromStorage } from './elevation.js';
 import { loadCurveOptsFromStorage } from './curve-speed.js';
+import { applyThemeCss } from './theme.js';
+import { initTtsHealth } from './tts-health.js';
 
+applyThemeCss();
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();
@@ -16,6 +19,7 @@ updateCamStatusUI();
 bindSetupUI();
 initFavorites();
 initNativeHints();
+initTtsHealth();
 
 window.__motoHUD = { S, applyCoordsOrLink, startHud, startGps, doBuildRoute };
 

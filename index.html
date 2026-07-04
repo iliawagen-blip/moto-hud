@@ -55,6 +55,8 @@
     <div class="route-info" id="route-info"></div>
   </div>
 
+  <div id="tts-banner" class="setup-banner hidden" role="status"></div>
+
   <!-- ОПЦИИ — нативный details (работает без JS) -->
   <details class="setup-details" id="drawer-opts">
     <summary>⚙ Опции</summary>
@@ -75,6 +77,10 @@
         </select>
       </div>
       <div class="toggle" style="margin-top:8px">🧭 Компас N/E/S/W <input type="checkbox" id="opt-heading"></div>
+      <div style="margin-top:8px">
+        <button type="button" id="btn-compass-cal" class="secondary" style="width:100%">🧭 Калибровка компаса</button>
+        <div class="hint" style="margin-top:6px;font-size:13px">На стоянке: медленная «восьмёрка» телефоном 15 с — снижает помехи от рамы/электрики.</div>
+      </div>
       <div class="toggle" style="margin-top:8px">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
       <div class="toggle" style="margin-top:8px">🎯 Только камеры в спину <input type="checkbox" id="opt-back-only" checked></div>
       <div class="toggle" style="margin-top:8px">⚙ Допуск направления (°) <input type="number" id="opt-tol" value="45" min="10" max="90"></div>
@@ -149,6 +155,7 @@
 
   <!-- компас N E S W (опционально) -->
   <div class="compass"><svg id="compass-svg" viewBox="0 0 400 36" preserveAspectRatio="xMidYMid meet"></svg></div>
+  <div class="no-heading" id="heading-warn">⚠ Помехи компаса — курс по GPS</div>
 
   <!-- манёвр: улица + крупная стрелка + расстояние -->
   <div class="block block-arrow">
@@ -197,7 +204,7 @@
 </div>
 
 <script src="js/sim.js"></script>
-<script type="module" src="js/app.js?v=mr6k50pa"></script>
+<script type="module" src="js/app.js?v=mr6vgqyd"></script>
 
 </body>
 </html>
