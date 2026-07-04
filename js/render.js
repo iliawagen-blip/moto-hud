@@ -393,6 +393,11 @@ function arriveFlagSVG(){
     '</svg>';
 }
 
+export function buildTurnArrowSVG(turnDeg){
+  const turn = Math.max(-178, Math.min(178, turnDeg || 0));
+  return renderParametricArrow(turn);
+}
+
 export function buildArrowSVG(step){
   if(!step) return '';
   if(step.type === 'arrive') return arriveFlagSVG();

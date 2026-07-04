@@ -38,6 +38,14 @@ html,body{height:100%;overflow:hidden}
 .search-results div{padding:12px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;cursor:pointer}
 .search-results div:last-child{border-bottom:none}
 .search-results div:active{background:var(--panel)}
+.search-results .fuel-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.search-results .fuel-dist{font-size:13px;color:var(--accent);white-space:nowrap;flex-shrink:0}
+.search-results .fuel-meta{font-size:12px;color:var(--dim);font-weight:600;margin-top:4px;line-height:1.35}
+.search-results .fuel-meta .fuel-st{color:var(--ok)}
+.search-results .fuel-meta .fuel-st.queue{color:var(--warn)}
+.search-results .fuel-meta .fuel-st.no{color:var(--err,#ff3b30)}
+.search-results .fuel-meta .fuel-st.low{color:var(--warn)}
+#setup .fuel-search-btn{width:100%;margin-bottom:8px;min-height:48px}
 
 /* ---------- Компактный UI ---------- */
 #setup .headrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
@@ -92,7 +100,7 @@ html,body{height:100%;overflow:hidden}
 /* карта маршрута (только setup) — Leaflet */
 .route-section{margin:8px 0 12px}
 .route-section.hidden{display:none}
-.map-provider-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.map-provider-row{display:flex;align-items:center;gap:10px;margin:8px 0 10px;flex-wrap:wrap}
 .map-provider-lbl{font-size:13px;color:var(--dim);font-weight:700;white-space:nowrap}
 .map-select{
   flex:1;min-width:160px;min-height:44px;padding:8px 12px;border-radius:10px;

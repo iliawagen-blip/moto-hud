@@ -78,8 +78,12 @@
     const dbg = $('tel-debug');
     if(!dbg) return;
     const sm = window.__simReplay?.getSmoothedHeading?.() ?? '—';
+    const ors = (() => {
+      try{ return document.getElementById('frame')?.contentWindow?.__motoHUD?.S?.offRouteState; }catch(e){ return null; }
+    })();
     dbg.innerHTML =
       '<div><strong>t</strong> ' + Math.round(t) + ' ms</div>' +
+      '<div><strong>offRouteState</strong> ' + (ors ?? '—') + '</div>' +
       '<div><strong>snap.s0</strong> ' + (snap?.s0 ?? '—') + ' · <strong>lat_off</strong> ' + (snap?.lat_off ?? '—') + '</div>' +
       '<div><strong>fix.hdg</strong> ' + (fix?.hdg ?? '—') + ' · <strong>smoothed</strong> ' + sm + '</div>' +
       '<div><strong>Δ hdg</strong> ' + (fix?.hdg != null && sm !== '—' ? Math.abs(((fix.hdg - sm + 540) % 360) - 180).toFixed(1) : '—') + '°</div>';

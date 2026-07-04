@@ -1,7 +1,7 @@
 /**
  * Опции HUD: расстояние / время / ETA до финиша — загрузка и сохранение.
  */
-import { S, HUD_OPTS_KEY } from './state.js';
+import { S, HUD_OPTS_KEY, DEFAULT_FUEL_PLANNER_COUNT, MIN_FUEL_PLANNER_COUNT, MAX_FUEL_PLANNER_COUNT } from './state.js';
 import { $ } from './util.js';
 
 export function loadHudOptsFromStorage(){
@@ -21,7 +21,17 @@ export function loadHudOptsFromStorage(){
       const el = $('opt-finish-eta');
       if(el) el.checked = o.showFinishEta;
     }
+    if(typeof o.fuelPlannerCount === 'number'){
+      S.fuelPlannerCount = clampFuelPlannerCount(o.fuelPlannerCount);
+      const el = $('opt-fuel-count');
+      if(el) el.value = String(S.fuelPlannerCount);
+    }
   }catch(e){}
+}
+
+export function clampFuelPlannerCount(n){
+  return Math.max(MIN_FUEL_PLANNER_COUNT, Math.min(MAX_FUEL_PLANNER_COUNT,
+    parseInt(n, 10) || DEFAULT_FUEL_PLANNER_COUNT));
 }
 
 export function saveHudOptsToStorage(){
@@ -29,7 +39,8 @@ export function saveHudOptsToStorage(){
     localStorage.setItem(HUD_OPTS_KEY, JSON.stringify({
       showFinishDist: !!S.showFinishDist,
       showFinishTime: !!S.showFinishTime,
-      showFinishEta: !!S.showFinishEta
+      showFinishEta: !!S.showFinishEta,
+      fuelPlannerCount: clampFuelPlannerCount(S.fuelPlannerCount)
     }));
   }catch(e){}
 }

@@ -1,6 +1,6 @@
 import { S, DEFAULT_ELEV_EXAG, DEFAULT_ELEV_PROFILE_H, MIN_ELEV_PROFILE_H, MAX_ELEV_PROFILE_H, DEFAULT_ELEV_PROFILE_LEN_KM, MIN_ELEV_PROFILE_LEN_KM, MAX_ELEV_PROFILE_LEN_KM } from './state.js';
 
-import { $ } from './util.js';
+import { $, escapeHtml } from './util.js';
 import { parseInput } from './geo.js';
 
 import { startGps, checkStartReady } from './gps.js';
@@ -12,7 +12,7 @@ import { onTick, startHud, stopHud, cycleFuelAssist } from './hud.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { loadRouteElevation, saveElevOptsToStorage } from './elevation.js';
 import { computeCurveSpeed, saveCurveOptsToStorage } from './curve-speed.js';
-import { saveHudOptsToStorage, applyFinishInfoVisibility } from './hud-opts.js';
+import { saveHudOptsToStorage, applyFinishInfoVisibility, clampFuelPlannerCount } from './hud-opts.js';
 
 import { isAndroidNative } from './platform.js';
 
@@ -23,7 +23,7 @@ import {
 
 } from './route-map.js';
 
-import { prefetchFuelForMap } from './fuel.js';
+import { prefetchFuelForMap, searchNearestFuelStations, formatFuelDist, fuelStatusText } from './fuel.js';
 import { refreshTtsBanner } from './tts-health.js';
 import {
   startCompassCalibration, requestHeadingPermission, isCalibrating
@@ -274,6 +274,81 @@ export async function doAddressSearch(){
 
 
 
+function applyFuelFinish(st){
+  const brand = st.brand || st.name || 'АЗС';
+  S.finish = { lat: st.lat, lon: st.lon, label: '⛽ ' + brand };
+  const inputVal = st.name && st.name !== st.brand ? brand + ' — ' + st.name : brand;
+  $('finish-input').value = inputVal;
+  $('finish-input').dataset.userEdited = '1';
+  $('s-finish').textContent = '✅ Финиш: ' + inputVal + ' · ' + formatFuelDist(st.distGps);
+  $('s-finish').className = 'status ok';
+  invalidateRoute();
+  checkStartReady();
+}
+
+function fuelStationMetaLine(st){
+  const parts = ['<span class="fuel-st ' + (st.status || 'unknown') + '">' +
+    escapeHtml(fuelStatusText(st.status)) + '</span>'];
+  if(st.confirmations) parts.push('отчётов: ' + st.confirmations);
+  if(st.lastAt) parts.push('данные: ' + escapeHtml(String(st.lastAt).split(' ')[0]));
+  return parts.join(' · ');
+}
+
+export async function doFuelSearch(){
+  if(!S.gps){
+    $('s-finish').textContent = '❌ Сначала получите GPS (нажмите 📍 GPS)';
+    $('s-finish').className = 'status err';
+    return;
+  }
+  const btn = $('btn-fuel-search');
+  const prev = btn?.textContent;
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Ищем АЗС…'; }
+  $('s-finish').textContent = '⏳ Загрузка заправок…';
+  $('s-finish').className = 'status';
+  try{
+    syncOptionsFromDom();
+    const limit = clampFuelPlannerCount(S.fuelPlannerCount);
+    const list = await searchNearestFuelStations(limit);
+    const box = $('search-results');
+    box.innerHTML = '';
+    if(!list.length){
+      $('s-finish').textContent = '❌ Заправки не найдены поблизости';
+      $('s-finish').className = 'status err';
+      box.style.display = 'none';
+      return;
+    }
+    list.forEach(st => {
+      const row = document.createElement('div');
+      row.className = 'fuel-item';
+      row.innerHTML =
+        '<div class="fuel-title"><span>⛽ ' + escapeHtml(st.brand || st.name || 'АЗС') + '</span>' +
+        '<span class="fuel-dist">' + formatFuelDist(st.distGps) + '</span></div>' +
+        (st.name && st.name !== st.brand
+          ? '<div class="fuel-meta">' + escapeHtml(st.name) + '</div>' : '') +
+        '<div class="fuel-meta">' + fuelStationMetaLine(st) + '</div>';
+      row.addEventListener('click', () => {
+        applyFuelFinish(st);
+        box.style.display = 'none';
+      });
+      box.appendChild(row);
+    });
+    box.style.display = 'block';
+    box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    $('s-finish').textContent = '⛽ Выберите заправку (' + list.length + ')';
+    $('s-finish').className = 'status';
+  }catch(e){
+    $('s-finish').textContent = '❌ Ошибка загрузки АЗС: ' + e.message;
+    $('s-finish').className = 'status err';
+  }finally{
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = prev || '⛽ Ближайшие заправки';
+    }
+  }
+}
+
+
+
 export function setFinishQuiet(lat, lon, label = 'Точка'){
   S.finish = { lat, lon, label };
   $('s-finish').textContent = '✅ Финиш: ' + lat.toFixed(5) + ', ' + lon.toFixed(5);
@@ -360,6 +435,8 @@ export function bindSetupUI(){
   $('s-gps').addEventListener('click', startGps);
 
   $('btn-search').addEventListener('click', doAddressSearch);
+
+  $('btn-fuel-search')?.addEventListener('click', doFuelSearch);
 
   $('btn-parse').addEventListener('click', applyCoordsOrLink);
 
@@ -475,6 +552,12 @@ export function bindSetupUI(){
   bindFinishOpt('opt-finish-dist');
   bindFinishOpt('opt-finish-time');
   bindFinishOpt('opt-finish-eta');
+
+  $('opt-fuel-count')?.addEventListener('change', e => {
+    S.fuelPlannerCount = clampFuelPlannerCount(e.target.value);
+    e.target.value = String(S.fuelPlannerCount);
+    saveHudOptsToStorage();
+  });
 
   function syncElevInputs(){
     const on = S.showElevProfile;
@@ -654,6 +737,9 @@ export function syncOptionsFromDom(){
   S.showFinishTime = $('opt-finish-time')?.checked ?? true;
   S.showFinishEta = $('opt-finish-eta')?.checked ?? true;
   applyFinishInfoVisibility();
+
+  S.fuelPlannerCount = clampFuelPlannerCount($('opt-fuel-count')?.value);
+  if($('opt-fuel-count')) $('opt-fuel-count').value = String(S.fuelPlannerCount);
 
   S.showElevProfile = $('opt-elev-profile').checked;
 

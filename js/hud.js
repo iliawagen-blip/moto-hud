@@ -4,10 +4,10 @@ import { haversine, bearing, angleDiff } from './geo.js';
 import { curPos } from './gps.js';
 import {
   buildRoute, loadCameras, saveLastRun, findNearestOnRoute,
-  findNextManeuver, getRemainingDistance, recalcRoute
+  findNextManeuver, getRemainingDistance
 } from './route.js';
 import { speak, maneuverText, isTurnStep, isCameraBehind } from './voice.js';
-import { buildArrowSVG } from './render.js';
+import { buildArrowSVG, buildTurnArrowSVG } from './render.js';
 import { startVisualLoop, stopVisualLoop, startNavigationGps, stopNavigationGps } from './gps.js';
 import {
   ensureFuelStations, bestAlongRoute, nearestOverall,
@@ -23,9 +23,8 @@ import { clearVoiceQueue } from './voice.js';
 import { getHeadingHealth } from './heading.js';
 import { tickAutoMode } from './theme-manager.js';
 import { applyFinishInfoVisibility } from './hud-opts.js';
+import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide } from './offroute.js';
 import telemetry from './telemetry.js';
-
-/** Пороги озвучки манёвра: дальняя ~9 с, ближняя ~2.5 с хода */
 function maneuverVoiceThresholds(kmh){
   const mps = Math.max(kmh / 3.6, 4);
   return {
@@ -153,52 +152,68 @@ export function onTick(){
   }
 
   const remaining = getRemainingDistance();
-  const nm = findNextManeuver();
-  if(nm){
-    $('arrow-box').innerHTML = buildArrowSVG(nm.step);
-    if(nm.dist < 1000){
-      $('v-mdist').textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
+  const near = findNearestOnRoute();
+  const snap = getRouteSnapForNav(S.smoothedHeading);
+  const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
+  tickOffRouteMachine({
+    lateral: near?.dist,
+    acc: S.gps.acc || 0,
+    spdMps,
+    spdKmh: kmh,
+    heading: S.smoothedHeading,
+    tangent: snap?.tangent ?? null
+  });
+
+  if(isOfflineGuide() && snap && S.gps){
+    const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
+    const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading)
+      ? S.smoothedHeading : S.gps.heading;
+    let turn = 0;
+    if(hdg != null && !isNaN(hdg)) turn = ((brg - hdg + 540) % 360) - 180;
+    $('arrow-box').innerHTML = buildTurnArrowSVG(turn);
+    const dSnap = haversine(S.gps, { lat: snap.lat, lon: snap.lon });
+    if(dSnap < 1000){
+      $('v-mdist').textContent = Math.max(0, Math.round(dSnap / 10) * 10);
       $('v-mdist-u').textContent = 'м';
     } else {
-      $('v-mdist').textContent = (nm.dist / 1000).toFixed(1);
+      $('v-mdist').textContent = (dSnap / 1000).toFixed(1);
       $('v-mdist-u').textContent = 'км';
     }
-    $('street').textContent = (nm.step.name || '').toUpperCase() || '—';
-    const stIdx = S.route.steps.indexOf(nm.step);
-    const kFar = 'st_' + stIdx + '_far';
-    const kNear = 'st_' + stIdx + '_near';
-    if(isTurnStep(nm.step)){
-      const txt = maneuverText(nm.step);
-      const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
-      if(nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt){
-        S.camWarned.add(kFar);
-        telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'far' });
-        speak(formatManeuverLead(nm.dist, mps) + ' ' + txt);
+    $('street').textContent = 'ВОЗВРАТ НА МАРШРУТ';
+  } else {
+    const nm = findNextManeuver();
+    if(nm){
+      $('arrow-box').innerHTML = buildArrowSVG(nm.step);
+      if(nm.dist < 1000){
+        $('v-mdist').textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
+        $('v-mdist-u').textContent = 'м';
+      } else {
+        $('v-mdist').textContent = (nm.dist / 1000).toFixed(1);
+        $('v-mdist-u').textContent = 'км';
       }
-      if(nm.dist <= nearM && !S.camWarned.has(kNear) && txt){
-        S.camWarned.add(kNear);
-        telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'near' });
-        speak(txt);
+      $('street').textContent = (nm.step.name || '').toUpperCase() || '—';
+      const stIdx = S.route.steps.indexOf(nm.step);
+      const kFar = 'st_' + stIdx + '_far';
+      const kNear = 'st_' + stIdx + '_near';
+      if(isTurnStep(nm.step)){
+        const txt = maneuverText(nm.step);
+        const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
+        if(nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt){
+          S.camWarned.add(kFar);
+          telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'far' });
+          speak(formatManeuverLead(nm.dist, mps) + ' ' + txt);
+        }
+        if(nm.dist <= nearM && !S.camWarned.has(kNear) && txt){
+          S.camWarned.add(kNear);
+          telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'near' });
+          speak(txt);
+        }
       }
     }
   }
   updateFinishInfo(remaining, kmh, now);
   $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
 
-  const near = findNearestOnRoute();
-  if(near && near.dist > 40){
-    if(!S.offRouteSince) S.offRouteSince = Date.now();
-    else if(Date.now() - S.offRouteSince > 8000){
-      $('offRouteWarn').classList.add('on');
-      S.offRouteSince = null;
-      recalcRoute().then(() => {
-        setTimeout(() => $('offRouteWarn').classList.remove('on'), 2000);
-      });
-    }
-  } else {
-    S.offRouteSince = null;
-    $('offRouteWarn').classList.remove('on');
-  }
   if(remaining < 30 && !S.camWarned.has('arrived')){
     S.camWarned.add('arrived');
     speak('Вы прибыли');
@@ -238,6 +253,7 @@ export async function startHud(){
   S.startTs = Date.now();
   S.distDone = 0;
   S.camWarned.clear();
+  resetOffRouteMachine();
   resetRouteSnap();
   resetCurveRibbonState();
   ensureRouteGeometry(S.route);
@@ -275,6 +291,7 @@ export function stopHud(){
   if(goBar) goBar.classList.toggle('hidden', !(S.route && S.route.coords?.length));
   releaseWakeLock();
   clearVoiceQueue();
+  resetOffRouteMachine();
   try{ document.exitFullscreen && document.exitFullscreen(); }catch(e){}
 }
 

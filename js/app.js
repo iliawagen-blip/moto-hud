@@ -10638,6 +10638,9 @@ function applyThemeCss() {
 }
 
 // js/state.js
+var DEFAULT_FUEL_PLANNER_COUNT = 5;
+var MIN_FUEL_PLANNER_COUNT = 1;
+var MAX_FUEL_PLANNER_COUNT = 10;
 var S = {
   gps: null,
   finish: null,
@@ -10649,7 +10652,10 @@ var S = {
   camLoadStatus: "idle",
   // idle | loading | ok | err | off
   camWarned: /* @__PURE__ */ new Set(),
-  offRouteSince: null,
+  offRouteState: "ON_ROUTE",
+  rerouting: false,
+  rerouteBackoffStep: 0,
+  rerouteBackoffUntil: 0,
   watchId: null,
   wakeLock: null,
   startTs: null,
@@ -10680,6 +10686,8 @@ var S = {
   showFinishDist: true,
   showFinishEta: true,
   showFinishTime: true,
+  /** Сколько ближайших АЗС показывать в планировщике (1–10) */
+  fuelPlannerCount: DEFAULT_FUEL_PLANNER_COUNT,
   // Топливный ассистент
   fuelStations: [],
   // [{lat,lon,brand,name,osmId,status,distGps,offRoute,distAhead,aheadOnRoute}]
@@ -13125,6 +13133,16 @@ function nearestOverall(exclude) {
   cands.sort((a, b) => a.distGps - b.distGps);
   return cands[0] || null;
 }
+async function searchNearestFuelStations(limit) {
+  await ensureFuelStations(true);
+  recomputeFuelGeometry();
+  return S.fuelStations.filter((s2) => s2.distGps != null && isFinite(s2.distGps)).sort((a, b) => a.distGps - b.distGps).slice(0, Math.max(1, limit || 5));
+}
+function formatFuelDist(m) {
+  if (m == null || !isFinite(m)) return "\u2014";
+  if (m < 1e3) return Math.round(m) + " \u043C";
+  return (m / 1e3).toFixed(1).replace(".", ",") + " \u043A\u043C";
+}
 async function prefetchFuelForMap() {
   try {
     await ensureFuelStations(true);
@@ -13248,13 +13266,23 @@ function selectRouteIndex(idx) {
   resetRouteSnap();
   resetFuelRouteBinding();
 }
-async function buildRoute() {
+async function buildRoute(opts = {}) {
+  const { reroute = false, allowCache = true } = opts;
   if (S.routeAlternatives.length) {
     selectRouteIndex(S.selectedRouteIdx);
     return;
   }
   S._usedCache = false;
-  const url = `https://router.project-osrm.org/route/v1/driving/${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}?overview=full&geometries=geojson&steps=true&annotations=false`;
+  let url = `https://router.project-osrm.org/route/v1/driving/${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}?overview=full&geometries=geojson&steps=true&annotations=false`;
+  if (reroute) {
+    const spd = S.gps.speed != null ? S.gps.speed : 0;
+    const hdg = S.smoothedHeading;
+    if (spd > 3 && hdg != null && !isNaN(hdg)) {
+      const brg = Math.round(hdg);
+      const rad = Math.max(30, Math.round(S.gps.acc || 30));
+      url += "&bearings=" + brg + ",45;&radiuses=" + rad + ";";
+    }
+  }
   try {
     const r = await fetch(url);
     if (!r.ok) throw new Error("OSRM HTTP " + r.status);
@@ -13262,8 +13290,11 @@ async function buildRoute() {
     if (!j.routes || !j.routes.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     S.route = parseOsrmRoute(j.routes[0]);
     attachRouteGeometry(S.route);
-    telemetry_default.log("nav", { sub: "route_built" });
+    if (!reroute) telemetry_default.log("nav", { sub: "route_built" });
   } catch (err) {
+    if (!allowCache) {
+      throw err;
+    }
     const last = loadLastRun();
     if (last && last.route && S.finish && last.finish && haversine(last.finish, S.finish) < 60) {
       S.route = last.route;
@@ -13274,6 +13305,51 @@ async function buildRoute() {
       return;
     }
     throw new Error("\u041D\u0435\u0442 \u0441\u0435\u0442\u0438 \u0438 \u043D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 \u043A \u044D\u0442\u043E\u0439 \u0442\u043E\u0447\u043A\u0435");
+  }
+}
+function classifyRerouteError(err) {
+  const msg = String(err?.message || err || "");
+  if (err instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg)) {
+    return "network";
+  }
+  if (/не найден|no route|NoRoute/i.test(msg)) return "no_route";
+  if (/OSRM HTTP/i.test(msg)) return "osrm_error";
+  return "network";
+}
+async function recalcRoute() {
+  if (S.rerouting) return false;
+  S.rerouting = true;
+  const t0 = Date.now();
+  try {
+    S.routeAlternatives = [];
+    await buildRoute({ reroute: true, allowCache: false });
+    telemetry_default.log("nav", { sub: "reroute" });
+    Array.from(S.camWarned).forEach((k) => {
+      if (typeof k === "string" && k.startsWith("st_")) S.camWarned.delete(k);
+    });
+    await loadCameras();
+    if (S.camLoadStatus === "err") {
+      console.warn("\u041A\u0430\u043C\u0435\u0440\u044B \u043F\u043E\u0441\u043B\u0435 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C");
+      telemetry_default.log("nav", { sub: "cameras_reload_failed" });
+    }
+    S.rerouteBackoffStep = 0;
+    S.rerouteBackoffUntil = 0;
+    return true;
+  } catch (e) {
+    console.warn("\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:", e);
+    const reason = classifyRerouteError(e);
+    telemetry_default.log("nav", {
+      sub: "reroute_failed",
+      reason,
+      dur_ms: Date.now() - t0
+    });
+    const delays = [5e3, 15e3, 6e4];
+    const step = Math.min(S.rerouteBackoffStep, 2);
+    S.rerouteBackoffUntil = Date.now() + delays[step];
+    S.rerouteBackoffStep = Math.min(S.rerouteBackoffStep + 1, 2);
+    return false;
+  } finally {
+    S.rerouting = false;
   }
 }
 async function loadCameras() {
@@ -13454,18 +13530,6 @@ function getRemainingDistance() {
     remaining = haversine(S.gps, S.finish);
   }
   return remaining;
-}
-async function recalcRoute() {
-  try {
-    S.routeAlternatives = [];
-    await buildRoute();
-    telemetry_default.log("nav", { sub: "reroute" });
-    Array.from(S.camWarned).forEach((k) => {
-      if (typeof k === "string" && k.startsWith("st_")) S.camWarned.delete(k);
-    });
-  } catch (e) {
-    console.warn("\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:", e);
-  }
 }
 function maneuverTurnAngle(step) {
   if (!S.route || !step) return 0;
@@ -14010,6 +14074,10 @@ function arriveFlagSVG() {
   const col = tok.pathEdge;
   return '<svg class="arrow-svg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet"><rect x="-28" y="-32" width="56" height="40" fill="none" stroke="' + col + '" stroke-width="' + sw + '"/><path d="M-28 -32 L-28 8 L28 -12 Z" fill="' + (tok.arrowStyle === "outline" ? "none" : col) + '" stroke="' + col + '" stroke-width="' + sw * 0.5 + '"/><line x1="-28" y1="8" x2="-28" y2="28" stroke="' + col + '" stroke-width="' + sw + '"/></svg>';
 }
+function buildTurnArrowSVG(turnDeg) {
+  const turn = Math.max(-178, Math.min(178, turnDeg || 0));
+  return renderParametricArrow(turn);
+}
 function buildArrowSVG(step) {
   if (!step) return "";
   if (step.type === "arrive") return arriveFlagSVG();
@@ -14064,15 +14132,27 @@ function loadHudOptsFromStorage() {
       const el = $("opt-finish-eta");
       if (el) el.checked = o.showFinishEta;
     }
+    if (typeof o.fuelPlannerCount === "number") {
+      S.fuelPlannerCount = clampFuelPlannerCount(o.fuelPlannerCount);
+      const el = $("opt-fuel-count");
+      if (el) el.value = String(S.fuelPlannerCount);
+    }
   } catch (e) {
   }
+}
+function clampFuelPlannerCount(n) {
+  return Math.max(MIN_FUEL_PLANNER_COUNT, Math.min(
+    MAX_FUEL_PLANNER_COUNT,
+    parseInt(n, 10) || DEFAULT_FUEL_PLANNER_COUNT
+  ));
 }
 function saveHudOptsToStorage() {
   try {
     localStorage.setItem(HUD_OPTS_KEY, JSON.stringify({
       showFinishDist: !!S.showFinishDist,
       showFinishTime: !!S.showFinishTime,
-      showFinishEta: !!S.showFinishEta
+      showFinishEta: !!S.showFinishEta,
+      fuelPlannerCount: clampFuelPlannerCount(S.fuelPlannerCount)
     }));
   } catch (e) {
   }
@@ -14620,6 +14700,73 @@ async function doAddressSearch() {
     if (window.__motoHUD) window.__motoHUD._searchBusy = false;
   }
 }
+function applyFuelFinish(st) {
+  const brand = st.brand || st.name || "\u0410\u0417\u0421";
+  S.finish = { lat: st.lat, lon: st.lon, label: "\u26FD " + brand };
+  const inputVal = st.name && st.name !== st.brand ? brand + " \u2014 " + st.name : brand;
+  $("finish-input").value = inputVal;
+  $("finish-input").dataset.userEdited = "1";
+  $("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + inputVal + " \xB7 " + formatFuelDist(st.distGps);
+  $("s-finish").className = "status ok";
+  invalidateRoute();
+  checkStartReady();
+}
+function fuelStationMetaLine(st) {
+  const parts = ['<span class="fuel-st ' + (st.status || "unknown") + '">' + escapeHtml(fuelStatusText(st.status)) + "</span>"];
+  if (st.confirmations) parts.push("\u043E\u0442\u0447\u0451\u0442\u043E\u0432: " + st.confirmations);
+  if (st.lastAt) parts.push("\u0434\u0430\u043D\u043D\u044B\u0435: " + escapeHtml(String(st.lastAt).split(" ")[0]));
+  return parts.join(" \xB7 ");
+}
+async function doFuelSearch() {
+  if (!S.gps) {
+    $("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 GPS (\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u{1F4CD} GPS)";
+    $("s-finish").className = "status err";
+    return;
+  }
+  const btn = $("btn-fuel-search");
+  const prev = btn?.textContent;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0410\u0417\u0421\u2026";
+  }
+  $("s-finish").textContent = "\u23F3 \u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A\u2026";
+  $("s-finish").className = "status";
+  try {
+    syncOptionsFromDom();
+    const limit = clampFuelPlannerCount(S.fuelPlannerCount);
+    const list = await searchNearestFuelStations(limit);
+    const box = $("search-results");
+    box.innerHTML = "";
+    if (!list.length) {
+      $("s-finish").textContent = "\u274C \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438";
+      $("s-finish").className = "status err";
+      box.style.display = "none";
+      return;
+    }
+    list.forEach((st) => {
+      const row = document.createElement("div");
+      row.className = "fuel-item";
+      row.innerHTML = '<div class="fuel-title"><span>\u26FD ' + escapeHtml(st.brand || st.name || "\u0410\u0417\u0421") + '</span><span class="fuel-dist">' + formatFuelDist(st.distGps) + "</span></div>" + (st.name && st.name !== st.brand ? '<div class="fuel-meta">' + escapeHtml(st.name) + "</div>" : "") + '<div class="fuel-meta">' + fuelStationMetaLine(st) + "</div>";
+      row.addEventListener("click", () => {
+        applyFuelFinish(st);
+        box.style.display = "none";
+      });
+      box.appendChild(row);
+    });
+    box.style.display = "block";
+    box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    $("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")";
+    $("s-finish").className = "status";
+  } catch (e) {
+    $("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0410\u0417\u0421: " + e.message;
+    $("s-finish").className = "status err";
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = prev || "\u26FD \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0438";
+    }
+  }
+}
 function setFinishQuiet(lat, lon, label = "\u0422\u043E\u0447\u043A\u0430") {
   S.finish = { lat, lon, label };
   $("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + lat.toFixed(5) + ", " + lon.toFixed(5);
@@ -14665,6 +14812,7 @@ function bindSetupUI() {
   initMapProviderSelect();
   $("s-gps").addEventListener("click", startGps);
   $("btn-search").addEventListener("click", doAddressSearch);
+  $("btn-fuel-search")?.addEventListener("click", doFuelSearch);
   $("btn-parse").addEventListener("click", applyCoordsOrLink);
   $("btn-build-route").addEventListener("click", doBuildRoute);
   $("finish-input").addEventListener("input", () => {
@@ -14740,6 +14888,11 @@ function bindSetupUI() {
   bindFinishOpt("opt-finish-dist");
   bindFinishOpt("opt-finish-time");
   bindFinishOpt("opt-finish-eta");
+  $("opt-fuel-count")?.addEventListener("change", (e) => {
+    S.fuelPlannerCount = clampFuelPlannerCount(e.target.value);
+    e.target.value = String(S.fuelPlannerCount);
+    saveHudOptsToStorage();
+  });
   function syncElevInputs() {
     const on = S.showElevProfile;
     const exag = $("opt-elev-exag");
@@ -14864,6 +15017,8 @@ function syncOptionsFromDom() {
   S.showFinishTime = $("opt-finish-time")?.checked ?? true;
   S.showFinishEta = $("opt-finish-eta")?.checked ?? true;
   applyFinishInfoVisibility();
+  S.fuelPlannerCount = clampFuelPlannerCount($("opt-fuel-count")?.value);
+  if ($("opt-fuel-count")) $("opt-fuel-count").value = String(S.fuelPlannerCount);
   S.showElevProfile = $("opt-elev-profile").checked;
   S.elevExag = Math.max(0.5, Math.min(5, parseFloat($("opt-elev-exag").value) || DEFAULT_ELEV_EXAG));
   S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
@@ -15380,6 +15535,212 @@ function initThemeManager() {
   $2("btn-mode")?.addEventListener("click", () => cycleModePref());
 }
 
+// js/offroute.js
+var OffRouteState = {
+  ON_ROUTE: "ON_ROUTE",
+  SUSPECT: "SUSPECT",
+  REROUTING: "REROUTING",
+  OFFLINE_GUIDE: "OFFLINE_GUIDE"
+};
+var OFF_ROUTE_ENTER_M = 50;
+var OFF_ROUTE_EXIT_M = 25;
+var OFF_ROUTE_CONFIRM_MS = 8e3;
+var OFF_ROUTE_CONFIRM_DIST_M = 100;
+var GPS_ACC_GATE_M = 30;
+var ACC_FACTOR = 1.5;
+var HEADING_DIVERGE_DEG = 60;
+var HEADING_DIVERGE_MS = 3e3;
+var HEADING_DIVERGE_MIN_SPD = 5;
+var OFFLINE_VOICE_STEP_M = 200;
+var OFF_ROUTE_WARN_OK = "\u25C6 \u041F\u0415\u0420\u0415\u0421\u0427\u0401\u0422 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0410 \u25C6";
+var OFF_ROUTE_WARN_FAIL = "\u25C6 \u041D\u0415\u0422 \u0421\u0412\u042F\u0417\u0418 \u2014 \u0412\u0415\u0420\u041D\u0418\u0422\u0415\u0421\u042C \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422 \u25C6";
+var _ctx = {
+  confirmMs: 0,
+  suspectDistM: 0,
+  headingDivergeSince: 0,
+  lastFeedMs: 0,
+  rerouteBusy: false,
+  offlineEntryVoice: false,
+  offlineVoiceBucket: null
+};
+function clearOffRouteWarn() {
+  const el = $("offRouteWarn");
+  if (!el) return;
+  el.classList.remove("on");
+  el.textContent = OFF_ROUTE_WARN_OK;
+}
+function showRerouteOk() {
+  const el = $("offRouteWarn");
+  if (!el) return;
+  el.textContent = OFF_ROUTE_WARN_OK;
+  el.classList.add("on");
+  setTimeout(() => clearOffRouteWarn(), 2e3);
+}
+function showOfflineWarn() {
+  const el = $("offRouteWarn");
+  if (!el) return;
+  el.textContent = OFF_ROUTE_WARN_FAIL;
+  el.classList.add("on");
+}
+function resetBackoff() {
+  S.rerouteBackoffStep = 0;
+  S.rerouteBackoffUntil = 0;
+}
+function resetSuspectCtx() {
+  _ctx.confirmMs = 0;
+  _ctx.suspectDistM = 0;
+  _ctx.headingDivergeSince = 0;
+}
+function resetOfflineCtx() {
+  _ctx.offlineEntryVoice = false;
+  _ctx.offlineVoiceBucket = null;
+}
+function resetCtx() {
+  resetSuspectCtx();
+  resetOfflineCtx();
+  _ctx.lastFeedMs = 0;
+  _ctx.rerouteBusy = false;
+}
+function resetOffRouteMachine() {
+  S.offRouteState = OffRouteState.ON_ROUTE;
+  resetBackoff();
+  resetCtx();
+  clearOffRouteWarn();
+}
+function isOfflineGuide() {
+  return S.offRouteState === OffRouteState.OFFLINE_GUIDE;
+}
+function transition(from, to, meta) {
+  S.offRouteState = to;
+  telemetry_default.log("nav", {
+    sub: "offroute_state",
+    from,
+    to,
+    lateral: meta.lateral,
+    spd: meta.spd,
+    trigger: meta.trigger || void 0
+  });
+}
+function metaFromFeed(feed) {
+  return {
+    lateral: feed.lateral,
+    spd: feed.spdKmh,
+    trigger: feed.trigger
+  };
+}
+function pickSuspectTrigger(now) {
+  if (_ctx.confirmMs >= OFF_ROUTE_CONFIRM_MS) return "time";
+  if (_ctx.suspectDistM >= OFF_ROUTE_CONFIRM_DIST_M) return "dist";
+  if (_ctx.headingDivergeSince && now - _ctx.headingDivergeSince >= HEADING_DIVERGE_MS) {
+    return "heading";
+  }
+  return null;
+}
+function enterOfflineGuide(feed) {
+  showOfflineWarn();
+  resetSuspectCtx();
+  resetOfflineCtx();
+  tickOfflineGuideVoice(feed.lateral);
+}
+function tickOfflineGuideVoice(lateral) {
+  if (!S.voice || lateral == null) return;
+  if (!_ctx.offlineEntryVoice) {
+    _ctx.offlineEntryVoice = true;
+    _ctx.offlineVoiceBucket = Math.ceil(lateral / OFFLINE_VOICE_STEP_M) * OFFLINE_VOICE_STEP_M;
+    speak("\u041D\u0435\u0442 \u0441\u0432\u044F\u0437\u0438. \u0412\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u044E \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
+    S.lastVoiceTs = Date.now();
+    return;
+  }
+  const bucket = Math.ceil(lateral / OFFLINE_VOICE_STEP_M) * OFFLINE_VOICE_STEP_M;
+  if (_ctx.offlineVoiceBucket == null) _ctx.offlineVoiceBucket = bucket;
+  if (bucket <= _ctx.offlineVoiceBucket - OFFLINE_VOICE_STEP_M) {
+    _ctx.offlineVoiceBucket = bucket;
+    if (Date.now() - S.lastVoiceTs < 3e3) return;
+    speak("\u0414\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 " + Math.round(lateral) + " \u043C\u0435\u0442\u0440\u043E\u0432");
+    S.lastVoiceTs = Date.now();
+  }
+}
+function beginReroute(fromState, feed, trigger) {
+  if (_ctx.rerouteBusy || S.offRouteState === OffRouteState.REROUTING) return;
+  _ctx.rerouteBusy = true;
+  transition(fromState, OffRouteState.REROUTING, { ...metaFromFeed(feed), trigger });
+  recalcRoute().then((ok) => {
+    _ctx.rerouteBusy = false;
+    if (ok) {
+      transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, metaFromFeed(feed));
+      resetBackoff();
+      resetSuspectCtx();
+      showRerouteOk();
+    } else {
+      transition(OffRouteState.REROUTING, OffRouteState.OFFLINE_GUIDE, metaFromFeed(feed));
+      enterOfflineGuide(feed);
+    }
+  });
+}
+function tickSuspectConfirm(feed, inDeadZone) {
+  if (inDeadZone) return;
+  const now = Date.now();
+  const dtMs = feed.dtMs || 0;
+  _ctx.confirmMs += dtMs;
+  if (feed.spdMps > 0) _ctx.suspectDistM += feed.spdMps * (dtMs / 1e3);
+  if (feed.spdMps > HEADING_DIVERGE_MIN_SPD && feed.heading != null && !isNaN(feed.heading) && feed.tangent != null && !isNaN(feed.tangent)) {
+    if (angleDiff(feed.heading, feed.tangent) > HEADING_DIVERGE_DEG) {
+      if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
+    } else {
+      _ctx.headingDivergeSince = 0;
+    }
+  } else {
+    _ctx.headingDivergeSince = 0;
+  }
+  const trigger = pickSuspectTrigger(now);
+  if (!trigger) return;
+  if (S.rerouteBackoffUntil && Date.now() < S.rerouteBackoffUntil) return;
+  beginReroute(OffRouteState.SUSPECT, { ...feed, trigger }, trigger);
+}
+function tryReturnOnRoute(feed) {
+  if (feed.lateral >= OFF_ROUTE_EXIT_M) return false;
+  const from = S.offRouteState;
+  transition(from, OffRouteState.ON_ROUTE, metaFromFeed(feed));
+  resetBackoff();
+  resetCtx();
+  clearOffRouteWarn();
+  return true;
+}
+function tickOffRouteMachine(feed) {
+  if (feed.lateral == null || !S.route) return;
+  const now = Date.now();
+  const dtMs = _ctx.lastFeedMs ? Math.min(3e3, now - _ctx.lastFeedMs) : 0;
+  _ctx.lastFeedMs = now;
+  feed = { ...feed, dtMs };
+  if (S.offRouteState === OffRouteState.REROUTING || _ctx.rerouteBusy) return;
+  if (S.offRouteState === OffRouteState.SUSPECT || S.offRouteState === OffRouteState.OFFLINE_GUIDE) {
+    if (tryReturnOnRoute(feed)) return;
+  }
+  if (S.offRouteState === OffRouteState.OFFLINE_GUIDE) {
+    tickOfflineGuideVoice(feed.lateral);
+    if (S.rerouteBackoffUntil && now >= S.rerouteBackoffUntil) {
+      transition(OffRouteState.OFFLINE_GUIDE, OffRouteState.SUSPECT, metaFromFeed(feed));
+      beginReroute(OffRouteState.SUSPECT, { ...feed, trigger: "backoff_retry" }, "backoff_retry");
+    }
+    return;
+  }
+  if (feed.acc > GPS_ACC_GATE_M) return;
+  const enterM = Math.max(OFF_ROUTE_ENTER_M, ACC_FACTOR * feed.acc);
+  const inDeadZone = feed.lateral >= OFF_ROUTE_EXIT_M && feed.lateral <= OFF_ROUTE_ENTER_M;
+  if (S.offRouteState === OffRouteState.ON_ROUTE) {
+    if (feed.lateral > enterM) {
+      resetSuspectCtx();
+      transition(OffRouteState.ON_ROUTE, OffRouteState.SUSPECT, metaFromFeed(feed));
+    }
+    return;
+  }
+  if (S.offRouteState === OffRouteState.SUSPECT) {
+    if (feed.lateral <= enterM && !inDeadZone) {
+    }
+    tickSuspectConfirm(feed, inDeadZone);
+  }
+}
+
 // js/hud.js
 function maneuverVoiceThresholds(kmh) {
   const mps = Math.max(kmh / 3.6, 4);
@@ -15490,51 +15851,65 @@ function onTick() {
     return;
   }
   const remaining = getRemainingDistance();
-  const nm = findNextManeuver();
-  if (nm) {
-    $("arrow-box").innerHTML = buildArrowSVG(nm.step);
-    if (nm.dist < 1e3) {
-      $("v-mdist").textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
+  const near = findNearestOnRoute();
+  const snap = getRouteSnapForNav(S.smoothedHeading);
+  const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
+  tickOffRouteMachine({
+    lateral: near?.dist,
+    acc: S.gps.acc || 0,
+    spdMps,
+    spdKmh: kmh,
+    heading: S.smoothedHeading,
+    tangent: snap?.tangent ?? null
+  });
+  if (isOfflineGuide() && snap && S.gps) {
+    const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
+    const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
+    let turn = 0;
+    if (hdg != null && !isNaN(hdg)) turn = (brg - hdg + 540) % 360 - 180;
+    $("arrow-box").innerHTML = buildTurnArrowSVG(turn);
+    const dSnap = haversine(S.gps, { lat: snap.lat, lon: snap.lon });
+    if (dSnap < 1e3) {
+      $("v-mdist").textContent = Math.max(0, Math.round(dSnap / 10) * 10);
       $("v-mdist-u").textContent = "\u043C";
     } else {
-      $("v-mdist").textContent = (nm.dist / 1e3).toFixed(1);
+      $("v-mdist").textContent = (dSnap / 1e3).toFixed(1);
       $("v-mdist-u").textContent = "\u043A\u043C";
     }
-    $("street").textContent = (nm.step.name || "").toUpperCase() || "\u2014";
-    const stIdx = S.route.steps.indexOf(nm.step);
-    const kFar = "st_" + stIdx + "_far";
-    const kNear = "st_" + stIdx + "_near";
-    if (isTurnStep(nm.step)) {
-      const txt = maneuverText(nm.step);
-      const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
-      if (nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt) {
-        S.camWarned.add(kFar);
-        telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "far" });
-        speak(formatManeuverLead(nm.dist, mps) + " " + txt);
+    $("street").textContent = "\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422";
+  } else {
+    const nm = findNextManeuver();
+    if (nm) {
+      $("arrow-box").innerHTML = buildArrowSVG(nm.step);
+      if (nm.dist < 1e3) {
+        $("v-mdist").textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
+        $("v-mdist-u").textContent = "\u043C";
+      } else {
+        $("v-mdist").textContent = (nm.dist / 1e3).toFixed(1);
+        $("v-mdist-u").textContent = "\u043A\u043C";
       }
-      if (nm.dist <= nearM && !S.camWarned.has(kNear) && txt) {
-        S.camWarned.add(kNear);
-        telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "near" });
-        speak(txt);
+      $("street").textContent = (nm.step.name || "").toUpperCase() || "\u2014";
+      const stIdx = S.route.steps.indexOf(nm.step);
+      const kFar = "st_" + stIdx + "_far";
+      const kNear = "st_" + stIdx + "_near";
+      if (isTurnStep(nm.step)) {
+        const txt = maneuverText(nm.step);
+        const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
+        if (nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt) {
+          S.camWarned.add(kFar);
+          telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "far" });
+          speak(formatManeuverLead(nm.dist, mps) + " " + txt);
+        }
+        if (nm.dist <= nearM && !S.camWarned.has(kNear) && txt) {
+          S.camWarned.add(kNear);
+          telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "near" });
+          speak(txt);
+        }
       }
     }
   }
   updateFinishInfo(remaining, kmh, now);
   $("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
-  const near = findNearestOnRoute();
-  if (near && near.dist > 40) {
-    if (!S.offRouteSince) S.offRouteSince = Date.now();
-    else if (Date.now() - S.offRouteSince > 8e3) {
-      $("offRouteWarn").classList.add("on");
-      S.offRouteSince = null;
-      recalcRoute().then(() => {
-        setTimeout(() => $("offRouteWarn").classList.remove("on"), 2e3);
-      });
-    }
-  } else {
-    S.offRouteSince = null;
-    $("offRouteWarn").classList.remove("on");
-  }
   if (remaining < 30 && !S.camWarned.has("arrived")) {
     S.camWarned.add("arrived");
     speak("\u0412\u044B \u043F\u0440\u0438\u0431\u044B\u043B\u0438");
@@ -15573,6 +15948,7 @@ async function startHud() {
   S.startTs = Date.now();
   S.distDone = 0;
   S.camWarned.clear();
+  resetOffRouteMachine();
   resetRouteSnap();
   resetCurveRibbonState();
   ensureRouteGeometry(S.route);
@@ -15618,6 +15994,7 @@ function stopHud() {
   if (goBar) goBar.classList.toggle("hidden", !(S.route && S.route.coords?.length));
   releaseWakeLock();
   clearVoiceQueue();
+  resetOffRouteMachine();
   try {
     document.exitFullscreen && document.exitFullscreen();
   } catch (e) {
