@@ -13,6 +13,7 @@ import { initThemeManager, applyTheme } from './theme-manager.js';
 import { initTtsHealth } from './tts-health.js';
 import { initTelemetry } from './telemetry.js';
 import { initTelemetryUI } from './telemetry-ui.js';
+import { registerServiceWorker } from './sw-register.js';
 
 applyThemeCss();
 initThemeManager();
@@ -37,14 +38,9 @@ window.applyTheme = applyTheme;
 
 window.addEventListener('load', () => {
   setTimeout(startGps, 400);
+  registerServiceWorker();
   if(window.__SIM__?.boot && !window.__SIM__._bootScheduled){
     window.__SIM__._bootScheduled = true;
     setTimeout(() => window.__SIM__.boot(), 500);
   }
 });
-
-if('serviceWorker' in navigator && !window.__SIM__ && location.protocol !== 'file:'){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
