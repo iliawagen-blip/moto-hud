@@ -132,6 +132,15 @@ export async function buildRoute(opts = {}){
   let url = 'https://router.project-osrm.org/route/v1/driving/' +
     `${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}` +
     '?overview=full&geometries=geojson&steps=true&annotations=false';
+  if(reroute){
+    const spd = S.gps.speed != null ? S.gps.speed : 0;
+    const hdg = S.smoothedHeading;
+    if(spd > 3 && hdg != null && !isNaN(hdg)){
+      const brg = Math.round(hdg);
+      const rad = Math.max(30, Math.round(S.gps.acc || 30));
+      url += '&bearings=' + brg + ',45;&radiuses=' + rad + ';';
+    }
+  }
   try{
     const r = await fetch(url);
     if(!r.ok) throw new Error('OSRM HTTP ' + r.status);
