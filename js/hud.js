@@ -28,6 +28,17 @@ import telemetry from './telemetry.js';
 const OFF_ROUTE_WARN_OK = '◆ ПЕРЕСЧЁТ МАРШРУТА ◆';
 const OFF_ROUTE_WARN_FAIL = '◆ НЕТ СВЯЗИ — ВЕРНИТЕСЬ НА МАРШРУТ ◆';
 
+/** Порог входа в «подозрение на уход с маршрута», м */
+const OFF_ROUTE_ENTER_M = 50;
+/** Порог выхода из подозрения (гистерезис), м */
+const OFF_ROUTE_EXIT_M = 25;
+/** Время подтверждения ухода до пересчёта, мс */
+const OFF_ROUTE_CONFIRM_MS = 8000;
+/** При acc выше — тик детектора пропускается */
+const GPS_ACC_GATE_M = 30;
+/** Множитель точности GPS к порогу входа */
+const ACC_FACTOR = 1.5;
+
 function clearOffRouteWarn(){
   const el = $('offRouteWarn');
   if(!el) return;
@@ -54,6 +65,53 @@ function showRerouteFail(){
   if(!S.rerouteFailVoiceAt || now - S.rerouteFailVoiceAt > 60000){
     S.rerouteFailVoiceAt = now;
     speak('Нет связи. Вернитесь на маршрут');
+  }
+}
+
+function tickOffRouteDetector(near){
+  if(S.rerouting || !near) return;
+
+  const acc = S.gps.acc || 0;
+  if(acc > GPS_ACC_GATE_M) return;
+
+  const dist = near.dist;
+  const enterM = Math.max(OFF_ROUTE_ENTER_M, ACC_FACTOR * acc);
+  const inDeadZone = dist >= OFF_ROUTE_EXIT_M && dist <= OFF_ROUTE_ENTER_M;
+  const spd = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+
+  if(dist > enterM){
+    if(!S.offRouteSuspect){
+      S.offRouteSuspect = true;
+      S.offRouteSince = Date.now();
+      telemetry.log('nav', { sub: 'off_route_suspect', lateral: dist, acc, spd });
+    }
+  } else if(dist < OFF_ROUTE_EXIT_M){
+    if(S.offRouteSuspect){
+      const dur = S.offRouteSince ? Date.now() - S.offRouteSince : 0;
+      telemetry.log('nav', { sub: 'off_route_cancel', dur_ms: dur });
+    }
+    S.offRouteSuspect = false;
+    S.offRouteSince = null;
+    S.rerouteBackoffStep = 0;
+    S.rerouteBackoffUntil = 0;
+    clearOffRouteWarn();
+    return;
+  }
+
+  if(!S.offRouteSuspect || inDeadZone) return;
+
+  if(!S.offRouteSince) S.offRouteSince = Date.now();
+  else if(Date.now() - S.offRouteSince > OFF_ROUTE_CONFIRM_MS){
+    if(S.rerouteBackoffUntil && Date.now() < S.rerouteBackoffUntil) return;
+    S.offRouteSince = null;
+    recalcRoute().then(ok => {
+      if(ok){
+        S.offRouteSuspect = false;
+        showRerouteOk();
+      } else {
+        showRerouteFail();
+      }
+    });
   }
 }
 
@@ -218,26 +276,7 @@ export function onTick(){
   $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
 
   const near = findNearestOnRoute();
-  if(!S.rerouting){
-    if(near && near.dist > 40){
-      if(!S.offRouteSince) S.offRouteSince = Date.now();
-      else if(Date.now() - S.offRouteSince > 8000){
-        if(S.rerouteBackoffUntil && Date.now() < S.rerouteBackoffUntil) { /* backoff */ }
-        else {
-          S.offRouteSince = null;
-          recalcRoute().then(ok => {
-            if(ok) showRerouteOk();
-            else showRerouteFail();
-          });
-        }
-      }
-    } else if(near){
-      S.offRouteSince = null;
-      S.rerouteBackoffStep = 0;
-      S.rerouteBackoffUntil = 0;
-      clearOffRouteWarn();
-    }
-  }
+  tickOffRouteDetector(near);
   if(remaining < 30 && !S.camWarned.has('arrived')){
     S.camWarned.add('arrived');
     speak('Вы прибыли');
