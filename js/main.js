@@ -2,18 +2,22 @@ import { S } from './state.js';
 import { initGps, startGps } from './gps.js';
 import { onTick, startHud } from './hud.js';
 import { renderVisualFrame } from './render.js';
-import { bindSetupUI, syncOptionsFromDom, applyCoordsOrLink, initNativeHints, doBuildRoute } from './setup.js';
+import { bindSetupUI, syncOptionsFromDom, applyCoordsOrLink, setFinishQuiet, initNativeHints, doBuildRoute, doAddressSearch } from './setup.js';
 import { initFavorites } from './favorites.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { loadElevOptsFromStorage } from './elevation.js';
 import { loadCurveOptsFromStorage } from './curve-speed.js';
+import { loadHudOptsFromStorage } from './hud-opts.js';
 import { applyThemeCss } from './theme.js';
+import { initThemeManager, applyTheme } from './theme-manager.js';
 import { initTtsHealth } from './tts-health.js';
 
 applyThemeCss();
+initThemeManager();
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();
+loadHudOptsFromStorage();
 syncOptionsFromDom();
 updateCamStatusUI();
 bindSetupUI();
@@ -21,13 +25,20 @@ initFavorites();
 initNativeHints();
 initTtsHealth();
 
-window.__motoHUD = { S, applyCoordsOrLink, startHud, startGps, doBuildRoute };
+window.__motoHUD = {
+  S, applyCoordsOrLink, setFinishQuiet, startHud, startGps, doBuildRoute, doAddressSearch,
+  _searchBusy: false, _finishFocused: false
+};
 
-window.addEventListener('load', () => { setTimeout(startGps, 400); });
+window.applyTheme = applyTheme;
 
-if(window.__SIM__ && typeof window.__SIM__.boot === 'function'){
-  window.addEventListener('load', () => setTimeout(() => window.__SIM__.boot(), 700));
-}
+window.addEventListener('load', () => {
+  setTimeout(startGps, 400);
+  if(window.__SIM__?.boot && !window.__SIM__._bootScheduled){
+    window.__SIM__._bootScheduled = true;
+    setTimeout(() => window.__SIM__.boot(), 500);
+  }
+});
 
 if('serviceWorker' in navigator && !window.__SIM__ && location.protocol !== 'file:'){
   window.addEventListener('load', () => {

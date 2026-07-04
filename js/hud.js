@@ -1,5 +1,5 @@
 import { S } from './state.js';
-import { $, fmtClock, fmtTime } from './util.js';
+import { $, fmtClock, fmtTime, fmtRemainDur } from './util.js';
 import { haversine, bearing, angleDiff } from './geo.js';
 import { curPos } from './gps.js';
 import {
@@ -21,6 +21,8 @@ import { renderFavs } from './favorites.js';
 import { acquireWakeLock, releaseWakeLock } from './wake-lock.js';
 import { clearVoiceQueue } from './voice.js';
 import { getHeadingHealth } from './heading.js';
+import { tickAutoMode } from './theme-manager.js';
+import { applyFinishInfoVisibility } from './hud-opts.js';
 
 /** Пороги озвучки манёвра: дальняя ~9 с, ближняя ~2.5 с хода */
 function maneuverVoiceThresholds(kmh){
@@ -82,6 +84,50 @@ export function checkCamerasILS(){
   }
 }
 
+function estimateRemainSec(remaining, kmh){
+  if(remaining <= 0) return 0;
+  if(kmh > 5) return remaining / (kmh / 3.6);
+  if(S.route?.distance > 0 && S.route.duration > 0){
+    return remaining / S.route.distance * S.route.duration;
+  }
+  return null;
+}
+
+function updateFinishInfo(remaining, kmh, now){
+  const panel = $('finish-info');
+  if(!panel) return;
+  const any = S.showFinishDist || S.showFinishTime || S.showFinishEta;
+  if(!any || !S.route){
+    panel.classList.add('hidden');
+    return;
+  }
+  panel.classList.remove('hidden');
+
+  if(S.showFinishDist){
+    $('fi-dist-line')?.classList.remove('hidden');
+    const el = $('fi-dist-val');
+    if(el){
+      el.textContent = remaining < 1000
+        ? Math.round(remaining) + ' м'
+        : (remaining / 1000).toFixed(1) + ' км';
+    }
+  } else $('fi-dist-line')?.classList.add('hidden');
+
+  const remainSec = estimateRemainSec(remaining, kmh);
+
+  if(S.showFinishTime && remainSec != null){
+    $('fi-time-line')?.classList.remove('hidden');
+    const el = $('fi-time-val');
+    if(el) el.textContent = fmtRemainDur(remainSec);
+  } else $('fi-time-line')?.classList.add('hidden');
+
+  if(S.showFinishEta && remainSec != null){
+    $('fi-eta-line')?.classList.remove('hidden');
+    const el = $('fi-eta-val');
+    if(el) el.textContent = fmtClock(new Date(now.getTime() + remainSec * 1000));
+  } else $('fi-eta-line')?.classList.add('hidden');
+}
+
 export function onTick(){
   if(!S.gps) return;
   const now = new Date();
@@ -99,7 +145,11 @@ export function onTick(){
       : '⚠ Помехи компаса — курс по GPS';
   }
 
-  if(!S.route){ $('mid-info').textContent = '—'; return; }
+  if(!S.route){
+    $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
+    updateFinishInfo(0, kmh, now);
+    return;
+  }
 
   const remaining = getRemainingDistance();
   const nm = findNextManeuver();
@@ -129,13 +179,8 @@ export function onTick(){
       }
     }
   }
-  let midInfo = remaining < 1000 ? Math.round(remaining) + ' м' : (remaining / 1000).toFixed(1) + ' км';
-  if(kmh > 5){
-    const eta = new Date(now.getTime() + (remaining / (kmh / 3.6)) * 1000);
-    midInfo += ' · ' + fmtClock(eta);
-  }
-  if(S.startTs) midInfo += ' · T+' + fmtTime((Date.now() - S.startTs) / 1000);
-  $('mid-info').textContent = midInfo;
+  updateFinishInfo(remaining, kmh, now);
+  $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
 
   const near = findNearestOnRoute();
   if(near && near.dist > 40){
@@ -155,6 +200,7 @@ export function onTick(){
     S.camWarned.add('arrived');
     speak('Вы прибыли');
   }
+  tickAutoMode();
   checkCamerasILS();
   checkCurveSpeedWarn(kmh);
   refreshFuelPanel();
@@ -174,6 +220,7 @@ function checkCurveSpeedWarn(kmh){
 }
 
 export async function startHud(){
+  applyFinishInfoVisibility();
   if(!S.route){
     alert('Сначала постройте маршрут');
     return;

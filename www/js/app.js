@@ -10528,53 +10528,113 @@ var init_esm2 = __esm({
   }
 });
 
-// js/theme.js
-var THEME = {
-  bg: "#000000",
-  fg: "#ffffff",
-  dim: "#8b9cb3",
-  accent: "#ffd400",
-  ok: "#39d353",
-  warn: "#ff6b6b",
-  alert: "#ff2d2d",
-  panel: "#0a0f16",
-  panel2: "#141d2a",
-  border: "#1a2332",
-  hud: "#00ff88",
-  hudDim: "#00aa5c",
-  ribbonFill: "#00aa5c",
-  curveYellow: "#ffd400",
-  curveRed: "#ff6644",
-  routeStart: "#39d353",
-  routeFinish: "#ffd400",
-  routeAlts: ["#00ff88", "#66ccff", "#ffd400"],
-  grade: { flat: "#00ff88", mid: "#ffd400", steep: "#ff6644" },
-  fuel: {
-    yes: "#39d353",
-    queue: "#ffd400",
-    low: "#ff9500",
-    no: "#ff3b30",
-    unknown: "#66ccff"
+// js/theme-tokens.js
+var _cache = null;
+function readProp(style, name, fallback) {
+  const v = style.getPropertyValue(name).trim();
+  return v || fallback;
+}
+function readNum(style, name, fallback) {
+  const v = parseFloat(readProp(style, name, String(fallback)));
+  return Number.isFinite(v) ? v : fallback;
+}
+function invalidateThemeTokens() {
+  _cache = null;
+  if (typeof document !== "undefined") {
+    document.dispatchEvent(new CustomEvent("themechange"));
   }
-};
-var FUEL_COLORS = THEME.fuel;
+}
+function getThemeTokens() {
+  if (_cache) return _cache;
+  const el = typeof document !== "undefined" ? document.documentElement : null;
+  const style = el ? getComputedStyle(el) : null;
+  const g = (n, fb) => style ? readProp(style, n, fb) : fb;
+  const gn = (n, fb) => style ? readNum(style, n, fb) : fb;
+  _cache = {
+    bg: g("--bg", "#000000"),
+    accent: g("--accent", "#ffd400"),
+    fg: g("--fg", "#ffffff"),
+    fgDim: g("--fg-dim", "#8b9cb3"),
+    pathEdge: g("--path-edge", "#00ff88"),
+    pathFill: g("--path-fill", "#00aa5c"),
+    pathFillOpacity: gn("--path-fill-opacity", 0.22),
+    pathEdgeW: gn("--path-edge-w", 5),
+    pathCenterOpacity: gn("--path-center-opacity", 0.45),
+    pathDash: g("--path-dash", "none"),
+    strokeW: gn("--stroke-w", 3),
+    arrowStyle: g("--arrow-style", "filled"),
+    compassStyle: g("--compass-style", "tape"),
+    glow: g("--glow", "none"),
+    glowOpacity: gn("--glow-opacity", 0),
+    svgHalo: g("--svg-halo", "#000000"),
+    svgBgOverlay: g("--svg-bg-overlay", "rgba(0,0,0,0.72)"),
+    turnPrimary: g("--turn-primary", "#ffd400"),
+    turnSecondary: g("--turn-secondary", "#00cc70"),
+    semWarn: g("--sem-warn", "#FFB000"),
+    semDanger: g("--sem-danger", "#E10600"),
+    semOk: g("--sem-ok", "#33CC66"),
+    curveYellow: g("--curve-yellow", "#FFB000"),
+    curveRed: g("--curve-red", "#E10600"),
+    gradeFlat: g("--grade-flat", "#00ff88"),
+    gradeMid: g("--grade-mid", "#FFB000"),
+    gradeSteep: g("--grade-steep", "#E10600"),
+    routeStart: g("--route-start", "#33CC66"),
+    routeFinish: g("--route-finish", "#ffd400"),
+    routeAlt0: g("--route-alt-0", "#00ff88"),
+    routeAlt1: g("--route-alt-1", "#66ccff"),
+    routeAlt2: g("--route-alt-2", "#ffd400"),
+    fontNum: g("--font-num", "sans-serif"),
+    fontLabel: g("--font-label", "sans-serif")
+  };
+  return _cache;
+}
+function getThemeObject() {
+  const t = getThemeTokens();
+  return {
+    bg: t.bg,
+    fg: t.fg,
+    dim: t.fgDim,
+    accent: t.accent,
+    ok: t.semOk,
+    warn: t.semWarn,
+    alert: t.semDanger,
+    hud: t.pathEdge,
+    hudDim: t.pathEdge,
+    ribbonFill: t.pathFill,
+    curveYellow: t.curveYellow,
+    curveRed: t.curveRed,
+    routeStart: t.routeStart,
+    routeFinish: t.routeFinish,
+    routeAlts: [t.routeAlt0, t.routeAlt1, t.routeAlt2],
+    grade: { flat: t.gradeFlat, mid: t.gradeMid, steep: t.gradeSteep },
+    fuel: {
+      yes: t.semOk,
+      queue: t.semWarn,
+      low: "#ff9500",
+      no: t.semDanger,
+      unknown: t.routeAlt1
+    }
+  };
+}
+
+// js/theme.js
+var THEME = new Proxy({}, {
+  get(_t, prop) {
+    const o = getThemeObject();
+    return o[prop];
+  }
+});
+var FUEL_COLORS = new Proxy({}, {
+  get(_t, prop) {
+    return getThemeObject().fuel[prop];
+  }
+});
 function applyThemeCss() {
   if (typeof document === "undefined") return;
-  const r = document.documentElement;
-  const t = THEME;
-  r.style.setProperty("--bg", t.bg);
-  r.style.setProperty("--fg", t.fg);
-  r.style.setProperty("--dim", t.dim);
-  r.style.setProperty("--accent", t.accent);
-  r.style.setProperty("--ok", t.ok);
-  r.style.setProperty("--warn", t.warn);
-  r.style.setProperty("--alert", t.alert);
-  r.style.setProperty("--panel", t.panel);
-  r.style.setProperty("--panel2", t.panel2);
-  r.style.setProperty("--border", t.border);
-  r.style.setProperty("--hud", t.hud);
-  r.style.setProperty("--hud-dim", t.hudDim);
-  r.style.setProperty("--amber", t.accent);
+  invalidateThemeTokens();
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#000";
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", bg);
 }
 
 // js/state.js
@@ -10617,6 +10677,9 @@ var S = {
   curveWarn: true,
   curveStrict: "normal",
   // relaxed | normal | strict
+  showFinishDist: true,
+  showFinishEta: true,
+  showFinishTime: true,
   // Топливный ассистент
   fuelStations: [],
   // [{lat,lon,brand,name,osmId,status,distGps,offRoute,distAhead,aheadOnRoute}]
@@ -10660,6 +10723,7 @@ var RUN_KEY = "moto-hud-last-run";
 var FAV_KEY = "moto-hud-favs";
 var ELEV_OPTS_KEY = "moto-hud-elev-opts";
 var CURVE_OPTS_KEY = "moto-hud-curve-opts";
+var HUD_OPTS_KEY = "moto-hud-hud-opts";
 var DEFAULT_ELEV_EXAG = 1.8;
 var DEFAULT_ELEV_PROFILE_H = 72;
 var MIN_ELEV_PROFILE_H = 36;
@@ -10698,6 +10762,19 @@ function angleDiff(a, b) {
   let d = Math.abs(a - b) % 360;
   return d > 180 ? 360 - d : d;
 }
+function parseInput(raw) {
+  const s2 = String(raw || "").trim();
+  if (!s2) return null;
+  const coord = s2.match(/(-?\d{1,2}\.\d+)\s*[,;\s]\s*(-?\d{1,3}\.\d+)/);
+  if (coord) return { lat: parseFloat(coord[1]), lon: parseFloat(coord[2]), label: "\u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B" };
+  const ll = s2.match(/[?&]ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/i) || s2.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/i);
+  if (ll) return { lat: parseFloat(ll[1]), lon: parseFloat(ll[2]), label: "\u042F\u043D\u0434\u0435\u043A\u0441" };
+  const pt = s2.match(/[?&]pt=(-?\d+\.\d+)%2C(-?\d+\.\d+)/i) || s2.match(/[?&]pt=(-?\d+\.\d+),(-?\d+\.\d+)/i);
+  if (pt) return { lat: parseFloat(pt[2]), lon: parseFloat(pt[1]), label: "\u042F\u043D\u0434\u0435\u043A\u0441 pt" };
+  const at = s2.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (at) return { lat: parseFloat(at[1]), lon: parseFloat(at[2]), label: "Google" };
+  return null;
+}
 
 // js/util.js
 var $ = (id) => document.getElementById(id);
@@ -10707,6 +10784,16 @@ function fmtClock(d) {
 function fmtTime(sec) {
   const m = Math.floor(sec / 60), s2 = Math.floor(sec % 60);
   return m + ":" + String(s2).padStart(2, "0");
+}
+function fmtRemainDur(sec) {
+  if (!isFinite(sec) || sec < 0) return "\u2014";
+  sec = Math.round(sec);
+  if (sec < 60) return sec + " \u0441\u0435\u043A";
+  const m = Math.round(sec / 60);
+  if (m < 60) return m + " \u043C\u0438\u043D";
+  const h = Math.floor(m / 60);
+  const rm = m % 60;
+  return rm ? h + " \u0447 " + rm + " \u043C\u0438\u043D" : h + " \u0447";
 }
 function escapeHtml(s2) {
   return String(s2 || "").replace(/[&<>"']/g, (c) => ({
@@ -11052,20 +11139,16 @@ var _onTick = () => {
 };
 var _onVisual = () => {
 };
-var _lastPathBuild = 0;
 function initGps(callbacks) {
   _onTick = callbacks.onTick || _onTick;
   _onVisual = callbacks.onVisual || _onVisual;
 }
-function visualLoop(ts) {
+function visualLoop() {
   S.rafId = requestAnimationFrame(visualLoop);
   if (!$("hud").classList.contains("on")) return;
   updateRenderPos();
   easeSpeed();
-  if (ts - _lastPathBuild >= 33) {
-    _lastPathBuild = ts;
-    _onVisual();
-  }
+  _onVisual();
 }
 function startVisualLoop() {
   if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
@@ -11107,8 +11190,8 @@ function applyGpsFix(next) {
     if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
     else {
       const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * 0.7 + Math.sin(next.heading * r) * 0.3;
-      const sy = Math.cos(S.smoothedHeading * r) * 0.7 + Math.cos(next.heading * r) * 0.3;
+      const sx = Math.sin(S.smoothedHeading * r) * 0.82 + Math.sin(next.heading * r) * 0.18;
+      const sy = Math.cos(S.smoothedHeading * r) * 0.82 + Math.cos(next.heading * r) * 0.18;
       S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
     }
   }
@@ -11241,14 +11324,25 @@ var SNAP_REVERSE_EPS = 5;
 var SNAP_MIN_DOT = 0.3;
 var SNAP_ANGLE_PENALTY = 2;
 var CAM_TANGENT_WINDOW = 25;
-var CAM_SMOOTH_ALPHA = 0.12;
+var CAM_SMOOTH_ALPHA = 0.11;
+var RIBBON_STEP_M = 2;
 var _snap = null;
 var _camHeadingRad = null;
 var _camPitchRad = null;
+var _snapMemoTs = null;
+var _disp = { s: 0, inited: false };
+var _dispLastTs = 0;
+var _camLastTs = 0;
+var _camPitchLastTs = 0;
 function resetRouteSnap() {
   _snap = null;
   _camHeadingRad = null;
   _camPitchRad = null;
+  _snapMemoTs = null;
+  _disp.inited = false;
+  _dispLastTs = 0;
+  _camLastTs = 0;
+  _camPitchLastTs = 0;
 }
 function destPoint(from, brgDeg, distM) {
   const r = Math.PI / 180;
@@ -11493,6 +11587,12 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir) {
   }
   return best;
 }
+function snapNearS(gps, geom, hintS, gpsHdg) {
+  const total = geom.s[geom.n - 1];
+  const sMin = Math.max(0, hintS - 40);
+  const sMax = Math.min(total, hintS + 85);
+  return scanSnap(gps, geom, sMin, sMax, gpsHdg, false);
+}
 function snapToRoute(gps, geom, gpsHeadingDeg) {
   if (!gps || !geom || geom.n < 2) return null;
   const prev = _snap;
@@ -11519,18 +11619,58 @@ function snapToRoute(gps, geom, gpsHeadingDeg) {
   if (prev && best.lateral < 40 && best.s < prev.s - SNAP_REVERSE_EPS) {
     best = { ...best, s: prev.s, segIdx: prev.segIdx, confidence: 0.4 };
   }
+  if (prev && best.lateral < 35) {
+    const ds = best.s - prev.s;
+    if (ds > 0 && ds < 30) best.s = prev.s + ds * 0.65;
+  }
   if (best.lateral > 60) best.confidence = Math.min(best.confidence, 0.3);
   _snap = best;
   return best;
 }
-var _snapMemoGps = null;
 function getRouteSnapForNav(gpsHeadingDeg) {
   const geom = S.route?.geometry;
-  const gps = curPos();
+  const gps = S.gps;
   if (!geom || !gps) return null;
-  if (_snapMemoGps === gps && _snap) return _snap;
-  _snapMemoGps = gps;
+  if (_snapMemoTs === gps.ts && _snap) return _snap;
+  _snapMemoTs = gps.ts;
   return snapToRoute(gps, geom, gpsHeadingDeg);
+}
+function frameDtSec() {
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dtMs = _dispLastTs ? Math.min(48, now - _dispLastTs) : 16;
+  _dispLastTs = now;
+  return dtMs / 1e3;
+}
+function getDisplaySnap(rawSnap, geom, speedMps, gpsHeadingDeg) {
+  if (!rawSnap || !geom) return null;
+  const dt = frameDtSec();
+  const total = geom.s[geom.n - 1];
+  const spd = Math.max(0, speedMps || 0);
+  if (!_disp.inited) {
+    _disp.s = rawSnap.s;
+    _disp.inited = true;
+  } else if (spd > 0.05) {
+    _disp.s = Math.min(total, _disp.s + spd * dt);
+  }
+  let targetS = rawSnap.s;
+  const pos = curPos();
+  if (pos) {
+    const hit = snapNearS(pos, geom, _disp.s, gpsHeadingDeg);
+    if (hit) targetS = hit.s;
+  }
+  const tau = 0.11;
+  const alpha = 1 - Math.exp(-dt / tau);
+  _disp.s += (targetS - _disp.s) * alpha;
+  _disp.s = Math.max(0, Math.min(total, _disp.s));
+  const p = interpolateAtS(geom, _disp.s);
+  return {
+    s: _disp.s,
+    lat: p.lat,
+    lon: p.lon,
+    segIdx: findSegAtS(geom, _disp.s),
+    lateral: rawSnap.lateral,
+    confidence: rawSnap.confidence
+  };
 }
 function avgTangentDeg(geom, s2, windowM) {
   const end = Math.min(geom.s[geom.n - 1], s2 + windowM);
@@ -11552,8 +11692,14 @@ function avgTangentDeg(geom, s2, windowM) {
   }
   return (Math.atan2(vx, vz) * 180 / Math.PI + 360) % 360;
 }
+function camSmoothAlpha(dtSec) {
+  return 1 - Math.pow(1 - CAM_SMOOTH_ALPHA, Math.max(1, dtSec * 60));
+}
 function updateCamHeading(geom, snap) {
   if (!geom || !snap) return _camHeadingRad;
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dt = _camLastTs ? Math.min(48, now - _camLastTs) / 1e3 : 1 / 60;
+  _camLastTs = now;
   const tgt = avgTangentDeg(geom, snap.s, CAM_TANGENT_WINDOW) * Math.PI / 180;
   if (_camHeadingRad == null) {
     _camHeadingRad = tgt;
@@ -11562,7 +11708,7 @@ function updateCamHeading(geom, snap) {
   let diff = tgt - _camHeadingRad;
   while (diff > Math.PI) diff -= 2 * Math.PI;
   while (diff < -Math.PI) diff += 2 * Math.PI;
-  _camHeadingRad += diff * CAM_SMOOTH_ALPHA;
+  _camHeadingRad += diff * camSmoothAlpha(dt);
   return _camHeadingRad;
 }
 function avgGradeAtS(geom, s2, windowM) {
@@ -11580,14 +11726,17 @@ function updateCamPitch(geom, snap, elevExag, enabled) {
     _camPitchRad = null;
     return CAM_PITCH;
   }
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dt = _camPitchLastTs ? Math.min(48, now - _camPitchLastTs) / 1e3 : 1 / 60;
+  _camPitchLastTs = now;
   const grade = avgGradeAtS(geom, snap.s, CAM_TANGENT_WINDOW);
-  const roadPitch = Math.atan(grade * elevExag) * 0.42;
-  const tgt = CAM_PITCH + Math.max(-0.18, Math.min(0.22, roadPitch));
+  const roadPitch = Math.atan(grade * elevExag) * 0.35;
+  const tgt = CAM_PITCH + Math.max(-0.14, Math.min(0.16, roadPitch));
   if (_camPitchRad == null) {
     _camPitchRad = tgt;
     return _camPitchRad;
   }
-  _camPitchRad += (tgt - _camPitchRad) * CAM_SMOOTH_ALPHA;
+  _camPitchRad += (tgt - _camPitchRad) * camSmoothAlpha(dt);
   return _camPitchRad;
 }
 function getCamPitchRad() {
@@ -11607,20 +11756,6 @@ function interpolateElevAtS(geom, s2) {
 function meterScale(lat) {
   const r = Math.PI / 180;
   return { kx: Math.cos(lat * r) * 111320, ky: 110540 };
-}
-function frenetFrameAtS(geom, s2) {
-  const total = geom.s[geom.n - 1];
-  const ds = Math.min(2.5, Math.max(1, total / Math.max(geom.n, 1)));
-  const s0 = Math.max(0, s2 - ds);
-  const s1 = Math.min(total, s2 + ds);
-  const p0 = interpolateAtS(geom, s0);
-  const p1 = interpolateAtS(geom, s1);
-  const midLat = (p0.lat + p1.lat) / 2;
-  const { kx, ky } = meterScale(midLat);
-  const ex = (p1.lon - p0.lon) * kx;
-  const ny = (p1.lat - p0.lat) * ky;
-  const len = Math.hypot(ex, ny) || 1;
-  return { tx: ex / len, tz: ny / len, nx: -ny / len, nz: ex / len };
 }
 function radiusAtS(geom, s2) {
   const ds = 2;
@@ -11646,42 +11781,69 @@ function radiusAtS(geom, s2) {
   const R = Math.min(la, lb) / (2 * Math.sin(angle / 2));
   return { R, turnSign: cross > 0 ? 1 : -1 };
 }
-function ribbonStepAtS(geom, s2) {
-  const { R } = radiusAtS(geom, s2);
-  if (R < 15) return 1;
-  if (R < 30) return 1.5;
-  if (R < 80) return 2;
-  return 2.5;
+function ribbonStepAtS() {
+  return RIBBON_STEP_M;
 }
-function computeRibbonSections(geom, snap, maxDist, halfW) {
-  const sections = [];
+function computeRibbonSectionsCam(geom, snap, maxDist, halfW, headingRad) {
   const elev0 = geom.elevReady ? interpolateElevAtS(geom, snap.s) : 0;
   const sEnd = Math.min(geom.s[geom.n - 1], snap.s + maxDist);
-  let s2 = snap.s;
-  while (s2 <= sEnd + 0.01) {
+  const step = ribbonStepAtS();
+  const samples = [];
+  for (let s2 = snap.s; s2 <= sEnd + 0.01; s2 += step) {
     const p = interpolateAtS(geom, s2);
-    const { kx, ky } = meterScale(p.lat);
-    const frame = frenetFrameAtS(geom, s2);
-    const { R, turnSign } = radiusAtS(geom, s2);
+    const c = worldToCamXZ(p.lat, p.lon, snap, headingRad);
+    samples.push({
+      s: s2,
+      x: c.x,
+      z: c.z,
+      lat: p.lat,
+      lon: p.lon,
+      elev: geom.elevReady ? interpolateElevAtS(geom, s2) - elev0 : 0
+    });
+    if (s2 >= sEnd) break;
+  }
+  const sections = [];
+  let prevNx = null;
+  let prevNz = null;
+  for (let i = 0; i < samples.length; i++) {
+    const cur = samples[i];
+    if (cur.z < 1) continue;
+    const i0 = Math.max(0, i - 1);
+    const i1 = Math.min(samples.length - 1, i + 1);
+    let tx = samples[i1].x - samples[i0].x;
+    let tz = samples[i1].z - samples[i0].z;
+    const tl = Math.hypot(tx, tz);
+    if (tl < 0.08) continue;
+    tx /= tl;
+    tz /= tl;
+    let nx = -tz;
+    let nz = tx;
+    if (prevNx != null && nx * prevNx + nz * prevNz < 0) {
+      nx = -nx;
+      nz = -nz;
+    }
+    prevNx = nx;
+    prevNz = nz;
     let leftW = halfW;
     let rightW = halfW;
-    if (R < Infinity && R < halfW * 4) {
-      const maxOff = Math.max(0.4, R - 0.35);
+    const { R, turnSign } = radiusAtS(geom, cur.s);
+    if (R < Infinity && R < halfW * 5) {
+      const maxOff = Math.max(0.55, R * 0.88);
       if (turnSign > 0) leftW = Math.min(leftW, maxOff);
       else if (turnSign < 0) rightW = Math.min(rightW, maxOff);
     }
     sections.push({
-      s: s2,
-      lat: p.lat,
-      lon: p.lon,
-      leftLat: p.lat + frame.nz * leftW / ky,
-      leftLon: p.lon + frame.nx * leftW / kx,
-      rightLat: p.lat - frame.nz * rightW / ky,
-      rightLon: p.lon - frame.nx * rightW / kx,
-      elev: geom.elevReady ? interpolateElevAtS(geom, s2) - elev0 : 0
+      s: cur.s,
+      lat: cur.lat,
+      lon: cur.lon,
+      elev: cur.elev,
+      cx: cur.x,
+      cz: cur.z,
+      lx: cur.x + nx * leftW,
+      lz: cur.z + nz * leftW,
+      rx: cur.x - nx * rightW,
+      rz: cur.z - nz * rightW
     });
-    if (s2 >= sEnd) break;
-    s2 += ribbonStepAtS(geom, s2);
   }
   return sections;
 }
@@ -12254,10 +12416,11 @@ function loadRouteElevation() {
   fetchElevationForGeometry(geom).catch((e) => console.warn("\u0412\u044B\u0441\u043E\u0442\u044B:", e));
 }
 function gradeColor(grade) {
+  const t = getThemeTokens();
   const g = Math.abs(grade || 0);
-  if (g < 0.04) return THEME.grade.flat;
-  if (g < 0.08) return THEME.grade.mid;
-  return THEME.grade.steep;
+  if (g < 0.04) return t.gradeFlat;
+  if (g < 0.08) return t.gradeMid;
+  return t.gradeSteep;
 }
 function renderElevProfile(snap, geom, W, H) {
   if (!S.showElevProfile || !geom?.elevReady || !snap) return "";
@@ -12308,10 +12471,11 @@ function renderElevProfile(snap, geom, W, H) {
     pathSegs += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="' + col + '" stroke-width="3" stroke-linecap="round"/>';
   });
   let marks = "";
+  const tok = getThemeTokens();
   geom.maneuvers.forEach((m) => {
     if (m.s < s0 || m.s > s1) return;
     const x = toX(m.s - s0);
-    marks += '<line x1="' + x.toFixed(1) + '" y1="' + my + '" x2="' + x.toFixed(1) + '" y2="' + (my + ph) + '" stroke="#ffd400" stroke-width="1" opacity="0.5"/>';
+    marks += '<line x1="' + x.toFixed(1) + '" y1="' + my + '" x2="' + x.toFixed(1) + '" y2="' + (my + ph) + '" stroke="' + tok.accent + '" stroke-width="1" opacity="0.5"/>';
   });
   return '<g class="elev-profile"><rect x="0" y="0" width="' + W + '" height="' + H + '" fill="rgba(0,0,0,0.55)"/>' + marks + pathSegs + "</g>";
 }
@@ -12570,7 +12734,10 @@ function loadLastRun() {
 }
 async function searchAddress(query) {
   const url = "https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ru&q=" + encodeURIComponent(query) + "&email=moto-hud-dev@users.noreply.github.com";
-  const r = await fetch(url, { headers: { Accept: "application/json" } });
+  const r = await fetch(url, {
+    headers: { Accept: "application/json" },
+    referrerPolicy: "no-referrer"
+  });
   if (!r.ok) throw new Error("Nominatim " + r.status);
   return r.json();
 }
@@ -12857,6 +13024,80 @@ function maneuverTurnAngle(step) {
   return (bOut - bIn + 540) % 360 - 180;
 }
 
+// js/tts-ru.js
+var _nativeVoiceIdx = -1;
+var _webVoice = null;
+var _voiceReady = false;
+function scoreRuVoice(v) {
+  const name = String(v.name || v.voiceURI || v.identifier || "").toLowerCase();
+  const lang = String(v.lang || v.language || "").toLowerCase();
+  if (!lang.startsWith("ru")) return -1;
+  let score = 0;
+  const offline = v.localService === true || v.network === false || v.networkConnectionRequired === false;
+  if (offline) score += 28;
+  if (name.includes("google")) score += 55;
+  if (/ruc|ru-ru-x|x-ruc/.test(name)) score += 35;
+  if (name.includes("yandex")) score += 48;
+  if (name.includes("microsoft")) score += 38;
+  if (name.includes("pavel") || name.includes("dmitry")) score += 22;
+  if (name.includes("irina") || name.includes("milena")) score += 14;
+  if (v.default) score += 6;
+  if (name.includes("e-speak") || name.includes("espeak") || name.includes("festival")) score -= 45;
+  return score;
+}
+async function refreshRuVoice() {
+  _voiceReady = true;
+  if (isNative()) {
+    try {
+      const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm(), esm_exports));
+      const res = await TextToSpeech2.getSupportedVoices();
+      const list2 = res.voices || [];
+      let best2 = -1;
+      let bestScore2 = -1;
+      list2.forEach((v, i) => {
+        const sc = scoreRuVoice(v);
+        if (sc > bestScore2) {
+          bestScore2 = sc;
+          best2 = i;
+        }
+      });
+      _nativeVoiceIdx = best2;
+    } catch (e) {
+      _nativeVoiceIdx = -1;
+    }
+    return;
+  }
+  if (!("speechSynthesis" in window)) {
+    _webVoice = null;
+    return;
+  }
+  const list = speechSynthesis.getVoices();
+  let best = null;
+  let bestScore = -1;
+  for (const v of list) {
+    const sc = scoreRuVoice(v);
+    if (sc > bestScore) {
+      bestScore = sc;
+      best = v;
+    }
+  }
+  _webVoice = best;
+}
+function initRuVoice() {
+  refreshRuVoice();
+  if ("speechSynthesis" in window) {
+    speechSynthesis.addEventListener("voiceschanged", () => {
+      refreshRuVoice();
+    }, { once: false });
+  }
+}
+function getNativeRuVoiceIdx() {
+  return _nativeVoiceIdx;
+}
+function getWebRuVoice() {
+  return _webVoice;
+}
+
 // js/voice.js
 var _queue = [];
 var _busy = false;
@@ -12864,16 +13105,22 @@ var MAX_QUEUE = 4;
 var _lastText = "";
 var _lastSpeakTs = 0;
 var DEDUPE_MS = 6500;
+var TTS_RATE = 0.98;
+var TTS_PITCH = 1;
 async function speakNative(text) {
+  await refreshRuVoice();
+  const voiceIdx = getNativeRuVoiceIdx();
   const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm(), esm_exports));
-  await TextToSpeech2.speak({
+  const opts = {
     text,
     lang: "ru-RU",
-    rate: 1.05,
-    pitch: 1,
+    rate: TTS_RATE,
+    pitch: TTS_PITCH,
     volume: 1,
     category: "playback"
-  });
+  };
+  if (voiceIdx >= 0) opts.voice = voiceIdx;
+  await TextToSpeech2.speak(opts);
 }
 function speakWeb(text) {
   return new Promise((resolve, reject) => {
@@ -12885,7 +13132,14 @@ function speakWeb(text) {
       speechSynthesis.cancel();
       const u2 = new SpeechSynthesisUtterance(text);
       u2.lang = "ru-RU";
-      u2.rate = 1.05;
+      u2.rate = TTS_RATE;
+      u2.pitch = TTS_PITCH;
+      let voice = getWebRuVoice();
+      if (!voice) {
+        const list = speechSynthesis.getVoices().filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
+        voice = list[0] || null;
+      }
+      if (voice) u2.voice = voice;
       u2.onend = () => resolve();
       u2.onerror = () => reject(new Error("TTS"));
       speechSynthesis.speak(u2);
@@ -12953,9 +13207,6 @@ function isCameraBehind(cam, heading) {
 
 // js/render.js
 var PROFILE_GAP = 6;
-var RIBBON_FILL = THEME.ribbonFill;
-var RIBBON_EDGE = THEME.hud;
-var RIBBON_FILL_OP = 0.22;
 function computePathLayout(w, h) {
   const aspect = Math.max(0.2, w / Math.max(1, h));
   L2.W = 1e3;
@@ -12985,40 +13236,68 @@ function projectGround(x, z, elevDelta) {
 function toLocalFrenet(lat, lon, snap, headingRad) {
   return worldToCamXZ(lat, lon, snap, headingRad);
 }
-function projectWorld(lat, lon, elev, snap, headingRad) {
-  const { x, z } = worldToCamXZ(lat, lon, snap, headingRad);
-  return projectGround(x, z, elev);
-}
 function triArea2(a, b, c) {
   if (!a || !b || !c) return 0;
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
-function buildStripMeshSvg(sections, snap, headingRad, geom, speedMps) {
+function screenDist2(a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return dx * dx + dy * dy;
+}
+function quadValid(aL, aR, bL, bR) {
+  if (!aL || !aR || !bL || !bR) return false;
+  const maxD2 = (L2.W * 0.28) ** 2;
+  const edges = [
+    screenDist2(aL, aR),
+    screenDist2(bL, bR),
+    screenDist2(aL, bL),
+    screenDist2(aR, bR)
+  ];
+  if (Math.max(...edges) > maxD2) return false;
+  if (screenDist2(aL, bR) > maxD2 * 1.8 || screenDist2(aR, bL) > maxD2 * 1.8) return false;
+  const t1 = triArea2(aL, bL, bR);
+  const t2 = triArea2(aL, bR, aR);
+  if (t1 <= 0.5 || t2 <= 0.5) return false;
+  if (t1 * t2 <= 0) return false;
+  return true;
+}
+function projectCam(x, z, elev) {
+  return projectGround(x, z, elev);
+}
+function buildStripMeshSvg(sections, geom, speedMps) {
   if (sections.length < 2) return { fill: "", edges: "" };
+  const tok = getThemeTokens();
+  const fillNone = tok.pathFill === "none" || tok.pathFill === "transparent";
   let fill = "";
   let edges = "";
   const pt = (p) => p.x.toFixed(1) + "," + p.y.toFixed(1);
+  const edgeW = tok.pathEdgeW;
+  const glowExtra = tok.glow !== "none" ? ' opacity="' + Math.max(0.1, tok.glowOpacity || 0.25) + '"' : "";
   for (let i = sections.length - 2; i >= 0; i--) {
     const a = sections[i];
     const b = sections[i + 1];
-    const aL = projectWorld(a.leftLat, a.leftLon, a.elev, snap, headingRad);
-    const aR = projectWorld(a.rightLat, a.rightLon, a.elev, snap, headingRad);
-    const bL = projectWorld(b.leftLat, b.leftLon, b.elev, snap, headingRad);
-    const bR = projectWorld(b.rightLat, b.rightLon, b.elev, snap, headingRad);
-    if (!aL || !aR || !bL || !bR) continue;
+    if (b.cz <= a.cz + 0.05) continue;
+    const aL = projectCam(a.lx, a.lz, a.elev);
+    const aR = projectCam(a.rx, a.rz, a.elev);
+    const bL = projectCam(b.lx, b.lz, b.elev);
+    const bR = projectCam(b.rx, b.rz, b.elev);
+    if (!quadValid(aL, aR, bL, bR)) continue;
     const sMid = (a.s + b.s) * 0.5;
     const warnCol = ribbonCurveColor(sMid, geom, speedMps);
-    const fillCol = warnCol || RIBBON_FILL;
-    const edgeCol = warnCol || RIBBON_EDGE;
-    const fillOp = warnCol ? 0.48 : RIBBON_FILL_OP;
-    const edgeW = warnCol ? 7 : 5;
-    if (triArea2(aL, bL, bR) > 1) {
+    const fillCol = warnCol || tok.pathFill;
+    const edgeCol = warnCol || tok.pathEdge;
+    const fillOp = warnCol ? 0.48 : tok.pathFillOpacity;
+    const ew = warnCol ? edgeW + 2 : edgeW;
+    if (!fillNone) {
       fill += '<polygon points="' + pt(aL) + " " + pt(bL) + " " + pt(bR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
-    }
-    if (triArea2(aL, bR, aR) > 1) {
       fill += '<polygon points="' + pt(aL) + " " + pt(bR) + " " + pt(aR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
     }
-    edges += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + edgeW + '" stroke-linecap="round"/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + edgeW + '" stroke-linecap="round"/>';
+    const dash = tok.pathDash !== "none" ? ' stroke-dasharray="' + tok.pathDash + '"' : "";
+    edges += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + ew + '" stroke-linecap="round"' + dash + glowExtra + '/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + ew + '" stroke-linecap="round"' + dash + glowExtra + "/>";
+    if (tok.glow !== "none") {
+      edges += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + tok.glow + '" stroke-width="' + (ew + 4) + '" stroke-linecap="round" opacity="' + (tok.glowOpacity || 0.25) + '"/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + tok.glow + '" stroke-width="' + (ew + 4) + '" stroke-linecap="round" opacity="' + (tok.glowOpacity || 0.25) + '"/>';
+    }
   }
   return { fill, edges };
 }
@@ -13052,6 +13331,7 @@ function turnAngleAt(step) {
 }
 function renderTurnsStr(svg, snap, headingRad) {
   if (!S.route || !snap) return "";
+  const tok = getThemeTokens();
   const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
   const vb = bv && bv.width ? bv.width : L2.W;
   const vbX = bv ? bv.x : 0;
@@ -13072,7 +13352,7 @@ function renderTurnsStr(svg, snap, headingRad) {
     const dir = ang == null ? st.modifier.includes("left") ? -1 : 1 : ang < 0 ? -1 : 1;
     const deg = ang == null ? "" : Math.round(Math.abs(ang)) + "\xB0";
     const dist = Math.round(haversine(pos, st));
-    const col = shown === 0 ? "#ffd400" : "#00cc70";
+    const col = shown === 0 ? tok.turnPrimary : tok.turnSecondary;
     const k = shown === 0 ? 1 : 0.72;
     const degFont = vb * 0.12 * k;
     const distFont = vb * 0.05 * k;
@@ -13088,13 +13368,14 @@ function renderTurnsStr(svg, snap, headingRad) {
     degY = Math.min(vbY + vbH - 4, Math.max(vbY + degFont + 4, degY));
     let distY = P.y + s2 + distFont * 1.1;
     distY = Math.min(vbY + vbH - 4, distY);
-    out += '<g font-family="Consolas,monospace" text-anchor="middle"><path d="M ' + (P.x + +base).toFixed(1) + " " + (P.y - s2).toFixed(1) + " L " + (P.x + +tip).toFixed(1) + " " + P.y.toFixed(1) + " L " + (P.x + +base).toFixed(1) + " " + (P.y + s2).toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '" stroke-linecap="round" stroke-linejoin="round"/><text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" font-size="' + degFont.toFixed(1) + '" font-weight="900" stroke="#000" stroke-width="' + halo.toFixed(1) + '" stroke-linejoin="round" fill="#000" opacity="0.65">' + deg + '</text><text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" font-size="' + degFont.toFixed(1) + '" font-weight="900" fill="' + col + '">' + deg + '</text><text x="' + P.x.toFixed(1) + '" y="' + distY.toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" fill="' + col + '" opacity="0.9">' + dist + " \u043C</text></g>";
+    out += '<g font-family="' + tok.fontNum + ',monospace" text-anchor="middle"><path d="M ' + (P.x + +base).toFixed(1) + " " + (P.y - s2).toFixed(1) + " L " + (P.x + +tip).toFixed(1) + " " + P.y.toFixed(1) + " L " + (P.x + +base).toFixed(1) + " " + (P.y + s2).toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '" stroke-linecap="round" stroke-linejoin="round"/><text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" font-size="' + degFont.toFixed(1) + '" font-weight="900" stroke="' + tok.svgHalo + '" stroke-width="' + halo.toFixed(1) + '" stroke-linejoin="round" fill="' + tok.svgHalo + '" opacity="0.65">' + deg + '</text><text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" font-size="' + degFont.toFixed(1) + '" font-weight="900" fill="' + col + '">' + deg + '</text><text x="' + P.x.toFixed(1) + '" y="' + distY.toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" fill="' + col + '" opacity="0.9">' + dist + " \u043C</text></g>";
     shown++;
   }
   return out;
 }
 function renderFuelStr(svg, snap, headingRad) {
   if (S.fuelMode === 0 || !snap) return "";
+  const tok = getThemeTokens();
   const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
   const vb = bv && bv.width ? bv.width : L2.W;
   const vbX = bv ? bv.x : 0;
@@ -13119,7 +13400,7 @@ function renderFuelStr(svg, snap, headingRad) {
     const distTxt = dm < 1e3 ? Math.round(dm / 10) * 10 + " \u043C" : (dm / 1e3).toFixed(1) + " \u043A\u043C";
     let cx = Math.min(vbX + vbW - r - 2, Math.max(vbX + r + 2, P.x));
     let cy = Math.min(vbY + vbH - r - distFont - 4, Math.max(vbY + r + 2, P.y));
-    out += '<g text-anchor="middle" font-family="Consolas,monospace"><circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="rgba(0,0,0,0.72)" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '"/><text x="' + cx.toFixed(1) + '" y="' + (cy + emoji * 0.36).toFixed(1) + '" font-size="' + emoji.toFixed(1) + '">\u26FD</text><text x="' + cx.toFixed(1) + '" y="' + (cy + r + distFont * 1.05).toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" font-weight="900" fill="' + col + '" stroke="#000" stroke-width="' + (distFont * 0.14).toFixed(1) + '" paint-order="stroke">' + distTxt + "</text></g>";
+    out += '<g text-anchor="middle" font-family="' + tok.fontNum + ',monospace"><circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + tok.svgBgOverlay + '" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '"/><text x="' + cx.toFixed(1) + '" y="' + (cy + emoji * 0.36).toFixed(1) + '" font-size="' + emoji.toFixed(1) + '">\u26FD</text><text x="' + cx.toFixed(1) + '" y="' + (cy + r + distFont * 1.05).toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" font-weight="900" fill="' + col + '" stroke="' + tok.svgHalo + '" stroke-width="' + (distFont * 0.14).toFixed(1) + '" paint-order="stroke">' + distTxt + "</text></g>";
   }
   return out;
 }
@@ -13137,12 +13418,17 @@ function renderPathway() {
   }
   block.classList.remove("hidden");
   hud.classList.remove("no-path");
-  const geom = S.route?.geometry;
   const gpsHdg = S.smoothedHeading;
-  if (S.route && !geom) ensureRouteGeometry(S.route);
-  const snap = getRouteSnapForNav(gpsHdg);
+  if (S.route && !S.route.geometry) ensureRouteGeometry(S.route);
+  const rawSnap = getRouteSnapForNav(gpsHdg);
   const geomReady = S.route?.geometry;
-  if (!geomReady || !snap) {
+  if (!geomReady || !rawSnap) {
+    if (svg.innerHTML) svg.innerHTML = "";
+    return;
+  }
+  const speedMps = Math.max(0, S.dispSpeed / 3.6);
+  const snap = getDisplaySnap(rawSnap, geomReady, speedMps, gpsHdg);
+  if (!snap) {
     if (svg.innerHTML) svg.innerHTML = "";
     return;
   }
@@ -13152,23 +13438,23 @@ function renderPathway() {
   svg.setAttribute("viewBox", "0 0 " + L2.W + " " + L2.H);
   const headingRad = updateCamHeading(geomReady, snap);
   updateCamPitch(geomReady, snap, getElevExag(), S.showElevProfile);
-  const sections = computeRibbonSections(geomReady, snap, maxDist, ROAD_HALF);
+  const sections = computeRibbonSectionsCam(geomReady, snap, maxDist, ROAD_HALF, headingRad);
   if (sections.length < 2) {
     svg.innerHTML = "";
     return;
   }
-  const speedMps = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
-  const mesh = buildStripMeshSvg(sections, snap, headingRad, geomReady, speedMps);
+  const mesh = buildStripMeshSvg(sections, geomReady, speedMps);
   let html = mesh.fill + mesh.edges;
-  const centerS = sections.map((sec) => ({ p: projectWorld(sec.lat, sec.lon, sec.elev, snap, headingRad), s: sec.s })).filter((x) => x.p);
+  const tok = getThemeTokens();
+  const centerS = sections.map((sec) => ({ p: projectCam(sec.cx, sec.cz, sec.elev), s: sec.s })).filter((x) => x.p);
   for (let ci = 0; ci < centerS.length - 1; ci++) {
     const a = centerS[ci];
     const b = centerS[ci + 1];
     const sMid = (a.s + b.s) * 0.5;
     const warnCol = ribbonCurveColor(sMid, geomReady, speedMps);
-    const stroke = warnCol || THEME.hud;
-    const sw = warnCol ? 4.5 : 3;
-    const op = warnCol ? 0.85 : 0.45;
+    const stroke = warnCol || tok.pathEdge;
+    const sw = warnCol ? tok.strokeW + 1.5 : tok.strokeW;
+    const op = warnCol ? 0.85 : tok.pathCenterOpacity;
     html += '<line x1="' + a.p.x.toFixed(1) + '" y1="' + a.p.y.toFixed(1) + '" x2="' + b.p.x.toFixed(1) + '" y2="' + b.p.y.toFixed(1) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" opacity="' + op + '"/>';
   }
   html += renderTurnsStr(svg, snap, headingRad);
@@ -13179,12 +13465,14 @@ function renderPathway() {
   svg.innerHTML = html;
 }
 function renderParametricArrow(turnDeg) {
+  const tok = getThemeTokens();
   const H = 120;
   const stemLen = H / 3;
   const exitLen = H / 3;
   const R = Math.abs(turnDeg) > 150 ? H / 3.2 : H / 4;
-  const sw = Math.round(H * 0.12);
-  const col = "#ffd400";
+  const sw = Math.round(H * 0.12 * (tok.strokeW / 3));
+  const col = tok.accent;
+  const outline = tok.arrowStyle === "outline";
   const dirVec = (aDeg) => {
     const a2 = aDeg * Math.PI / 180;
     return [Math.sin(a2), -Math.cos(a2)];
@@ -13231,11 +13519,15 @@ function renderParametricArrow(turnDeg) {
   maxY += pad;
   const vb = minX.toFixed(1) + " " + minY.toFixed(1) + " " + (maxX - minX).toFixed(1) + " " + (maxY - minY).toFixed(1);
   const line = '<polyline points="' + stem.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ") + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round"/>';
-  const head = '<polygon points="' + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1) + '" fill="' + col + '"/>';
-  return '<svg class="arrow-svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + line + head + "</svg>";
+  const head = outline ? "" : '<polygon points="' + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1) + '" fill="' + col + '"/>';
+  const headOutline = outline ? '<polyline points="' + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1) + " " + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linejoin="round"/>' : "";
+  return '<svg class="arrow-svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + line + head + headOutline + "</svg>";
 }
 function arriveFlagSVG() {
-  return '<svg class="arrow-svg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet"><rect x="-28" y="-32" width="56" height="40" fill="none" stroke="' + THEME.hud + '" stroke-width="5"/><path d="M-28 -32 L-28 8 L28 -12 Z" fill="' + THEME.hud + '"/><line x1="-28" y1="8" x2="-28" y2="28" stroke="' + THEME.hud + '" stroke-width="5"/></svg>';
+  const tok = getThemeTokens();
+  const sw = Math.max(4, tok.strokeW + 2);
+  const col = tok.pathEdge;
+  return '<svg class="arrow-svg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet"><rect x="-28" y="-32" width="56" height="40" fill="none" stroke="' + col + '" stroke-width="' + sw + '"/><path d="M-28 -32 L-28 8 L28 -12 Z" fill="' + (tok.arrowStyle === "outline" ? "none" : col) + '" stroke="' + col + '" stroke-width="' + sw * 0.5 + '"/><line x1="-28" y1="8" x2="-28" y2="28" stroke="' + col + '" stroke-width="' + sw + '"/></svg>';
 }
 function buildArrowSVG(step) {
   if (!step) return "";
@@ -13252,8 +13544,9 @@ function buildArrowSVG(step) {
 function renderCompass() {
   const el = $("compass-svg");
   if (!el) return;
+  const tok = getThemeTokens();
   const W = 400, H = 36, cx = W / 2, px = 1.8;
-  let html = '<line x1="' + cx + '" y1="2" x2="' + cx + '" y2="' + H + '" stroke="#ffd400" stroke-width="2"/>';
+  let html = '<line x1="' + cx + '" y1="2" x2="' + cx + '" y2="' + H + '" stroke="' + tok.accent + '" stroke-width="2"/>';
   const hdg = effectiveHeading();
   if (hdg != null && !isNaN(hdg)) {
     [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
@@ -13261,7 +13554,7 @@ function renderCompass() {
       const x = cx + diff * px;
       if (x < 14 || x > W - 14) return;
       const near = Math.abs(diff) < 12;
-      html += '<text x="' + x.toFixed(1) + '" y="29" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="27" font-weight="900" fill="' + (near ? "#ffd400" : "#fff") + '">' + d[0] + "</text>";
+      html += '<text x="' + x.toFixed(1) + '" y="29" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="27" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
     });
   }
   el.setAttribute("viewBox", "0 0 " + W + " " + H);
@@ -13270,6 +13563,47 @@ function renderCompass() {
 function renderVisualFrame() {
   renderCompass();
   renderPathway();
+}
+
+// js/hud-opts.js
+function loadHudOptsFromStorage() {
+  try {
+    const raw = localStorage.getItem(HUD_OPTS_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    if (typeof o.showFinishDist === "boolean") {
+      const el = $("opt-finish-dist");
+      if (el) el.checked = o.showFinishDist;
+    }
+    if (typeof o.showFinishTime === "boolean") {
+      const el = $("opt-finish-time");
+      if (el) el.checked = o.showFinishTime;
+    }
+    if (typeof o.showFinishEta === "boolean") {
+      const el = $("opt-finish-eta");
+      if (el) el.checked = o.showFinishEta;
+    }
+  } catch (e) {
+  }
+}
+function saveHudOptsToStorage() {
+  try {
+    localStorage.setItem(HUD_OPTS_KEY, JSON.stringify({
+      showFinishDist: !!S.showFinishDist,
+      showFinishTime: !!S.showFinishTime,
+      showFinishEta: !!S.showFinishEta
+    }));
+  } catch (e) {
+  }
+}
+function applyFinishInfoVisibility() {
+  const panel = $("finish-info");
+  if (!panel) return;
+  const any = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
+  panel.classList.toggle("hidden", !any);
+  $("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
+  $("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
+  $("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
 }
 
 // js/route-map.js
@@ -13617,12 +13951,16 @@ async function auditTtsHealth() {
   const voices = speechSynthesis.getVoices();
   const ru = voices.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
   const localRu = ru.filter((v) => v.localService);
+  const best = ru.reduce((acc, v) => {
+    const sc = scoreRuVoice(v);
+    return sc > acc.score ? { score: sc, name: v.name } : acc;
+  }, { score: -1, name: "" });
   return {
     ok: ru.length > 0,
     offlineVoice: localRu.length > 0,
     voices: ru.length,
     platform: "web",
-    hint: !ru.length ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0438 \u0441\u0438\u0441\u0442\u0435\u043C\u044B/\u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430." : !localRu.length ? "\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0431\u043B\u0430\u0447\u043D\u044B\u0435 \u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0431\u0435\u0437 \u0441\u0435\u0442\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0430 \u043C\u043E\u0436\u0435\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C." : ""
+    hint: !ru.length ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0438 \u0441\u0438\u0441\u0442\u0435\u043C\u044B/\u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430." : !localRu.length ? "\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0431\u043B\u0430\u0447\u043D\u044B\u0435 \u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0431\u0435\u0437 \u0441\u0435\u0442\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0430 \u043C\u043E\u0436\u0435\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C." : best.name ? "\u0413\u043E\u043B\u043E\u0441: " + best.name : ""
   };
 }
 async function openTtsInstall() {
@@ -13668,8 +14006,10 @@ async function refreshTtsBanner() {
   return health;
 }
 function initTtsHealth() {
+  initRuVoice();
   if ("speechSynthesis" in window) {
     speechSynthesis.addEventListener("voiceschanged", () => {
+      refreshRuVoice();
       refreshTtsBanner();
     }, { once: false });
   }
@@ -13755,10 +14095,15 @@ async function doAddressSearch() {
     $("s-finish").className = "status err";
     return;
   }
+  if (parseInput(q)) {
+    applyCoordsOrLink();
+    return;
+  }
   $("s-finish").textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0430\u0434\u0440\u0435\u0441\u2026";
   $("s-finish").className = "status";
   S.finish = null;
   invalidateRoute();
+  if (window.__motoHUD) window.__motoHUD._searchBusy = true;
   try {
     const res = await searchAddress(q);
     if (!res.length) {
@@ -13789,9 +14134,18 @@ async function doAddressSearch() {
   } catch (e) {
     $("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430: " + e.message;
     $("s-finish").className = "status err";
+  } finally {
+    if (window.__motoHUD) window.__motoHUD._searchBusy = false;
   }
 }
-function applyCoordsOrLink() {
+function setFinishQuiet(lat, lon, label = "\u0422\u043E\u0447\u043A\u0430") {
+  S.finish = { lat, lon, label };
+  $("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + lat.toFixed(5) + ", " + lon.toFixed(5);
+  $("s-finish").className = "status ok";
+  checkStartReady();
+}
+function applyCoordsOrLink(opts = {}) {
+  const hideSearch = opts.hideSearch !== false;
   const raw = $("finish-input").value.trim();
   const p = parseInput(raw);
   if (!p) {
@@ -13802,7 +14156,7 @@ function applyCoordsOrLink() {
   S.finish = p;
   $("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + p.lat.toFixed(5) + ", " + p.lon.toFixed(5);
   $("s-finish").className = "status ok";
-  $("search-results").style.display = "none";
+  if (hideSearch) $("search-results").style.display = "none";
   invalidateRoute();
 }
 function isFullscreen() {
@@ -13831,6 +14185,15 @@ function bindSetupUI() {
   $("btn-search").addEventListener("click", doAddressSearch);
   $("btn-parse").addEventListener("click", applyCoordsOrLink);
   $("btn-build-route").addEventListener("click", doBuildRoute);
+  $("finish-input").addEventListener("input", () => {
+    $("finish-input").dataset.userEdited = "1";
+  });
+  $("finish-input").addEventListener("focus", () => {
+    if (window.__motoHUD) window.__motoHUD._finishFocused = true;
+  });
+  $("finish-input").addEventListener("blur", () => {
+    if (window.__motoHUD) window.__motoHUD._finishFocused = false;
+  });
   $("finish-input").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -13885,6 +14248,16 @@ function bindSetupUI() {
       $("hud").classList.remove("no-path");
     }
   });
+  const bindFinishOpt = (id) => {
+    $(id)?.addEventListener("change", () => {
+      syncOptionsFromDom();
+      saveHudOptsToStorage();
+      applyFinishInfoVisibility();
+    });
+  };
+  bindFinishOpt("opt-finish-dist");
+  bindFinishOpt("opt-finish-time");
+  bindFinishOpt("opt-finish-eta");
   function syncElevInputs() {
     const on = S.showElevProfile;
     const exag = $("opt-elev-exag");
@@ -14005,6 +14378,10 @@ function bindSetupUI() {
 function syncOptionsFromDom() {
   S.voice = $("opt-voice").checked;
   S.showPath = $("opt-path").checked;
+  S.showFinishDist = $("opt-finish-dist")?.checked ?? true;
+  S.showFinishTime = $("opt-finish-time")?.checked ?? true;
+  S.showFinishEta = $("opt-finish-eta")?.checked ?? true;
+  applyFinishInfoVisibility();
   S.showElevProfile = $("opt-elev-profile").checked;
   S.elevExag = Math.max(0.5, Math.min(5, parseFloat($("opt-elev-exag").value) || DEFAULT_ELEV_EXAG));
   S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
@@ -14345,6 +14722,179 @@ async function releaseWakeLock() {
   }
 }
 
+// js/sun-mode.js
+function sunTimes(lat, lon, date = /* @__PURE__ */ new Date()) {
+  const zenith = 90.833;
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
+  const lngHour = lon / 15;
+  function calc(isSunrise) {
+    const t = isSunrise ? dayOfYear + (6 - lngHour) / 24 : dayOfYear + (18 - lngHour) / 24;
+    const M = 0.9856 * t - 3.289;
+    let L4 = M + 1.916 * Math.sin(M * Math.PI / 180) + 0.02 * Math.sin(2 * M * Math.PI / 180) + 282.634;
+    L4 = (L4 % 360 + 360) % 360;
+    let RA = Math.atan(0.91764 * Math.tan(L4 * Math.PI / 180)) * 180 / Math.PI;
+    RA = (RA % 360 + 360) % 360;
+    const Lq = Math.floor(L4 / 90) * 90;
+    const Rq = Math.floor(RA / 90) * 90;
+    RA = (RA + (Lq - Rq)) / 15;
+    const sinDec = 0.39782 * Math.sin(L4 * Math.PI / 180);
+    const cosDec = Math.cos(Math.asin(sinDec));
+    const cosH = (Math.cos(zenith * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
+    if (cosH > 1 || cosH < -1) {
+      return isSunrise ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0) : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 18, 0, 0);
+    }
+    let H = Math.acos(cosH) * 180 / Math.PI / 15;
+    if (!isSunrise) H = 24 - H;
+    const T = H + RA - 0.06571 * t - 6.622;
+    let ut = T - lngHour;
+    ut = (ut % 24 + 24) % 24;
+    const h = Math.floor(ut);
+    const m = Math.floor((ut - h) * 60);
+    const s2 = Math.floor(((ut - h) * 60 - m) * 60);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, s2);
+  }
+  return { sunrise: calc(true), sunset: calc(false) };
+}
+var HYST_MS = 20 * 60 * 1e3;
+var _lastResolved = "night";
+var _lastSwitchTs = 0;
+function resolveDisplayMode(pref, pos, now = /* @__PURE__ */ new Date()) {
+  if (pref === "day") return "day";
+  if (pref === "night") return "night";
+  const lat = pos?.lat;
+  const lon = pos?.lon;
+  if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
+    const { sunrise, sunset } = sunTimes(lat, lon, now);
+    const dawn = sunrise.getTime() + HYST_MS;
+    const dusk = sunset.getTime() - HYST_MS;
+    const ts = now.getTime();
+    let target = ts >= dawn && ts < dusk ? "day" : "night";
+    if (target !== _lastResolved && ts - _lastSwitchTs < HYST_MS) {
+      return _lastResolved;
+    }
+    if (target !== _lastResolved) {
+      _lastResolved = target;
+      _lastSwitchTs = ts;
+    }
+    return target;
+  }
+  const h = now.getHours() + now.getMinutes() / 60;
+  return h >= 7 && h < 21 ? "day" : "night";
+}
+function resetModeHysteresis() {
+  _lastResolved = "night";
+  _lastSwitchTs = 0;
+}
+
+// js/theme-manager.js
+var THEME_STORAGE_KEY = "moto-hud-theme";
+var THEME_IDS = ["avionics", "hitech", "space", "sport", "chopper", "vintage"];
+var MODE_PREFS = ["day", "night", "auto"];
+function loadThemePrefs() {
+  try {
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
+    if (!raw) return { theme: "avionics", modePref: "night" };
+    const o = JSON.parse(raw);
+    return {
+      theme: THEME_IDS.includes(o.theme) ? o.theme : "avionics",
+      modePref: MODE_PREFS.includes(o.modePref) ? o.modePref : "night"
+    };
+  } catch (e) {
+    return { theme: "avionics", modePref: "night" };
+  }
+}
+function saveThemePrefs(prefs) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(prefs));
+  } catch (e) {
+  }
+}
+function applyTheme(theme, modePref, save = true) {
+  const html = document.documentElement;
+  THEME_IDS.forEach((id) => html.classList.remove("theme-" + id));
+  const tid = THEME_IDS.includes(theme) ? theme : "avionics";
+  html.classList.add("theme-" + tid);
+  const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
+  const mode = resolveDisplayMode(modePref, pos);
+  html.setAttribute("data-mode", mode);
+  if (save) saveThemePrefs({ theme: tid, modePref });
+  applyThemeCss();
+  syncThemeControls(tid, modePref);
+  updateModeButtonLabel(modePref, mode);
+  if ($2("hud")?.classList.contains("on")) renderVisualFrame();
+}
+function $2(id) {
+  return document.getElementById(id);
+}
+function syncThemeControls(theme, modePref) {
+  const sel = $2("opt-theme");
+  if (sel) sel.value = theme;
+  const mDay = $2("opt-mode-day");
+  const mNight = $2("opt-mode-night");
+  const mAuto = $2("opt-mode-auto");
+  if (mDay) mDay.checked = modePref === "day";
+  if (mNight) mNight.checked = modePref === "night";
+  if (mAuto) mAuto.checked = modePref === "auto";
+}
+function updateModeButtonLabel(modePref, resolved) {
+  const btn = $2("btn-mode");
+  if (!btn) return;
+  const lbl = btn.querySelector(".cb-lbl");
+  if (!lbl) return;
+  if (modePref === "auto") {
+    lbl.textContent = resolved === "day" ? "\u0410\u0412\u0422\u041E\u2600" : "\u0410\u0412\u0422\u041E\u{1F319}";
+  } else if (modePref === "day") {
+    lbl.textContent = "\u0414\u0415\u041D\u042C";
+  } else {
+    lbl.textContent = "\u041D\u041E\u0427\u042C";
+  }
+}
+function cycleModePref() {
+  const cur = loadThemePrefs();
+  const i = MODE_PREFS.indexOf(cur.modePref);
+  const next = MODE_PREFS[(i + 1) % MODE_PREFS.length];
+  if (next !== "auto") resetModeHysteresis();
+  applyTheme(cur.theme, next);
+}
+var _lastAutoCheck = 0;
+function tickAutoMode() {
+  const cur = loadThemePrefs();
+  if (cur.modePref !== "auto") return;
+  const now = Date.now();
+  if (now - _lastAutoCheck < 3e4) return;
+  _lastAutoCheck = now;
+  const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
+  const mode = resolveDisplayMode("auto", pos);
+  const html = document.documentElement;
+  if (html.getAttribute("data-mode") !== mode) {
+    html.setAttribute("data-mode", mode);
+    invalidateThemeTokens();
+    applyThemeCss();
+    updateModeButtonLabel("auto", mode);
+    if ($2("hud")?.classList.contains("on")) renderVisualFrame();
+  } else {
+    updateModeButtonLabel("auto", mode);
+  }
+}
+function initThemeManager() {
+  const cur = loadThemePrefs();
+  applyTheme(cur.theme, cur.modePref, false);
+  $2("opt-theme")?.addEventListener("change", (e) => {
+    applyTheme(e.target.value, loadThemePrefs().modePref);
+  });
+  ["opt-mode-day", "opt-mode-night", "opt-mode-auto"].forEach((id) => {
+    $2(id)?.addEventListener("change", (e) => {
+      if (!e.target.checked) return;
+      const mode = id.replace("opt-mode-", "");
+      if (mode !== "auto") resetModeHysteresis();
+      applyTheme(loadThemePrefs().theme, mode);
+    });
+  });
+  $2("btn-mode")?.addEventListener("click", () => cycleModePref());
+}
+
 // js/hud.js
 function maneuverVoiceThresholds(kmh) {
   const mps = Math.max(kmh / 3.6, 4);
@@ -14397,6 +14947,42 @@ function checkCamerasILS() {
     });
   }
 }
+function estimateRemainSec(remaining, kmh) {
+  if (remaining <= 0) return 0;
+  if (kmh > 5) return remaining / (kmh / 3.6);
+  if (S.route?.distance > 0 && S.route.duration > 0) {
+    return remaining / S.route.distance * S.route.duration;
+  }
+  return null;
+}
+function updateFinishInfo(remaining, kmh, now) {
+  const panel = $("finish-info");
+  if (!panel) return;
+  const any = S.showFinishDist || S.showFinishTime || S.showFinishEta;
+  if (!any || !S.route) {
+    panel.classList.add("hidden");
+    return;
+  }
+  panel.classList.remove("hidden");
+  if (S.showFinishDist) {
+    $("fi-dist-line")?.classList.remove("hidden");
+    const el = $("fi-dist-val");
+    if (el) {
+      el.textContent = remaining < 1e3 ? Math.round(remaining) + " \u043C" : (remaining / 1e3).toFixed(1) + " \u043A\u043C";
+    }
+  } else $("fi-dist-line")?.classList.add("hidden");
+  const remainSec = estimateRemainSec(remaining, kmh);
+  if (S.showFinishTime && remainSec != null) {
+    $("fi-time-line")?.classList.remove("hidden");
+    const el = $("fi-time-val");
+    if (el) el.textContent = fmtRemainDur(remainSec);
+  } else $("fi-time-line")?.classList.add("hidden");
+  if (S.showFinishEta && remainSec != null) {
+    $("fi-eta-line")?.classList.remove("hidden");
+    const el = $("fi-eta-val");
+    if (el) el.textContent = fmtClock(new Date(now.getTime() + remainSec * 1e3));
+  } else $("fi-eta-line")?.classList.add("hidden");
+}
 function onTick() {
   if (!S.gps) return;
   const now = /* @__PURE__ */ new Date();
@@ -14414,7 +15000,8 @@ function onTick() {
     hw.textContent = hh.calibrating ? "\u{1F9ED} \u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043C\u043F\u0430\u0441\u0430 \u2014 \u0432\u043E\u0441\u044C\u043C\u0451\u0440\u043A\u0430 15 \u0441" : "\u26A0 \u041F\u043E\u043C\u0435\u0445\u0438 \u043A\u043E\u043C\u043F\u0430\u0441\u0430 \u2014 \u043A\u0443\u0440\u0441 \u043F\u043E GPS";
   }
   if (!S.route) {
-    $("mid-info").textContent = "\u2014";
+    $("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
+    updateFinishInfo(0, kmh, now);
     return;
   }
   const remaining = getRemainingDistance();
@@ -14445,13 +15032,8 @@ function onTick() {
       }
     }
   }
-  let midInfo = remaining < 1e3 ? Math.round(remaining) + " \u043C" : (remaining / 1e3).toFixed(1) + " \u043A\u043C";
-  if (kmh > 5) {
-    const eta = new Date(now.getTime() + remaining / (kmh / 3.6) * 1e3);
-    midInfo += " \xB7 " + fmtClock(eta);
-  }
-  if (S.startTs) midInfo += " \xB7 T+" + fmtTime((Date.now() - S.startTs) / 1e3);
-  $("mid-info").textContent = midInfo;
+  updateFinishInfo(remaining, kmh, now);
+  $("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
   const near = findNearestOnRoute();
   if (near && near.dist > 40) {
     if (!S.offRouteSince) S.offRouteSince = Date.now();
@@ -14470,6 +15052,7 @@ function onTick() {
     S.camWarned.add("arrived");
     speak("\u0412\u044B \u043F\u0440\u0438\u0431\u044B\u043B\u0438");
   }
+  tickAutoMode();
   checkCamerasILS();
   checkCurveSpeedWarn(kmh);
   refreshFuelPanel();
@@ -14487,6 +15070,7 @@ function checkCurveSpeedWarn(kmh) {
   speak("\u0421\u043D\u0438\u0437\u044C\u0442\u0435 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u043F\u0435\u0440\u0435\u0434 \u043F\u043E\u0432\u043E\u0440\u043E\u0442\u043E\u043C. \u0420\u0435\u043A\u043E\u043C\u0435\u043D\u0434\u0443\u0435\u0442\u0441\u044F " + warn.vSafeKmh + " \u043A\u0438\u043B\u043E\u043C\u0435\u0442\u0440\u043E\u0432 \u0432 \u0447\u0430\u0441");
 }
 async function startHud() {
+  applyFinishInfoVisibility();
   if (!S.route) {
     alert("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
     return;
@@ -14690,22 +15274,36 @@ async function selectQuickFinish(id, loadFavs2, buildAndLoad) {
 
 // js/main.js
 applyThemeCss();
+initThemeManager();
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();
+loadHudOptsFromStorage();
 syncOptionsFromDom();
 updateCamStatusUI();
 bindSetupUI();
 initFavorites();
 initNativeHints();
 initTtsHealth();
-window.__motoHUD = { S, applyCoordsOrLink, startHud, startGps, doBuildRoute };
+window.__motoHUD = {
+  S,
+  applyCoordsOrLink,
+  setFinishQuiet,
+  startHud,
+  startGps,
+  doBuildRoute,
+  doAddressSearch,
+  _searchBusy: false,
+  _finishFocused: false
+};
+window.applyTheme = applyTheme;
 window.addEventListener("load", () => {
   setTimeout(startGps, 400);
+  if (window.__SIM__?.boot && !window.__SIM__._bootScheduled) {
+    window.__SIM__._bootScheduled = true;
+    setTimeout(() => window.__SIM__.boot(), 500);
+  }
 });
-if (window.__SIM__ && typeof window.__SIM__.boot === "function") {
-  window.addEventListener("load", () => setTimeout(() => window.__SIM__.boot(), 700));
-}
 if ("serviceWorker" in navigator && !window.__SIM__ && location.protocol !== "file:") {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch(() => {

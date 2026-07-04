@@ -35,6 +35,9 @@ export const S = {
   lastVoiceTs: 0,
   curveWarn: true,
   curveStrict: 'normal', // relaxed | normal | strict
+  showFinishDist: true,
+  showFinishEta: true,
+  showFinishTime: true,
 
   // Топливный ассистент
   fuelStations: [],       // [{lat,lon,brand,name,osmId,status,distGps,offRoute,distAhead,aheadOnRoute}]
@@ -63,6 +66,7 @@ export const RUN_KEY = 'moto-hud-last-run';
 export const FAV_KEY = 'moto-hud-favs';
 export const ELEV_OPTS_KEY = 'moto-hud-elev-opts';
 export const CURVE_OPTS_KEY = 'moto-hud-curve-opts';
+export const HUD_OPTS_KEY = 'moto-hud-hud-opts';
 /** Усиление вертикали профиля высот по умолчанию */
 export const DEFAULT_ELEV_EXAG = 1.8;
 /** Высота полоски профиля в HUD, px (viewBox) */

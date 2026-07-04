@@ -3,8 +3,8 @@
  * @module route-geometry
  */
 import { haversine, bearing, angleDiff } from './geo.js';
-import { curPos } from './gps.js';
 import { S, CAM_PITCH } from './state.js';
+import { curPos } from './gps.js';
 
 /** Шаг уплотнения polyline, м */
 export const DENSE_STEP = 3;
@@ -23,18 +23,30 @@ export const SNAP_MIN_DOT = 0.3;
 export const SNAP_ANGLE_PENALTY = 2;
 /** Окно усреднения касательной камеры по s, м */
 export const CAM_TANGENT_WINDOW = 25;
-/** Сглаживание касательной камеры за кадр (0…1) */
-export const CAM_SMOOTH_ALPHA = 0.12;
+/** Сглаживание касательной камеры за кадр (0…1, при ~60 fps) */
+export const CAM_SMOOTH_ALPHA = 0.11;
+/** Шаг сечений ленты, м — фиксированный для стабильной топологии mesh */
+export const RIBBON_STEP_M = 2;
 
 let _snap = null;
 let _camHeadingRad = null;
 let _camPitchRad = null;
+let _snapMemoTs = null;
+let _disp = { s: 0, inited: false };
+let _dispLastTs = 0;
+let _camLastTs = 0;
+let _camPitchLastTs = 0;
 
 /** Сброс snap при смене маршрута */
 export function resetRouteSnap(){
   _snap = null;
   _camHeadingRad = null;
   _camPitchRad = null;
+  _snapMemoTs = null;
+  _disp.inited = false;
+  _dispLastTs = 0;
+  _camLastTs = 0;
+  _camPitchLastTs = 0;
 }
 
 /** Текущий snap (или null) */
@@ -289,6 +301,14 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir){
   return best;
 }
 
+/** Snap в узком окне вокруг hintS — для отрисовки каждый кадр */
+function snapNearS(gps, geom, hintS, gpsHdg){
+  const total = geom.s[geom.n - 1];
+  const sMin = Math.max(0, hintS - 40);
+  const sMax = Math.min(total, hintS + 85);
+  return scanSnap(gps, geom, sMin, sMax, gpsHdg, false);
+}
+
 /**
  * Snap GPS на polyline с окном по s и проверкой направления (серпантины).
  * @param {object} gps
@@ -321,21 +341,72 @@ export function snapToRoute(gps, geom, gpsHeadingDeg){
     best = { ...best, s: prev.s, segIdx: prev.segIdx, confidence: 0.4 };
   }
 
+  if(prev && best.lateral < 35){
+    const ds = best.s - prev.s;
+    if(ds > 0 && ds < 30) best.s = prev.s + ds * 0.65;
+  }
+
   if(best.lateral > 60) best.confidence = Math.min(best.confidence, 0.3);
 
   _snap = best;
   return best;
 }
 
-/** Получить snap для текущей позиции (кэш на кадр) */
-let _snapMemoGps = null;
+/** Snap по последнему GPS-fix (не по интерполированному curPos — иначе дрожание) */
 export function getRouteSnapForNav(gpsHeadingDeg){
   const geom = S.route?.geometry;
-  const gps = curPos();
+  const gps = S.gps;
   if(!geom || !gps) return null;
-  if(_snapMemoGps === gps && _snap) return _snap;
-  _snapMemoGps = gps;
+  if(_snapMemoTs === gps.ts && _snap) return _snap;
+  _snapMemoTs = gps.ts;
   return snapToRoute(gps, geom, gpsHeadingDeg);
+}
+
+function frameDtSec(){
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const dtMs = _dispLastTs ? Math.min(48, now - _dispLastTs) : 16;
+  _dispLastTs = now;
+  return dtMs / 1000;
+}
+
+/**
+ * Сглаженный snap для отрисовки ленты: интеграция по скорости + curPos каждый кадр.
+ * Навигация (манёвры, дистанция) использует getRouteSnapForNav без сглаживания.
+ */
+export function getDisplaySnap(rawSnap, geom, speedMps, gpsHeadingDeg){
+  if(!rawSnap || !geom) return null;
+  const dt = frameDtSec();
+  const total = geom.s[geom.n - 1];
+  const spd = Math.max(0, speedMps || 0);
+
+  if(!_disp.inited){
+    _disp.s = rawSnap.s;
+    _disp.inited = true;
+  } else if(spd > 0.05){
+    _disp.s = Math.min(total, _disp.s + spd * dt);
+  }
+
+  let targetS = rawSnap.s;
+  const pos = curPos();
+  if(pos){
+    const hit = snapNearS(pos, geom, _disp.s, gpsHeadingDeg);
+    if(hit) targetS = hit.s;
+  }
+
+  const tau = 0.11;
+  const alpha = 1 - Math.exp(-dt / tau);
+  _disp.s += (targetS - _disp.s) * alpha;
+  _disp.s = Math.max(0, Math.min(total, _disp.s));
+
+  const p = interpolateAtS(geom, _disp.s);
+  return {
+    s: _disp.s,
+    lat: p.lat,
+    lon: p.lon,
+    segIdx: findSegAtS(geom, _disp.s),
+    lateral: rawSnap.lateral,
+    confidence: rawSnap.confidence
+  };
 }
 
 /** Средняя касательная маршрута на окне [s, s+windowM] */
@@ -360,9 +431,17 @@ export function avgTangentDeg(geom, s, windowM){
   return (Math.atan2(vx, vz) * 180 / Math.PI + 360) % 360;
 }
 
+function camSmoothAlpha(dtSec){
+  return 1 - Math.pow(1 - CAM_SMOOTH_ALPHA, Math.max(1, dtSec * 60));
+}
+
 /** Сглаженная касательная камеры (пространство + время) */
 export function updateCamHeading(geom, snap){
   if(!geom || !snap) return _camHeadingRad;
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const dt = _camLastTs ? Math.min(48, now - _camLastTs) / 1000 : 1 / 60;
+  _camLastTs = now;
+
   const tgt = avgTangentDeg(geom, snap.s, CAM_TANGENT_WINDOW) * Math.PI / 180;
   if(_camHeadingRad == null){
     _camHeadingRad = tgt;
@@ -371,7 +450,7 @@ export function updateCamHeading(geom, snap){
   let diff = tgt - _camHeadingRad;
   while(diff > Math.PI) diff -= 2 * Math.PI;
   while(diff < -Math.PI) diff += 2 * Math.PI;
-  _camHeadingRad += diff * CAM_SMOOTH_ALPHA;
+  _camHeadingRad += diff * camSmoothAlpha(dt);
   return _camHeadingRad;
 }
 
@@ -397,14 +476,18 @@ export function updateCamPitch(geom, snap, elevExag, enabled){
     _camPitchRad = null;
     return CAM_PITCH;
   }
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const dt = _camPitchLastTs ? Math.min(48, now - _camPitchLastTs) / 1000 : 1 / 60;
+  _camPitchLastTs = now;
+
   const grade = avgGradeAtS(geom, snap.s, CAM_TANGENT_WINDOW);
-  const roadPitch = Math.atan(grade * elevExag) * 0.42;
-  const tgt = CAM_PITCH + Math.max(-0.18, Math.min(0.22, roadPitch));
+  const roadPitch = Math.atan(grade * elevExag) * 0.35;
+  const tgt = CAM_PITCH + Math.max(-0.14, Math.min(0.16, roadPitch));
   if(_camPitchRad == null){
     _camPitchRad = tgt;
     return _camPitchRad;
   }
-  _camPitchRad += (tgt - _camPitchRad) * CAM_SMOOTH_ALPHA;
+  _camPitchRad += (tgt - _camPitchRad) * camSmoothAlpha(dt);
   return _camPitchRad;
 }
 
@@ -516,17 +599,88 @@ export function radiusAtS(geom, s){
 
 function curvatureAtS(geom, s){ return radiusAtS(geom, s); }
 
-function ribbonStepAtS(geom, s){
-  const { R } = radiusAtS(geom, s);
-  if(R < 15) return 1;
-  if(R < 30) return 1.5;
-  if(R < 80) return 2;
-  return 2.5;
+function ribbonStepAtS(){
+  return RIBBON_STEP_M;
+}
+
+/**
+ * Сечения ленты в камерной системе (x/z от snap) — без скачков Frenet на шпильках.
+ * Нормаль с parallel transport (не переворачивается между точками).
+ */
+export function computeRibbonSectionsCam(geom, snap, maxDist, halfW, headingRad){
+  const elev0 = geom.elevReady ? interpolateElevAtS(geom, snap.s) : 0;
+  const sEnd = Math.min(geom.s[geom.n - 1], snap.s + maxDist);
+  const step = ribbonStepAtS();
+  const samples = [];
+
+  for(let s = snap.s; s <= sEnd + 0.01; s += step){
+    const p = interpolateAtS(geom, s);
+    const c = worldToCamXZ(p.lat, p.lon, snap, headingRad);
+    samples.push({
+      s,
+      x: c.x,
+      z: c.z,
+      lat: p.lat,
+      lon: p.lon,
+      elev: geom.elevReady ? interpolateElevAtS(geom, s) - elev0 : 0
+    });
+    if(s >= sEnd) break;
+  }
+
+  const sections = [];
+  let prevNx = null;
+  let prevNz = null;
+
+  for(let i = 0; i < samples.length; i++){
+    const cur = samples[i];
+    if(cur.z < 1) continue;
+
+    const i0 = Math.max(0, i - 1);
+    const i1 = Math.min(samples.length - 1, i + 1);
+    let tx = samples[i1].x - samples[i0].x;
+    let tz = samples[i1].z - samples[i0].z;
+    const tl = Math.hypot(tx, tz);
+    if(tl < 0.08) continue;
+    tx /= tl;
+    tz /= tl;
+
+    let nx = -tz;
+    let nz = tx;
+    if(prevNx != null && nx * prevNx + nz * prevNz < 0){
+      nx = -nx;
+      nz = -nz;
+    }
+    prevNx = nx;
+    prevNz = nz;
+
+    let leftW = halfW;
+    let rightW = halfW;
+    const { R, turnSign } = radiusAtS(geom, cur.s);
+    if(R < Infinity && R < halfW * 5){
+      const maxOff = Math.max(0.55, R * 0.88);
+      if(turnSign > 0) leftW = Math.min(leftW, maxOff);
+      else if(turnSign < 0) rightW = Math.min(rightW, maxOff);
+    }
+
+    sections.push({
+      s: cur.s,
+      lat: cur.lat,
+      lon: cur.lon,
+      elev: cur.elev,
+      cx: cur.x,
+      cz: cur.z,
+      lx: cur.x + nx * leftW,
+      lz: cur.z + nz * leftW,
+      rx: cur.x - nx * rightW,
+      rz: cur.z - nz * rightW
+    });
+  }
+  return sections;
 }
 
 /**
  * Поперечные сечения ленты вдоль маршрута (per-point Frenet).
- * Offset и clamp — в метрах east/north, не в экранных координатах.
+ * @deprecated — для HUD используйте computeRibbonSectionsCam
  */
 export function computeRibbonSections(geom, snap, maxDist, halfW){
   const sections = [];
@@ -556,7 +710,7 @@ export function computeRibbonSections(geom, snap, maxDist, halfW){
       elev: geom.elevReady ? interpolateElevAtS(geom, s) - elev0 : 0
     });
     if(s >= sEnd) break;
-    s += ribbonStepAtS(geom, s);
+    s += ribbonStepAtS();
   }
   return sections;
 }

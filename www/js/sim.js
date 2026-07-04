@@ -220,14 +220,15 @@
       });
     }
     function applyGpxToFinish(track) {
-      const first = track.points[0];
       const last = track.points[track.points.length - 1];
       const inp = document.getElementById("finish-input");
       if (inp) {
         inp.value = last.lat.toFixed(5) + ", " + last.lon.toFixed(5);
       }
-      if (window.__motoHUD?.applyCoordsOrLink) window.__motoHUD.applyCoordsOrLink();
-      return { first, last };
+      const hud = window.__motoHUD;
+      if (hud?.setFinishQuiet) hud.setFinishQuiet(last.lat, last.lon, "GPX");
+      else if (hud?.applyCoordsOrLink) hud.applyCoordsOrLink();
+      return { first: track.points[0], last };
     }
     function loadGpxReplay(xmlText, opts) {
       const track = parseGpxTrack(xmlText);
@@ -332,10 +333,16 @@
       },
       boot() {
         const inp = document.getElementById("finish-input");
+        const hud = window.__motoHUD;
+        const skipDemo = !inp || inp.dataset.userEdited === "1" || inp === document.activeElement || hud?._searchBusy || hud?._finishFocused;
         let autoDemo = false;
-        if (inp && !inp.value.trim()) {
+        if (inp && !inp.value.trim() && !skipDemo) {
           inp.value = DEMO_FINISH[0].toFixed(5) + ", " + DEMO_FINISH[1].toFixed(5);
-          if (window.__motoHUD?.applyCoordsOrLink) window.__motoHUD.applyCoordsOrLink();
+          if (hud?.setFinishQuiet) {
+            hud.setFinishQuiet(DEMO_FINISH[0], DEMO_FINISH[1], "\u0414\u0435\u043C\u043E");
+          } else if (hud?.applyCoordsOrLink) {
+            hud.applyCoordsOrLink({ hideSearch: false });
+          }
           autoDemo = true;
         }
         const gpxParam = params.get("gpx");

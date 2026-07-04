@@ -8,7 +8,7 @@ import {
   ELEV_OPTS_KEY
 } from './state.js';
 import { findSegAtS, interpolateAtS } from './route-geometry.js';
-import { THEME } from './theme.js';
+import { getThemeTokens } from './theme-tokens.js';
 import { computeCurveSpeed } from './curve-speed.js';
 
 const TERRARIUM_Z = 13;
@@ -282,10 +282,11 @@ export function loadRouteElevation(){
 }
 
 export function gradeColor(grade){
+  const t = getThemeTokens();
   const g = Math.abs(grade || 0);
-  if(g < 0.04) return THEME.grade.flat;
-  if(g < 0.08) return THEME.grade.mid;
-  return THEME.grade.steep;
+  if(g < 0.04) return t.gradeFlat;
+  if(g < 0.08) return t.gradeMid;
+  return t.gradeSteep;
 }
 
 export function renderElevProfile(snap, geom, W, H){
@@ -345,11 +346,12 @@ export function renderElevProfile(snap, geom, W, H){
   });
 
   let marks = '';
+  const tok = getThemeTokens();
   geom.maneuvers.forEach(m => {
     if(m.s < s0 || m.s > s1) return;
     const x = toX(m.s - s0);
     marks += '<line x1="' + x.toFixed(1) + '" y1="' + my + '" x2="' + x.toFixed(1) + '" ' +
-      'y2="' + (my + ph) + '" stroke="#ffd400" stroke-width="1" opacity="0.5"/>';
+      'y2="' + (my + ph) + '" stroke="' + tok.accent + '" stroke-width="1" opacity="0.5"/>';
   });
 
   return '<g class="elev-profile">' +

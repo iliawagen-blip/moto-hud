@@ -7,12 +7,40 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#000">
+<script>
+(function(){
+  try{
+    var p=JSON.parse(localStorage.getItem('moto-hud-theme')||'{}');
+    var themes=['avionics','hitech','space','sport','chopper','vintage'];
+    var theme=themes.indexOf(p.theme)>=0?p.theme:'avionics';
+    var modes=['day','night','auto'];
+    var mp=modes.indexOf(p.modePref)>=0?p.modePref:'night';
+    var q=new URLSearchParams(location.search);
+    if(q.get('sim')==='1'){
+      var qt=q.get('theme');
+      if(qt&&themes.indexOf(qt)>=0) theme=qt;
+      var qm=q.get('mode');
+      if(qm&&modes.indexOf(qm)>=0) mp=qm;
+    }
+    var r=document.documentElement;
+    r.classList.add('theme-'+theme);
+    if(mp!=='auto') r.setAttribute('data-mode', mp);
+    else {
+      var h=new Date().getHours();
+      r.setAttribute('data-mode', (h>=7&&h<21)?'day':'night');
+    }
+  }catch(e){
+    document.documentElement.classList.add('theme-avionics');
+    document.documentElement.setAttribute('data-mode','night');
+  }
+})();
+</script>
+<link rel="stylesheet" href="css/leaflet.css">
+<link rel="stylesheet" href="css/app.css?v=mr6xvkkl">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Мото ИЛС</title>
-<link rel="stylesheet" href="css/leaflet.css">
-<link rel="stylesheet" href="css/app.css">
 
 </head>
 <body>
@@ -62,7 +90,29 @@
     <summary>⚙ Опции</summary>
     <div class="drawer-body">
       <div class="toggle">🔊 Голос <input type="checkbox" id="opt-voice" checked></div>
-      <div class="toggle" style="margin-top:8px">🛣 Прогноз-дорожка <input type="checkbox" id="opt-path" checked></div>
+      <div class="toggle" style="margin-top:12px;font-size:14px;color:var(--fg-dim)">Оформление HUD</div>
+      <div class="toggle" style="margin-top:6px">
+        🎨 Тема
+        <select id="opt-theme" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px">
+          <option value="avionics">Авионика</option>
+          <option value="hitech">Хайтек</option>
+          <option value="space">Космос</option>
+          <option value="sport">Спорт</option>
+          <option value="chopper">Чоппер</option>
+          <option value="vintage">Винтаж</option>
+        </select>
+      </div>
+      <div class="toggle" style="margin-top:6px;flex-wrap:wrap;gap:8px">
+        <span>🌓 Режим</span>
+        <label style="display:inline-flex;align-items:center;gap:4px;font-size:14px"><input type="radio" name="opt-mode" id="opt-mode-day" value="day"> День</label>
+        <label style="display:inline-flex;align-items:center;gap:4px;font-size:14px"><input type="radio" name="opt-mode" id="opt-mode-night" value="night" checked> Ночь</label>
+        <label style="display:inline-flex;align-items:center;gap:4px;font-size:14px"><input type="radio" name="opt-mode" id="opt-mode-auto" value="auto"> Авто</label>
+      </div>
+      <div class="toggle" style="margin-top:6px">🛣 Прогноз-дорожка <input type="checkbox" id="opt-path" checked></div>
+      <div class="toggle" style="margin-top:12px;font-size:14px;color:var(--dim)">До финиша в HUD</div>
+      <div class="toggle" style="margin-top:6px">📍 Расстояние <input type="checkbox" id="opt-finish-dist" checked></div>
+      <div class="toggle" style="margin-top:6px">⏱ Оставшееся время <input type="checkbox" id="opt-finish-time" checked></div>
+      <div class="toggle" style="margin-top:6px">🕐 ETA (прибытие) <input type="checkbox" id="opt-finish-eta" checked></div>
       <div class="toggle" style="margin-top:8px">⛰ Профиль высот <input type="checkbox" id="opt-elev-profile" checked></div>
       <div class="toggle" style="margin-top:8px">⛰ Высота полоски (px) <input type="number" id="opt-elev-profile-h" value="72" min="36" max="160" step="4"></div>
       <div class="toggle" style="margin-top:8px">⛰ Дальность профиля (км) <input type="number" id="opt-elev-profile-len" value="3" min="1" max="5" step="1"></div>
@@ -166,6 +216,12 @@
 
   <!-- скорость -->
   <div class="block block-speed">
+    <div class="finish-info" id="finish-info">
+      <div class="fi-line" id="fi-dist-line"><span class="fi-k">Осталось</span><span class="fi-v" id="fi-dist-val">—</span></div>
+      <div class="fi-line" id="fi-time-line"><span class="fi-k">В пути</span><span class="fi-v" id="fi-time-val">—</span></div>
+      <div class="fi-line" id="fi-eta-line"><span class="fi-k">Прибытие</span><span class="fi-v" id="fi-eta-val">—</span></div>
+    </div>
+    <div class="speed-ghost" id="speed-ghost" aria-hidden="true">888</div>
     <div class="speed-val" id="v-speed">0</div>
     <div class="speed-unit">км/ч</div>
   </div>
@@ -197,6 +253,7 @@
     <button class="qf-close" id="qf-close">◆ ОТМЕНА ◆</button>
   </div>
 
+  <button type="button" class="corner-btn btn-mode" id="btn-mode" title="День / ночь / авто"><span class="cb-icon">🌓</span><span class="cb-lbl">НОЧЬ</span></button>
   <button type="button" class="corner-btn btn-fs" id="btn-fs"><span class="cb-icon">⛶</span><span class="cb-lbl">ЭКРАН</span></button>
   <button type="button" class="corner-btn btn-gear" id="btn-gear"><span class="cb-icon">⚙</span><span class="cb-lbl">НАСТР.</span></button>
   <button type="button" class="corner-btn fuel btn-fuel" id="btn-fuel"><span class="cb-icon">⛽</span><span class="cb-lbl">ЗАПР.</span></button>
@@ -204,7 +261,7 @@
 </div>
 
 <script src="js/sim.js"></script>
-<script type="module" src="js/app.js?v=mr6w2bsw"></script>
+<script type="module" src="js/app.js?v=mr6xvkkl"></script>
 
 </body>
 </html>
