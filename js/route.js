@@ -8,6 +8,7 @@ import {
 import { loadRouteElevation } from './elevation.js';
 import { computeCurveSpeed } from './curve-speed.js';
 import { resetFuelRouteBinding } from './fuel.js';
+import telemetry from './telemetry.js';
 
 /** Построение RouteGeometry и запуск загрузки высот (не блокирует UI) */
 export function ensureRouteGeometry(route){
@@ -137,6 +138,7 @@ export async function buildRoute(){
     if(!j.routes || !j.routes.length) throw new Error('Маршрут не найден');
     S.route = parseOsrmRoute(j.routes[0]);
     attachRouteGeometry(S.route);
+    telemetry.log('nav', { sub: 'route_built' });
   }catch(err){
     const last = loadLastRun();
     if(last && last.route && S.finish && last.finish &&
@@ -309,6 +311,7 @@ export async function recalcRoute(){
   try{
     S.routeAlternatives = [];
     await buildRoute();
+    telemetry.log('nav', { sub: 'reroute' });
     Array.from(S.camWarned).forEach(k => {
       if(typeof k === 'string' && k.startsWith('st_')) S.camWarned.delete(k);
     });

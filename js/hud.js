@@ -23,6 +23,7 @@ import { clearVoiceQueue } from './voice.js';
 import { getHeadingHealth } from './heading.js';
 import { tickAutoMode } from './theme-manager.js';
 import { applyFinishInfoVisibility } from './hud-opts.js';
+import telemetry from './telemetry.js';
 
 /** Пороги озвучки манёвра: дальняя ~9 с, ближняя ~2.5 с хода */
 function maneuverVoiceThresholds(kmh){
@@ -171,10 +172,12 @@ export function onTick(){
       const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
       if(nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt){
         S.camWarned.add(kFar);
+        telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'far' });
         speak(formatManeuverLead(nm.dist, mps) + ' ' + txt);
       }
       if(nm.dist <= nearM && !S.camWarned.has(kNear) && txt){
         S.camWarned.add(kNear);
+        telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'near' });
         speak(txt);
       }
     }
@@ -219,6 +222,8 @@ function checkCurveSpeedWarn(kmh){
   speak('Снизьте скорость перед поворотом. Рекомендуется ' + warn.vSafeKmh + ' километров в час');
 }
 
+function r2(n){ return n != null && Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
+
 export async function startHud(){
   applyFinishInfoVisibility();
   if(!S.route){
@@ -226,6 +231,10 @@ export async function startHud(){
     return;
   }
   saveLastRun();
+  if(telemetry.isEnabled()){
+    telemetry.start({ routeKm: S.route?.distance ? r2(S.route.distance / 1000) : null });
+    telemetry.updateMarkButtonVisibility();
+  }
   S.startTs = Date.now();
   S.distDone = 0;
   S.camWarned.clear();
@@ -250,6 +259,8 @@ export async function startHud(){
 }
 
 export function stopHud(){
+  telemetry.stop().catch(() => {});
+  telemetry.updateMarkButtonVisibility();
   stopVisualLoop();
   stopNavigationGps().catch(() => {});
   S.fuelMode = 0;

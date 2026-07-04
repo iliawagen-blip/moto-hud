@@ -8,9 +8,12 @@ import {
 import {
   fuseHeading, startHeadingSensors, stopHeadingSensors, updateHeadingHealth
 } from './heading.js';
+import telemetry from './telemetry.js';
+import { getRouteSnapForNav } from './route-geometry.js';
 
 let RENDER_POS = null;
 let _navMode = false;
+let _gpsLost = false;
 
 export function curPos(){ return RENDER_POS || S.gps; }
 
@@ -54,6 +57,7 @@ export function initGps(callbacks){
 export function visualLoop(){
   S.rafId = requestAnimationFrame(visualLoop);
   if(!$('hud').classList.contains('on')) return;
+  telemetry.tickPerfFrame();
   updateRenderPos();
   easeSpeed();
   _onVisual();
@@ -77,6 +81,10 @@ export function checkStartReady(){
 function onGpsError(){
   $('s-gps').textContent = '❌ GPS';
   $('s-gps').className = 'chip err';
+  if(!_gpsLost){
+    _gpsLost = true;
+    telemetry.log('nav', { sub: 'gps_lost' });
+  }
 }
 
 export function applyGpsFix(next){
@@ -114,6 +122,21 @@ export function applyGpsFix(next){
   $('s-gps').className = 'chip ok';
   checkStartReady();
   if($('hud').classList.contains('on')) _onTick();
+
+  const rcv = Date.now();
+  if(_gpsLost){
+    _gpsLost = false;
+    telemetry.log('nav', { sub: 'gps_restored' });
+  }
+  telemetry.logFix({
+    lat: next.lat, lon: next.lon, acc: next.acc,
+    speed: next.speed, heading: next.heading, alt: next.alt,
+    ts: next.ts, rcv
+  });
+  if($('hud').classList.contains('on') && S.route?.geometry){
+    const snap = getRouteSnapForNav(S.smoothedHeading);
+    telemetry.logSnapFromResult(snap);
+  }
 }
 
 function stopWebGps(){
@@ -139,7 +162,9 @@ function startWebGps(){
         lat: c.latitude, lon: c.longitude,
         speed: (c.speed != null && !isNaN(c.speed) && c.speed >= 0) ? c.speed : null,
         heading: c.heading == null ? null : c.heading,
-        acc: c.accuracy, ts: pos.timestamp
+        acc: c.accuracy,
+        alt: c.altitude != null && !isNaN(c.altitude) ? c.altitude : null,
+        ts: pos.timestamp
       });
     },
     onGpsError,
