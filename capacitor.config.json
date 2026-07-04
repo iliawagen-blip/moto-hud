@@ -1,0 +1,12 @@
+{
+  "appId": "ru.vagin.motohud",
+  "appName": "Мото ИЛС",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "useLegacyBridge": true
+  }
+}

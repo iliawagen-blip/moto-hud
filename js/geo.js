@@ -1,0 +1,47 @@
+/** Геометрия и разбор ввода координат/ссылок */
+export function haversine(a, b){
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r;
+  const s = Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+export function bearing(a, b){
+  const r = Math.PI / 180, d = 180 / Math.PI;
+  const f1 = a.lat * r, f2 = b.lat * r, dl = (b.lon - a.lon) * r;
+  const y = Math.sin(dl) * Math.cos(f2);
+  const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+  return (Math.atan2(y, x) * d + 360) % 360;
+}
+
+export function distToSegment(p, a, b){
+  const r = Math.PI / 180;
+  const ax = a.lon * r * Math.cos(a.lat * r), ay = a.lat * r;
+  const bx = b.lon * r * Math.cos(b.lat * r), by = b.lat * r;
+  const px = p.lon * r * Math.cos(p.lat * r), py = p.lat * r;
+  const dx = bx - ax, dy = by - ay;
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy || 1)));
+  const cx = ax + t * dx, cy = ay + t * dy;
+  const dLat = py - cy, dLon = (px - cx) / Math.cos(p.lat * r || 1);
+  return Math.sqrt(dLat * dLat + dLon * dLon) * 6371000;
+}
+
+export function angleDiff(a, b){
+  let d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+export function parseInput(raw){
+  const s = String(raw || '').trim();
+  if(!s) return null;
+  const coord = s.match(/(-?\d{1,2}\.\d+)\s*[,;\s]\s*(-?\d{1,3}\.\d+)/);
+  if(coord) return { lat: parseFloat(coord[1]), lon: parseFloat(coord[2]), label: 'Координаты' };
+  const ll = s.match(/[?&]ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/i) || s.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/i);
+  if(ll) return { lat: parseFloat(ll[1]), lon: parseFloat(ll[2]), label: 'Яндекс' };
+  const pt = s.match(/[?&]pt=(-?\d+\.\d+)%2C(-?\d+\.\d+)/i) || s.match(/[?&]pt=(-?\d+\.\d+),(-?\d+\.\d+)/i);
+  if(pt) return { lat: parseFloat(pt[2]), lon: parseFloat(pt[1]), label: 'Яндекс pt' };
+  const at = s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if(at) return { lat: parseFloat(at[1]), lon: parseFloat(at[2]), label: 'Google' };
+  return null;
+}

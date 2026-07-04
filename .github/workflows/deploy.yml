@@ -19,6 +19,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Build web bundle
+        run: npm ci && npm run build
+
       - name: Publish to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -26,4 +35,4 @@ jobs:
           publish_branch: gh-pages
           publish_dir: .
           enable_jekyll: false
-          exclude_assets: '.github'
+          exclude_assets: '.github,node_modules,android,scripts,.gitignore,package-lock.json,capacitor.config.json,serve.json,preview.bat'

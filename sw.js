@@ -2,13 +2,16 @@
    Кеширует «оболочку» приложения (HTML/иконка/манифест) для установки и работы
    офлайн. Кросс-доменные запросы (OSRM/Overpass/Nominatim, будущие тайлы карт)
    НЕ перехватываются — ими управляет само приложение. */
-const CACHE = 'moto-hud-shell-v1';
+const CACHE = 'moto-hud-shell-v6';
 const SHELL = [
   './',
   './index.html',
   './sim.html',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './css/app.css',
+  './js/sim.js',
+  './js/app.js'
 ];
 
 self.addEventListener('install', event => {

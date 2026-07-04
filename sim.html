@@ -35,7 +35,7 @@
 </head>
 <body>
   <h1>🏍 Мото ИЛС — эмулятор экрана и движения</h1>
-  <div class="sub">Тестирование HUD без реальной поездки. Данные GPS и сеть — симулированы.</div>
+  <div class="sub">Тестирование HUD без реальной поездки. GPS — симулирован; карта и маршрут — реальные (OSRM + тайлы).</div>
 
   <div class="bar">
     <button id="btn-orient" class="act">📱 Портрет</button>
@@ -58,7 +58,7 @@
 
   <div class="frame-wrap">
     <div class="phone" id="phone">
-      <iframe id="frame" src="index.html?sim=1" allow="fullscreen; geolocation"></iframe>
+      <iframe id="frame" allow="fullscreen; geolocation"></iframe>
     </div>
   </div>
 
@@ -66,6 +66,8 @@
     Маршрут и движение эмулируются автоматически: HUD стартует сам через ~1 с.
     Меняйте ориентацию и устройство — layout должен оставаться корректным.
     На реальном телефоне откройте <code>index.html?sim=1</code> для той же демонстрации.
+    Если HUD выглядит «старым»: закройте вкладку, перезапустите <code>preview.bat</code> (Ctrl+Shift+R).
+    Метки «±N%» убраны; высота полоски — в настройках «Высота полоски (px)».
   </div>
 
 <script>
@@ -80,6 +82,9 @@
   const spdVal = document.getElementById('spd-val');
 
   let portrait = true;
+
+  // грузим HUD с уникальным параметром — обходит возможный кэш редиректов dev-сервера
+  function frameUrl(){ return 'index.html?sim=1&t=' + Date.now(); }
 
   function applySize(){
     const [w, h] = selDevice.value.split('x').map(Number);
@@ -124,13 +129,14 @@
     const s = sim();
     if(s){ s.reset(); s.setSpeed(Number(spd.value) / 3.6); playing = true; btnPlay.textContent = '⏸ Пауза'; }
   });
-  btnReload.addEventListener('click', () => { frame.src = 'index.html?sim=1&t=' + Date.now(); });
+  btnReload.addEventListener('click', () => { frame.src = frameUrl(); });
 
   frame.addEventListener('load', () => {
     setTimeout(() => { const s = sim(); if(s) s.setSpeed(Number(spd.value) / 3.6); }, 800);
   });
 
   applySize();
+  frame.src = frameUrl();
 </script>
 </body>
 </html>

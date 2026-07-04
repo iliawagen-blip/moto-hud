@@ -1,0 +1,613 @@
+/**
+ * RouteGeometry — уплотнение маршрута, snap по длине дуги, Frenet-проекция.
+ * @module route-geometry
+ */
+import { haversine, bearing, angleDiff } from './geo.js';
+import { curPos } from './gps.js';
+import { S, CAM_PITCH } from './state.js';
+
+/** Шаг уплотнения polyline, м */
+export const DENSE_STEP = 3;
+/** Минимальный радиус дуги на шпильке, м */
+export const ARC_R_MIN = 12;
+/** Порог угла для вставки дуги, ° */
+export const ARC_ANGLE_THRESH = 15;
+/** Окно snap назад / вперёд по s, м */
+export const SNAP_BACK_M = 30;
+export const SNAP_FWD_M = 150;
+/** Допуск отката s при GPS-шуме, м */
+export const SNAP_REVERSE_EPS = 5;
+/** Минимальный dot(tangent, gpsHeading) для кандидата */
+export const SNAP_MIN_DOT = 0.3;
+/** Штраф за несогласие направления в скоринге snap */
+export const SNAP_ANGLE_PENALTY = 2;
+/** Окно усреднения касательной камеры по s, м */
+export const CAM_TANGENT_WINDOW = 25;
+/** Сглаживание касательной камеры за кадр (0…1) */
+export const CAM_SMOOTH_ALPHA = 0.12;
+
+let _snap = null;
+let _camHeadingRad = null;
+let _camPitchRad = null;
+
+/** Сброс snap при смене маршрута */
+export function resetRouteSnap(){
+  _snap = null;
+  _camHeadingRad = null;
+  _camPitchRad = null;
+}
+
+/** Текущий snap (или null) */
+export function getRouteSnap(){ return _snap; }
+
+function destPoint(from, brgDeg, distM){
+  const r = Math.PI / 180;
+  const br = brgDeg * r;
+  const d = distM / 6371000;
+  const lat1 = from.lat * r;
+  const lon1 = from.lon * r;
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(br));
+  const lon2 = lon1 + Math.atan2(
+    Math.sin(br) * Math.sin(d) * Math.cos(lat1),
+    Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+  return { lat: lat2 / r, lon: lon2 / r };
+}
+
+function turnAngleDeg(A, B, C){
+  const bIn = bearing(A, B);
+  const bOut = bearing(B, C);
+  return ((bOut - bIn + 540) % 360) - 180;
+}
+
+/** Квадратичная дуга вместо острой вершины (не Chaikin — не срезает шпильку) */
+function bezierCorner(A, B, C){
+  const turn = turnAngleDeg(A, B, C);
+  if(Math.abs(turn) < ARC_ANGLE_THRESH) return null;
+  const dAB = haversine(A, B);
+  const dBC = haversine(B, C);
+  const lead = Math.min(15, dAB * 0.35, dBC * 0.35);
+  if(lead < 1.5) return null;
+  const bIn = bearing(A, B);
+  const bOut = bearing(B, C);
+  const E = destPoint(B, bIn + 180, lead);
+  const X = destPoint(B, bOut, lead);
+  const n = Math.max(4, Math.ceil(Math.abs(turn) / 3));
+  const pts = [];
+  for(let k = 0; k <= n; k++){
+    const t = k / n;
+    const u = 1 - t;
+    pts.push({
+      lat: u * u * E.lat + 2 * u * t * B.lat + t * t * X.lat,
+      lon: u * u * E.lon + 2 * u * t * B.lon + t * t * X.lon
+    });
+  }
+  return pts;
+}
+
+function pushUnique(lat, lon, la, lo){
+  const n = lat.length;
+  if(n){
+    const d = haversine({ lat: lat[n - 1], lon: lon[n - 1] }, { lat: la, lon: lo });
+    if(d < 0.4) return;
+  }
+  lat.push(la);
+  lon.push(lo);
+}
+
+function interpolateSeg(lat, lon, a, b, stepM){
+  const d = haversine(a, b);
+  const n = Math.max(1, Math.ceil(d / stepM));
+  for(let k = 1; k <= n; k++){
+    const t = k / n;
+    pushUnique(lat, lon,
+      a.lat + t * (b.lat - a.lat),
+      a.lon + t * (b.lon - a.lon));
+  }
+}
+
+/** Уплотнение coords с дугами на острых вершинах */
+function densifyCoords(coords, stepM){
+  const lat = [];
+  const lon = [];
+  if(!coords || coords.length < 2) return { lat, lon };
+
+  const first = { lat: coords[0][0], lon: coords[0][1] };
+  pushUnique(lat, lon, first.lat, first.lon);
+
+  for(let i = 0; i < coords.length - 1; i++){
+    const B = { lat: coords[i][0], lon: coords[i][1] };
+    const C = { lat: coords[i + 1][0], lon: coords[i + 1][1] };
+    const A = i > 0 ? { lat: coords[i - 1][0], lon: coords[i - 1][1] } : null;
+
+    let segStart = B;
+    if(A){
+      const arc = bezierCorner(A, B, C);
+      if(arc && arc.length > 1){
+        if(lat.length){
+          const last = { lat: lat[lat.length - 1], lon: lon[lon.length - 1] };
+          if(haversine(last, arc[0]) < 2) lat.pop(), lon.pop();
+        }
+        arc.forEach(p => pushUnique(lat, lon, p.lat, p.lon));
+        segStart = { lat: lat[lat.length - 1], lon: lon[lon.length - 1] };
+      }
+    }
+    interpolateSeg(lat, lon, segStart, C, stepM);
+  }
+  return { lat, lon };
+}
+
+function buildArcLength(lat, lon){
+  const n = lat.length;
+  const s = new Float64Array(n);
+  for(let i = 1; i < n; i++){
+    s[i] = s[i - 1] + haversine(
+      { lat: lat[i - 1], lon: lon[i - 1] },
+      { lat: lat[i], lon: lon[i] });
+  }
+  return s;
+}
+
+function findSForManeuver(sparseCoords, geom, targetLat, targetLon){
+  let bi = 0;
+  let bd = Infinity;
+  for(let i = 0; i < sparseCoords.length; i++){
+    const d = haversine(
+      { lat: sparseCoords[i][0], lon: sparseCoords[i][1] },
+      { lat: targetLat, lon: targetLon });
+    if(d < bd){ bd = d; bi = i; }
+  }
+  const t = bi / Math.max(1, sparseCoords.length - 1);
+  const idx = Math.min(geom.n - 1, Math.round(t * (geom.n - 1)));
+  return geom.s[idx];
+}
+
+function buildManeuvers(steps, sparseCoords, geom){
+  if(!steps || !sparseCoords) return [];
+  return steps
+    .filter(st => st.type !== 'depart' && st.type !== 'arrive')
+    .map(st => ({
+      s: findSForManeuver(sparseCoords, geom, st.lat, st.lon),
+      lat: st.lat,
+      lon: st.lon,
+      angle: 0,
+      step: st
+    }));
+}
+
+/** Шаг уплотнения: грубее на длинных маршрутах */
+function denseStepForCoords(coords){
+  let total = 0;
+  for(let i = 0; i < coords.length - 1; i++){
+    total += haversine(
+      { lat: coords[i][0], lon: coords[i][1] },
+      { lat: coords[i + 1][0], lon: coords[i + 1][1] });
+  }
+  if(total > 120000) return 8;
+  if(total > 40000) return 5;
+  return DENSE_STEP;
+}
+
+/** Построение RouteGeometry из route.coords + steps */
+export function buildRouteGeometry(route){
+  if(!route || !route.coords || route.coords.length < 2) return null;
+  const stepM = denseStepForCoords(route.coords);
+  const { lat: latArr, lon: lonArr } = densifyCoords(route.coords, stepM);
+  const n = latArr.length;
+  if(n < 2) return null;
+
+  const lat = Float64Array.from(latArr);
+  const lon = Float64Array.from(lonArr);
+  const s = buildArcLength(latArr, lonArr);
+  const elev = new Float64Array(n);
+  const grade = new Float64Array(n);
+  const maneuvers = buildManeuvers(route.steps, route.coords, { s, n });
+
+  return { lat, lon, s, elev, grade, maneuvers, n, elevReady: false };
+}
+
+/** Индекс сегмента, содержащего s */
+export function findSegAtS(geom, s){
+  let lo = 0;
+  let hi = geom.n - 2;
+  while(lo < hi){
+    const mid = (lo + hi + 1) >> 1;
+    if(geom.s[mid] <= s) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo;
+}
+
+/** lat/lon в точке s (линейная интерполяция по сегменту) */
+export function interpolateAtS(geom, s){
+  if(s <= 0) return { lat: geom.lat[0], lon: geom.lon[0] };
+  const total = geom.s[geom.n - 1];
+  if(s >= total) return { lat: geom.lat[geom.n - 1], lon: geom.lon[geom.n - 1] };
+  const i = findSegAtS(geom, s);
+  const s0 = geom.s[i];
+  const s1 = geom.s[i + 1];
+  const t = s1 > s0 ? (s - s0) / (s1 - s0) : 0;
+  return {
+    lat: geom.lat[i] + t * (geom.lat[i + 1] - geom.lat[i]),
+    lon: geom.lon[i] + t * (geom.lon[i + 1] - geom.lon[i])
+  };
+}
+
+function segmentBearing(geom, i){
+  return bearing(
+    { lat: geom.lat[i], lon: geom.lon[i] },
+    { lat: geom.lat[i + 1], lon: geom.lon[i + 1] });
+}
+
+function projectOnSegment(gps, lat0, lon0, lat1, lon1){
+  const r = Math.PI / 180;
+  const cosM = Math.cos(((lat0 + lat1) / 2) * r);
+  const ax = lon0 * r * cosM;
+  const ay = lat0 * r;
+  const bx = lon1 * r * cosM;
+  const by = lat1 * r;
+  const px = gps.lon * r * cosM;
+  const py = gps.lat * r;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2)) : 0;
+  const plat = (ay + t * dy) / r;
+  const plon = (ax + t * dx) / (r * cosM);
+  const lateral = haversine(gps, { lat: plat, lon: plon });
+  return { t, lat: plat, lon: plon, lateral };
+}
+
+function headingDot(tangentDeg, gpsHdg){
+  if(gpsHdg == null || isNaN(gpsHdg)) return 1;
+  const diff = angleDiff(tangentDeg, gpsHdg);
+  return Math.cos(diff * Math.PI / 180);
+}
+
+function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir){
+  let best = null;
+  const i0 = findSegAtS(geom, sMin);
+  for(let i = i0; i < geom.n - 1; i++){
+    if(geom.s[i] > sMax) break;
+    const proj = projectOnSegment(gps,
+      geom.lat[i], geom.lon[i], geom.lat[i + 1], geom.lon[i + 1]);
+    const segLen = geom.s[i + 1] - geom.s[i];
+    const s = geom.s[i] + proj.t * segLen;
+    if(s < sMin - 1 || s > sMax + 1) continue;
+
+    const tangent = segmentBearing(geom, i);
+    const dot = headingDot(tangent, gpsHdg);
+    if(requireDir && dot < SNAP_MIN_DOT) continue;
+
+    const score = proj.lateral + SNAP_ANGLE_PENALTY * (gpsHdg != null ? (1 - dot) * 50 : 0);
+    if(!best || score < best.score){
+      best = { s, segIdx: i, lat: proj.lat, lon: proj.lon, lateral: proj.lateral,
+        tangent, dot, score, confidence: dot >= SNAP_MIN_DOT ? 1 : 0.5 };
+    }
+  }
+  return best;
+}
+
+/**
+ * Snap GPS на polyline с окном по s и проверкой направления (серпантины).
+ * @param {object} gps
+ * @param {object} geom RouteGeometry
+ * @param {number|null} gpsHeadingDeg
+ */
+export function snapToRoute(gps, geom, gpsHeadingDeg){
+  if(!gps || !geom || geom.n < 2) return null;
+
+  const prev = _snap;
+  const total = geom.s[geom.n - 1];
+  const prevS = prev ? prev.s : 0;
+  const sMin = Math.max(0, prevS - SNAP_BACK_M);
+  const sMax = Math.min(total, prevS + SNAP_FWD_M);
+
+  let best = scanSnap(gps, geom, sMin, sMax, gpsHeadingDeg, true);
+
+  if(!best){
+    best = scanSnap(gps, geom, Math.max(0, prevS - 60), Math.min(total, prevS + 220),
+      gpsHeadingDeg, false);
+  }
+
+  if(!best){
+    if(prev) return prev;
+    best = scanSnap(gps, geom, 0, Math.min(total, 200), gpsHeadingDeg, false);
+    if(!best) return null;
+  }
+
+  if(prev && best.lateral < 40 && best.s < prev.s - SNAP_REVERSE_EPS){
+    best = { ...best, s: prev.s, segIdx: prev.segIdx, confidence: 0.4 };
+  }
+
+  if(best.lateral > 60) best.confidence = Math.min(best.confidence, 0.3);
+
+  _snap = best;
+  return best;
+}
+
+/** Получить snap для текущей позиции (кэш на кадр) */
+let _snapMemoGps = null;
+export function getRouteSnapForNav(gpsHeadingDeg){
+  const geom = S.route?.geometry;
+  const gps = curPos();
+  if(!geom || !gps) return null;
+  if(_snapMemoGps === gps && _snap) return _snap;
+  _snapMemoGps = gps;
+  return snapToRoute(gps, geom, gpsHeadingDeg);
+}
+
+/** Средняя касательная маршрута на окне [s, s+windowM] */
+export function avgTangentDeg(geom, s, windowM){
+  const end = Math.min(geom.s[geom.n - 1], s + windowM);
+  let vx = 0;
+  let vz = 0;
+  const i0 = findSegAtS(geom, s);
+  for(let i = i0; i < geom.n - 1 && geom.s[i] < end; i++){
+    const r = Math.PI / 180;
+    const midLat = (geom.lat[i] + geom.lat[i + 1]) / 2;
+    const dLon = (geom.lon[i + 1] - geom.lon[i]) * Math.cos(midLat * r) * 111320;
+    const dLat = (geom.lat[i + 1] - geom.lat[i]) * 110540;
+    const len = Math.hypot(dLon, dLat) || 1;
+    vx += dLon / len;
+    vz += dLat / len;
+  }
+  if(vx === 0 && vz === 0){
+    const i = findSegAtS(geom, s);
+    return segmentBearing(geom, Math.min(i, geom.n - 2));
+  }
+  return (Math.atan2(vx, vz) * 180 / Math.PI + 360) % 360;
+}
+
+/** Сглаженная касательная камеры (пространство + время) */
+export function updateCamHeading(geom, snap){
+  if(!geom || !snap) return _camHeadingRad;
+  const tgt = avgTangentDeg(geom, snap.s, CAM_TANGENT_WINDOW) * Math.PI / 180;
+  if(_camHeadingRad == null){
+    _camHeadingRad = tgt;
+    return _camHeadingRad;
+  }
+  let diff = tgt - _camHeadingRad;
+  while(diff > Math.PI) diff -= 2 * Math.PI;
+  while(diff < -Math.PI) diff += 2 * Math.PI;
+  _camHeadingRad += diff * CAM_SMOOTH_ALPHA;
+  return _camHeadingRad;
+}
+
+/** Средний уклон (grade) на окне [s, s+windowM] */
+export function avgGradeAtS(geom, s, windowM){
+  if(!geom?.elevReady) return 0;
+  const total = geom.s[geom.n - 1];
+  const sEnd = Math.min(total, s + windowM);
+  const ds = sEnd - s;
+  if(ds < 0.5) return 0;
+  const e0 = interpolateElevAtS(geom, s);
+  const e1 = interpolateElevAtS(geom, sEnd);
+  return (e1 - e0) / ds;
+}
+
+/**
+ * Сглаженный наклон камеры по уклону дороги (этап 3).
+ * @param {number} elevExag усиление из настроек
+ * @param {boolean} enabled профиль высот включён
+ */
+export function updateCamPitch(geom, snap, elevExag, enabled){
+  if(!enabled || !geom?.elevReady || !snap){
+    _camPitchRad = null;
+    return CAM_PITCH;
+  }
+  const grade = avgGradeAtS(geom, snap.s, CAM_TANGENT_WINDOW);
+  const roadPitch = Math.atan(grade * elevExag) * 0.42;
+  const tgt = CAM_PITCH + Math.max(-0.18, Math.min(0.22, roadPitch));
+  if(_camPitchRad == null){
+    _camPitchRad = tgt;
+    return _camPitchRad;
+  }
+  _camPitchRad += (tgt - _camPitchRad) * CAM_SMOOTH_ALPHA;
+  return _camPitchRad;
+}
+
+export function getCamPitchRad(){
+  return _camPitchRad != null ? _camPitchRad : CAM_PITCH;
+}
+
+export function getCamHeadingRad(){ return _camHeadingRad; }
+
+/** Точки центра дорожки в локальной Frenet-системе (x — вбок, z — вперёд) */
+export function slicePathFrenet(geom, snap, maxDist, headingRad, stepM){
+  if(!geom || !snap) return [];
+  const cosH = Math.cos(headingRad);
+  const sinH = Math.sin(headingRad);
+  const kx = Math.cos(snap.lat * Math.PI / 180) * 111320;
+  const ky = 110540;
+  const sEnd = Math.min(geom.s[geom.n - 1], snap.s + maxDist);
+  const pts = [];
+  const elev0 = geom.elevReady ? interpolateElevAtS(geom, snap.s) : 0;
+
+  for(let s = snap.s; s <= sEnd; s += stepM){
+    const p = interpolateAtS(geom, s);
+    const dx = (p.lon - snap.lon) * kx;
+    const dy = (p.lat - snap.lat) * ky;
+    const x = dx * cosH - dy * sinH;
+    const z = dx * sinH + dy * cosH;
+    const elev = geom.elevReady ? interpolateElevAtS(geom, s) - elev0 : 0;
+    pts.push({ x, z, s, lat: p.lat, lon: p.lon, elev });
+  }
+  return pts;
+}
+
+export function interpolateElevAtS(geom, s){
+  if(!geom.elevReady || !geom.elev.length) return 0;
+  const i = findSegAtS(geom, s);
+  const s0 = geom.s[i];
+  const s1 = geom.s[i + 1];
+  const t = s1 > s0 ? (s - s0) / (s1 - s0) : 0;
+  return geom.elev[i] + t * (geom.elev[i + 1] - geom.elev[i]);
+}
+
+function estimateRadius(pts, i){
+  if(i <= 0 || i >= pts.length - 1) return Infinity;
+  const a = pts[i - 1];
+  const b = pts[i];
+  const c = pts[i + 1];
+  const v1x = b.x - a.x;
+  const v1z = b.z - a.z;
+  const v2x = c.x - b.x;
+  const v2z = c.z - b.z;
+  const l1 = Math.hypot(v1x, v1z);
+  const l2 = Math.hypot(v2x, v2z);
+  if(l1 < 0.05 || l2 < 0.05) return Infinity;
+  const cross = v1x * v2z - v1z * v2x;
+  const dot = (v1x * v2x + v1z * v2z) / (l1 * l2);
+  const angle = Math.acos(Math.max(-1, Math.min(1, dot)));
+  if(angle < 0.03) return Infinity;
+  const chord = Math.min(l1, l2);
+  return chord / (2 * Math.sin(angle / 2));
+}
+
+/** Масштаб метров на градус широты */
+function meterScale(lat){
+  const r = Math.PI / 180;
+  return { kx: Math.cos(lat * r) * 111320, ky: 110540 };
+}
+
+/** Frenet-рамка в точке s: касательная и левая нормаль (east/north), м */
+export function frenetFrameAtS(geom, s){
+  const total = geom.s[geom.n - 1];
+  const ds = Math.min(2.5, Math.max(1, total / Math.max(geom.n, 1)));
+  const s0 = Math.max(0, s - ds);
+  const s1 = Math.min(total, s + ds);
+  const p0 = interpolateAtS(geom, s0);
+  const p1 = interpolateAtS(geom, s1);
+  const midLat = (p0.lat + p1.lat) / 2;
+  const { kx, ky } = meterScale(midLat);
+  const ex = (p1.lon - p0.lon) * kx;
+  const ny = (p1.lat - p0.lat) * ky;
+  const len = Math.hypot(ex, ny) || 1;
+  return { tx: ex / len, tz: ny / len, nx: -ny / len, nz: ex / len };
+}
+
+/** Радиус кривизны и знак поворота (+ = влево) в точке s */
+function curvatureAtS(geom, s){
+  const ds = 2;
+  const total = geom.s[geom.n - 1];
+  const s0 = Math.max(0, s - ds);
+  const s1 = s;
+  const s2 = Math.min(total, s + ds);
+  const p0 = interpolateAtS(geom, s0);
+  const p1 = interpolateAtS(geom, s1);
+  const p2 = interpolateAtS(geom, s2);
+  const { kx, ky } = meterScale(p1.lat);
+  const ax = (p1.lon - p0.lon) * kx;
+  const ay = (p1.lat - p0.lat) * ky;
+  const bx = (p2.lon - p1.lon) * kx;
+  const by = (p2.lat - p1.lat) * ky;
+  const cross = ax * by - ay * bx;
+  const la = Math.hypot(ax, ay);
+  const lb = Math.hypot(bx, by);
+  if(la < 0.01 || lb < 0.01) return { R: Infinity, turnSign: 0 };
+  const dot = Math.max(-1, Math.min(1, (ax * bx + ay * by) / (la * lb)));
+  const angle = Math.acos(dot);
+  if(angle < 0.02) return { R: Infinity, turnSign: 0 };
+  const R = Math.min(la, lb) / (2 * Math.sin(angle / 2));
+  return { R, turnSign: cross > 0 ? 1 : -1 };
+}
+
+function ribbonStepAtS(geom, s){
+  const { R } = curvatureAtS(geom, s);
+  if(R < 15) return 1;
+  if(R < 30) return 1.5;
+  if(R < 80) return 2;
+  return 2.5;
+}
+
+/**
+ * Поперечные сечения ленты вдоль маршрута (per-point Frenet).
+ * Offset и clamp — в метрах east/north, не в экранных координатах.
+ */
+export function computeRibbonSections(geom, snap, maxDist, halfW){
+  const sections = [];
+  const elev0 = geom.elevReady ? interpolateElevAtS(geom, snap.s) : 0;
+  const sEnd = Math.min(geom.s[geom.n - 1], snap.s + maxDist);
+  let s = snap.s;
+  while(s <= sEnd + 0.01){
+    const p = interpolateAtS(geom, s);
+    const { kx, ky } = meterScale(p.lat);
+    const frame = frenetFrameAtS(geom, s);
+    const { R, turnSign } = curvatureAtS(geom, s);
+    let leftW = halfW;
+    let rightW = halfW;
+    if(R < Infinity && R < halfW * 4){
+      const maxOff = Math.max(0.4, R - 0.35);
+      if(turnSign > 0) leftW = Math.min(leftW, maxOff);
+      else if(turnSign < 0) rightW = Math.min(rightW, maxOff);
+    }
+    sections.push({
+      s,
+      lat: p.lat,
+      lon: p.lon,
+      leftLat: p.lat + (frame.nz * leftW) / ky,
+      leftLon: p.lon + (frame.nx * leftW) / kx,
+      rightLat: p.lat - (frame.nz * rightW) / ky,
+      rightLon: p.lon - (frame.nx * rightW) / kx,
+      elev: geom.elevReady ? interpolateElevAtS(geom, s) - elev0 : 0
+    });
+    if(s >= sEnd) break;
+    s += ribbonStepAtS(geom, s);
+  }
+  return sections;
+}
+
+/** lat/lon → камера (x вбок, z вперёд), м */
+export function worldToCamXZ(lat, lon, snap, headingRad){
+  const { kx, ky } = meterScale(snap.lat);
+  const dx = (lon - snap.lon) * kx;
+  const dy = (lat - snap.lat) * ky;
+  const cosH = Math.cos(headingRad);
+  const sinH = Math.sin(headingRad);
+  return {
+    x: dx * cosH - dy * sinH,
+    z: dx * sinH + dy * cosH
+  };
+}
+
+/** @deprecated — экранный offset; используйте computeRibbonSections */
+export function ribbonOffsets(pts, i, halfW){
+  const pr = pts[Math.max(0, i - 1)];
+  const q = pts[Math.min(pts.length - 1, i + 1)];
+  let tx = q.x - pr.x;
+  let tz = q.z - pr.z;
+  const tl = Math.hypot(tx, tz) || 1;
+  tx /= tl;
+  tz /= tl;
+  const nx = tz;
+  const nz = -tx;
+
+  const R = estimateRadius(pts, i);
+  let leftW = halfW;
+  let rightW = halfW;
+  if(R < Infinity && R < halfW * 4){
+    const maxOff = Math.max(0.4, R - 0.35);
+    const a = pts[Math.max(0, i - 1)];
+    const b = pts[i];
+    const c = pts[Math.min(pts.length - 1, i + 1)];
+    const cross = (b.x - a.x) * (c.z - b.z) - (b.z - a.z) * (c.x - b.x);
+    if(cross > 0) leftW = Math.min(leftW, maxOff);
+    else rightW = Math.min(rightW, maxOff);
+  }
+  return { nx, nz, leftW, rightW };
+}
+
+/** Polyline lat/lon для Leaflet из geometry */
+export function geometryToLatLngs(geom){
+  if(!geom) return [];
+  const out = [];
+  for(let i = 0; i < geom.n; i++) out.push([geom.lat[i], geom.lon[i]]);
+  return out;
+}
+
+/** Оставшееся расстояние по s */
+export function remainingDistanceS(geom, snap){
+  if(!geom || !snap) return 0;
+  return Math.max(0, geom.s[geom.n - 1] - snap.s);
+}
