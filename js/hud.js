@@ -8,6 +8,7 @@ import {
 } from './route.js';
 import { speak, maneuverText, isTurnStep, isCameraBehind } from './voice.js';
 import { buildArrowSVG, buildTurnArrowSVG } from './render.js';
+import { syncVintageVfdDomClasses, resetVintageVfd } from './vintage-vfd.js';
 import { startVisualLoop, stopVisualLoop, startNavigationGps, stopNavigationGps } from './gps.js';
 import {
   ensureFuelStations, bestAlongRoute, nearestOverall,
@@ -15,6 +16,7 @@ import {
 } from './fuel.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { resetRouteSnap, getRouteSnapForNav } from './route-geometry.js';
+import { getActiveRoundabout, isCrossingContextEnabled } from './crossings.js';
 import { ensureRouteGeometry } from './route.js';
 import { pickCurveVoiceWarn, resetCurveRibbonState } from './curve-speed.js';
 import { renderFavs } from './favorites.js';
@@ -180,10 +182,25 @@ export function onTick(){
       $('v-mdist-u').textContent = 'км';
     }
     $('street').textContent = 'ВОЗВРАТ НА МАРШРУТ';
+    $('rb-exit-label')?.classList.add('hidden');
   } else {
     const nm = findNextManeuver();
     if(nm){
       $('arrow-box').innerHTML = buildArrowSVG(nm.step);
+      const rbEl = $('rb-exit-label');
+      if(rbEl){
+        const geom = S.route.geometry;
+        const rb = isCrossingContextEnabled() && geom && snap
+          ? getActiveRoundabout(geom, snap.s, spdMps) : null;
+        const isRbStep = nm.step.type === 'roundabout' || nm.step.type === 'rotary';
+        if(rb && isRbStep && rb.exitNumber > 0){
+          rbEl.textContent = String(rb.exitNumber);
+          rbEl.classList.remove('hidden');
+        } else {
+          rbEl.textContent = '';
+          rbEl.classList.add('hidden');
+        }
+      }
       if(nm.dist < 1000){
         $('v-mdist').textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
         $('v-mdist-u').textContent = 'м';
@@ -261,6 +278,8 @@ export async function startHud(){
   $('setup').style.zIndex = '30';
   $('hud').classList.add('on');
   $('hud').classList.toggle('show-compass', !!S.showCompass);
+  resetVintageVfd();
+  syncVintageVfdDomClasses();
   updateCamStatusUI();
   loadCameras(); // фоном, не блокирует старт
   acquireWakeLock();
@@ -278,6 +297,7 @@ export function stopHud(){
   telemetry.stop().catch(() => {});
   telemetry.updateMarkButtonVisibility();
   stopVisualLoop();
+  resetVintageVfd();
   stopNavigationGps().catch(() => {});
   S.fuelMode = 0;
   S.fuelSel = null;
