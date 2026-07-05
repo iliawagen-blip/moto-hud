@@ -1,4 +1,4 @@
-import { S, DEFAULT_ELEV_EXAG, DEFAULT_ELEV_PROFILE_H, MIN_ELEV_PROFILE_H, MAX_ELEV_PROFILE_H, DEFAULT_ELEV_PROFILE_LEN_KM, MIN_ELEV_PROFILE_LEN_KM, MAX_ELEV_PROFILE_LEN_KM } from './state.js';
+import { S, DEFAULT_ELEV_EXAG, DEFAULT_ELEV_PROFILE_H, MIN_ELEV_PROFILE_H, MAX_ELEV_PROFILE_H, DEFAULT_ELEV_PROFILE_LEN_KM, MIN_ELEV_PROFILE_LEN_KM, MAX_ELEV_PROFILE_LEN_KM, DEFAULT_CAM_SPEED_TOL, DEFAULT_PATH_CHEVRON_MAX } from './state.js';
 
 import { $, escapeHtml } from './util.js';
 import { parseInput } from './geo.js';
@@ -551,6 +551,31 @@ export function bindSetupUI(){
     saveAppOptsToStorage();
   });
 
+  function syncChevronInputs(){
+    const on = S.showPathChevrons !== false;
+    const labels = $('opt-chevron-labels');
+    const maxEl = $('opt-chevron-max');
+    if(labels) labels.disabled = !on;
+    if(maxEl) maxEl.disabled = !on;
+  }
+
+  $('opt-path-chevrons')?.addEventListener('change', e => {
+    S.showPathChevrons = e.target.checked;
+    syncChevronInputs();
+    saveAppOptsToStorage();
+  });
+
+  $('opt-chevron-labels')?.addEventListener('change', e => {
+    S.pathChevronLabels = e.target.checked;
+    saveAppOptsToStorage();
+  });
+
+  $('opt-chevron-max')?.addEventListener('change', e => {
+    S.pathChevronMax = Math.max(1, Math.min(3, parseInt(e.target.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
+    e.target.value = String(S.pathChevronMax);
+    saveAppOptsToStorage();
+  });
+
   const bindFinishOpt = id => {
     $(id)?.addEventListener('change', () => {
       syncOptionsFromDom();
@@ -674,6 +699,12 @@ export function bindSetupUI(){
     saveAppOptsToStorage();
   });
 
+  $('opt-cam-speed-tol')?.addEventListener('change', e => {
+    S.camSpeedTol = Math.max(0, Math.min(50, parseInt(e.target.value, 10) || DEFAULT_CAM_SPEED_TOL));
+    e.target.value = String(S.camSpeedTol);
+    saveAppOptsToStorage();
+  });
+
 
 
   $('btn-start').addEventListener('click', startHud);
@@ -759,6 +790,13 @@ export function syncOptionsFromDom(){
 
   S.showPath = $('opt-path').checked;
   S.showCrossingContext = $('opt-crossings')?.checked ?? true;
+  S.showPathChevrons = $('opt-path-chevrons')?.checked ?? true;
+  S.pathChevronLabels = $('opt-chevron-labels')?.checked ?? true;
+  S.pathChevronMax = Math.max(1, Math.min(3,
+    parseInt($('opt-chevron-max')?.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
+  if($('opt-chevron-max')) $('opt-chevron-max').value = String(S.pathChevronMax);
+  if($('opt-chevron-labels')) $('opt-chevron-labels').disabled = !S.showPathChevrons;
+  if($('opt-chevron-max')) $('opt-chevron-max').disabled = !S.showPathChevrons;
 
   S.showFinishDist = $('opt-finish-dist')?.checked ?? true;
   S.showFinishTime = $('opt-finish-time')?.checked ?? true;
@@ -801,6 +839,9 @@ export function syncOptionsFromDom(){
   S.noDirPolicy = $('opt-nodir').value;
 
   S.limit = parseInt($('opt-limit').value, 10) || 60;
+  S.camSpeedTol = Math.max(0, Math.min(50,
+    parseInt($('opt-cam-speed-tol')?.value, 10) || DEFAULT_CAM_SPEED_TOL));
+  if($('opt-cam-speed-tol')) $('opt-cam-speed-tol').value = String(S.camSpeedTol);
 
   $('hud')?.classList.toggle('show-compass', S.showCompass);
 

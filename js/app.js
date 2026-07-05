@@ -10646,6 +10646,8 @@ function applyThemeCss() {
 var DEFAULT_FUEL_PLANNER_COUNT = 5;
 var MIN_FUEL_PLANNER_COUNT = 1;
 var MAX_FUEL_PLANNER_COUNT = 10;
+var DEFAULT_CAM_SPEED_TOL = 15;
+var DEFAULT_PATH_CHEVRON_MAX = 3;
 var S = {
   gps: null,
   finish: null,
@@ -10675,6 +10677,9 @@ var S = {
   voice: true,
   showPath: true,
   showCrossingContext: true,
+  showPathChevrons: true,
+  pathChevronLabels: true,
+  pathChevronMax: DEFAULT_PATH_CHEVRON_MAX,
   showElevProfile: true,
   elevExag: 1.8,
   elevProfileH: 72,
@@ -10685,6 +10690,8 @@ var S = {
   tolerance: 45,
   noDirPolicy: "skip",
   limit: 60,
+  /** Допуск над лимитом камеры перед тревогой, км/ч */
+  camSpeedTol: DEFAULT_CAM_SPEED_TOL,
   lastVoiceTs: 0,
   curveWarn: true,
   curveStrict: "normal",
@@ -11817,6 +11824,19 @@ function interpolateAtS(geom, s2) {
     lon: geom.lon[i] + t * (geom.lon[i + 1] - geom.lon[i])
   };
 }
+function turnAngleAtS(geom, s2) {
+  const ds = 18;
+  const total = geom.s[geom.n - 1];
+  const s0 = Math.max(0, s2 - ds);
+  const s22 = Math.min(total, s2 + ds);
+  if (s22 - s0 < 8) return 0;
+  const p0 = interpolateAtS(geom, s0);
+  const p1 = interpolateAtS(geom, s2);
+  const p2 = interpolateAtS(geom, s22);
+  const bIn = bearing(p0, p1);
+  const bOut = bearing(p1, p2);
+  return (bOut - bIn + 540) % 360 - 180;
+}
 function segmentBearing(geom, i) {
   return bearing(
     { lat: geom.lat[i], lon: geom.lon[i] },
@@ -12503,19 +12523,6 @@ var PRESETS = {
 };
 function getCurveParams() {
   return PRESETS[S.curveStrict] || PRESETS.normal;
-}
-function turnAngleAtS(geom, s2) {
-  const ds = 18;
-  const total = geom.s[geom.n - 1];
-  const s0 = Math.max(0, s2 - ds);
-  const s22 = Math.min(total, s2 + ds);
-  if (s22 - s0 < 8) return 0;
-  const p0 = interpolateAtS(geom, s0);
-  const p1 = interpolateAtS(geom, s2);
-  const p2 = interpolateAtS(geom, s22);
-  const bIn = bearing(p0, p1);
-  const bOut = bearing(p1, p2);
-  return (bOut - bIn + 540) % 360 - 180;
 }
 function vSafeFromR(R, params, gradeAt) {
   if (!isFinite(R) || R >= CURVE_R_WARN * 2) return Infinity;
@@ -14204,6 +14211,10 @@ function projectGround2(x, z, elevDelta) {
 function toLocalFrenet(lat, lon, snap, headingRad) {
   return worldToCamXZ(lat, lon, snap, headingRad);
 }
+function projectWorld(lat, lon, elev, snap, headingRad) {
+  const { x, z } = worldToCamXZ(lat, lon, snap, headingRad);
+  return projectGround2(x, z, elev);
+}
 function triArea2(a, b, c) {
   if (!a || !b || !c) return 0;
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
@@ -14284,11 +14295,166 @@ function turnAngleAt(step) {
   );
   return (bOut - bIn + 540) % 360 - 180;
 }
+function modifierTurnSide(mod) {
+  if (!mod) return 0;
+  if (mod.includes("left")) return -1;
+  if (mod.includes("right")) return 1;
+  return 0;
+}
+function reconcileTurnAngle(ang, modifier) {
+  const side = modifierTurnSide(modifier);
+  if (modifier === "uturn") {
+    if (Math.abs(ang) < 120) return side < 0 ? -175 : 175;
+    return ang;
+  }
+  if (side === 0) return ang;
+  if (side < 0 && ang > 0) return -Math.abs(ang);
+  if (side > 0 && ang < 0) return Math.abs(ang);
+  if (Math.abs(ang) < 10) return side * 25;
+  return ang;
+}
+function chevronScreenBasis(snap, headingRad, geom, s2, modifier, ang) {
+  const ds = 16;
+  const total = geom.s[geom.n - 1];
+  const p0 = interpolateAtS(geom, Math.max(0, s2 - ds));
+  const p1 = interpolateAtS(geom, s2);
+  const p2 = interpolateAtS(geom, Math.min(total, s2 + ds));
+  const P0 = projectWorld(p0.lat, p0.lon, 0, snap, headingRad);
+  const P1 = projectWorld(p1.lat, p1.lon, 0, snap, headingRad);
+  const P2 = projectWorld(p2.lat, p2.lon, 0, snap, headingRad);
+  if (!P1) return null;
+  let ex = 0;
+  let ey = 0;
+  if (P0 && P2) {
+    ex = P2.x - P1.x;
+    ey = P2.y - P1.y;
+    const el = Math.hypot(ex, ey);
+    if (el > 1) {
+      ex /= el;
+      ey /= el;
+      const ax = P1.x - P0.x;
+      const ay = P1.y - P0.y;
+      const al = Math.hypot(ax, ay);
+      if (al > 1) {
+        const cross = ax / al * ey - ay / al * ex;
+        const modSide = modifierTurnSide(modifier);
+        const geoSide = cross > 0.02 ? 1 : cross < -0.02 ? -1 : 0;
+        if (modSide !== 0 && geoSide !== 0 && geoSide !== modSide) {
+          const lx = -ay / al;
+          const ly = ax / al;
+          ex = modSide < 0 ? lx : -lx;
+          ey = modSide < 0 ? ly : -ly;
+        }
+      }
+    }
+  }
+  if (Math.hypot(ex, ey) < 0.05) {
+    const side = modifierTurnSide(modifier) || (ang < 0 ? -1 : 1);
+    ex = side;
+    ey = 0;
+  }
+  return { P: P1, ex, ey };
+}
+function chevronPath(P, ex, ey, arm) {
+  const tipX = P.x + ex * arm;
+  const tipY = P.y + ey * arm;
+  const bx = P.x - ex * arm * 0.55;
+  const by = P.y - ey * arm * 0.55;
+  const px = -ey;
+  const py = ex;
+  const wing = arm * 0.88;
+  const x1 = (bx + px * wing).toFixed(1);
+  const y1 = (by + py * wing).toFixed(1);
+  const x2 = (bx - px * wing).toFixed(1);
+  const y2 = (by - py * wing).toFixed(1);
+  return "M " + x1 + " " + y1 + " L " + tipX.toFixed(1) + " " + tipY.toFixed(1) + " L " + x2 + " " + y2;
+}
+function textBBox(cx, cy, fontSize, text) {
+  const n = Math.max(String(text || "").length, 1);
+  const w = fontSize * n * 0.58;
+  const h = fontSize * 1.12;
+  return { left: cx - w * 0.5, right: cx + w * 0.5, top: cy - h * 0.82, bottom: cy + h * 0.18 };
+}
+function bboxOverlap(a, b, pad) {
+  return a.left - pad < b.right + pad && a.right + pad > b.left - pad && a.top - pad < b.bottom + pad && a.bottom + pad > b.top - pad;
+}
+function clampLabelX(cx, halfW, vbX, vbW) {
+  return Math.min(vbX + vbW - halfW - 4, Math.max(vbX + halfW + 4, cx));
+}
+function clampLabelY(cy, fontSize, vbY, vbH) {
+  return Math.min(vbY + vbH - 4, Math.max(vbY + fontSize + 4, cy));
+}
+function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
+  if (S.pathChevronLabels === false) return;
+  const placed = [];
+  const minSep = vb * 0.07;
+  const pad = vb * 0.014;
+  for (let i = 0; i < markers.length; i++) {
+    const m = markers[i];
+    m.degX = null;
+    m.degY = null;
+    m.distX = null;
+    m.distY = null;
+    const prev = i > 0 ? markers[i - 1] : null;
+    const sep = prev ? Math.hypot(m.P.x - prev.P.x, m.P.y - prev.P.y) : Infinity;
+    const wantDeg = i === 0 && !!m.deg;
+    const wantDist = i === 0 ? true : sep >= minSep;
+    if (wantDeg) {
+      const sides = [m.labelSide, -m.labelSide];
+      for (const side of sides) {
+        const off = m.arm + m.degFont * 0.35;
+        let dx = m.P.x + m.nx * off * side;
+        const halfW = m.degFont * Math.max(m.deg.length, 1) * 0.34;
+        dx = clampLabelX(dx, halfW, vbX, vbW);
+        let dy = clampLabelY(
+          m.P.y + m.ny * off * side * 0.35 + m.degFont * 0.34,
+          m.degFont,
+          vbY,
+          vbH
+        );
+        const box = textBBox(dx, dy, m.degFont, m.deg);
+        if (!placed.some((p) => bboxOverlap(box, p, pad))) {
+          m.degX = dx;
+          m.degY = dy;
+          placed.push(box);
+          break;
+        }
+      }
+    }
+    if (!wantDist) continue;
+    const distText = m.dist + " \u043C";
+    const slots = [
+      () => ({
+        x: m.P.x + m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
+        y: m.P.y + m.ny * m.arm * 0.35 * m.labelSide + m.distFont * 0.15
+      }),
+      () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.1 + i * 0.35) }),
+      () => ({
+        x: m.P.x - m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
+        y: m.P.y - m.ny * m.arm * 0.35 * m.labelSide
+      }),
+      () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.6 + i * 0.4) })
+    ];
+    for (const slot of slots) {
+      let { x, y } = slot();
+      x = clampLabelX(x, m.distFont * distText.length * 0.32, vbX, vbW);
+      y = clampLabelY(y, m.distFont, vbY, vbH);
+      const box = textBBox(x, y, m.distFont, distText);
+      if (!placed.some((p) => bboxOverlap(box, p, pad))) {
+        m.distX = x;
+        m.distY = y;
+        placed.push(box);
+        break;
+      }
+    }
+  }
+}
 function isPathTurnStep2(st) {
   return st && st.type !== "depart" && st.type !== "arrive" && st.modifier && st.modifier !== "straight";
 }
 function renderTurnsStr(svg, snap, headingRad, geom, curS) {
-  if (!S.route || !snap) return "";
+  if (!S.route || !snap || S.showPathChevrons === false) return "";
+  const maxChevrons = Math.max(1, Math.min(3, S.pathChevronMax || 3));
   const tok = getThemeTokens();
   const scale = tok.pathTurnScale || 1;
   const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
@@ -14298,39 +14464,57 @@ function renderTurnsStr(svg, snap, headingRad, geom, curS) {
   const vbW = bv ? bv.width : L2.W;
   const vbH = bv ? bv.height : L2.H;
   const pos = curPos();
-  let out = "";
-  let shown = 0;
-  const items = geom && curS != null ? getVisibleTurnManeuvers(geom, curS, 3) : S.route.steps.filter(isPathTurnStep2).map((st) => ({ maneuver: { step: st }, distAhead: haversine(pos, st) }));
+  const items = geom && curS != null ? getVisibleTurnManeuvers(geom, curS, maxChevrons) : S.route.steps.filter(isPathTurnStep2).map((st) => ({ maneuver: { step: st }, distAhead: haversine(pos, st) }));
+  const markers = [];
   for (const item of items) {
-    if (shown >= 3) break;
+    if (markers.length >= maxChevrons) break;
     const st = item.maneuver?.step;
     if (!st) continue;
     const loc = toLocalFrenet(st.lat, st.lon, snap, headingRad);
     if (loc.z < 5 || loc.z > ROAD_MAX) continue;
     const P = projectGround2(loc.x, loc.z, 0);
     if (!P) continue;
-    const ang = turnAngleAt(st);
-    const dir = ang == null ? st.modifier.includes("left") ? -1 : 1 : ang < 0 ? -1 : 1;
-    const deg = ang == null ? "" : Math.round(Math.abs(ang)) + "\xB0";
-    const dist = Math.round(item.distAhead != null ? item.distAhead : haversine(pos, st));
-    const col = shown === 0 ? tok.turnPrimary : tok.turnSecondary;
-    const k = (shown === 0 ? 1 : 0.72) * scale;
+    let ang = null;
+    let chev = null;
+    const mS = item.maneuver?.s;
+    if (geom && mS != null) {
+      ang = reconcileTurnAngle(turnAngleAtS(geom, mS), st.modifier);
+      chev = chevronScreenBasis(snap, headingRad, geom, mS, st.modifier, ang);
+    }
+    if (ang == null) {
+      const raw = turnAngleAt(st);
+      ang = raw == null ? modifierTurnSide(st.modifier) < 0 ? -25 : modifierTurnSide(st.modifier) > 0 ? 25 : 0 : reconcileTurnAngle(raw, st.modifier);
+    }
+    if (!chev) {
+      const side = modifierTurnSide(st.modifier) || (ang < 0 ? -1 : 1);
+      chev = { P, ex: side, ey: 0 };
+    }
+    const k = (markers.length === 0 ? 1 : 0.72) * scale;
     const degFont = vb * 0.12 * k;
     const distFont = vb * 0.05 * k;
-    const s2 = vb * 0.05 * k;
-    const sw = Math.max(2, vb * 0.012 * k);
-    const halo = Math.max(3, degFont * 0.16);
-    const tip = (dir * s2).toFixed(1);
-    const base = (-dir * s2).toFixed(1);
-    const degHalfW = degFont * deg.length * 0.34;
-    let degX = P.x + dir * (s2 + degHalfW + degFont * 0.25);
-    degX = Math.min(vbX + vbW - degHalfW - 4, Math.max(vbX + degHalfW + 4, degX));
-    let degY = P.y + degFont * 0.34;
-    degY = Math.min(vbY + vbH - 4, Math.max(vbY + degFont + 4, degY));
-    let distY = P.y + s2 + distFont * 1.1;
-    distY = Math.min(vbY + vbH - 4, distY);
-    out += '<g font-family="' + tok.fontNum + ',monospace" text-anchor="middle"><path d="M ' + (P.x + +base).toFixed(1) + " " + (P.y - s2).toFixed(1) + " L " + (P.x + +tip).toFixed(1) + " " + P.y.toFixed(1) + " L " + (P.x + +base).toFixed(1) + " " + (P.y + s2).toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '" stroke-linecap="round" stroke-linejoin="round"/><text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" font-size="' + degFont.toFixed(1) + '" font-weight="900" stroke="' + tok.svgHalo + '" stroke-width="' + halo.toFixed(1) + '" stroke-linejoin="round" fill="' + tok.svgHalo + '" opacity="0.65">' + deg + '</text><text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" font-size="' + degFont.toFixed(1) + '" font-weight="900" fill="' + col + '">' + deg + '</text><text x="' + P.x.toFixed(1) + '" y="' + distY.toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" fill="' + col + '" opacity="0.9">' + dist + " \u043C</text></g>";
-    shown++;
+    const arm = vb * 0.05 * k;
+    const tipY = chev.P.y + chev.ey * arm;
+    markers.push({
+      P: chev.P,
+      ex: chev.ex,
+      ey: chev.ey,
+      nx: -chev.ey,
+      ny: chev.ex,
+      arm,
+      sw: Math.max(2, vb * 0.012 * k),
+      col: markers.length === 0 ? tok.turnPrimary : tok.turnSecondary,
+      deg: Math.abs(ang) >= 4 ? Math.round(Math.abs(ang)) + "\xB0" : "",
+      dist: Math.round(item.distAhead != null ? item.distAhead : haversine(pos, st)),
+      degFont,
+      distFont,
+      tipY,
+      labelSide: ang < 0 ? 1 : -1
+    });
+  }
+  layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH);
+  let out = "";
+  for (const m of markers) {
+    out += '<g font-family="' + tok.fontNum + ',monospace" text-anchor="middle"><path d="' + chevronPath(m.P, m.ex, m.ey, m.arm) + '" fill="none" stroke="' + m.col + '" stroke-width="' + m.sw.toFixed(1) + '" stroke-linecap="round" stroke-linejoin="round"/>' + (m.degX != null ? '<text x="' + m.degX.toFixed(1) + '" y="' + m.degY.toFixed(1) + '" font-size="' + m.degFont.toFixed(1) + '" font-weight="900" fill="' + m.col + '">' + m.deg + "</text>" : "") + (m.distX != null ? '<text x="' + m.distX.toFixed(1) + '" y="' + m.distY.toFixed(1) + '" font-size="' + m.distFont.toFixed(1) + '" fill="' + m.col + '" opacity="0.9">' + m.dist + " \u043C</text>" : "") + "</g>";
   }
   return out;
 }
@@ -14739,12 +14923,16 @@ function loadAppOptsFromStorage() {
     setCheck("opt-voice", o.voice);
     setCheck("opt-path", o.showPath);
     setCheck("opt-crossings", o.showCrossingContext);
+    setCheck("opt-path-chevrons", o.showPathChevrons !== false);
+    setCheck("opt-chevron-labels", o.pathChevronLabels !== false);
+    setVal("opt-chevron-max", o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
     setCheck("opt-heading", o.showCompass);
     setCheck("opt-cams", o.cams);
     setCheck("opt-back-only", o.backOnly);
     setVal("opt-tol", o.tolerance);
     setVal("opt-nodir", o.noDirPolicy);
     setVal("opt-limit", o.limit);
+    setVal("opt-cam-speed-tol", o.camSpeedTol);
   } catch (e) {
   }
 }
@@ -14754,12 +14942,16 @@ function saveAppOptsToStorage() {
       voice: !!S.voice,
       showPath: !!S.showPath,
       showCrossingContext: S.showCrossingContext !== false,
+      showPathChevrons: S.showPathChevrons !== false,
+      pathChevronLabels: S.pathChevronLabels !== false,
+      pathChevronMax: S.pathChevronMax,
       showCompass: !!S.showCompass,
       cams: !!S.cams,
       backOnly: !!S.backOnly,
       tolerance: S.tolerance,
       noDirPolicy: S.noDirPolicy,
-      limit: S.limit
+      limit: S.limit,
+      camSpeedTol: S.camSpeedTol
     }));
   } catch (e) {
   }
@@ -15482,6 +15674,27 @@ function bindSetupUI() {
     S.showCrossingContext = e.target.checked;
     saveAppOptsToStorage();
   });
+  function syncChevronInputs() {
+    const on = S.showPathChevrons !== false;
+    const labels = $("opt-chevron-labels");
+    const maxEl = $("opt-chevron-max");
+    if (labels) labels.disabled = !on;
+    if (maxEl) maxEl.disabled = !on;
+  }
+  $("opt-path-chevrons")?.addEventListener("change", (e) => {
+    S.showPathChevrons = e.target.checked;
+    syncChevronInputs();
+    saveAppOptsToStorage();
+  });
+  $("opt-chevron-labels")?.addEventListener("change", (e) => {
+    S.pathChevronLabels = e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $("opt-chevron-max")?.addEventListener("change", (e) => {
+    S.pathChevronMax = Math.max(1, Math.min(3, parseInt(e.target.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
+    e.target.value = String(S.pathChevronMax);
+    saveAppOptsToStorage();
+  });
   const bindFinishOpt = (id) => {
     $(id)?.addEventListener("change", () => {
       syncOptionsFromDom();
@@ -15585,6 +15798,11 @@ function bindSetupUI() {
     S.limit = parseInt(e.target.value, 10) || 0;
     saveAppOptsToStorage();
   });
+  $("opt-cam-speed-tol")?.addEventListener("change", (e) => {
+    S.camSpeedTol = Math.max(0, Math.min(50, parseInt(e.target.value, 10) || DEFAULT_CAM_SPEED_TOL));
+    e.target.value = String(S.camSpeedTol);
+    saveAppOptsToStorage();
+  });
   $("btn-start").addEventListener("click", startHud);
   let stopArmed = false;
   let stopArmTimer = null;
@@ -15633,6 +15851,15 @@ function syncOptionsFromDom() {
   S.voice = $("opt-voice").checked;
   S.showPath = $("opt-path").checked;
   S.showCrossingContext = $("opt-crossings")?.checked ?? true;
+  S.showPathChevrons = $("opt-path-chevrons")?.checked ?? true;
+  S.pathChevronLabels = $("opt-chevron-labels")?.checked ?? true;
+  S.pathChevronMax = Math.max(1, Math.min(
+    3,
+    parseInt($("opt-chevron-max")?.value, 10) || DEFAULT_PATH_CHEVRON_MAX
+  ));
+  if ($("opt-chevron-max")) $("opt-chevron-max").value = String(S.pathChevronMax);
+  if ($("opt-chevron-labels")) $("opt-chevron-labels").disabled = !S.showPathChevrons;
+  if ($("opt-chevron-max")) $("opt-chevron-max").disabled = !S.showPathChevrons;
   S.showFinishDist = $("opt-finish-dist")?.checked ?? true;
   S.showFinishTime = $("opt-finish-time")?.checked ?? true;
   S.showFinishEta = $("opt-finish-eta")?.checked ?? true;
@@ -15667,6 +15894,11 @@ function syncOptionsFromDom() {
   S.tolerance = parseInt($("opt-tol").value, 10) || 45;
   S.noDirPolicy = $("opt-nodir").value;
   S.limit = parseInt($("opt-limit").value, 10) || 60;
+  S.camSpeedTol = Math.max(0, Math.min(
+    50,
+    parseInt($("opt-cam-speed-tol")?.value, 10) || DEFAULT_CAM_SPEED_TOL
+  ));
+  if ($("opt-cam-speed-tol")) $("opt-cam-speed-tol").value = String(S.camSpeedTol);
   $("hud")?.classList.toggle("show-compass", S.showCompass);
   if (!S.showPath) {
     $("block-path").classList.add("hidden");
@@ -16384,10 +16616,13 @@ function checkCamerasILS() {
   const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
   const heading = S.smoothedHeading;
   const radius = Math.max(200, Math.min(1e3, kmh * 10));
+  const tol = S.camSpeedTol != null ? S.camSpeedTol : 15;
   let closest = null;
   S.cameras.forEach((c, i) => {
     const d = haversine(S.gps, c);
     if (d > radius) return;
+    if (!c.speed) return;
+    if (kmh <= c.speed + tol) return;
     if (S.backOnly && !isCameraBehind(c, heading)) return;
     if (heading != null && angleDiff(bearing(S.gps, c), heading) > 90) return;
     if (!closest || d < closest.dist) closest = { cam: c, dist: d, id: i };

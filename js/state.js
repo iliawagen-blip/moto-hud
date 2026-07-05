@@ -4,6 +4,10 @@
 export const DEFAULT_FUEL_PLANNER_COUNT = 5;
 export const MIN_FUEL_PLANNER_COUNT = 1;
 export const MAX_FUEL_PLANNER_COUNT = 10;
+/** Допуск превышения лимита камеры по умолчанию, км/ч */
+export const DEFAULT_CAM_SPEED_TOL = 15;
+/** Макс. шевронов на прогноз-дорожке по умолчанию */
+export const DEFAULT_PATH_CHEVRON_MAX = 3;
 
 export const S = {
   gps: null,
@@ -32,6 +36,9 @@ export const S = {
   voice: true,
   showPath: true,
   showCrossingContext: true,
+  showPathChevrons: true,
+  pathChevronLabels: true,
+  pathChevronMax: DEFAULT_PATH_CHEVRON_MAX,
   showElevProfile: true,
   elevExag: 1.8,
   elevProfileH: 72,
@@ -42,6 +49,8 @@ export const S = {
   tolerance: 45,
   noDirPolicy: 'skip',
   limit: 60,
+  /** Допуск над лимитом камеры перед тревогой, км/ч */
+  camSpeedTol: DEFAULT_CAM_SPEED_TOL,
   lastVoiceTs: 0,
   curveWarn: true,
   curveStrict: 'normal', // relaxed | normal | strict

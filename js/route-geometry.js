@@ -264,6 +264,21 @@ export function interpolateAtS(geom, s){
   };
 }
 
+/** Угол поворота маршрута в точке s, ° (− влево, + вправо) */
+export function turnAngleAtS(geom, s){
+  const ds = 18;
+  const total = geom.s[geom.n - 1];
+  const s0 = Math.max(0, s - ds);
+  const s2 = Math.min(total, s + ds);
+  if(s2 - s0 < 8) return 0;
+  const p0 = interpolateAtS(geom, s0);
+  const p1 = interpolateAtS(geom, s);
+  const p2 = interpolateAtS(geom, s2);
+  const bIn = bearing(p0, p1);
+  const bOut = bearing(p1, p2);
+  return ((bOut - bIn + 540) % 360) - 180;
+}
+
 function segmentBearing(geom, i){
   return bearing(
     { lat: geom.lat[i], lon: geom.lon[i] },
