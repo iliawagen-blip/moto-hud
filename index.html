@@ -36,7 +36,7 @@
 })();
 </script>
 <link rel="stylesheet" href="css/leaflet.css">
-<link rel="stylesheet" href="css/app.css?v=mr702zw8">
+<link rel="stylesheet" href="css/app.css?v=mr7h37i4">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -231,14 +231,23 @@
 
   <!-- скорость -->
   <div class="block block-speed">
+    <div class="speed-btns" id="hud-side-btns">
+      <button type="button" class="corner-btn stop btn-stop" id="btn-stop"><span class="cb-icon">■</span><span class="cb-lbl">СТОП</span></button>
+      <button type="button" class="corner-btn fuel btn-fuel" id="btn-fuel"><span class="cb-icon">⛽</span><span class="cb-lbl">ЗАПР.</span></button>
+      <button type="button" class="corner-btn btn-fs" id="btn-fs"><span class="cb-icon">⛶</span><span class="cb-lbl">ЭКРАН</span></button>
+      <button type="button" class="corner-btn btn-gear" id="btn-gear"><span class="cb-icon">⚙</span><span class="cb-lbl">НАСТР.</span></button>
+      <button type="button" class="corner-btn btn-telemetry-mark hidden" id="btn-telemetry-mark" title="Метка (двойной тап — critical)" aria-label="Метка"><span class="cb-icon">📍</span><span class="cb-lbl">МЕТКА</span></button>
+    </div>
+    <div class="speed-stack">
+      <div class="speed-ghost" id="speed-ghost" aria-hidden="true">888</div>
+      <div class="speed-val" id="v-speed">0</div>
+      <div class="speed-unit">км/ч</div>
+    </div>
     <div class="finish-info" id="finish-info">
       <div class="fi-line" id="fi-dist-line"><span class="fi-k">Осталось</span><span class="fi-v" id="fi-dist-val">—</span></div>
       <div class="fi-line" id="fi-time-line"><span class="fi-k">В пути</span><span class="fi-v" id="fi-time-val">—</span></div>
       <div class="fi-line" id="fi-eta-line"><span class="fi-k">Прибытие</span><span class="fi-v" id="fi-eta-val">—</span></div>
     </div>
-    <div class="speed-ghost" id="speed-ghost" aria-hidden="true">888</div>
-    <div class="speed-val" id="v-speed">0</div>
-    <div class="speed-unit">км/ч</div>
   </div>
 
   <!-- прогноз-дорожка -->
@@ -268,17 +277,11 @@
     <button class="qf-close" id="qf-close">◆ ОТМЕНА ◆</button>
   </div>
 
-  <button type="button" class="corner-btn btn-mode" id="btn-mode" title="День / ночь / авто"><span class="cb-icon">🌓</span><span class="cb-lbl">НОЧЬ</span></button>
-  <button type="button" class="corner-btn btn-fs" id="btn-fs"><span class="cb-icon">⛶</span><span class="cb-lbl">ЭКРАН</span></button>
-  <button type="button" class="corner-btn btn-gear" id="btn-gear"><span class="cb-icon">⚙</span><span class="cb-lbl">НАСТР.</span></button>
-  <button type="button" class="corner-btn fuel btn-fuel" id="btn-fuel"><span class="cb-icon">⛽</span><span class="cb-lbl">ЗАПР.</span></button>
-  <button type="button" class="corner-btn stop btn-stop" id="btn-stop"><span class="cb-icon">■</span><span class="cb-lbl">СТОП</span></button>
-  <button type="button" class="corner-btn btn-telemetry-mark hidden" id="btn-telemetry-mark" title="Метка (двойной тап — critical)" aria-label="Метка">📍</button>
 </div>
 
-<script>window.mr702zw8='mr702zw8';</script>
+<script>window.mr7h37i4='mr7h37i4';</script>
 <script src="js/sim.js"></script>
-<script type="module" src="js/app.js?v=mr702zw8"></script>
+<script type="module" src="js/app.js?v=mr7h37i4"></script>
 
 </body>
 </html>

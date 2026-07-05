@@ -10553,16 +10553,19 @@ function getThemeTokens() {
   _cache = {
     bg: g("--bg", "#000000"),
     accent: g("--accent", "#ffd400"),
+    line: g("--line", "#1a2332"),
     fg: g("--fg", "#ffffff"),
     fgDim: g("--fg-dim", "#8b9cb3"),
     pathEdge: g("--path-edge", "#00ff88"),
     pathFill: g("--path-fill", "#00aa5c"),
     pathFillOpacity: gn("--path-fill-opacity", 0.22),
     pathEdgeW: gn("--path-edge-w", 5),
+    pathTurnScale: gn("--path-turn-scale", 1),
     pathCenterOpacity: gn("--path-center-opacity", 0.45),
     pathDash: g("--path-dash", "none"),
     strokeW: gn("--stroke-w", 3),
     arrowStyle: g("--arrow-style", "filled"),
+    arrowShape: g("--arrow-shape", "parametric"),
     compassStyle: g("--compass-style", "tape"),
     glow: g("--glow", "none"),
     glowOpacity: gn("--glow-opacity", 0),
@@ -10703,6 +10706,7 @@ var S = {
 var L2 = {
   W: 1e3,
   H: 1600,
+  roadH: 1600,
   cx: 500,
   land: false,
   hdgTop: 120,
@@ -10732,6 +10736,7 @@ var FAV_KEY = "moto-hud-favs";
 var ELEV_OPTS_KEY = "moto-hud-elev-opts";
 var CURVE_OPTS_KEY = "moto-hud-curve-opts";
 var HUD_OPTS_KEY = "moto-hud-hud-opts";
+var APP_OPTS_KEY = "moto-hud-app-opts";
 var DEFAULT_ELEV_EXAG = 1.8;
 var DEFAULT_ELEV_PROFILE_H = 72;
 var MIN_ELEV_PROFILE_H = 36;
@@ -11363,6 +11368,7 @@ async function start(meta) {
   startSysTimers();
   document.documentElement.classList.add("telemetry-on");
   log("meta", { sub: "start", appVersion: APP_VERSION, ...meta || {} });
+  updateMarkButtonVisibility();
   return _sessionId;
 }
 async function stop() {
@@ -11385,6 +11391,7 @@ async function stop() {
   _lastSnapS0 = null;
   document.documentElement.classList.remove("telemetry-on");
   stopTimers();
+  updateMarkButtonVisibility();
 }
 function mark(note) {
   if (!_active) return;
@@ -11404,8 +11411,10 @@ async function setEnabled(on) {
 }
 function updateMarkButtonVisibility() {
   const btn = document.getElementById("btn-telemetry-mark");
-  const show = isEnabledPref() && _active;
-  if (btn) btn.classList.toggle("hidden", !show);
+  if (!btn) return;
+  const enabled = isEnabledPref();
+  btn.classList.toggle("hidden", !enabled);
+  btn.classList.toggle("tel-idle", enabled && !_active);
 }
 async function listSessions() {
   const all = await listSessionsRaw();
@@ -12018,6 +12027,42 @@ function radiusAtS(geom, s2) {
 function ribbonStepAtS() {
   return RIBBON_STEP_M;
 }
+var RIBBON_NEAR_Z_MIN = 0.06;
+var RIBBON_NEAR_Z_STEP = 0.22;
+function extendRibbonNearCam(sections) {
+  if (sections.length < 2) return sections;
+  const s0 = sections[0];
+  const s1 = sections[1];
+  const dz = s1.cz - s0.cz;
+  if (dz < 0.02) return sections;
+  const inv = 1 / dz;
+  const rate = {
+    s: (s1.s - s0.s) * inv,
+    elev: (s1.elev - s0.elev) * inv,
+    cx: (s1.cx - s0.cx) * inv,
+    lx: (s1.lx - s0.lx) * inv,
+    lz: (s1.lz - s0.lz) * inv,
+    rx: (s1.rx - s0.rx) * inv,
+    rz: (s1.rz - s0.rz) * inv
+  };
+  const extra = [];
+  for (let z = s0.cz - RIBBON_NEAR_Z_STEP; z >= RIBBON_NEAR_Z_MIN; z -= RIBBON_NEAR_Z_STEP) {
+    const back = s0.cz - z;
+    extra.push({
+      s: s0.s - rate.s * back,
+      lat: s0.lat,
+      lon: s0.lon,
+      elev: s0.elev - rate.elev * back,
+      cx: s0.cx - rate.cx * back,
+      cz: z,
+      lx: s0.lx - rate.lx * back,
+      lz: s0.lz - rate.lz * back,
+      rx: s0.rx - rate.rx * back,
+      rz: s0.rz - rate.rz * back
+    });
+  }
+  return extra.length ? extra.concat(sections) : sections;
+}
 function computeRibbonSectionsCam(geom, snap, maxDist, halfW, headingRad) {
   const elev0 = geom.elevReady ? interpolateElevAtS(geom, snap.s) : 0;
   const sEnd = Math.min(geom.s[geom.n - 1], snap.s + maxDist);
@@ -12041,7 +12086,7 @@ function computeRibbonSectionsCam(geom, snap, maxDist, halfW, headingRad) {
   let prevNz = null;
   for (let i = 0; i < samples.length; i++) {
     const cur = samples[i];
-    if (cur.z < 1) continue;
+    if (cur.z < 0.12) continue;
     const i0 = Math.max(0, i - 1);
     const i1 = Math.min(samples.length - 1, i + 1);
     let tx2 = samples[i1].x - samples[i0].x;
@@ -12957,7 +13002,7 @@ function renderElevProfile(snap, geom, W, H) {
     const x = toX(m.s - s0);
     marks += '<line x1="' + x.toFixed(1) + '" y1="' + my + '" x2="' + x.toFixed(1) + '" y2="' + (my + ph) + '" stroke="' + tok.accent + '" stroke-width="1" opacity="0.5"/>';
   });
-  return '<g class="elev-profile"><rect x="0" y="0" width="' + W + '" height="' + H + '" fill="rgba(0,0,0,0.55)"/>' + marks + pathSegs + "</g>";
+  return '<g class="elev-profile" fill="none">' + marks + pathSegs + "</g>";
 }
 
 // js/fuel.js
@@ -13163,6 +13208,30 @@ function fuelStationsForRoad(maxDist) {
 }
 
 // js/route.js
+var MANEUVER_PASSED_M = 8;
+var MANEUVER_NEXT_DELAY_M = 90;
+function isPathTurnStep(st) {
+  return st && st.type !== "depart" && st.type !== "arrive" && st.modifier && st.modifier !== "straight";
+}
+function getVisibleTurnManeuvers(geom, curS, limit) {
+  if (!geom?.maneuvers?.length || curS == null) return [];
+  const maxN = limit || 3;
+  const sorted = geom.maneuvers.filter((m) => isPathTurnStep(m.step)).sort((a, b) => a.s - b.s);
+  const out = [];
+  let blockUntilS = -Infinity;
+  for (const m of sorted) {
+    if (curS > m.s + MANEUVER_PASSED_M) {
+      blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
+      continue;
+    }
+    if (m.s < blockUntilS) continue;
+    const ahead = m.s - curS;
+    if (ahead > 500) continue;
+    out.push({ maneuver: m, distAhead: Math.max(0, ahead) });
+    if (out.length >= maxN) break;
+  }
+  return out;
+}
 function ensureRouteGeometry(route) {
   if (!route) return null;
   if (route.geometry?.n > 1) {
@@ -13491,15 +13560,29 @@ function findNextManeuver() {
   const snap = geom ? getRouteSnapForNav(S.smoothedHeading) : null;
   const curS = snap ? snap.s : null;
   const curIdx = snap ? snap.segIdx : findNearestOnRoute()?.idx ?? 0;
+  if (geom && curS != null) {
+    const sorted = geom.maneuvers.filter((m) => m.step.type !== "depart").sort((a, b) => a.s - b.s);
+    let blockUntilS = -Infinity;
+    for (const m of sorted) {
+      if (m.step.type === "arrive") {
+        if (curS <= m.s + MANEUVER_PASSED_M && m.s >= blockUntilS) {
+          const along2 = Math.max(0, m.s - curS);
+          return { step: m.step, dist: along2 > 0 ? along2 : haversine(S.gps, m.step) };
+        }
+        continue;
+      }
+      if (curS > m.s + MANEUVER_PASSED_M) {
+        blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
+        continue;
+      }
+      if (m.s < blockUntilS) continue;
+      const along = Math.max(0, m.s - curS);
+      return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
+    }
+    return null;
+  }
   for (const st of S.route.steps) {
     if (st.type === "depart") continue;
-    if (geom && curS != null) {
-      const m = geom.maneuvers.find((mn) => mn.step === st);
-      if (m && m.s >= curS - 15) {
-        const along = Math.max(0, m.s - curS);
-        return { step: st, dist: along > 0 ? along : haversine(S.gps, st) };
-      }
-    }
     if (stepCoordIndex(st) >= curIdx) {
       return { step: st, dist: haversine(S.gps, st) };
     }
@@ -13756,6 +13839,7 @@ function computePathLayout(w, h) {
   const aspect = Math.max(0.2, w / Math.max(1, h));
   L2.W = 1e3;
   L2.H = Math.max(480, Math.min(2400, Math.round(L2.W / aspect)));
+  L2.roadH = L2.H;
   L2.cx = L2.W / 2;
   L2.land = aspect > 1;
   L2.camFocal = L2.land ? 900 : 1300;
@@ -13772,7 +13856,7 @@ function projectGround(x, z, elevDelta) {
   const elevLift = use3d ? (elevDelta || 0) * getElevExag() * 0.16 : 0;
   const Yc = dy * cp + dz * sp - elevLift;
   const Zc = -dy * sp + dz * cp;
-  if (Zc < 1.5) return null;
+  if (Zc < 0.85) return null;
   const sx = L2.cx + L2.camFocal * x / Zc;
   const sy = L2.camVoff - L2.camFocal * Yc / Zc;
   if (sx < -L2.W * 0.4 || sx > L2.W * 1.4) return null;
@@ -13784,28 +13868,6 @@ function toLocalFrenet(lat, lon, snap, headingRad) {
 function triArea2(a, b, c) {
   if (!a || !b || !c) return 0;
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-}
-function screenDist2(a, b) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  return dx * dx + dy * dy;
-}
-function quadValid(aL, aR, bL, bR) {
-  if (!aL || !aR || !bL || !bR) return false;
-  const maxD2 = (L2.W * 0.28) ** 2;
-  const edges = [
-    screenDist2(aL, aR),
-    screenDist2(bL, bR),
-    screenDist2(aL, bL),
-    screenDist2(aR, bR)
-  ];
-  if (Math.max(...edges) > maxD2) return false;
-  if (screenDist2(aL, bR) > maxD2 * 1.8 || screenDist2(aR, bL) > maxD2 * 1.8) return false;
-  const t1 = triArea2(aL, bL, bR);
-  const t2 = triArea2(aL, bR, aR);
-  if (t1 <= 0.5 || t2 <= 0.5) return false;
-  if (t1 * t2 <= 0) return false;
-  return true;
 }
 function projectCam(x, z, elev) {
   return projectGround(x, z, elev);
@@ -13827,7 +13889,7 @@ function buildStripMeshSvg(sections, geom, speedMps) {
     const aR = projectCam(a.rx, a.rz, a.elev);
     const bL = projectCam(b.lx, b.lz, b.elev);
     const bR = projectCam(b.rx, b.rz, b.elev);
-    if (!quadValid(aL, aR, bL, bR)) continue;
+    if (!aL || !aR || !bL || !bR) continue;
     const sMid = (a.s + b.s) * 0.5;
     const warnCol = ribbonCurveColor(sMid, geom, speedMps);
     const fillCol = warnCol || tok.pathFill;
@@ -13835,8 +13897,17 @@ function buildStripMeshSvg(sections, geom, speedMps) {
     const fillOp = warnCol ? 0.48 : tok.pathFillOpacity;
     const ew = warnCol ? edgeW + 2 : edgeW;
     if (!fillNone) {
-      fill += '<polygon points="' + pt(aL) + " " + pt(bL) + " " + pt(bR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
-      fill += '<polygon points="' + pt(aL) + " " + pt(bR) + " " + pt(aR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
+      const t1 = triArea2(aL, bL, bR);
+      const t2 = triArea2(aL, bR, aR);
+      const bowTie = t1 * t2 <= 0;
+      if (!bowTie || a.cz < 8 || b.cz < 8) {
+        if (t1 > 1) {
+          fill += '<polygon points="' + pt(aL) + " " + pt(bL) + " " + pt(bR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
+        }
+        if (t2 > 1) {
+          fill += '<polygon points="' + pt(aL) + " " + pt(bR) + " " + pt(aR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
+        }
+      }
     }
     const dash = tok.pathDash !== "none" ? ' stroke-dasharray="' + tok.pathDash + '"' : "";
     edges += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + ew + '" stroke-linecap="round"' + dash + glowExtra + '/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + ew + '" stroke-linecap="round"' + dash + glowExtra + "/>";
@@ -13874,21 +13945,27 @@ function turnAngleAt(step) {
   );
   return (bOut - bIn + 540) % 360 - 180;
 }
-function renderTurnsStr(svg, snap, headingRad) {
+function isPathTurnStep2(st) {
+  return st && st.type !== "depart" && st.type !== "arrive" && st.modifier && st.modifier !== "straight";
+}
+function renderTurnsStr(svg, snap, headingRad, geom, curS) {
   if (!S.route || !snap) return "";
   const tok = getThemeTokens();
+  const scale = tok.pathTurnScale || 1;
   const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
   const vb = bv && bv.width ? bv.width : L2.W;
   const vbX = bv ? bv.x : 0;
   const vbY = bv ? bv.y : 0;
-  const vbW = vb;
+  const vbW = bv ? bv.width : L2.W;
   const vbH = bv ? bv.height : L2.H;
-  const turns = S.route.steps.filter((st) => st.type !== "depart" && st.type !== "arrive" && st.modifier && st.modifier !== "straight");
   const pos = curPos();
   let out = "";
   let shown = 0;
-  for (const st of turns) {
+  const items = geom && curS != null ? getVisibleTurnManeuvers(geom, curS, 3) : S.route.steps.filter(isPathTurnStep2).map((st) => ({ maneuver: { step: st }, distAhead: haversine(pos, st) }));
+  for (const item of items) {
     if (shown >= 3) break;
+    const st = item.maneuver?.step;
+    if (!st) continue;
     const loc = toLocalFrenet(st.lat, st.lon, snap, headingRad);
     if (loc.z < 5 || loc.z > ROAD_MAX) continue;
     const P = projectGround(loc.x, loc.z, 0);
@@ -13896,9 +13973,9 @@ function renderTurnsStr(svg, snap, headingRad) {
     const ang = turnAngleAt(st);
     const dir = ang == null ? st.modifier.includes("left") ? -1 : 1 : ang < 0 ? -1 : 1;
     const deg = ang == null ? "" : Math.round(Math.abs(ang)) + "\xB0";
-    const dist = Math.round(haversine(pos, st));
+    const dist = Math.round(item.distAhead != null ? item.distAhead : haversine(pos, st));
     const col = shown === 0 ? tok.turnPrimary : tok.turnSecondary;
-    const k = shown === 0 ? 1 : 0.72;
+    const k = (shown === 0 ? 1 : 0.72) * scale;
     const degFont = vb * 0.12 * k;
     const distFont = vb * 0.05 * k;
     const s2 = vb * 0.05 * k;
@@ -13945,7 +14022,7 @@ function renderFuelStr(svg, snap, headingRad) {
     const distTxt = dm < 1e3 ? Math.round(dm / 10) * 10 + " \u043C" : (dm / 1e3).toFixed(1) + " \u043A\u043C";
     let cx = Math.min(vbX + vbW - r - 2, Math.max(vbX + r + 2, P.x));
     let cy = Math.min(vbY + vbH - r - distFont - 4, Math.max(vbY + r + 2, P.y));
-    out += '<g text-anchor="middle" font-family="' + tok.fontNum + ',monospace"><circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + tok.svgBgOverlay + '" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '"/><text x="' + cx.toFixed(1) + '" y="' + (cy + emoji * 0.36).toFixed(1) + '" font-size="' + emoji.toFixed(1) + '">\u26FD</text><text x="' + cx.toFixed(1) + '" y="' + (cy + r + distFont * 1.05).toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" font-weight="900" fill="' + col + '" stroke="' + tok.svgHalo + '" stroke-width="' + (distFont * 0.14).toFixed(1) + '" paint-order="stroke">' + distTxt + "</text></g>";
+    out += '<g text-anchor="middle" font-family="' + tok.fontNum + ',monospace"><circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '"/><text x="' + cx.toFixed(1) + '" y="' + (cy + emoji * 0.36).toFixed(1) + '" font-size="' + emoji.toFixed(1) + '">\u26FD</text><text x="' + cx.toFixed(1) + '" y="' + (cy + r + distFont * 1.05).toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" font-weight="900" fill="' + col + '" stroke="' + tok.svgHalo + '" stroke-width="' + (distFont * 0.14).toFixed(1) + '" paint-order="stroke">' + distTxt + "</text></g>";
   }
   return out;
 }
@@ -13968,22 +14045,25 @@ function renderPathway() {
   const rawSnap = getRouteSnapForNav(gpsHdg);
   const geomReady = S.route?.geometry;
   if (!geomReady || !rawSnap) {
-    if (svg.innerHTML) svg.innerHTML = "";
+    svg.innerHTML = "";
     return;
   }
   const speedMps = Math.max(0, S.dispSpeed / 3.6);
   const snap = getDisplaySnap(rawSnap, geomReady, speedMps, gpsHdg);
   if (!snap) {
-    if (svg.innerHTML) svg.innerHTML = "";
+    svg.innerHTML = "";
     return;
   }
   const maxDist = Math.max(100, Math.min(ROAD_MAX, Math.round(kmh * 8)));
   const rect = block.getBoundingClientRect();
   computePathLayout(rect.width || block.clientWidth || 300, rect.height || block.clientHeight || 200);
   svg.setAttribute("viewBox", "0 0 " + L2.W + " " + L2.H);
+  svg.setAttribute("preserveAspectRatio", "xMidYMax slice");
   const headingRad = updateCamHeading(geomReady, snap);
   updateCamPitch(geomReady, snap, getElevExag(), S.showElevProfile);
-  const sections = computeRibbonSectionsCam(geomReady, snap, maxDist, ROAD_HALF, headingRad);
+  const sections = extendRibbonNearCam(
+    computeRibbonSectionsCam(geomReady, snap, maxDist, ROAD_HALF, headingRad)
+  );
   if (sections.length < 2) {
     svg.innerHTML = "";
     return;
@@ -13995,6 +14075,10 @@ function renderPathway() {
   for (let ci = 0; ci < centerS.length - 1; ci++) {
     const a = centerS[ci];
     const b = centerS[ci + 1];
+    if (!a.p || !b.p) continue;
+    const dx = b.p.x - a.p.x;
+    const dy = b.p.y - a.p.y;
+    if (dx * dx + dy * dy > (L2.W * 0.32) ** 2) continue;
     const sMid = (a.s + b.s) * 0.5;
     const warnCol = ribbonCurveColor(sMid, geomReady, speedMps);
     const stroke = warnCol || tok.pathEdge;
@@ -14002,22 +14086,17 @@ function renderPathway() {
     const op = warnCol ? 0.85 : tok.pathCenterOpacity;
     html += '<line x1="' + a.p.x.toFixed(1) + '" y1="' + a.p.y.toFixed(1) + '" x2="' + b.p.x.toFixed(1) + '" y2="' + b.p.y.toFixed(1) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" opacity="' + op + '"/>';
   }
-  html += renderTurnsStr(svg, snap, headingRad);
+  html += renderTurnsStr(svg, snap, headingRad, geomReady, rawSnap.s);
   html += renderFuelStr(svg, snap, headingRad);
   const profileH = getElevProfileH();
   const prof = renderElevProfile(snap, geomReady, L2.W, profileH);
   if (prof) html += '<g transform="translate(0,' + (L2.H - profileH - PROFILE_GAP) + ')">' + prof + "</g>";
   svg.innerHTML = html;
 }
-function renderParametricArrow(turnDeg) {
-  const tok = getThemeTokens();
-  const H = 120;
+function computeArrowCenterline(turnDeg, H = 120) {
   const stemLen = H / 3;
   const exitLen = H / 3;
   const R = Math.abs(turnDeg) > 150 ? H / 3.2 : H / 4;
-  const sw = Math.round(H * 0.12 * (tok.strokeW / 3));
-  const col = tok.accent;
-  const outline = tok.arrowStyle === "outline";
   const dirVec = (aDeg) => {
     const a2 = aDeg * Math.PI / 180;
     return [Math.sin(a2), -Math.cos(a2)];
@@ -14042,14 +14121,9 @@ function renderParametricArrow(turnDeg) {
   x += d[0] * exitLen;
   y += d[1] * exitLen;
   pts.push([x, y]);
-  const tip = [x, y];
-  const hl = sw * 2.1, hw = sw * 1.5;
-  const back = [x - d[0] * hl, y - d[1] * hl];
-  const perp = [-d[1], d[0]];
-  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
-  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
-  const stem = pts.slice(0, pts.length - 1).concat([back]);
-  const all = pts.concat([tip, wingA, wingB]);
+  return { pts, dir: d, tip: [x, y] };
+}
+function arrowViewBox(all, pad) {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   all.forEach((p) => {
     minX = Math.min(minX, p[0]);
@@ -14057,16 +14131,151 @@ function renderParametricArrow(turnDeg) {
     maxX = Math.max(maxX, p[0]);
     maxY = Math.max(maxY, p[1]);
   });
-  const pad = sw;
   minX -= pad;
   minY -= pad;
   maxX += pad;
   maxY += pad;
-  const vb = minX.toFixed(1) + " " + minY.toFixed(1) + " " + (maxX - minX).toFixed(1) + " " + (maxY - minY).toFixed(1);
+  return {
+    vb: minX.toFixed(1) + " " + minY.toFixed(1) + " " + (maxX - minX).toFixed(1) + " " + (maxY - minY).toFixed(1)
+  };
+}
+function renderParametricArrow(turnDeg) {
+  const tok = getThemeTokens();
+  const H = 120;
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
+  const sw = Math.round(H * 0.12 * (tok.strokeW / 3));
+  const col = tok.accent;
+  const outline = tok.arrowStyle === "outline";
+  const hl = sw * 2.1, hw = sw * 1.5;
+  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
+  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
+  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
+  const stem = pts.slice(0, pts.length - 1).concat([back]);
+  const all = [...stem, tip, wingA, wingB];
+  const { vb } = arrowViewBox(all, sw);
   const line = '<polyline points="' + stem.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ") + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round"/>';
   const head = outline ? "" : '<polygon points="' + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1) + '" fill="' + col + '"/>';
   const headOutline = outline ? '<polyline points="' + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1) + " " + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linejoin="round"/>' : "";
   return '<svg class="arrow-svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + line + head + headOutline + "</svg>";
+}
+function renderChopperArrow(turnDeg) {
+  const tok = getThemeTokens();
+  const col = tok.accent;
+  const H = 120;
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
+  const halfW = 11;
+  const hl = 22, hw = 19;
+  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
+  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
+  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
+  const stem = pts.slice(0, pts.length - 1).concat([back]);
+  const left = [], right = [];
+  for (let i = 0; i < stem.length; i++) {
+    const p = stem[i];
+    let t;
+    if (i < stem.length - 1) {
+      const q = stem[i + 1];
+      t = [q[0] - p[0], q[1] - p[1]];
+    } else if (i > 0) {
+      const q = stem[i - 1];
+      t = [p[0] - q[0], p[1] - q[1]];
+    } else {
+      t = dir;
+    }
+    const len = Math.hypot(t[0], t[1]) || 1;
+    const n = [-t[1] / len, t[0] / len];
+    left.push([p[0] + n[0] * halfW, p[1] + n[1] * halfW]);
+    right.push([p[0] - n[0] * halfW, p[1] - n[1] * halfW]);
+  }
+  const body = left.concat(right.slice().reverse());
+  const bodyPts = body.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const headPts = tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1);
+  const all = [...stem, tip, wingA, wingB, ...left, ...right];
+  const { vb } = arrowViewBox(all, halfW + 4);
+  const rim = tok.line || col;
+  return '<svg class="arrow-svg arrow-chopper" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet"><polygon points="' + bodyPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/><polygon points="' + headPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/></svg>';
+}
+function pointInTri(px, py, ax, ay, bx, by, cx, cy) {
+  const v0x = cx - ax, v0y = cy - ay;
+  const v1x = bx - ax, v1y = by - ay;
+  const v2x = px - ax, v2y = py - ay;
+  const dot00 = v0x * v0x + v0y * v0y;
+  const dot01 = v0x * v1x + v0y * v1y;
+  const dot02 = v0x * v2x + v0y * v2y;
+  const dot11 = v1x * v1x + v1y * v1y;
+  const dot12 = v1x * v2x + v1y * v2y;
+  const inv = 1 / (dot00 * dot11 - dot01 * dot01 || 1e-9);
+  const u2 = (dot11 * dot02 - dot01 * dot12) * inv;
+  const v = (dot00 * dot12 - dot01 * dot02) * inv;
+  return u2 >= -0.02 && v >= -0.02 && u2 + v <= 1.02;
+}
+function renderVintageArrow(turnDeg) {
+  const tok = getThemeTokens();
+  const col = tok.accent;
+  const G2 = 3;
+  const halfW = 7;
+  const hl = 18, hw = 14;
+  const cellR = Math.max(1, Math.round(halfW / G2));
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, 120);
+  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
+  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
+  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
+  const stem = pts.slice(0, pts.length - 1).concat([back]);
+  const filled = /* @__PURE__ */ new Set();
+  const stamp = (x, y) => {
+    const ix = Math.round(x / G2), iy = Math.round(y / G2);
+    for (let dy = -cellR; dy <= cellR; dy++) {
+      for (let dx = -cellR; dx <= cellR; dx++) {
+        if (Math.abs(dx) + Math.abs(dy) <= cellR) filled.add(ix + dx + "," + (iy + dy));
+      }
+    }
+  };
+  for (let i = 0; i < stem.length - 1; i++) {
+    const a = stem[i], b = stem[i + 1];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const steps = Math.max(1, Math.ceil(len / (G2 * 0.4)));
+    for (let s2 = 0; s2 <= steps; s2++) {
+      const t = s2 / steps;
+      stamp(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t);
+    }
+  }
+  const allPts = [...stem, tip, wingA, wingB];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  allPts.forEach((p) => {
+    minX = Math.min(minX, p[0]);
+    minY = Math.min(minY, p[1]);
+    maxX = Math.max(maxX, p[0]);
+    maxY = Math.max(maxY, p[1]);
+  });
+  const pad = G2 * 3;
+  const iMinX = Math.floor((minX - pad) / G2), iMaxX = Math.ceil((maxX + pad) / G2);
+  const iMinY = Math.floor((minY - pad) / G2), iMaxY = Math.ceil((maxY + pad) / G2);
+  const hcx = G2 * 0.5, hcy = G2 * 0.5;
+  for (let iy = iMinY; iy <= iMaxY; iy++) {
+    for (let ix = iMinX; ix <= iMaxX; ix++) {
+      const cx = ix * G2 + hcx, cy = iy * G2 + hcy;
+      if (pointInTri(cx, cy, tip[0], tip[1], wingA[0], wingA[1], wingB[0], wingB[1])) {
+        filled.add(ix + "," + iy);
+      }
+    }
+  }
+  const blocks = [];
+  filled.forEach((k) => {
+    const parts = k.split(",");
+    const ix = Number(parts[0]), iy = Number(parts[1]);
+    blocks.push('<rect x="' + ix * G2 + '" y="' + iy * G2 + '" width="' + G2 + '" height="' + G2 + '" fill="' + col + '"/>');
+  });
+  const { vb } = arrowViewBox(allPts, pad);
+  return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges">' + blocks.join("") + "</svg>";
+}
+function renderManeuverArrow(turnDeg) {
+  const shape = getThemeTokens().arrowShape || "parametric";
+  if (shape === "chopper") return renderChopperArrow(turnDeg);
+  if (shape === "vintage") return renderVintageArrow(turnDeg);
+  return renderParametricArrow(turnDeg);
 }
 function arriveFlagSVG() {
   const tok = getThemeTokens();
@@ -14076,7 +14285,7 @@ function arriveFlagSVG() {
 }
 function buildTurnArrowSVG(turnDeg) {
   const turn = Math.max(-178, Math.min(178, turnDeg || 0));
-  return renderParametricArrow(turn);
+  return renderManeuverArrow(turn);
 }
 function buildArrowSVG(step) {
   if (!step) return "";
@@ -14088,7 +14297,7 @@ function buildArrowSVG(step) {
     else if (step.modifier.includes("right")) turn = 8;
   }
   turn = Math.max(-178, Math.min(178, turn));
-  return renderParametricArrow(turn);
+  return renderManeuverArrow(turn);
 }
 function renderCompass() {
   const el = $("compass-svg");
@@ -14165,6 +14374,49 @@ function applyFinishInfoVisibility() {
   $("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
   $("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
   $("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
+}
+
+// js/app-opts.js
+function loadAppOptsFromStorage() {
+  try {
+    const raw = localStorage.getItem(APP_OPTS_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    const setCheck = (id, v) => {
+      if (typeof v !== "boolean") return;
+      const el = $(id);
+      if (el) el.checked = v;
+    };
+    const setVal = (id, v) => {
+      if (v == null) return;
+      const el = $(id);
+      if (el) el.value = String(v);
+    };
+    setCheck("opt-voice", o.voice);
+    setCheck("opt-path", o.showPath);
+    setCheck("opt-heading", o.showCompass);
+    setCheck("opt-cams", o.cams);
+    setCheck("opt-back-only", o.backOnly);
+    setVal("opt-tol", o.tolerance);
+    setVal("opt-nodir", o.noDirPolicy);
+    setVal("opt-limit", o.limit);
+  } catch (e) {
+  }
+}
+function saveAppOptsToStorage() {
+  try {
+    localStorage.setItem(APP_OPTS_KEY, JSON.stringify({
+      voice: !!S.voice,
+      showPath: !!S.showPath,
+      showCompass: !!S.showCompass,
+      cams: !!S.cams,
+      backOnly: !!S.backOnly,
+      tolerance: S.tolerance,
+      noDirPolicy: S.noDirPolicy,
+      limit: S.limit
+    }));
+  } catch (e) {
+  }
 }
 
 // js/route-map.js
@@ -14847,6 +15099,7 @@ function bindSetupUI() {
   $("opt-voice").addEventListener("change", (e) => {
     S.voice = e.target.checked;
     refreshTtsBanner();
+    saveAppOptsToStorage();
   });
   $("btn-compass-cal")?.addEventListener("click", async () => {
     const btn = $("btn-compass-cal");
@@ -14877,6 +15130,7 @@ function bindSetupUI() {
       $("block-path").classList.remove("hidden");
       $("hud").classList.remove("no-path");
     }
+    saveAppOptsToStorage();
   });
   const bindFinishOpt = (id) => {
     $(id)?.addEventListener("change", () => {
@@ -14953,6 +15207,7 @@ function bindSetupUI() {
   $("opt-heading").addEventListener("change", (e) => {
     S.showCompass = e.target.checked;
     $("hud").classList.toggle("show-compass", S.showCompass);
+    saveAppOptsToStorage();
   });
   $("opt-cams").addEventListener("change", (e) => {
     S.cams = e.target.checked;
@@ -14962,32 +15217,46 @@ function bindSetupUI() {
     }
     updateCamStatusUI();
     if (S.cams && S.route) loadCameras();
+    saveAppOptsToStorage();
   });
   $("opt-back-only").addEventListener("change", (e) => {
     S.backOnly = e.target.checked;
+    saveAppOptsToStorage();
   });
   $("opt-tol").addEventListener("change", (e) => {
     S.tolerance = Math.max(10, Math.min(90, parseInt(e.target.value, 10) || 45));
+    saveAppOptsToStorage();
   });
   $("opt-nodir").addEventListener("change", (e) => {
     S.noDirPolicy = e.target.value;
+    saveAppOptsToStorage();
   });
   $("opt-limit").addEventListener("change", (e) => {
     S.limit = parseInt(e.target.value, 10) || 0;
+    saveAppOptsToStorage();
   });
   $("btn-start").addEventListener("click", startHud);
-  let stopTapCount = 0, stopTapTimer = null;
-  $("btn-stop").addEventListener("click", () => {
-    stopTapCount++;
-    clearTimeout(stopTapTimer);
-    if (stopTapCount >= 2) {
-      stopTapCount = 0;
+  let stopArmed = false;
+  let stopArmTimer = null;
+  let stopLastTap = 0;
+  $("btn-stop").addEventListener("click", (e) => {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - stopLastTap < 350) return;
+    stopLastTap = now;
+    if (stopArmed) {
+      stopArmed = false;
+      clearTimeout(stopArmTimer);
+      $("btn-stop")?.classList.remove("armed");
       if (confirm("\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044C \u043F\u043E\u0435\u0437\u0434\u043A\u0443?")) stopHud();
-    } else {
-      stopTapTimer = setTimeout(() => {
-        stopTapCount = 0;
-      }, 800);
+      return;
     }
+    stopArmed = true;
+    $("btn-stop")?.classList.add("armed");
+    stopArmTimer = setTimeout(() => {
+      stopArmed = false;
+      $("btn-stop")?.classList.remove("armed");
+    }, 1400);
   });
   $("btn-fuel").addEventListener("click", () => {
     cycleFuelAssist();
@@ -15047,9 +15316,13 @@ function syncOptionsFromDom() {
   S.tolerance = parseInt($("opt-tol").value, 10) || 45;
   S.noDirPolicy = $("opt-nodir").value;
   S.limit = parseInt($("opt-limit").value, 10) || 60;
+  $("hud")?.classList.toggle("show-compass", S.showCompass);
   if (!S.showPath) {
     $("block-path").classList.add("hidden");
     $("hud").classList.add("no-path");
+  } else {
+    $("block-path")?.classList.remove("hidden");
+    $("hud")?.classList.remove("no-path");
   }
 }
 function initNativeHints() {
@@ -15491,13 +15764,6 @@ function updateModeButtonLabel(modePref, resolved) {
     lbl.textContent = "\u041D\u041E\u0427\u042C";
   }
 }
-function cycleModePref() {
-  const cur = loadThemePrefs();
-  const i = MODE_PREFS.indexOf(cur.modePref);
-  const next = MODE_PREFS[(i + 1) % MODE_PREFS.length];
-  if (next !== "auto") resetModeHysteresis();
-  applyTheme(cur.theme, next);
-}
 var _lastAutoCheck = 0;
 function tickAutoMode() {
   const cur = loadThemePrefs();
@@ -15532,7 +15798,6 @@ function initThemeManager() {
       applyTheme(loadThemePrefs().theme, mode);
     });
   });
-  $2("btn-mode")?.addEventListener("click", () => cycleModePref());
 }
 
 // js/offroute.js
@@ -16257,6 +16522,7 @@ function initTelemetryUI() {
     if (e.target.open) refreshSessionsList();
   });
   refreshSessionsList();
+  telemetry_default.updateMarkButtonVisibility();
 }
 
 // js/sw-register.js
@@ -16291,6 +16557,7 @@ initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();
 loadHudOptsFromStorage();
+loadAppOptsFromStorage();
 syncOptionsFromDom();
 updateCamStatusUI();
 bindSetupUI();
@@ -16305,6 +16572,7 @@ window.__motoHUD = {
   startGps,
   doBuildRoute,
   doAddressSearch,
+  onTick,
   _searchBusy: false,
   _finishFocused: false
 };

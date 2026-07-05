@@ -29,11 +29,13 @@ html {
   --radius: 10px;
   --stroke-w: 3px;
   --arrow-style: filled;
+  --arrow-shape: parametric;
   --path-fill: #00aa5c;
   --path-fill-opacity: 0.22;
   --path-edge: #00ff88;
   --path-edge-w: 5px;
   --path-center-opacity: 0.45;
+  --path-turn-scale: 1;
   --path-dash: none;
   --compass-style: tape;
   --glow: none;

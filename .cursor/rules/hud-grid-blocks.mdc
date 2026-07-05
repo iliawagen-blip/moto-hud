@@ -1,0 +1,50 @@
+---
+description: HUD grid blocks (arrow, path, speed) — одинаковые в portrait/landscape
+globs: css/app.css,index.html,js/render.js,js/hud.js
+alwaysApply: false
+---
+
+# HUD: три блока сетки — одинаковые, меняется только раскладка
+
+## Блоки
+
+| Класс | grid-area | Содержимое |
+|-------|-----------|------------|
+| `.block-arrow` | `ar` | улица, стрелка, дистанция до манёвра |
+| `.block-path` | `pa` | прогноз-дорожка (SVG) |
+| `.block-speed` | `sp` | СТОП/ЗАПР./ЭКРАН/НАСТР./МЕТКА (если телеметрия), скорость, ETA |
+
+## Инвариант
+
+**В portrait и landscape блоки `ar`, `pa`, `sp` визуально и структурно одинаковы** (разметка, типографика, внутренний grid, padding, borders).  
+Меняется **только** взаимное расположение через `#hud.on`:
+
+- **portrait**: `"st" "ar" "pa" "sp"` (столбец)
+- **landscape**: `"st st st" "ar pa sp"` (три колонки)
+
+## Разрешено в `@media (orientation:…)`
+
+Только для `#hud.on` / `#hud.on.no-path`:
+
+- `grid-template-areas`
+- `grid-template-columns`
+- `grid-template-rows`
+
+## Запрещено в `@media (orientation:…)`
+
+Для `.block-arrow`, `.block-path`, `.block-speed` и их потомков:
+
+- другие `font-size` / `padding` / `border` / внутренний `grid-template-columns`
+- `order`, `display`, скрытие/перестановка дочерних элементов
+- отдельные правила `.speed-val`, `.finish-info`, `.mdist`, `.street` по ориентации
+
+Общие стили блоков — **в базовой секции** `css/app.css` (до media queries).
+
+## Исключения (не блоки сетки)
+
+Statusbar, compass, overlays — могут иметь orientation-специфику.  
+Кнопки `.speed-btns` (включая `.btn-telemetry-mark` при включённой телеметрии) — часть `.block-speed`.
+
+## Проверка
+
+После правок layout: в DevTools переключить portrait ↔ landscape — содержимое `ar`/`pa`/`sp` не должно «переключать» стили, только позицию на экране.
