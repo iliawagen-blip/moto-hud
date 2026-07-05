@@ -60,7 +60,7 @@ export const S = {
 };
 
 export const L = {
-  W: 1000, H: 1600, cx: 500, land: false,
+  W: 1000, H: 1600, roadH: 1600, cx: 500, land: false,
   hdgTop: 120, hdgPxPerDeg: 10, hdgHalf: 30,
   horizonY: 520,
   spX: 120, spCenterY: 820, spHalfH: 300, spPxPerKmh: 7.5,
@@ -79,6 +79,7 @@ export const FAV_KEY = 'moto-hud-favs';
 export const ELEV_OPTS_KEY = 'moto-hud-elev-opts';
 export const CURVE_OPTS_KEY = 'moto-hud-curve-opts';
 export const HUD_OPTS_KEY = 'moto-hud-hud-opts';
+export const APP_OPTS_KEY = 'moto-hud-app-opts';
 /** Усиление вертикали профиля высот по умолчанию */
 export const DEFAULT_ELEV_EXAG = 1.8;
 /** Высота полоски профиля в HUD, px (viewBox) */

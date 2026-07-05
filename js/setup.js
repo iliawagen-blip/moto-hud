@@ -13,6 +13,7 @@ import { updateCamStatusUI } from './cam-status.js';
 import { loadRouteElevation, saveElevOptsToStorage } from './elevation.js';
 import { computeCurveSpeed, saveCurveOptsToStorage } from './curve-speed.js';
 import { saveHudOptsToStorage, applyFinishInfoVisibility, clampFuelPlannerCount } from './hud-opts.js';
+import { saveAppOptsToStorage } from './app-opts.js';
 
 import { isAndroidNative } from './platform.js';
 
@@ -499,6 +500,7 @@ export function bindSetupUI(){
   $('opt-voice').addEventListener('change', e => {
     S.voice = e.target.checked;
     refreshTtsBanner();
+    saveAppOptsToStorage();
   });
 
   $('btn-compass-cal')?.addEventListener('click', async () => {
@@ -539,6 +541,8 @@ export function bindSetupUI(){
       $('hud').classList.remove('no-path');
 
     }
+
+    saveAppOptsToStorage();
 
   });
 
@@ -627,6 +631,8 @@ export function bindSetupUI(){
 
     $('hud').classList.toggle('show-compass', S.showCompass);
 
+    saveAppOptsToStorage();
+
   });
 
   $('opt-cams').addEventListener('change', e => {
@@ -637,19 +643,31 @@ export function bindSetupUI(){
     }
     updateCamStatusUI();
     if(S.cams && S.route) loadCameras();
+    saveAppOptsToStorage();
   });
 
-  $('opt-back-only').addEventListener('change', e => { S.backOnly = e.target.checked; });
+  $('opt-back-only').addEventListener('change', e => {
+    S.backOnly = e.target.checked;
+    saveAppOptsToStorage();
+  });
 
   $('opt-tol').addEventListener('change', e => {
 
     S.tolerance = Math.max(10, Math.min(90, parseInt(e.target.value, 10) || 45));
 
+    saveAppOptsToStorage();
+
   });
 
-  $('opt-nodir').addEventListener('change', e => { S.noDirPolicy = e.target.value; });
+  $('opt-nodir').addEventListener('change', e => {
+    S.noDirPolicy = e.target.value;
+    saveAppOptsToStorage();
+  });
 
-  $('opt-limit').addEventListener('change', e => { S.limit = parseInt(e.target.value, 10) || 0; });
+  $('opt-limit').addEventListener('change', e => {
+    S.limit = parseInt(e.target.value, 10) || 0;
+    saveAppOptsToStorage();
+  });
 
 
 
@@ -657,26 +675,29 @@ export function bindSetupUI(){
 
 
 
-  let stopTapCount = 0, stopTapTimer = null;
+  let stopArmed = false;
+  let stopArmTimer = null;
+  let stopLastTap = 0;
 
-  $('btn-stop').addEventListener('click', () => {
+  $('btn-stop').addEventListener('click', (e) => {
+    e.preventDefault();
+    const now = Date.now();
+    if(now - stopLastTap < 350) return;
+    stopLastTap = now;
 
-    stopTapCount++;
-
-    clearTimeout(stopTapTimer);
-
-    if(stopTapCount >= 2){
-
-      stopTapCount = 0;
-
+    if(stopArmed){
+      stopArmed = false;
+      clearTimeout(stopArmTimer);
+      $('btn-stop')?.classList.remove('armed');
       if(confirm('Завершить поездку?')) stopHud();
-
-    } else {
-
-      stopTapTimer = setTimeout(() => { stopTapCount = 0; }, 800);
-
+      return;
     }
-
+    stopArmed = true;
+    $('btn-stop')?.classList.add('armed');
+    stopArmTimer = setTimeout(() => {
+      stopArmed = false;
+      $('btn-stop')?.classList.remove('armed');
+    }, 1400);
   });
 
 
@@ -775,11 +796,19 @@ export function syncOptionsFromDom(){
 
   S.limit = parseInt($('opt-limit').value, 10) || 60;
 
+  $('hud')?.classList.toggle('show-compass', S.showCompass);
+
   if(!S.showPath){
 
     $('block-path').classList.add('hidden');
 
     $('hud').classList.add('no-path');
+
+  } else {
+
+    $('block-path')?.classList.remove('hidden');
+
+    $('hud')?.classList.remove('no-path');
 
   }
 

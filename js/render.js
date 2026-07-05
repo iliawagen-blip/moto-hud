@@ -2,13 +2,13 @@ import { S, L, CAM_H, CAM_B, CAM_PITCH, ROAD_MAX, ROAD_HALF } from './state.js';
 import { $ } from './util.js';
 import { haversine, bearing } from './geo.js';
 import { curPos } from './gps.js';
-import { maneuverTurnAngle } from './route.js';
+import { maneuverTurnAngle, getVisibleTurnManeuvers } from './route.js';
 import { fuelStationsForRoad, fuelColor } from './fuel.js';
 import { ensureRouteGeometry } from './route.js';
 import {
   getRouteSnapForNav, getDisplaySnap, updateCamHeading, getCamHeadingRad,
   updateCamPitch, getCamPitchRad,
-  computeRibbonSectionsCam, worldToCamXZ
+  computeRibbonSectionsCam, worldToCamXZ, extendRibbonNearCam
 } from './route-geometry.js';
 import { renderElevProfile, getElevExag, getElevProfileH } from './elevation.js';
 import { ribbonCurveColor } from './curve-speed.js';
@@ -20,6 +20,7 @@ export function computePathLayout(w, h){
   const aspect = Math.max(0.2, w / Math.max(1, h));
   L.W = 1000;
   L.H = Math.max(480, Math.min(2400, Math.round(L.W / aspect)));
+  L.roadH = L.H;
   L.cx = L.W / 2;
   L.land = aspect > 1;
   L.camFocal = L.land ? 900 : 1300;
@@ -38,7 +39,7 @@ export function projectGround(x, z, elevDelta){
   const elevLift = use3d ? (elevDelta || 0) * getElevExag() * 0.16 : 0;
   const Yc = dy * cp + dz * sp - elevLift;
   const Zc = -dy * sp + dz * cp;
-  if(Zc < 1.5) return null;
+  if(Zc < 0.85) return null;
   const sx = L.cx + L.camFocal * x / Zc;
   const sy = L.camVoff - L.camFocal * Yc / Zc;
   if(sx < -L.W * 0.4 || sx > L.W * 1.4) return null;
@@ -61,34 +62,11 @@ function triArea2(a, b, c){
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
 
-function screenDist2(a, b){
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  return dx * dx + dy * dy;
-}
-
-/** Отсечение «иголок» и bow-tie четырёхугольников */
-function quadValid(aL, aR, bL, bR){
-  if(!aL || !aR || !bL || !bR) return false;
-  const maxD2 = (L.W * 0.28) ** 2;
-  const edges = [
-    screenDist2(aL, aR), screenDist2(bL, bR),
-    screenDist2(aL, bL), screenDist2(aR, bR)
-  ];
-  if(Math.max(...edges) > maxD2) return false;
-  if(screenDist2(aL, bR) > maxD2 * 1.8 || screenDist2(aR, bL) > maxD2 * 1.8) return false;
-  const t1 = triArea2(aL, bL, bR);
-  const t2 = triArea2(aL, bR, aR);
-  if(t1 <= 0.5 || t2 <= 0.5) return false;
-  if(t1 * t2 <= 0) return false;
-  return true;
-}
-
 function projectCam(x, z, elev){
   return projectGround(x, z, elev);
 }
 
-/** Triangle strip в камерной системе + cull битых quad */
+/** Triangle strip в камерной системе */
 function buildStripMeshSvg(sections, geom, speedMps){
   if(sections.length < 2) return { fill: '', edges: '' };
   const tok = getThemeTokens();
@@ -108,7 +86,7 @@ function buildStripMeshSvg(sections, geom, speedMps){
     const aR = projectCam(a.rx, a.rz, a.elev);
     const bL = projectCam(b.lx, b.lz, b.elev);
     const bR = projectCam(b.rx, b.rz, b.elev);
-    if(!quadValid(aL, aR, bL, bR)) continue;
+    if(!aL || !aR || !bL || !bR) continue;
 
     const sMid = (a.s + b.s) * 0.5;
     const warnCol = ribbonCurveColor(sMid, geom, speedMps);
@@ -118,10 +96,19 @@ function buildStripMeshSvg(sections, geom, speedMps){
     const ew = warnCol ? edgeW + 2 : edgeW;
 
     if(!fillNone){
-      fill += '<polygon points="' + pt(aL) + ' ' + pt(bL) + ' ' + pt(bR) +
-        '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
-      fill += '<polygon points="' + pt(aL) + ' ' + pt(bR) + ' ' + pt(aR) +
-        '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
+      const t1 = triArea2(aL, bL, bR);
+      const t2 = triArea2(aL, bR, aR);
+      const bowTie = t1 * t2 <= 0;
+      if(!bowTie || a.cz < 8 || b.cz < 8){
+        if(t1 > 1){
+          fill += '<polygon points="' + pt(aL) + ' ' + pt(bL) + ' ' + pt(bR) +
+            '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
+        }
+        if(t2 > 1){
+          fill += '<polygon points="' + pt(aL) + ' ' + pt(bR) + ' ' + pt(aR) +
+            '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
+        }
+      }
     }
 
     const dash = tok.pathDash !== 'none' ? ' stroke-dasharray="' + tok.pathDash + '"' : '';
@@ -170,22 +157,33 @@ function turnAngleAt(step){
   return ((bOut - bIn + 540) % 360) - 180;
 }
 
-function renderTurnsStr(svg, snap, headingRad){
+function isPathTurnStep(st){
+  return st && st.type !== 'depart' && st.type !== 'arrive' &&
+    st.modifier && st.modifier !== 'straight';
+}
+
+function renderTurnsStr(svg, snap, headingRad, geom, curS){
   if(!S.route || !snap) return '';
   const tok = getThemeTokens();
+  const scale = tok.pathTurnScale || 1;
   const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
   const vb = bv && bv.width ? bv.width : L.W;
   const vbX = bv ? bv.x : 0;
   const vbY = bv ? bv.y : 0;
-  const vbW = vb;
+  const vbW = bv ? bv.width : L.W;
   const vbH = bv ? bv.height : L.H;
-  const turns = S.route.steps.filter(st =>
-    st.type !== 'depart' && st.type !== 'arrive' && st.modifier && st.modifier !== 'straight');
   const pos = curPos();
   let out = '';
   let shown = 0;
-  for(const st of turns){
+
+  const items = (geom && curS != null)
+    ? getVisibleTurnManeuvers(geom, curS, 3)
+    : S.route.steps.filter(isPathTurnStep).map(st => ({ maneuver: { step: st }, distAhead: haversine(pos, st) }));
+
+  for(const item of items){
     if(shown >= 3) break;
+    const st = item.maneuver?.step;
+    if(!st) continue;
     const loc = toLocalFrenet(st.lat, st.lon, snap, headingRad);
     if(loc.z < 5 || loc.z > ROAD_MAX) continue;
     const P = projectGround(loc.x, loc.z, 0);
@@ -193,9 +191,9 @@ function renderTurnsStr(svg, snap, headingRad){
     const ang = turnAngleAt(st);
     const dir = ang == null ? (st.modifier.includes('left') ? -1 : 1) : (ang < 0 ? -1 : 1);
     const deg = ang == null ? '' : Math.round(Math.abs(ang)) + '°';
-    const dist = Math.round(haversine(pos, st));
+    const dist = Math.round(item.distAhead != null ? item.distAhead : haversine(pos, st));
     const col = shown === 0 ? tok.turnPrimary : tok.turnSecondary;
-    const k = shown === 0 ? 1 : 0.72;
+    const k = (shown === 0 ? 1 : 0.72) * scale;
     const degFont = vb * 0.12 * k;
     const distFont = vb * 0.05 * k;
     const s = vb * 0.05 * k;
@@ -256,7 +254,7 @@ function renderFuelStr(svg, snap, headingRad){
     out +=
       '<g text-anchor="middle" font-family="' + tok.fontNum + ',monospace">' +
         '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" ' +
-          'fill="' + tok.svgBgOverlay + '" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '"/>' +
+          'fill="none" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '"/>' +
         '<text x="' + cx.toFixed(1) + '" y="' + (cy + emoji * 0.36).toFixed(1) + '" font-size="' + emoji.toFixed(1) + '">\u26FD</text>' +
         '<text x="' + cx.toFixed(1) + '" y="' + (cy + r + distFont * 1.05).toFixed(1) + '" ' +
           'font-size="' + distFont.toFixed(1) + '" font-weight="900" fill="' + col + '" ' +
@@ -287,13 +285,13 @@ export function renderPathway(){
   const rawSnap = getRouteSnapForNav(gpsHdg);
   const geomReady = S.route?.geometry;
   if(!geomReady || !rawSnap){
-    if(svg.innerHTML) svg.innerHTML = '';
+    svg.innerHTML = '';
     return;
   }
   const speedMps = Math.max(0, S.dispSpeed / 3.6);
   const snap = getDisplaySnap(rawSnap, geomReady, speedMps, gpsHdg);
   if(!snap){
-    if(svg.innerHTML) svg.innerHTML = '';
+    svg.innerHTML = '';
     return;
   }
 
@@ -301,10 +299,13 @@ export function renderPathway(){
   const rect = block.getBoundingClientRect();
   computePathLayout(rect.width || block.clientWidth || 300, rect.height || block.clientHeight || 200);
   svg.setAttribute('viewBox', '0 0 ' + L.W + ' ' + L.H);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMax slice');
 
   const headingRad = updateCamHeading(geomReady, snap);
   updateCamPitch(geomReady, snap, getElevExag(), S.showElevProfile);
-  const sections = computeRibbonSectionsCam(geomReady, snap, maxDist, ROAD_HALF, headingRad);
+  const sections = extendRibbonNearCam(
+    computeRibbonSectionsCam(geomReady, snap, maxDist, ROAD_HALF, headingRad)
+  );
   if(sections.length < 2){
     svg.innerHTML = '';
     return;
@@ -320,6 +321,10 @@ export function renderPathway(){
   for(let ci = 0; ci < centerS.length - 1; ci++){
     const a = centerS[ci];
     const b = centerS[ci + 1];
+    if(!a.p || !b.p) continue;
+    const dx = b.p.x - a.p.x;
+    const dy = b.p.y - a.p.y;
+    if(dx * dx + dy * dy > (L.W * 0.32) ** 2) continue;
     const sMid = (a.s + b.s) * 0.5;
     const warnCol = ribbonCurveColor(sMid, geomReady, speedMps);
     const stroke = warnCol || tok.pathEdge;
@@ -329,7 +334,7 @@ export function renderPathway(){
       '" x2="' + b.p.x.toFixed(1) + '" y2="' + b.p.y.toFixed(1) +
       '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" opacity="' + op + '"/>';
   }
-  html += renderTurnsStr(svg, snap, headingRad);
+  html += renderTurnsStr(svg, snap, headingRad, geomReady, rawSnap.s);
   html += renderFuelStr(svg, snap, headingRad);
   const profileH = getElevProfileH();
   const prof = renderElevProfile(snap, geomReady, L.W, profileH);
@@ -338,15 +343,10 @@ export function renderPathway(){
   svg.innerHTML = html;
 }
 
-function renderParametricArrow(turnDeg){
-  const tok = getThemeTokens();
-  const H = 120;
+function computeArrowCenterline(turnDeg, H = 120){
   const stemLen = H / 3;
   const exitLen = H / 3;
   const R = Math.abs(turnDeg) > 150 ? H / 3.2 : H / 4;
-  const sw = Math.round(H * 0.12 * (tok.strokeW / 3));
-  const col = tok.accent;
-  const outline = tok.arrowStyle === 'outline';
   const dirVec = aDeg => { const a = aDeg * Math.PI / 180; return [Math.sin(a), -Math.cos(a)]; };
   let a = 0, x = 0, y = 0;
   const pts = [[x, y]];
@@ -354,21 +354,40 @@ function renderParametricArrow(turnDeg){
   const N = Math.max(3, Math.round(Math.abs(turnDeg) / 5));
   const dA = turnDeg / N;
   const segLen = (R * Math.abs(turnDeg) * Math.PI / 180) / N;
-  for(let i = 0; i < N; i++){ a += dA; d = dirVec(a); x += d[0] * segLen; y += d[1] * segLen; pts.push([x, y]); }
+  for(let i = 0; i < N; i++){
+    a += dA; d = dirVec(a); x += d[0] * segLen; y += d[1] * segLen; pts.push([x, y]);
+  }
   d = dirVec(a); x += d[0] * exitLen; y += d[1] * exitLen; pts.push([x, y]);
-  const tip = [x, y];
+  return { pts, dir: d, tip: [x, y] };
+}
+
+function arrowViewBox(all, pad){
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  all.forEach(p => {
+    minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]);
+    maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]);
+  });
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  return {
+    vb: minX.toFixed(1) + ' ' + minY.toFixed(1) + ' ' + (maxX - minX).toFixed(1) + ' ' + (maxY - minY).toFixed(1)
+  };
+}
+
+function renderParametricArrow(turnDeg){
+  const tok = getThemeTokens();
+  const H = 120;
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
+  const sw = Math.round(H * 0.12 * (tok.strokeW / 3));
+  const col = tok.accent;
+  const outline = tok.arrowStyle === 'outline';
   const hl = sw * 2.1, hw = sw * 1.5;
-  const back = [x - d[0] * hl, y - d[1] * hl];
-  const perp = [-d[1], d[0]];
+  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
   const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
   const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
   const stem = pts.slice(0, pts.length - 1).concat([back]);
-  const all = pts.concat([tip, wingA, wingB]);
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  all.forEach(p => { minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]); maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]); });
-  const pad = sw;
-  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
-  const vb = minX.toFixed(1) + ' ' + minY.toFixed(1) + ' ' + (maxX - minX).toFixed(1) + ' ' + (maxY - minY).toFixed(1);
+  const all = [...stem, tip, wingA, wingB];
+  const { vb } = arrowViewBox(all, sw);
   const line = '<polyline points="' + stem.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ') +
     '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round"/>';
   const head = outline ? '' :
@@ -380,6 +399,140 @@ function renderParametricArrow(turnDeg){
       ' ' + tip[0].toFixed(1) + ',' + tip[1].toFixed(1) +
       '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linejoin="round"/>' : '';
   return '<svg class="arrow-svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + line + head + headOutline + '</svg>';
+}
+
+/** Чоппер: массивный шеврон «дорожный знак / эмблема» */
+function renderChopperArrow(turnDeg){
+  const tok = getThemeTokens();
+  const col = tok.accent;
+  const H = 120;
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
+  const halfW = 11;
+  const hl = 22, hw = 19;
+  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
+  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
+  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
+  const stem = pts.slice(0, pts.length - 1).concat([back]);
+  const left = [], right = [];
+  for(let i = 0; i < stem.length; i++){
+    const p = stem[i];
+    let t;
+    if(i < stem.length - 1){
+      const q = stem[i + 1];
+      t = [q[0] - p[0], q[1] - p[1]];
+    } else if(i > 0){
+      const q = stem[i - 1];
+      t = [p[0] - q[0], p[1] - q[1]];
+    } else {
+      t = dir;
+    }
+    const len = Math.hypot(t[0], t[1]) || 1;
+    const n = [-t[1] / len, t[0] / len];
+    left.push([p[0] + n[0] * halfW, p[1] + n[1] * halfW]);
+    right.push([p[0] - n[0] * halfW, p[1] - n[1] * halfW]);
+  }
+  const body = left.concat(right.slice().reverse());
+  const bodyPts = body.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const headPts = tip[0].toFixed(1) + ',' + tip[1].toFixed(1) + ' ' +
+    wingA[0].toFixed(1) + ',' + wingA[1].toFixed(1) + ' ' +
+    wingB[0].toFixed(1) + ',' + wingB[1].toFixed(1);
+  const all = [...stem, tip, wingA, wingB, ...left, ...right];
+  const { vb } = arrowViewBox(all, halfW + 4);
+  const rim = tok.line || col;
+  return '<svg class="arrow-svg arrow-chopper" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' +
+    '<polygon points="' + bodyPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/>' +
+    '<polygon points="' + headPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/>' +
+    '</svg>';
+}
+
+function pointInTri(px, py, ax, ay, bx, by, cx, cy){
+  const v0x = cx - ax, v0y = cy - ay;
+  const v1x = bx - ax, v1y = by - ay;
+  const v2x = px - ax, v2y = py - ay;
+  const dot00 = v0x * v0x + v0y * v0y;
+  const dot01 = v0x * v1x + v0y * v1y;
+  const dot02 = v0x * v2x + v0y * v2y;
+  const dot11 = v1x * v1x + v1y * v1y;
+  const dot12 = v1x * v2x + v1y * v2y;
+  const inv = 1 / (dot00 * dot11 - dot01 * dot01 || 1e-9);
+  const u = (dot11 * dot02 - dot01 * dot12) * inv;
+  const v = (dot00 * dot12 - dot01 * dot02) * inv;
+  return u >= -0.02 && v >= -0.02 && u + v <= 1.02;
+}
+
+/** Винтаж: пиксельная стрелка — растеризация штока + треугольный наконечник */
+function renderVintageArrow(turnDeg){
+  const tok = getThemeTokens();
+  const col = tok.accent;
+  const G = 3;
+  const halfW = 7;
+  const hl = 18, hw = 14;
+  const cellR = Math.max(1, Math.round(halfW / G));
+
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, 120);
+  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
+  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
+  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
+  const stem = pts.slice(0, pts.length - 1).concat([back]);
+
+  const filled = new Set();
+  const stamp = (x, y) => {
+    const ix = Math.round(x / G), iy = Math.round(y / G);
+    for(let dy = -cellR; dy <= cellR; dy++){
+      for(let dx = -cellR; dx <= cellR; dx++){
+        if(Math.abs(dx) + Math.abs(dy) <= cellR) filled.add((ix + dx) + ',' + (iy + dy));
+      }
+    }
+  };
+
+  for(let i = 0; i < stem.length - 1; i++){
+    const a = stem[i], b = stem[i + 1];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const steps = Math.max(1, Math.ceil(len / (G * 0.4)));
+    for(let s = 0; s <= steps; s++){
+      const t = s / steps;
+      stamp(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t);
+    }
+  }
+
+  const allPts = [...stem, tip, wingA, wingB];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  allPts.forEach(p => {
+    minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]);
+    maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]);
+  });
+  const pad = G * 3;
+  const iMinX = Math.floor((minX - pad) / G), iMaxX = Math.ceil((maxX + pad) / G);
+  const iMinY = Math.floor((minY - pad) / G), iMaxY = Math.ceil((maxY + pad) / G);
+  const hcx = G * 0.5, hcy = G * 0.5;
+  for(let iy = iMinY; iy <= iMaxY; iy++){
+    for(let ix = iMinX; ix <= iMaxX; ix++){
+      const cx = ix * G + hcx, cy = iy * G + hcy;
+      if(pointInTri(cx, cy, tip[0], tip[1], wingA[0], wingA[1], wingB[0], wingB[1])){
+        filled.add(ix + ',' + iy);
+      }
+    }
+  }
+
+  const blocks = [];
+  filled.forEach(k => {
+    const parts = k.split(',');
+    const ix = Number(parts[0]), iy = Number(parts[1]);
+    blocks.push('<rect x="' + (ix * G) + '" y="' + (iy * G) + '" width="' + G + '" height="' + G + '" fill="' + col + '"/>');
+  });
+
+  const { vb } = arrowViewBox(allPts, pad);
+  return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges">' +
+    blocks.join('') + '</svg>';
+}
+
+function renderManeuverArrow(turnDeg){
+  const shape = getThemeTokens().arrowShape || 'parametric';
+  if(shape === 'chopper') return renderChopperArrow(turnDeg);
+  if(shape === 'vintage') return renderVintageArrow(turnDeg);
+  return renderParametricArrow(turnDeg);
 }
 
 function arriveFlagSVG(){
@@ -395,7 +548,7 @@ function arriveFlagSVG(){
 
 export function buildTurnArrowSVG(turnDeg){
   const turn = Math.max(-178, Math.min(178, turnDeg || 0));
-  return renderParametricArrow(turn);
+  return renderManeuverArrow(turn);
 }
 
 export function buildArrowSVG(step){
@@ -408,7 +561,7 @@ export function buildArrowSVG(step){
     else if(step.modifier.includes('right')) turn = 8;
   }
   turn = Math.max(-178, Math.min(178, turn));
-  return renderParametricArrow(turn);
+  return renderManeuverArrow(turn);
 }
 
 export function renderCompass(){

@@ -141,5 +141,4 @@ export function initThemeManager(){
       applyTheme(loadThemePrefs().theme, mode);
     });
   });
-  $('btn-mode')?.addEventListener('click', () => cycleModePref());
 }

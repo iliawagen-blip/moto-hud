@@ -8,6 +8,7 @@ import { updateCamStatusUI } from './cam-status.js';
 import { loadElevOptsFromStorage } from './elevation.js';
 import { loadCurveOptsFromStorage } from './curve-speed.js';
 import { loadHudOptsFromStorage } from './hud-opts.js';
+import { loadAppOptsFromStorage } from './app-opts.js';
 import { applyThemeCss } from './theme.js';
 import { initThemeManager, applyTheme } from './theme-manager.js';
 import { initTtsHealth } from './tts-health.js';
@@ -22,6 +23,7 @@ initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();
 loadHudOptsFromStorage();
+loadAppOptsFromStorage();
 syncOptionsFromDom();
 updateCamStatusUI();
 bindSetupUI();
@@ -30,7 +32,7 @@ initNativeHints();
 initTtsHealth();
 
 window.__motoHUD = {
-  S, applyCoordsOrLink, setFinishQuiet, startHud, startGps, doBuildRoute, doAddressSearch,
+  S, applyCoordsOrLink, setFinishQuiet, startHud, startGps, doBuildRoute, doAddressSearch, onTick,
   _searchBusy: false, _finishFocused: false
 };
 

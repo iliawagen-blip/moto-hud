@@ -1,7 +1,8 @@
 /**
- * Локальные шрифты (woff2 в /fonts). Пока — системные fallback.
- * Список файлов: см. /fonts/README.md
+ * Шрифты тем (woff2 локально или CDN). Список: /fonts/README.md
  */
+@import url("https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Rye&family=VT323&family=Press+Start+2P&display=swap");
+
 @font-face {
   font-family: "B612";
   src: local("B612"), local("Arial");
@@ -54,6 +55,27 @@
   font-display: swap;
 }
 @font-face {
+  font-family: "Alfa Slab One";
+  src: local("Alfa Slab One");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Rye";
+  src: local("Rye");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Press Start 2P";
+  src: local("Press Start 2P");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
   font-family: "Bitter";
   src: local("Bitter"), local("Georgia"), local("Times New Roman");
   font-weight: 400 700;
@@ -67,7 +89,8 @@
 }
 @font-face {
   font-family: "DSEG7 Classic";
-  src: local("DSEG7 Classic"), local("Consolas"), local("Courier New");
+  src: url("https://cdn.jsdelivr.net/npm/@fontsource/dseg7-classic@5.2.5/files/dseg7-classic-latin-400-normal.woff2") format("woff2"),
+       local("DSEG7 Classic"), local("Consolas"), local("Courier New");
   font-weight: 400;
   font-display: swap;
 }

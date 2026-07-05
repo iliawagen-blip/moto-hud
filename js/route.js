@@ -10,6 +10,40 @@ import { computeCurveSpeed } from './curve-speed.js';
 import { resetFuelRouteBinding } from './fuel.js';
 import telemetry from './telemetry.js';
 
+/** Скрыть указатель поворота после прохождения, м (по s маршрута) */
+export const MANEUVER_PASSED_M = 8;
+/** Пауза перед показом следующего указателя после прохождения, м */
+export const MANEUVER_NEXT_DELAY_M = 90;
+
+function isPathTurnStep(st){
+  return st && st.type !== 'depart' && st.type !== 'arrive' &&
+    st.modifier && st.modifier !== 'straight';
+}
+
+/** Видимые на прогноз-дорожке повороты: без «хвоста» после проезда, с паузой до следующего */
+export function getVisibleTurnManeuvers(geom, curS, limit){
+  if(!geom?.maneuvers?.length || curS == null) return [];
+  const maxN = limit || 3;
+  const sorted = geom.maneuvers
+    .filter(m => isPathTurnStep(m.step))
+    .sort((a, b) => a.s - b.s);
+  const out = [];
+  let blockUntilS = -Infinity;
+
+  for(const m of sorted){
+    if(curS > m.s + MANEUVER_PASSED_M){
+      blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
+      continue;
+    }
+    if(m.s < blockUntilS) continue;
+    const ahead = m.s - curS;
+    if(ahead > 500) continue;
+    out.push({ maneuver: m, distAhead: Math.max(0, ahead) });
+    if(out.length >= maxN) break;
+  }
+  return out;
+}
+
 /** Построение RouteGeometry и запуск загрузки высот (не блокирует UI) */
 export function ensureRouteGeometry(route){
   if(!route) return null;
@@ -327,15 +361,33 @@ export function findNextManeuver(){
   const curS = snap ? snap.s : null;
   const curIdx = snap ? snap.segIdx : (findNearestOnRoute()?.idx ?? 0);
 
+  if(geom && curS != null){
+    const sorted = geom.maneuvers
+      .filter(m => m.step.type !== 'depart')
+      .sort((a, b) => a.s - b.s);
+    let blockUntilS = -Infinity;
+
+    for(const m of sorted){
+      if(m.step.type === 'arrive'){
+        if(curS <= m.s + MANEUVER_PASSED_M && m.s >= blockUntilS){
+          const along = Math.max(0, m.s - curS);
+          return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
+        }
+        continue;
+      }
+      if(curS > m.s + MANEUVER_PASSED_M){
+        blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
+        continue;
+      }
+      if(m.s < blockUntilS) continue;
+      const along = Math.max(0, m.s - curS);
+      return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
+    }
+    return null;
+  }
+
   for(const st of S.route.steps){
     if(st.type === 'depart') continue;
-    if(geom && curS != null){
-      const m = geom.maneuvers.find(mn => mn.step === st);
-      if(m && m.s >= curS - 15){
-        const along = Math.max(0, m.s - curS);
-        return { step: st, dist: along > 0 ? along : haversine(S.gps, st) };
-      }
-    }
     if(stepCoordIndex(st) >= curIdx){
       return { step: st, dist: haversine(S.gps, st) };
     }

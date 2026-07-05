@@ -18,13 +18,14 @@ html.theme-avionics {
   --num-weight: 700;
   --label-transform: uppercase;
   --radius: 0;
-  --stroke-w: 3px;
+  --stroke-w: 2px;
   --arrow-style: outline;
-  --path-fill: none;
-  --path-fill-opacity: 0;
+  --arrow-shape: parametric;
+  --path-fill: #00aa5c;
+  --path-fill-opacity: 0.22;
   --path-edge: #00FF66;
-  --path-edge-w: 3px;
-  --path-center-opacity: 0.55;
+  --path-edge-w: 5px;
+  --path-center-opacity: 0.45;
   --compass-style: tape;
   --glow: none;
   --glow-opacity: 0;
@@ -54,7 +55,6 @@ html.theme-avionics .block-speed{
   border-right: 2px solid var(--line);
   box-shadow: inset 8px 0 0 -6px var(--line), inset -8px 0 0 -6px var(--line);
 }
-
 /* ===== HITECH ===== */
 html.theme-hitech {
   --bg: #121417;
@@ -179,14 +179,14 @@ html.theme-chopper {
   --accent: #FFB84D;
   --accent-on: #141008;
   --line: #3D3220;
-  --font-num: "IBM Plex Mono", Consolas, monospace;
-  --font-label: "Bitter", Georgia, serif;
-  --num-weight: 500;
-  --label-transform: none;
+  --font-num: "Alfa Slab One", "Roboto Slab", Georgia, serif;
+  --font-label: "Rye", Georgia, serif;
+  --num-weight: 400;
+  --label-transform: uppercase;
   --radius: 10px;
   --stroke-w: 2px;
-  --arrow-style: outline;
-  --path-fill: #FFB84D;
+  --arrow-style: filled;
+  --arrow-shape: chopper;
   --path-fill-opacity: 0.15;
   --path-edge: #FFB84D;
   --path-edge-w: 2px;
@@ -216,13 +216,15 @@ html.theme-vintage {
   --accent: #66FFE0;
   --accent-on: #050505;
   --line: rgba(102, 255, 224, 0.2);
-  --font-num: "DSEG7 Classic", Consolas, monospace;
-  --font-label: "VT323", monospace;
+  --font-num: "VT323", "Press Start 2P", monospace;
+  --font-label: "VT323", "Press Start 2P", monospace;
   --num-weight: 400;
   --label-transform: uppercase;
+  --font-feature-num: normal;
   --radius: 0;
   --stroke-w: 2px;
-  --arrow-style: outline;
+  --arrow-style: filled;
+  --arrow-shape: vintage;
   --path-fill: none;
   --path-fill-opacity: 0;
   --path-edge: #66FFE0;
@@ -246,4 +248,3 @@ html.theme-vintage[data-mode="night"] {
   --turn-primary: #FFAA00;
 }
 
-/* TODO: пиксельная стрелка (8×8) для vintage — fallback на outline */

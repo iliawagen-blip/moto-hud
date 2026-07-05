@@ -603,6 +603,49 @@ function ribbonStepAtS(){
   return RIBBON_STEP_M;
 }
 
+/** Минимальная «глубина» ближнего сечения — лента уходит за нижний край экрана */
+const RIBBON_NEAR_Z_MIN = 0.06;
+const RIBBON_NEAR_Z_STEP = 0.22;
+
+/**
+ * Дополнительные сечения ближе к камере (экстраполяция от первых двух точек).
+ * Проецируются ниже viewBox — при slice заполняют низ без чёрной полосы.
+ */
+export function extendRibbonNearCam(sections){
+  if(sections.length < 2) return sections;
+  const s0 = sections[0];
+  const s1 = sections[1];
+  const dz = s1.cz - s0.cz;
+  if(dz < 0.02) return sections;
+  const inv = 1 / dz;
+  const rate = {
+    s: (s1.s - s0.s) * inv,
+    elev: (s1.elev - s0.elev) * inv,
+    cx: (s1.cx - s0.cx) * inv,
+    lx: (s1.lx - s0.lx) * inv,
+    lz: (s1.lz - s0.lz) * inv,
+    rx: (s1.rx - s0.rx) * inv,
+    rz: (s1.rz - s0.rz) * inv
+  };
+  const extra = [];
+  for(let z = s0.cz - RIBBON_NEAR_Z_STEP; z >= RIBBON_NEAR_Z_MIN; z -= RIBBON_NEAR_Z_STEP){
+    const back = s0.cz - z;
+    extra.push({
+      s: s0.s - rate.s * back,
+      lat: s0.lat,
+      lon: s0.lon,
+      elev: s0.elev - rate.elev * back,
+      cx: s0.cx - rate.cx * back,
+      cz: z,
+      lx: s0.lx - rate.lx * back,
+      lz: s0.lz - rate.lz * back,
+      rx: s0.rx - rate.rx * back,
+      rz: s0.rz - rate.rz * back
+    });
+  }
+  return extra.length ? extra.concat(sections) : sections;
+}
+
 /**
  * Сечения ленты в камерной системе (x/z от snap) — без скачков Frenet на шпильках.
  * Нормаль с parallel transport (не переворачивается между точками).
@@ -633,7 +676,7 @@ export function computeRibbonSectionsCam(geom, snap, maxDist, halfW, headingRad)
 
   for(let i = 0; i < samples.length; i++){
     const cur = samples[i];
-    if(cur.z < 1) continue;
+    if(cur.z < 0.12) continue;
 
     const i0 = Math.max(0, i - 1);
     const i1 = Math.min(samples.length - 1, i + 1);

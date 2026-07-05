@@ -244,6 +244,9 @@
     let scale = Math.min(1, maxH / ph, maxW / pw);
     phone.style.width = Math.round(pw * scale) + 'px';
     phone.style.height = Math.round(ph * scale) + 'px';
+    setTimeout(() => {
+      try{ frame.contentWindow?.__motoHUD?.onTick?.(); }catch(e){}
+    }, 300);
   }
 
   function sim(){

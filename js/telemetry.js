@@ -274,6 +274,7 @@ async function start(meta){
   startSysTimers();
   document.documentElement.classList.add('telemetry-on');
   log('meta', { sub: 'start', appVersion: APP_VERSION, ...(meta || {}) });
+  updateMarkButtonVisibility();
   return _sessionId;
 }
 
@@ -297,6 +298,7 @@ async function stop(){
   _lastSnapS0 = null;
   document.documentElement.classList.remove('telemetry-on');
   stopTimers();
+  updateMarkButtonVisibility();
 }
 
 function mark(note){
@@ -316,8 +318,10 @@ async function setEnabled(on){
 
 function updateMarkButtonVisibility(){
   const btn = document.getElementById('btn-telemetry-mark');
-  const show = isEnabledPref() && _active;
-  if(btn) btn.classList.toggle('hidden', !show);
+  if(!btn) return;
+  const enabled = isEnabledPref();
+  btn.classList.toggle('hidden', !enabled);
+  btn.classList.toggle('tel-idle', enabled && !_active);
 }
 
 async function listSessions(){
