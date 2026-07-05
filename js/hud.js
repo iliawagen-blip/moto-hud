@@ -54,10 +54,13 @@ export function checkCamerasILS(){
   const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
   const heading = S.smoothedHeading;
   const radius = Math.max(200, Math.min(1000, kmh * 10));
+  const tol = S.camSpeedTol != null ? S.camSpeedTol : 15;
   let closest = null;
   S.cameras.forEach((c, i) => {
     const d = haversine(S.gps, c);
     if(d > radius) return;
+    if(!c.speed) return;
+    if(kmh <= c.speed + tol) return;
     if(S.backOnly && !isCameraBehind(c, heading)) return;
     if(heading != null && angleDiff(bearing(S.gps, c), heading) > 90) return;
     if(!closest || d < closest.dist) closest = { cam: c, dist: d, id: i };

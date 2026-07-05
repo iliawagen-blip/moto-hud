@@ -8,7 +8,8 @@ import { ensureRouteGeometry } from './route.js';
 import {
   getRouteSnapForNav, getDisplaySnap, updateCamHeading, getCamHeadingRad,
   updateCamPitch, getCamPitchRad,
-  computeRibbonSectionsCam, worldToCamXZ, extendRibbonNearCam
+  computeRibbonSectionsCam, worldToCamXZ, extendRibbonNearCam,
+  interpolateAtS, turnAngleAtS
 } from './route-geometry.js';
 import { renderElevProfile, getElevExag, getElevProfileH } from './elevation.js';
 import { ribbonCurveColor } from './curve-speed.js';
@@ -161,13 +162,187 @@ function turnAngleAt(step){
   return ((bOut - bIn + 540) % 360) - 180;
 }
 
+/** Сторона поворота OSRM: −1 влево, +1 вправо, 0 неизвестно */
+function modifierTurnSide(mod){
+  if(!mod) return 0;
+  if(mod.includes('left')) return -1;
+  if(mod.includes('right')) return 1;
+  return 0;
+}
+
+/** Согласование знака угла геометрии с modifier OSRM */
+function reconcileTurnAngle(ang, modifier){
+  const side = modifierTurnSide(modifier);
+  if(modifier === 'uturn'){
+    if(Math.abs(ang) < 120) return side < 0 ? -175 : 175;
+    return ang;
+  }
+  if(side === 0) return ang;
+  if(side < 0 && ang > 0) return -Math.abs(ang);
+  if(side > 0 && ang < 0) return Math.abs(ang);
+  if(Math.abs(ang) < 10) return side * 25;
+  return ang;
+}
+
+/**
+ * Базис шеврона в экранных координатах: центр P, единичный вектор направления съезда (ex, ey).
+ */
+function chevronScreenBasis(snap, headingRad, geom, s, modifier, ang){
+  const ds = 16;
+  const total = geom.s[geom.n - 1];
+  const p0 = interpolateAtS(geom, Math.max(0, s - ds));
+  const p1 = interpolateAtS(geom, s);
+  const p2 = interpolateAtS(geom, Math.min(total, s + ds));
+  const P0 = projectWorld(p0.lat, p0.lon, 0, snap, headingRad);
+  const P1 = projectWorld(p1.lat, p1.lon, 0, snap, headingRad);
+  const P2 = projectWorld(p2.lat, p2.lon, 0, snap, headingRad);
+  if(!P1) return null;
+
+  let ex = 0;
+  let ey = 0;
+  if(P0 && P2){
+    ex = P2.x - P1.x;
+    ey = P2.y - P1.y;
+    const el = Math.hypot(ex, ey);
+    if(el > 1){
+      ex /= el;
+      ey /= el;
+      const ax = P1.x - P0.x;
+      const ay = P1.y - P0.y;
+      const al = Math.hypot(ax, ay);
+      if(al > 1){
+        const cross = (ax / al) * ey - (ay / al) * ex;
+        const modSide = modifierTurnSide(modifier);
+        const geoSide = cross > 0.02 ? 1 : cross < -0.02 ? -1 : 0;
+        if(modSide !== 0 && geoSide !== 0 && geoSide !== modSide){
+          const lx = -ay / al;
+          const ly = ax / al;
+          ex = modSide < 0 ? lx : -lx;
+          ey = modSide < 0 ? ly : -ly;
+        }
+      }
+    }
+  }
+  if(Math.hypot(ex, ey) < 0.05){
+    const side = modifierTurnSide(modifier) || (ang < 0 ? -1 : 1);
+    ex = side;
+    ey = 0;
+  }
+  return { P: P1, ex, ey };
+}
+
+function chevronPath(P, ex, ey, arm){
+  const tipX = P.x + ex * arm;
+  const tipY = P.y + ey * arm;
+  const bx = P.x - ex * arm * 0.55;
+  const by = P.y - ey * arm * 0.55;
+  const px = -ey;
+  const py = ex;
+  const wing = arm * 0.88;
+  const x1 = (bx + px * wing).toFixed(1);
+  const y1 = (by + py * wing).toFixed(1);
+  const x2 = (bx - px * wing).toFixed(1);
+  const y2 = (by - py * wing).toFixed(1);
+  return 'M ' + x1 + ' ' + y1 + ' L ' + tipX.toFixed(1) + ' ' + tipY.toFixed(1) + ' L ' + x2 + ' ' + y2;
+}
+
+function textBBox(cx, cy, fontSize, text){
+  const n = Math.max(String(text || '').length, 1);
+  const w = fontSize * n * 0.58;
+  const h = fontSize * 1.12;
+  return { left: cx - w * 0.5, right: cx + w * 0.5, top: cy - h * 0.82, bottom: cy + h * 0.18 };
+}
+
+function bboxOverlap(a, b, pad){
+  return a.left - pad < b.right + pad && a.right + pad > b.left - pad &&
+    a.top - pad < b.bottom + pad && a.bottom + pad > b.top - pad;
+}
+
+function clampLabelX(cx, halfW, vbX, vbW){
+  return Math.min(vbX + vbW - halfW - 4, Math.max(vbX + halfW + 4, cx));
+}
+
+function clampLabelY(cy, fontSize, vbY, vbH){
+  return Math.min(vbY + vbH - 4, Math.max(vbY + fontSize + 4, cy));
+}
+
+/** Размещение подписей без наложений: ближний — полный, дальние — дистанция или только шеврон */
+function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH){
+  if(S.pathChevronLabels === false) return;
+  const placed = [];
+  const minSep = vb * 0.07;
+  const pad = vb * 0.014;
+
+  for(let i = 0; i < markers.length; i++){
+    const m = markers[i];
+    m.degX = null;
+    m.degY = null;
+    m.distX = null;
+    m.distY = null;
+
+    const prev = i > 0 ? markers[i - 1] : null;
+    const sep = prev ? Math.hypot(m.P.x - prev.P.x, m.P.y - prev.P.y) : Infinity;
+    const wantDeg = i === 0 && !!m.deg;
+    const wantDist = i === 0 ? true : sep >= minSep;
+
+    if(wantDeg){
+      const sides = [m.labelSide, -m.labelSide];
+      for(const side of sides){
+        const off = m.arm + m.degFont * 0.35;
+        let dx = m.P.x + m.nx * off * side;
+        const halfW = m.degFont * Math.max(m.deg.length, 1) * 0.34;
+        dx = clampLabelX(dx, halfW, vbX, vbW);
+        let dy = clampLabelY(
+          m.P.y + m.ny * off * side * 0.35 + m.degFont * 0.34, m.degFont, vbY, vbH);
+        const box = textBBox(dx, dy, m.degFont, m.deg);
+        if(!placed.some(p => bboxOverlap(box, p, pad))){
+          m.degX = dx;
+          m.degY = dy;
+          placed.push(box);
+          break;
+        }
+      }
+    }
+
+    if(!wantDist) continue;
+
+    const distText = m.dist + ' м';
+    const slots = [
+      () => ({
+        x: m.P.x + m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
+        y: m.P.y + m.ny * m.arm * 0.35 * m.labelSide + m.distFont * 0.15
+      }),
+      () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.1 + i * 0.35) }),
+      () => ({
+        x: m.P.x - m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
+        y: m.P.y - m.ny * m.arm * 0.35 * m.labelSide
+      }),
+      () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.6 + i * 0.4) })
+    ];
+
+    for(const slot of slots){
+      let { x, y } = slot();
+      x = clampLabelX(x, m.distFont * distText.length * 0.32, vbX, vbW);
+      y = clampLabelY(y, m.distFont, vbY, vbH);
+      const box = textBBox(x, y, m.distFont, distText);
+      if(!placed.some(p => bboxOverlap(box, p, pad))){
+        m.distX = x;
+        m.distY = y;
+        placed.push(box);
+        break;
+      }
+    }
+  }
+}
+
 function isPathTurnStep(st){
   return st && st.type !== 'depart' && st.type !== 'arrive' &&
     st.modifier && st.modifier !== 'straight';
 }
 
 function renderTurnsStr(svg, snap, headingRad, geom, curS){
-  if(!S.route || !snap) return '';
+  if(!S.route || !snap || S.showPathChevrons === false) return '';
+  const maxChevrons = Math.max(1, Math.min(3, S.pathChevronMax || 3));
   const tok = getThemeTokens();
   const scale = tok.pathTurnScale || 1;
   const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
@@ -177,53 +352,73 @@ function renderTurnsStr(svg, snap, headingRad, geom, curS){
   const vbW = bv ? bv.width : L.W;
   const vbH = bv ? bv.height : L.H;
   const pos = curPos();
-  let out = '';
-  let shown = 0;
 
   const items = (geom && curS != null)
-    ? getVisibleTurnManeuvers(geom, curS, 3)
+    ? getVisibleTurnManeuvers(geom, curS, maxChevrons)
     : S.route.steps.filter(isPathTurnStep).map(st => ({ maneuver: { step: st }, distAhead: haversine(pos, st) }));
 
+  const markers = [];
   for(const item of items){
-    if(shown >= 3) break;
+    if(markers.length >= maxChevrons) break;
     const st = item.maneuver?.step;
     if(!st) continue;
     const loc = toLocalFrenet(st.lat, st.lon, snap, headingRad);
     if(loc.z < 5 || loc.z > ROAD_MAX) continue;
     const P = projectGround(loc.x, loc.z, 0);
     if(!P) continue;
-    const ang = turnAngleAt(st);
-    const dir = ang == null ? (st.modifier.includes('left') ? -1 : 1) : (ang < 0 ? -1 : 1);
-    const deg = ang == null ? '' : Math.round(Math.abs(ang)) + '°';
-    const dist = Math.round(item.distAhead != null ? item.distAhead : haversine(pos, st));
-    const col = shown === 0 ? tok.turnPrimary : tok.turnSecondary;
-    const k = (shown === 0 ? 1 : 0.72) * scale;
+
+    let ang = null;
+    let chev = null;
+    const mS = item.maneuver?.s;
+    if(geom && mS != null){
+      ang = reconcileTurnAngle(turnAngleAtS(geom, mS), st.modifier);
+      chev = chevronScreenBasis(snap, headingRad, geom, mS, st.modifier, ang);
+    }
+    if(ang == null){
+      const raw = turnAngleAt(st);
+      ang = raw == null
+        ? (modifierTurnSide(st.modifier) < 0 ? -25 : modifierTurnSide(st.modifier) > 0 ? 25 : 0)
+        : reconcileTurnAngle(raw, st.modifier);
+    }
+    if(!chev){
+      const side = modifierTurnSide(st.modifier) || (ang < 0 ? -1 : 1);
+      chev = { P, ex: side, ey: 0 };
+    }
+
+    const k = (markers.length === 0 ? 1 : 0.72) * scale;
     const degFont = vb * 0.12 * k;
     const distFont = vb * 0.05 * k;
-    const s = vb * 0.05 * k;
-    const sw = Math.max(2, vb * 0.012 * k);
-    const halo = Math.max(3, degFont * 0.16);
-    const tip = (dir * s).toFixed(1);
-    const base = (-dir * s).toFixed(1);
-    const degHalfW = degFont * deg.length * 0.34;
-    let degX = P.x + dir * (s + degHalfW + degFont * 0.25);
-    degX = Math.min(vbX + vbW - degHalfW - 4, Math.max(vbX + degHalfW + 4, degX));
-    let degY = P.y + degFont * 0.34;
-    degY = Math.min(vbY + vbH - 4, Math.max(vbY + degFont + 4, degY));
-    let distY = P.y + s + distFont * 1.1;
-    distY = Math.min(vbY + vbH - 4, distY);
+    const arm = vb * 0.05 * k;
+    const tipY = chev.P.y + chev.ey * arm;
+    markers.push({
+      P: chev.P,
+      ex: chev.ex,
+      ey: chev.ey,
+      nx: -chev.ey,
+      ny: chev.ex,
+      arm,
+      sw: Math.max(2, vb * 0.012 * k),
+      col: markers.length === 0 ? tok.turnPrimary : tok.turnSecondary,
+      deg: Math.abs(ang) >= 4 ? Math.round(Math.abs(ang)) + '°' : '',
+      dist: Math.round(item.distAhead != null ? item.distAhead : haversine(pos, st)),
+      degFont,
+      distFont,
+      tipY,
+      labelSide: ang < 0 ? 1 : -1
+    });
+  }
+
+  layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH);
+
+  let out = '';
+  for(const m of markers){
     out +=
       '<g font-family="' + tok.fontNum + ',monospace" text-anchor="middle">' +
-        '<path d="M ' + (P.x + +base).toFixed(1) + ' ' + (P.y - s).toFixed(1) +
-          ' L ' + (P.x + +tip).toFixed(1) + ' ' + P.y.toFixed(1) +
-          ' L ' + (P.x + +base).toFixed(1) + ' ' + (P.y + s).toFixed(1) + '" ' +
-          'fill="none" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '" stroke-linecap="round" stroke-linejoin="round"/>' +
-        '<text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" font-size="' + degFont.toFixed(1) + '" font-weight="900" ' +
-          'stroke="' + tok.svgHalo + '" stroke-width="' + halo.toFixed(1) + '" stroke-linejoin="round" fill="' + tok.svgHalo + '" opacity="0.65">' + deg + '</text>' +
-        '<text x="' + degX.toFixed(1) + '" y="' + degY.toFixed(1) + '" font-size="' + degFont.toFixed(1) + '" font-weight="900" fill="' + col + '">' + deg + '</text>' +
-        '<text x="' + P.x.toFixed(1) + '" y="' + distY.toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" fill="' + col + '" opacity="0.9">' + dist + ' м</text>' +
+        '<path d="' + chevronPath(m.P, m.ex, m.ey, m.arm) + '" ' +
+          'fill="none" stroke="' + m.col + '" stroke-width="' + m.sw.toFixed(1) + '" stroke-linecap="round" stroke-linejoin="round"/>' +
+        (m.degX != null ? '<text x="' + m.degX.toFixed(1) + '" y="' + m.degY.toFixed(1) + '" font-size="' + m.degFont.toFixed(1) + '" font-weight="900" fill="' + m.col + '">' + m.deg + '</text>' : '') +
+        (m.distX != null ? '<text x="' + m.distX.toFixed(1) + '" y="' + m.distY.toFixed(1) + '" font-size="' + m.distFont.toFixed(1) + '" fill="' + m.col + '" opacity="0.9">' + m.dist + ' м</text>' : '') +
       '</g>';
-    shown++;
   }
   return out;
 }
