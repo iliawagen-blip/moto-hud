@@ -546,6 +546,11 @@ export function bindSetupUI(){
 
   });
 
+  $('opt-crossings')?.addEventListener('change', e => {
+    S.showCrossingContext = e.target.checked;
+    saveAppOptsToStorage();
+  });
+
   const bindFinishOpt = id => {
     $(id)?.addEventListener('change', () => {
       syncOptionsFromDom();
@@ -753,6 +758,7 @@ export function syncOptionsFromDom(){
   S.voice = $('opt-voice').checked;
 
   S.showPath = $('opt-path').checked;
+  S.showCrossingContext = $('opt-crossings')?.checked ?? true;
 
   S.showFinishDist = $('opt-finish-dist')?.checked ?? true;
   S.showFinishTime = $('opt-finish-time')?.checked ?? true;

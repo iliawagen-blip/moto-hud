@@ -37,6 +37,8 @@ html {
   --path-center-opacity: 0.45;
   --path-turn-scale: 1;
   --path-dash: none;
+  --path-context: var(--fg-dim);
+  --path-context-opacity: 0.35;
   --compass-style: tape;
   --glow: none;
   --glow-opacity: 0;

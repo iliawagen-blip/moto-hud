@@ -21,6 +21,7 @@ export function loadAppOptsFromStorage(){
     };
     setCheck('opt-voice', o.voice);
     setCheck('opt-path', o.showPath);
+    setCheck('opt-crossings', o.showCrossingContext);
     setCheck('opt-heading', o.showCompass);
     setCheck('opt-cams', o.cams);
     setCheck('opt-back-only', o.backOnly);
@@ -35,6 +36,7 @@ export function saveAppOptsToStorage(){
     localStorage.setItem(APP_OPTS_KEY, JSON.stringify({
       voice: !!S.voice,
       showPath: !!S.showPath,
+      showCrossingContext: S.showCrossingContext !== false,
       showCompass: !!S.showCompass,
       cams: !!S.cams,
       backOnly: !!S.backOnly,

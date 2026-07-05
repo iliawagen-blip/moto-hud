@@ -10563,6 +10563,8 @@ function getThemeTokens() {
     pathTurnScale: gn("--path-turn-scale", 1),
     pathCenterOpacity: gn("--path-center-opacity", 0.45),
     pathDash: g("--path-dash", "none"),
+    pathContext: g("--path-context", g("--fg-dim", "#8b9cb3")),
+    pathContextOpacity: gn("--path-context-opacity", 0.35),
     strokeW: gn("--stroke-w", 3),
     arrowStyle: g("--arrow-style", "filled"),
     arrowShape: g("--arrow-shape", "parametric"),
@@ -10672,6 +10674,7 @@ var S = {
   rafId: null,
   voice: true,
   showPath: true,
+  showCrossingContext: true,
   showElevProfile: true,
   elevExag: 1.8,
   elevProfileH: 72,
@@ -10774,6 +10777,21 @@ function distToSegment(p, a, b) {
 function angleDiff(a, b) {
   let d = Math.abs(a - b) % 360;
   return d > 180 ? 360 - d : d;
+}
+function destPoint(from, brgDeg, distM) {
+  const r = Math.PI / 180;
+  const br = brgDeg * r;
+  const d = distM / 6371e3;
+  const lat1 = from.lat * r;
+  const lon1 = from.lon * r;
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(br)
+  );
+  const lon2 = lon1 + Math.atan2(
+    Math.sin(br) * Math.sin(d) * Math.cos(lat1),
+    Math.cos(d) - Math.sin(lat1) * Math.sin(lat2)
+  );
+  return { lat: lat2 / r, lon: lon2 / r };
 }
 function parseInput(raw) {
   const s2 = String(raw || "").trim();
@@ -11587,7 +11605,7 @@ function resetRouteSnap() {
   _camLastTs = 0;
   _camPitchLastTs = 0;
 }
-function destPoint(from, brgDeg, distM) {
+function destPoint2(from, brgDeg, distM) {
   const r = Math.PI / 180;
   const br = brgDeg * r;
   const d = distM / 6371e3;
@@ -11616,8 +11634,8 @@ function bezierCorner(A, B, C) {
   if (lead < 1.5) return null;
   const bIn = bearing(A, B);
   const bOut = bearing(B, C);
-  const E = destPoint(B, bIn + 180, lead);
-  const X = destPoint(B, bOut, lead);
+  const E = destPoint2(B, bIn + 180, lead);
+  const X = destPoint2(B, bOut, lead);
   const n = Math.max(4, Math.ceil(Math.abs(turn) / 3));
   const pts = [];
   for (let k = 0; k <= n; k++) {
@@ -11706,6 +11724,28 @@ function findSForManeuver(sparseCoords, geom, targetLat, targetLon) {
   const idx = Math.min(geom.n - 1, Math.round(t * (geom.n - 1)));
   return geom.s[idx];
 }
+function findSForLatLon(geom, lat, lon) {
+  if (!geom || geom.n < 2) return 0;
+  const gps = { lat, lon };
+  let bestS = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < geom.n - 1; i++) {
+    const proj = projectOnSegment(
+      gps,
+      geom.lat[i],
+      geom.lon[i],
+      geom.lat[i + 1],
+      geom.lon[i + 1]
+    );
+    const segLen = geom.s[i + 1] - geom.s[i];
+    const s2 = geom.s[i] + proj.t * segLen;
+    if (proj.lateral < bestD) {
+      bestD = proj.lateral;
+      bestS = s2;
+    }
+  }
+  return bestS;
+}
 function buildManeuvers(steps, sparseCoords, geom) {
   if (!steps || !sparseCoords) return [];
   return steps.filter((st) => st.type !== "depart" && st.type !== "arrive").map((st) => ({
@@ -11740,8 +11780,19 @@ function buildRouteGeometry(route) {
   const elev = new Float64Array(n);
   const grade = new Float64Array(n);
   const maneuvers = buildManeuvers(route.steps, route.coords, { s: s2, n });
-  const geom = { lat, lon, s: s2, elev, grade, maneuvers, n, elevReady: false, curveReady: false };
-  return geom;
+  return {
+    lat,
+    lon,
+    s: s2,
+    elev,
+    grade,
+    maneuvers,
+    n,
+    elevReady: false,
+    curveReady: false,
+    crossings: [],
+    roundabouts: []
+  };
 }
 function findSegAtS(geom, s2) {
   let lo = 0;
@@ -13005,6 +13056,273 @@ function renderElevProfile(snap, geom, W, H) {
   return '<g class="elev-profile" fill="none">' + marks + pathSegs + "</g>";
 }
 
+// js/crossings.js
+var WHISKER_LEN_M = 18;
+var CROSSING_MERGE_M = 10;
+var CROSSING_MAX_VISIBLE = 6;
+var CROSSING_AHEAD_M = 30;
+var CROSSING_MIN_BACK_M = 150;
+var CROSSING_TIME_S = 15;
+var MANEUVER_PASSED_M = 8;
+var MANEUVER_NEXT_DELAY_M = 90;
+var _crossLimitLoggedS = null;
+function projectGround(x, z, elevDelta) {
+  const pitch = getCamPitchRad();
+  const cp = Math.cos(pitch);
+  const sp = Math.sin(pitch);
+  const dy = -CAM_H;
+  const dz = z + CAM_B;
+  const use3d = S.showElevProfile && S.route?.geometry?.elevReady;
+  const elevLift = use3d ? (elevDelta || 0) * getElevExag() * 0.16 : 0;
+  const Yc = dy * cp + dz * sp - elevLift;
+  const Zc = -dy * sp + dz * cp;
+  if (Zc < 0.85) return null;
+  const sx = L2.cx + L2.camFocal * x / Zc;
+  const sy = L2.camVoff - L2.camFocal * Yc / Zc;
+  if (sx < -L2.W * 0.4 || sx > L2.W * 1.4) return null;
+  return { x: sx, y: sy };
+}
+function resetCrossingTelemetry() {
+  _crossLimitLoggedS = null;
+}
+function signedAngle(fromBrg, toBrg) {
+  return (toBrg - fromBrg + 540) % 360 - 180;
+}
+function pickSideBearings(inter, travelBrg) {
+  const inIdx = inter.in;
+  const outIdx = inter.out;
+  if (inIdx == null || outIdx == null || !inter.bearings?.length) return [];
+  const sides = [];
+  for (let i = 0; i < inter.bearings.length; i++) {
+    if (i === inIdx || i === outIdx) continue;
+    if (inter.entry && inter.entry[i] === false) continue;
+    const brg = inter.bearings[i];
+    const rel = signedAngle(travelBrg, brg);
+    if (Math.abs(rel) < 12) continue;
+    sides.push({ brg, side: rel < 0 ? "left" : "right", absRel: Math.abs(rel) });
+  }
+  const pick = (sideName) => sides.filter((s2) => s2.side === sideName).sort((a, b) => Math.abs(a.absRel - 90) - Math.abs(b.absRel - 90)).slice(0, 2).map((s2) => s2.brg);
+  return pick("left").concat(pick("right"));
+}
+function buildWhiskers(lat, lon, sideBearings) {
+  const axis = { lat, lon };
+  return sideBearings.map((bearing2) => {
+    const end = destPoint(axis, bearing2, WHISKER_LEN_M);
+    return { bearing: bearing2, endLat: end.lat, endLon: end.lon };
+  });
+}
+function mergeCrossings(list) {
+  if (!list.length) return [];
+  const sorted = list.slice().sort((a, b) => a.s - b.s);
+  const out = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = out[out.length - 1];
+    const cur = sorted[i];
+    if (cur.s - prev.s < CROSSING_MERGE_M) {
+      const brgs = new Set(prev.sideBearings.concat(cur.sideBearings));
+      prev.sideBearings = Array.from(brgs);
+      prev.whiskers = buildWhiskers(prev.lat, prev.lon, prev.sideBearings);
+      prev.isManeuver = prev.isManeuver || cur.isManeuver;
+    } else {
+      out.push(cur);
+    }
+  }
+  return out;
+}
+function buildCrossingsData(steps, geom) {
+  const raw = [];
+  if (!steps?.length || !geom?.n) return { crossings: [], roundabouts: [] };
+  for (const st of steps) {
+    const ixList = st.intersections;
+    if (!ixList?.length) continue;
+    ixList.forEach((inter, ixIdx) => {
+      const lat = inter.lat;
+      const lon = inter.lon;
+      const s2 = findSForLatLon(geom, lat, lon);
+      const travelBrg = inter.out != null && inter.bearings?.[inter.out] != null ? inter.bearings[inter.out] : avgTangentDeg(geom, s2, 8);
+      const sideBearings = pickSideBearings(inter, travelBrg);
+      if (!sideBearings.length) return;
+      const axis = interpolateAtS(geom, s2);
+      const isManeuver = ixIdx === ixList.length - 1 || haversineLike(st.lat, st.lon, lat, lon) < 6;
+      raw.push({
+        s: s2,
+        lat: axis.lat,
+        lon: axis.lon,
+        sideBearings,
+        whiskers: buildWhiskers(axis.lat, axis.lon, sideBearings),
+        isManeuver
+      });
+    });
+  }
+  const crossings = mergeCrossings(raw);
+  const roundabouts = buildRoundabouts(steps, geom);
+  telemetry_default.log("nav", {
+    sub: "crossings_parsed",
+    count: crossings.length,
+    roundabouts: roundabouts.length
+  });
+  return { crossings, roundabouts };
+}
+function haversineLike(lat1, lon1, lat2, lon2) {
+  const r = Math.PI / 180;
+  const dLat = (lat2 - lat1) * r;
+  const dLon = (lon2 - lon1) * r;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLon / 2) ** 2;
+  return 6371e3 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function buildRoundabouts(steps, geom) {
+  const out = [];
+  for (const st of steps) {
+    if (st.type !== "roundabout" && st.type !== "rotary") continue;
+    const ixList = st.intersections;
+    if (!ixList?.length) continue;
+    const firstIx = ixList[0];
+    const sEnter = findSForLatLon(geom, firstIx.lat, firstIx.lon);
+    const sExit = findSForLatLon(geom, st.lat, st.lon);
+    let mainIx = ixList[0];
+    for (const ix of ixList) {
+      if ((ix.bearings?.length || 0) > (mainIx.bearings?.length || 0)) mainIx = ix;
+    }
+    const enterPt = interpolateAtS(geom, sEnter);
+    const travelBrg = mainIx.out != null && mainIx.bearings?.[mainIx.out] != null ? mainIx.bearings[mainIx.out] : avgTangentDeg(geom, sEnter, 8);
+    const inIdx = mainIx.in;
+    const outIdx = mainIx.out;
+    const exits = [];
+    let totalExits = null;
+    if (mainIx.bearings?.length && inIdx != null) {
+      const exitBearings = [];
+      for (let i = 0; i < mainIx.bearings.length; i++) {
+        if (i === inIdx) continue;
+        exitBearings.push(mainIx.bearings[i]);
+      }
+      totalExits = exitBearings.length || null;
+      const targetBrg = outIdx != null ? mainIx.bearings[outIdx] : null;
+      for (const brg of exitBearings) {
+        exits.push({
+          bearing: brg,
+          isTarget: targetBrg != null && angleDiff(brg, targetBrg) < 25
+        });
+      }
+    }
+    out.push({
+      sEnter,
+      sExit,
+      lat: enterPt.lat,
+      lon: enterPt.lon,
+      exitNumber: st.exit != null ? st.exit : 0,
+      totalExits,
+      exits,
+      travelBearing: travelBrg
+    });
+  }
+  return out.sort((a, b) => a.sEnter - b.sEnter);
+}
+function isCrossingContextEnabled() {
+  return S.showCrossingContext !== false;
+}
+function getNextTurnManeuverS(geom, curS) {
+  if (!geom?.maneuvers?.length || curS == null) return null;
+  const sorted = geom.maneuvers.filter((m) => m.step.type !== "depart" && m.step.type !== "arrive").sort((a, b) => a.s - b.s);
+  let blockUntilS = -Infinity;
+  for (const m of sorted) {
+    if (curS > m.s + MANEUVER_PASSED_M) {
+      blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
+      continue;
+    }
+    if (m.s < blockUntilS) continue;
+    return m.s;
+  }
+  return null;
+}
+function crossingWindow(sManeuver, speedMps) {
+  const v = Math.max(speedMps || 0, CROSSING_MIN_BACK_M / CROSSING_TIME_S);
+  return {
+    sMin: sManeuver - v * CROSSING_TIME_S,
+    sMax: sManeuver + CROSSING_AHEAD_M
+  };
+}
+function getVisibleCrossings(geom, curS, speedMps) {
+  if (!geom?.crossings?.length || curS == null) return [];
+  const sManeuver = getNextTurnManeuverS(geom, curS);
+  if (sManeuver == null) return [];
+  const { sMin, sMax } = crossingWindow(sManeuver, speedMps);
+  const inRange = geom.crossings.filter((c) => c.s >= sMin && c.s <= sMax);
+  if (!inRange.length) return [];
+  if (inRange.length > CROSSING_MAX_VISIBLE) {
+    if (_crossLimitLoggedS !== sManeuver) {
+      _crossLimitLoggedS = sManeuver;
+      telemetry_default.log("nav", { sub: "crossings_over_limit", s_maneuver: Math.round(sManeuver) });
+    }
+    inRange.sort((a, b) => Math.abs(a.s - sManeuver) - Math.abs(b.s - sManeuver));
+    return inRange.slice(0, CROSSING_MAX_VISIBLE);
+  }
+  return inRange;
+}
+function getActiveRoundabout(geom, curS, speedMps) {
+  if (!geom?.roundabouts?.length || curS == null) return null;
+  const v = Math.max(speedMps || 0, CROSSING_MIN_BACK_M / CROSSING_TIME_S);
+  const back = v * CROSSING_TIME_S;
+  for (const rb of geom.roundabouts) {
+    if (curS >= rb.sEnter - back && curS <= rb.sExit) return rb;
+  }
+  return null;
+}
+function renderCrossingWhiskers(snap, headingRad, geom, curS, speedMps) {
+  if (!isCrossingContextEnabled()) return "";
+  const crossings = getVisibleCrossings(geom, curS, speedMps);
+  if (!crossings.length) return "";
+  const tok = getThemeTokens();
+  const sw = Math.max(1, tok.pathEdgeW * 0.5);
+  const ctxCol = tok.pathContext;
+  const ctxOp = tok.pathContextOpacity;
+  const sorted = crossings.slice().sort((a, b) => b.s - a.s);
+  let out = "";
+  for (const cx of sorted) {
+    const col = cx.isManeuver ? tok.accent : ctxCol;
+    const op = cx.isManeuver ? 1 : ctxOp;
+    for (const w of cx.whiskers) {
+      const start2 = worldToCamXZ(cx.lat, cx.lon, snap, headingRad);
+      const end = worldToCamXZ(w.endLat, w.endLon, snap, headingRad);
+      if (start2.z < 2 || start2.z > ROAD_MAX) continue;
+      if (end.z < 0.5) continue;
+      const P0 = projectGround(start2.x, start2.z, 0);
+      const P1 = projectGround(end.x, end.z, 0);
+      if (!P0 || !P1) continue;
+      out += '<line x1="' + P0.x.toFixed(1) + '" y1="' + P0.y.toFixed(1) + '" x2="' + P1.x.toFixed(1) + '" y2="' + P1.y.toFixed(1) + '" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '" stroke-linecap="round" stroke-opacity="' + op.toFixed(2) + '"/>';
+    }
+  }
+  return out;
+}
+function renderRoundaboutSchema(rb, snap, headingRad) {
+  if (!rb) return "";
+  const tok = getThemeTokens();
+  const loc = worldToCamXZ(rb.lat, rb.lon, snap, headingRad);
+  if (loc.z < 5 || loc.z > ROAD_MAX) return "";
+  const P = projectGround(loc.x, loc.z, 0);
+  if (!P) return "";
+  const r = L2.W * 0.085;
+  const cx = P.x;
+  const cy = P.y;
+  const swRing = Math.max(1, tok.pathEdgeW * 0.5);
+  let out = '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="none" stroke="' + tok.pathContext + '" stroke-width="' + swRing.toFixed(1) + '" stroke-opacity="' + tok.pathContextOpacity.toFixed(2) + '"/>';
+  const showAll = rb.totalExits != null && rb.exits.length > 1;
+  const exits = showAll ? rb.exits : rb.exits.filter((e) => e.isTarget);
+  for (const ex of exits) {
+    const rel = signedAngle(rb.travelBearing, ex.bearing) * Math.PI / 180;
+    const tickLen = ex.isTarget ? r * 0.42 : r * 0.26;
+    const sw = ex.isTarget ? Math.max(1.5, tok.pathEdgeW * 0.85) : swRing;
+    const col = ex.isTarget ? tok.accent : tok.pathContext;
+    const op = ex.isTarget ? 1 : tok.pathContextOpacity;
+    const inner = r * 0.72;
+    const x1 = cx + Math.sin(rel) * inner;
+    const y1 = cy - Math.cos(rel) * inner;
+    const x2 = cx + Math.sin(rel) * (inner + tickLen);
+    const y2 = cy - Math.cos(rel) * (inner + tickLen);
+    out += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '" stroke-linecap="round" stroke-opacity="' + op.toFixed(2) + '"/>';
+  }
+  return out;
+}
+
 // js/fuel.js
 var _fuelRouteKey = null;
 function fuelRouteKey() {
@@ -13208,8 +13526,8 @@ function fuelStationsForRoad(maxDist) {
 }
 
 // js/route.js
-var MANEUVER_PASSED_M = 8;
-var MANEUVER_NEXT_DELAY_M = 90;
+var MANEUVER_PASSED_M2 = 8;
+var MANEUVER_NEXT_DELAY_M2 = 90;
 function isPathTurnStep(st) {
   return st && st.type !== "depart" && st.type !== "arrive" && st.modifier && st.modifier !== "straight";
 }
@@ -13220,8 +13538,8 @@ function getVisibleTurnManeuvers(geom, curS, limit) {
   const out = [];
   let blockUntilS = -Infinity;
   for (const m of sorted) {
-    if (curS > m.s + MANEUVER_PASSED_M) {
-      blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
+    if (curS > m.s + MANEUVER_PASSED_M2) {
+      blockUntilS = m.s + MANEUVER_NEXT_DELAY_M2;
       continue;
     }
     if (m.s < blockUntilS) continue;
@@ -13235,12 +13553,22 @@ function getVisibleTurnManeuvers(geom, curS, limit) {
 function ensureRouteGeometry(route) {
   if (!route) return null;
   if (route.geometry?.n > 1) {
+    if (route.geometry.crossings == null && route.steps?.some((st) => st.intersections?.length)) {
+      const { crossings, roundabouts } = buildCrossingsData(route.steps, route.geometry);
+      route.geometry.crossings = crossings;
+      route.geometry.roundabouts = roundabouts;
+    }
     computeCurveSpeed(route.geometry, route);
     return route.geometry;
   }
   try {
     route.geometry = buildRouteGeometry(route);
-    if (route.geometry) computeCurveSpeed(route.geometry, route);
+    if (route.geometry) {
+      const { crossings, roundabouts } = buildCrossingsData(route.steps, route.geometry);
+      route.geometry.crossings = crossings;
+      route.geometry.roundabouts = roundabouts;
+      computeCurveSpeed(route.geometry, route);
+    }
     loadRouteElevation();
     return route.geometry;
   } catch (e) {
@@ -13252,6 +13580,7 @@ function ensureRouteGeometry(route) {
 function attachRouteGeometry(route) {
   ensureRouteGeometry(route);
   resetRouteSnap();
+  resetCrossingTelemetry();
   resetFuelRouteBinding();
 }
 function scheduleGeometryBuild(routes, onDone) {
@@ -13306,13 +13635,23 @@ function parseOsrmRoute(rt) {
   rt.legs.forEach((leg) => {
     leg.steps.forEach((st) => {
       const loc = st.maneuver.location;
+      const m = st.maneuver;
       steps.push({
         lat: loc[1],
         lon: loc[0],
-        type: st.maneuver.type,
-        modifier: st.maneuver.modifier,
+        type: m.type,
+        modifier: m.modifier,
         name: st.name || "",
-        distance: st.distance
+        distance: st.distance,
+        exit: m.exit,
+        intersections: (st.intersections || []).map((ix) => ({
+          lat: ix.location[1],
+          lon: ix.location[0],
+          bearings: ix.bearings || [],
+          entry: ix.entry,
+          in: ix.in,
+          out: ix.out
+        }))
       });
     });
   });
@@ -13565,14 +13904,14 @@ function findNextManeuver() {
     let blockUntilS = -Infinity;
     for (const m of sorted) {
       if (m.step.type === "arrive") {
-        if (curS <= m.s + MANEUVER_PASSED_M && m.s >= blockUntilS) {
+        if (curS <= m.s + MANEUVER_PASSED_M2 && m.s >= blockUntilS) {
           const along2 = Math.max(0, m.s - curS);
           return { step: m.step, dist: along2 > 0 ? along2 : haversine(S.gps, m.step) };
         }
         continue;
       }
-      if (curS > m.s + MANEUVER_PASSED_M) {
-        blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
+      if (curS > m.s + MANEUVER_PASSED_M2) {
+        blockUntilS = m.s + MANEUVER_NEXT_DELAY_M2;
         continue;
       }
       if (m.s < blockUntilS) continue;
@@ -13846,7 +14185,7 @@ function computePathLayout(w, h) {
   L2.camVoff = L2.H * 0.78;
   L2.horizonY = L2.camVoff - L2.camFocal * Math.tan(CAM_PITCH);
 }
-function projectGround(x, z, elevDelta) {
+function projectGround2(x, z, elevDelta) {
   const pitch = getCamPitchRad();
   const cp = Math.cos(pitch);
   const sp = Math.sin(pitch);
@@ -13870,7 +14209,7 @@ function triArea2(a, b, c) {
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
 function projectCam(x, z, elev) {
-  return projectGround(x, z, elev);
+  return projectGround2(x, z, elev);
 }
 function buildStripMeshSvg(sections, geom, speedMps) {
   if (sections.length < 2) return { fill: "", edges: "" };
@@ -13968,7 +14307,7 @@ function renderTurnsStr(svg, snap, headingRad, geom, curS) {
     if (!st) continue;
     const loc = toLocalFrenet(st.lat, st.lon, snap, headingRad);
     if (loc.z < 5 || loc.z > ROAD_MAX) continue;
-    const P = projectGround(loc.x, loc.z, 0);
+    const P = projectGround2(loc.x, loc.z, 0);
     if (!P) continue;
     const ang = turnAngleAt(st);
     const dir = ang == null ? st.modifier.includes("left") ? -1 : 1 : ang < 0 ? -1 : 1;
@@ -14009,7 +14348,7 @@ function renderFuelStr(svg, snap, headingRad) {
   for (const st of stations) {
     const loc = toLocalFrenet(st.lat, st.lon, snap, headingRad);
     if (loc.z < 5 || loc.z > ROAD_MAX) continue;
-    const P = projectGround(loc.x, loc.z, 0);
+    const P = projectGround2(loc.x, loc.z, 0);
     if (!P) continue;
     const sel = S.fuelSel && S.fuelSel.osmId === st.osmId;
     const k = sel ? 0.62 : 0.46;
@@ -14061,15 +14400,24 @@ function renderPathway() {
   svg.setAttribute("preserveAspectRatio", "xMidYMax slice");
   const headingRad = updateCamHeading(geomReady, snap);
   updateCamPitch(geomReady, snap, getElevExag(), S.showElevProfile);
-  const sections = extendRibbonNearCam(
+  const activeRb = isCrossingContextEnabled() ? getActiveRoundabout(geomReady, rawSnap.s, speedMps) : null;
+  let sections = extendRibbonNearCam(
     computeRibbonSectionsCam(geomReady, snap, maxDist, ROAD_HALF, headingRad)
   );
+  if (activeRb) {
+    sections = sections.filter((sec) => sec.s < activeRb.sEnter || sec.s > activeRb.sExit);
+  }
   if (sections.length < 2) {
     svg.innerHTML = "";
     return;
   }
+  let html = "";
+  if (isCrossingContextEnabled()) {
+    html += renderCrossingWhiskers(snap, headingRad, geomReady, rawSnap.s, speedMps);
+    if (activeRb) html += renderRoundaboutSchema(activeRb, snap, headingRad);
+  }
   const mesh = buildStripMeshSvg(sections, geomReady, speedMps);
-  let html = mesh.fill + mesh.edges;
+  html += mesh.fill + mesh.edges;
   const tok = getThemeTokens();
   const centerS = sections.map((sec) => ({ p: projectCam(sec.cx, sec.cz, sec.elev), s: sec.s })).filter((x) => x.p);
   for (let ci = 0; ci < centerS.length - 1; ci++) {
@@ -14197,79 +14545,58 @@ function renderChopperArrow(turnDeg) {
   const rim = tok.line || col;
   return '<svg class="arrow-svg arrow-chopper" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet"><polygon points="' + bodyPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/><polygon points="' + headPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/></svg>';
 }
-function pointInTri(px, py, ax, ay, bx, by, cx, cy) {
-  const v0x = cx - ax, v0y = cy - ay;
-  const v1x = bx - ax, v1y = by - ay;
-  const v2x = px - ax, v2y = py - ay;
-  const dot00 = v0x * v0x + v0y * v0y;
-  const dot01 = v0x * v1x + v0y * v1y;
-  const dot02 = v0x * v2x + v0y * v2y;
-  const dot11 = v1x * v1x + v1y * v1y;
-  const dot12 = v1x * v2x + v1y * v2y;
-  const inv = 1 / (dot00 * dot11 - dot01 * dot01 || 1e-9);
-  const u2 = (dot11 * dot02 - dot01 * dot12) * inv;
-  const v = (dot00 * dot12 - dot01 * dot02) * inv;
-  return u2 >= -0.02 && v >= -0.02 && u2 + v <= 1.02;
+function vfdSegmentBar(cx, cy, tdx, tdy, halfLen, thick, col) {
+  const len = Math.hypot(tdx, tdy) || 1;
+  const nx = -tdy / len, ny = tdx / len;
+  const x1 = (cx - nx * halfLen).toFixed(1);
+  const y1 = (cy - ny * halfLen).toFixed(1);
+  const x2 = (cx + nx * halfLen).toFixed(1);
+  const y2 = (cy + ny * halfLen).toFixed(1);
+  return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + col + '" stroke-width="' + thick + '" stroke-linecap="butt"/>';
+}
+function sampleStem(stem, step) {
+  const out = [];
+  for (let i = 0; i < stem.length - 1; i++) {
+    const a = stem[i], b = stem[i + 1];
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const seg = Math.hypot(dx, dy);
+    if (seg < 0.01) continue;
+    const n = Math.max(1, Math.ceil(seg / step));
+    for (let s2 = 0; s2 < n; s2++) {
+      if (i > 0 && s2 === 0) continue;
+      const t = s2 / n;
+      out.push({ x: a[0] + dx * t, y: a[1] + dy * t, dx, dy });
+    }
+  }
+  const last = stem[stem.length - 1];
+  const prev = out.length ? out[out.length - 1] : { dx: 0, dy: -1 };
+  out.push({ x: last[0], y: last[1], dx: prev.dx, dy: prev.dy });
+  return out;
 }
 function renderVintageArrow(turnDeg) {
   const tok = getThemeTokens();
   const col = tok.accent;
-  const G2 = 3;
-  const halfW = 7;
-  const hl = 18, hw = 14;
-  const cellR = Math.max(1, Math.round(halfW / G2));
+  const barHalf = 13;
+  const barThick = 6.5;
+  const barGap = 8;
+  const hl = 22, hw = 17;
   const { pts, dir, tip } = computeArrowCenterline(turnDeg, 120);
   const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
-  const perp = [-dir[1], dir[0]];
-  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
-  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
   const stem = pts.slice(0, pts.length - 1).concat([back]);
-  const filled = /* @__PURE__ */ new Set();
-  const stamp = (x, y) => {
-    const ix = Math.round(x / G2), iy = Math.round(y / G2);
-    for (let dy = -cellR; dy <= cellR; dy++) {
-      for (let dx = -cellR; dx <= cellR; dx++) {
-        if (Math.abs(dx) + Math.abs(dy) <= cellR) filled.add(ix + dx + "," + (iy + dy));
-      }
-    }
-  };
-  for (let i = 0; i < stem.length - 1; i++) {
-    const a = stem[i], b = stem[i + 1];
-    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    const steps = Math.max(1, Math.ceil(len / (G2 * 0.4)));
-    for (let s2 = 0; s2 <= steps; s2++) {
-      const t = s2 / steps;
-      stamp(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t);
-    }
+  const samples = sampleStem(stem, barGap);
+  const parts = samples.map((p) => vfdSegmentBar(p.x, p.y, p.dx, p.dy, barHalf, barThick, col));
+  const headN = 7;
+  for (let i = 0; i < headN; i++) {
+    const t = i / (headN - 1);
+    const along = hl * (0.06 + t * 0.94);
+    const cx = tip[0] - dir[0] * along;
+    const cy = tip[1] - dir[1] * along;
+    const half = hw * (0.08 + t * 0.92);
+    parts.push(vfdSegmentBar(cx, cy, dir[0], dir[1], half, barThick, col));
   }
-  const allPts = [...stem, tip, wingA, wingB];
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  allPts.forEach((p) => {
-    minX = Math.min(minX, p[0]);
-    minY = Math.min(minY, p[1]);
-    maxX = Math.max(maxX, p[0]);
-    maxY = Math.max(maxY, p[1]);
-  });
-  const pad = G2 * 3;
-  const iMinX = Math.floor((minX - pad) / G2), iMaxX = Math.ceil((maxX + pad) / G2);
-  const iMinY = Math.floor((minY - pad) / G2), iMaxY = Math.ceil((maxY + pad) / G2);
-  const hcx = G2 * 0.5, hcy = G2 * 0.5;
-  for (let iy = iMinY; iy <= iMaxY; iy++) {
-    for (let ix = iMinX; ix <= iMaxX; ix++) {
-      const cx = ix * G2 + hcx, cy = iy * G2 + hcy;
-      if (pointInTri(cx, cy, tip[0], tip[1], wingA[0], wingA[1], wingB[0], wingB[1])) {
-        filled.add(ix + "," + iy);
-      }
-    }
-  }
-  const blocks = [];
-  filled.forEach((k) => {
-    const parts = k.split(",");
-    const ix = Number(parts[0]), iy = Number(parts[1]);
-    blocks.push('<rect x="' + ix * G2 + '" y="' + iy * G2 + '" width="' + G2 + '" height="' + G2 + '" fill="' + col + '"/>');
-  });
-  const { vb } = arrowViewBox(allPts, pad);
-  return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges">' + blocks.join("") + "</svg>";
+  const all = [...stem, tip, back];
+  const { vb } = arrowViewBox(all, barHalf + barThick + 2);
+  return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" filter="url(#vfd-glow-cyan)">' + parts.join("") + "</svg>";
 }
 function renderManeuverArrow(turnDeg) {
   const shape = getThemeTokens().arrowShape || "parametric";
@@ -14321,6 +14648,23 @@ function renderCompass() {
 function renderVisualFrame() {
   renderCompass();
   renderPathway();
+}
+
+// js/vintage-vfd.js
+function initVintageVfd() {
+  document.addEventListener("themechange", syncVintageVfdDomClasses);
+  syncVintageVfdDomClasses();
+}
+function syncVintageVfdDomClasses() {
+  const vintage = document.documentElement.classList.contains("theme-vintage");
+  const speedVal = $("v-speed");
+  const speedGhost = $("speed-ghost");
+  const mdistInner = document.querySelector(".mdist-inner");
+  if (speedVal) speedVal.classList.toggle("vfd-emissive-cyan", vintage);
+  if (speedGhost && vintage) speedGhost.textContent = "888";
+  if (mdistInner) mdistInner.classList.toggle("vfd-emissive-cyan", vintage);
+}
+function resetVintageVfd() {
 }
 
 // js/hud-opts.js
@@ -14394,6 +14738,7 @@ function loadAppOptsFromStorage() {
     };
     setCheck("opt-voice", o.voice);
     setCheck("opt-path", o.showPath);
+    setCheck("opt-crossings", o.showCrossingContext);
     setCheck("opt-heading", o.showCompass);
     setCheck("opt-cams", o.cams);
     setCheck("opt-back-only", o.backOnly);
@@ -14408,6 +14753,7 @@ function saveAppOptsToStorage() {
     localStorage.setItem(APP_OPTS_KEY, JSON.stringify({
       voice: !!S.voice,
       showPath: !!S.showPath,
+      showCrossingContext: S.showCrossingContext !== false,
       showCompass: !!S.showCompass,
       cams: !!S.cams,
       backOnly: !!S.backOnly,
@@ -15132,6 +15478,10 @@ function bindSetupUI() {
     }
     saveAppOptsToStorage();
   });
+  $("opt-crossings")?.addEventListener("change", (e) => {
+    S.showCrossingContext = e.target.checked;
+    saveAppOptsToStorage();
+  });
   const bindFinishOpt = (id) => {
     $(id)?.addEventListener("change", () => {
       syncOptionsFromDom();
@@ -15282,6 +15632,7 @@ function bindSetupUI() {
 function syncOptionsFromDom() {
   S.voice = $("opt-voice").checked;
   S.showPath = $("opt-path").checked;
+  S.showCrossingContext = $("opt-crossings")?.checked ?? true;
   S.showFinishDist = $("opt-finish-dist")?.checked ?? true;
   S.showFinishTime = $("opt-finish-time")?.checked ?? true;
   S.showFinishEta = $("opt-finish-eta")?.checked ?? true;
@@ -15737,6 +16088,7 @@ function applyTheme(theme, modePref, save = true) {
   syncThemeControls(tid, modePref);
   updateModeButtonLabel(modePref, mode);
   if ($2("hud")?.classList.contains("on")) renderVisualFrame();
+  syncVintageVfdDomClasses();
 }
 function $2(id) {
   return document.getElementById(id);
@@ -16142,10 +16494,24 @@ function onTick() {
       $("v-mdist-u").textContent = "\u043A\u043C";
     }
     $("street").textContent = "\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422";
+    $("rb-exit-label")?.classList.add("hidden");
   } else {
     const nm = findNextManeuver();
     if (nm) {
       $("arrow-box").innerHTML = buildArrowSVG(nm.step);
+      const rbEl = $("rb-exit-label");
+      if (rbEl) {
+        const geom = S.route.geometry;
+        const rb = isCrossingContextEnabled() && geom && snap ? getActiveRoundabout(geom, snap.s, spdMps) : null;
+        const isRbStep = nm.step.type === "roundabout" || nm.step.type === "rotary";
+        if (rb && isRbStep && rb.exitNumber > 0) {
+          rbEl.textContent = String(rb.exitNumber);
+          rbEl.classList.remove("hidden");
+        } else {
+          rbEl.textContent = "";
+          rbEl.classList.add("hidden");
+        }
+      }
       if (nm.dist < 1e3) {
         $("v-mdist").textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
         $("v-mdist-u").textContent = "\u043C";
@@ -16221,6 +16587,8 @@ async function startHud() {
   $("setup").style.zIndex = "30";
   $("hud").classList.add("on");
   $("hud").classList.toggle("show-compass", !!S.showCompass);
+  resetVintageVfd();
+  syncVintageVfdDomClasses();
   updateCamStatusUI();
   loadCameras();
   acquireWakeLock();
@@ -16245,6 +16613,7 @@ function stopHud() {
   });
   telemetry_default.updateMarkButtonVisibility();
   stopVisualLoop();
+  resetVintageVfd();
   stopNavigationGps().catch(() => {
   });
   S.fuelMode = 0;
@@ -16552,6 +16921,7 @@ function registerServiceWorker() {
 // js/main.js
 applyThemeCss();
 initThemeManager();
+initVintageVfd();
 initTelemetry().then(() => initTelemetryUI());
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
