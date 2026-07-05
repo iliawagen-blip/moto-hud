@@ -5,6 +5,7 @@ import { S } from './state.js';
 import { applyThemeCss, invalidateThemeTokens } from './theme.js';
 import { resolveDisplayMode, resetModeHysteresis } from './sun-mode.js';
 import { renderVisualFrame } from './render.js';
+import { syncVintageVfdDomClasses } from './vintage-vfd.js';
 
 export const THEME_STORAGE_KEY = 'moto-hud-theme';
 export const THEME_IDS = ['avionics', 'hitech', 'space', 'sport', 'chopper', 'vintage'];
@@ -65,6 +66,7 @@ export function applyTheme(theme, modePref, save = true){
   syncThemeControls(tid, modePref);
   updateModeButtonLabel(modePref, mode);
   if($('hud')?.classList.contains('on')) renderVisualFrame();
+  syncVintageVfdDomClasses();
 }
 
 function $(id){ return document.getElementById(id); }

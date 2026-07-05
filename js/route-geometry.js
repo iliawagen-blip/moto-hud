@@ -174,6 +174,25 @@ function findSForManeuver(sparseCoords, geom, targetLat, targetLon){
   return geom.s[idx];
 }
 
+/** Ближайшая дуговая координата s для lat/lon на dense polyline */
+export function findSForLatLon(geom, lat, lon){
+  if(!geom || geom.n < 2) return 0;
+  const gps = { lat, lon };
+  let bestS = 0;
+  let bestD = Infinity;
+  for(let i = 0; i < geom.n - 1; i++){
+    const proj = projectOnSegment(gps,
+      geom.lat[i], geom.lon[i], geom.lat[i + 1], geom.lon[i + 1]);
+    const segLen = geom.s[i + 1] - geom.s[i];
+    const s = geom.s[i] + proj.t * segLen;
+    if(proj.lateral < bestD){
+      bestD = proj.lateral;
+      bestS = s;
+    }
+  }
+  return bestS;
+}
+
 function buildManeuvers(steps, sparseCoords, geom){
   if(!steps || !sparseCoords) return [];
   return steps
@@ -214,9 +233,8 @@ export function buildRouteGeometry(route){
   const elev = new Float64Array(n);
   const grade = new Float64Array(n);
   const maneuvers = buildManeuvers(route.steps, route.coords, { s, n });
-
-  const geom = { lat, lon, s, elev, grade, maneuvers, n, elevReady: false, curveReady: false };
-  return geom;
+  return { lat, lon, s, elev, grade, maneuvers, n, elevReady: false, curveReady: false,
+    crossings: [], roundabouts: [] };
 }
 
 /** Индекс сегмента, содержащего s */

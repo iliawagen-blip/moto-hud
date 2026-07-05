@@ -31,6 +31,7 @@ export const S = {
   rafId: null,
   voice: true,
   showPath: true,
+  showCrossingContext: true,
   showElevProfile: true,
   elevExag: 1.8,
   elevProfileH: 72,

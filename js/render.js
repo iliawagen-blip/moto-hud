@@ -13,6 +13,10 @@ import {
 import { renderElevProfile, getElevExag, getElevProfileH } from './elevation.js';
 import { ribbonCurveColor } from './curve-speed.js';
 import { getThemeTokens } from './theme-tokens.js';
+import {
+  renderCrossingWhiskers, renderRoundaboutSchema,
+  getActiveRoundabout, isCrossingContextEnabled
+} from './crossings.js';
 
 const PROFILE_GAP = 6;
 
@@ -303,16 +307,29 @@ export function renderPathway(){
 
   const headingRad = updateCamHeading(geomReady, snap);
   updateCamPitch(geomReady, snap, getElevExag(), S.showElevProfile);
-  const sections = extendRibbonNearCam(
+
+  const activeRb = isCrossingContextEnabled()
+    ? getActiveRoundabout(geomReady, rawSnap.s, speedMps) : null;
+
+  let sections = extendRibbonNearCam(
     computeRibbonSectionsCam(geomReady, snap, maxDist, ROAD_HALF, headingRad)
   );
+  if(activeRb){
+    sections = sections.filter(sec => sec.s < activeRb.sEnter || sec.s > activeRb.sExit);
+  }
   if(sections.length < 2){
     svg.innerHTML = '';
     return;
   }
 
+  let html = '';
+  if(isCrossingContextEnabled()){
+    html += renderCrossingWhiskers(snap, headingRad, geomReady, rawSnap.s, speedMps);
+    if(activeRb) html += renderRoundaboutSchema(activeRb, snap, headingRad);
+  }
+
   const mesh = buildStripMeshSvg(sections, geomReady, speedMps);
-  let html = mesh.fill + mesh.edges;
+  html += mesh.fill + mesh.edges;
   const tok = getThemeTokens();
 
   const centerS = sections
@@ -446,86 +463,68 @@ function renderChopperArrow(turnDeg){
     '</svg>';
 }
 
-function pointInTri(px, py, ax, ay, bx, by, cx, cy){
-  const v0x = cx - ax, v0y = cy - ay;
-  const v1x = bx - ax, v1y = by - ay;
-  const v2x = px - ax, v2y = py - ay;
-  const dot00 = v0x * v0x + v0y * v0y;
-  const dot01 = v0x * v1x + v0y * v1y;
-  const dot02 = v0x * v2x + v0y * v2y;
-  const dot11 = v1x * v1x + v1y * v1y;
-  const dot12 = v1x * v2x + v1y * v2y;
-  const inv = 1 / (dot00 * dot11 - dot01 * dot01 || 1e-9);
-  const u = (dot11 * dot02 - dot01 * dot12) * inv;
-  const v = (dot00 * dot12 - dot01 * dot02) * inv;
-  return u >= -0.02 && v >= -0.02 && u + v <= 1.02;
+/** VFD-сегмент: «планка» перпендикулярно траектории */
+function vfdSegmentBar(cx, cy, tdx, tdy, halfLen, thick, col){
+  const len = Math.hypot(tdx, tdy) || 1;
+  const nx = -tdy / len, ny = tdx / len;
+  const x1 = (cx - nx * halfLen).toFixed(1);
+  const y1 = (cy - ny * halfLen).toFixed(1);
+  const x2 = (cx + nx * halfLen).toFixed(1);
+  const y2 = (cy + ny * halfLen).toFixed(1);
+  return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
+    '" stroke="' + col + '" stroke-width="' + thick + '" stroke-linecap="butt"/>';
 }
 
-/** Винтаж: пиксельная стрелка — растеризация штока + треугольный наконечник */
+/** Точки вдоль ломаной с касательным направлением */
+function sampleStem(stem, step){
+  const out = [];
+  for(let i = 0; i < stem.length - 1; i++){
+    const a = stem[i], b = stem[i + 1];
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const seg = Math.hypot(dx, dy);
+    if(seg < 0.01) continue;
+    const n = Math.max(1, Math.ceil(seg / step));
+    for(let s = 0; s < n; s++){
+      if(i > 0 && s === 0) continue;
+      const t = s / n;
+      out.push({ x: a[0] + dx * t, y: a[1] + dy * t, dx, dy });
+    }
+  }
+  const last = stem[stem.length - 1];
+  const prev = out.length ? out[out.length - 1] : { dx: 0, dy: -1 };
+  out.push({ x: last[0], y: last[1], dx: prev.dx, dy: prev.dy });
+  return out;
+}
+
+/** Винтаж: сегментированная VFD-стрелка (планки как на референсе) */
 function renderVintageArrow(turnDeg){
   const tok = getThemeTokens();
   const col = tok.accent;
-  const G = 3;
-  const halfW = 7;
-  const hl = 18, hw = 14;
-  const cellR = Math.max(1, Math.round(halfW / G));
+  const barHalf = 13;
+  const barThick = 6.5;
+  const barGap = 8;
+  const hl = 22, hw = 17;
 
   const { pts, dir, tip } = computeArrowCenterline(turnDeg, 120);
   const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
-  const perp = [-dir[1], dir[0]];
-  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
-  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
   const stem = pts.slice(0, pts.length - 1).concat([back]);
+  const samples = sampleStem(stem, barGap);
+  const parts = samples.map(p => vfdSegmentBar(p.x, p.y, p.dx, p.dy, barHalf, barThick, col));
 
-  const filled = new Set();
-  const stamp = (x, y) => {
-    const ix = Math.round(x / G), iy = Math.round(y / G);
-    for(let dy = -cellR; dy <= cellR; dy++){
-      for(let dx = -cellR; dx <= cellR; dx++){
-        if(Math.abs(dx) + Math.abs(dy) <= cellR) filled.add((ix + dx) + ',' + (iy + dy));
-      }
-    }
-  };
-
-  for(let i = 0; i < stem.length - 1; i++){
-    const a = stem[i], b = stem[i + 1];
-    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    const steps = Math.max(1, Math.ceil(len / (G * 0.4)));
-    for(let s = 0; s <= steps; s++){
-      const t = s / steps;
-      stamp(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t);
-    }
+  const headN = 7;
+  for(let i = 0; i < headN; i++){
+    const t = i / (headN - 1);
+    const along = hl * (0.06 + t * 0.94);
+    const cx = tip[0] - dir[0] * along;
+    const cy = tip[1] - dir[1] * along;
+    const half = hw * (0.08 + t * 0.92);
+    parts.push(vfdSegmentBar(cx, cy, dir[0], dir[1], half, barThick, col));
   }
 
-  const allPts = [...stem, tip, wingA, wingB];
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  allPts.forEach(p => {
-    minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]);
-    maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]);
-  });
-  const pad = G * 3;
-  const iMinX = Math.floor((minX - pad) / G), iMaxX = Math.ceil((maxX + pad) / G);
-  const iMinY = Math.floor((minY - pad) / G), iMaxY = Math.ceil((maxY + pad) / G);
-  const hcx = G * 0.5, hcy = G * 0.5;
-  for(let iy = iMinY; iy <= iMaxY; iy++){
-    for(let ix = iMinX; ix <= iMaxX; ix++){
-      const cx = ix * G + hcx, cy = iy * G + hcy;
-      if(pointInTri(cx, cy, tip[0], tip[1], wingA[0], wingA[1], wingB[0], wingB[1])){
-        filled.add(ix + ',' + iy);
-      }
-    }
-  }
-
-  const blocks = [];
-  filled.forEach(k => {
-    const parts = k.split(',');
-    const ix = Number(parts[0]), iy = Number(parts[1]);
-    blocks.push('<rect x="' + (ix * G) + '" y="' + (iy * G) + '" width="' + G + '" height="' + G + '" fill="' + col + '"/>');
-  });
-
-  const { vb } = arrowViewBox(allPts, pad);
-  return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges">' +
-    blocks.join('') + '</svg>';
+  const all = [...stem, tip, back];
+  const { vb } = arrowViewBox(all, barHalf + barThick + 2);
+  return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" filter="url(#vfd-glow-cyan)">' +
+    parts.join('') + '</svg>';
 }
 
 function renderManeuverArrow(turnDeg){

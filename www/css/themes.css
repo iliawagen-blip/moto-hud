@@ -26,6 +26,8 @@ html.theme-avionics {
   --path-edge: #00FF66;
   --path-edge-w: 5px;
   --path-center-opacity: 0.45;
+  --path-context: var(--fg-dim);
+  --path-context-opacity: 0.35;
   --compass-style: tape;
   --glow: none;
   --glow-opacity: 0;
@@ -75,6 +77,8 @@ html.theme-hitech {
   --path-fill-opacity: 0.12;
   --path-edge: #FF6B1A;
   --path-edge-w: 2px;
+  --path-context: var(--fg-dim);
+  --path-context-opacity: 0.35;
   --compass-style: tape;
   --glow: none;
   --panel: var(--bg-panel);
@@ -114,6 +118,8 @@ html.theme-space {
   --path-fill-opacity: 0.08;
   --path-edge: #2EE6FF;
   --path-edge-w: 1.5px;
+  --path-context: var(--fg-dim);
+  --path-context-opacity: 0.35;
   --compass-style: tape;
   --glow: #2EE6FF;
   --glow-opacity: 0.25;
@@ -154,6 +160,8 @@ html.theme-sport {
   --path-fill-opacity: 0.1;
   --path-edge: #E10600;
   --path-edge-w: 3px;
+  --path-context: var(--fg-dim);
+  --path-context-opacity: 0.35;
   --compass-style: tape;
   --panel: var(--bg);
   --panel2: #141414;
@@ -190,6 +198,8 @@ html.theme-chopper {
   --path-fill-opacity: 0.15;
   --path-edge: #FFB84D;
   --path-edge-w: 2px;
+  --path-context: var(--fg-dim);
+  --path-context-opacity: 0.35;
   --compass-style: rose;
   --panel: var(--bg-panel);
   --panel2: #1C1710;
@@ -229,9 +239,10 @@ html.theme-vintage {
   --path-fill-opacity: 0;
   --path-edge: #66FFE0;
   --path-edge-w: 2px;
+  --path-context: var(--fg-dim);
+  --path-context-opacity: 0.35;
   --path-dash: 2 6;
   --compass-style: tape;
-  --speed-ghost-opacity: 0.06;
   --panel: var(--bg);
   --panel2: #0a0a0a;
   --turn-primary: #66FFE0;
@@ -244,7 +255,6 @@ html.theme-vintage[data-mode="night"] {
   --accent: #FFAA00;
   --path-edge: #FFAA00;
   --path-dash: 2 6;
-  --speed-ghost-opacity: 0.05;
   --turn-primary: #FFAA00;
 }
 

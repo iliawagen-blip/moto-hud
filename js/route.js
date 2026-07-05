@@ -5,6 +5,7 @@ import { updateCamStatusUI } from './cam-status.js';
 import {
   buildRouteGeometry, resetRouteSnap, getRouteSnapForNav, remainingDistanceS
 } from './route-geometry.js';
+import { buildCrossingsData, resetCrossingTelemetry } from './crossings.js';
 import { loadRouteElevation } from './elevation.js';
 import { computeCurveSpeed } from './curve-speed.js';
 import { resetFuelRouteBinding } from './fuel.js';
@@ -48,12 +49,22 @@ export function getVisibleTurnManeuvers(geom, curS, limit){
 export function ensureRouteGeometry(route){
   if(!route) return null;
   if(route.geometry?.n > 1){
+    if(route.geometry.crossings == null && route.steps?.some(st => st.intersections?.length)){
+      const { crossings, roundabouts } = buildCrossingsData(route.steps, route.geometry);
+      route.geometry.crossings = crossings;
+      route.geometry.roundabouts = roundabouts;
+    }
     computeCurveSpeed(route.geometry, route);
     return route.geometry;
   }
   try{
     route.geometry = buildRouteGeometry(route);
-    if(route.geometry) computeCurveSpeed(route.geometry, route);
+    if(route.geometry){
+      const { crossings, roundabouts } = buildCrossingsData(route.steps, route.geometry);
+      route.geometry.crossings = crossings;
+      route.geometry.roundabouts = roundabouts;
+      computeCurveSpeed(route.geometry, route);
+    }
     loadRouteElevation();
     return route.geometry;
   }catch(e){
@@ -66,6 +77,7 @@ export function ensureRouteGeometry(route){
 function attachRouteGeometry(route){
   ensureRouteGeometry(route);
   resetRouteSnap();
+  resetCrossingTelemetry();
   resetFuelRouteBinding();
 }
 
@@ -121,12 +133,22 @@ function parseOsrmRoute(rt){
   rt.legs.forEach(leg => {
     leg.steps.forEach(st => {
       const loc = st.maneuver.location;
+      const m = st.maneuver;
       steps.push({
         lat: loc[1], lon: loc[0],
-        type: st.maneuver.type,
-        modifier: st.maneuver.modifier,
+        type: m.type,
+        modifier: m.modifier,
         name: st.name || '',
-        distance: st.distance
+        distance: st.distance,
+        exit: m.exit,
+        intersections: (st.intersections || []).map(ix => ({
+          lat: ix.location[1],
+          lon: ix.location[0],
+          bearings: ix.bearings || [],
+          entry: ix.entry,
+          in: ix.in,
+          out: ix.out
+        }))
       });
     });
   });

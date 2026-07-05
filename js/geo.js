@@ -32,6 +32,21 @@ export function angleDiff(a, b){
   return d > 180 ? 360 - d : d;
 }
 
+/** Точка на расстоянии distM по азимуту brgDeg от from */
+export function destPoint(from, brgDeg, distM){
+  const r = Math.PI / 180;
+  const br = brgDeg * r;
+  const d = distM / 6371000;
+  const lat1 = from.lat * r;
+  const lon1 = from.lon * r;
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(br));
+  const lon2 = lon1 + Math.atan2(
+    Math.sin(br) * Math.sin(d) * Math.cos(lat1),
+    Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+  return { lat: lat2 / r, lon: lon2 / r };
+}
+
 export function parseInput(raw){
   const s = String(raw || '').trim();
   if(!s) return null;

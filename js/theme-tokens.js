@@ -46,6 +46,8 @@ export function getThemeTokens(){
     pathTurnScale: gn('--path-turn-scale', 1),
     pathCenterOpacity: gn('--path-center-opacity', 0.45),
     pathDash: g('--path-dash', 'none'),
+    pathContext: g('--path-context', g('--fg-dim', '#8b9cb3')),
+    pathContextOpacity: gn('--path-context-opacity', 0.35),
     strokeW: gn('--stroke-w', 3),
     arrowStyle: g('--arrow-style', 'filled'),
     arrowShape: g('--arrow-shape', 'parametric'),
