@@ -15,9 +15,11 @@ import { initTtsHealth } from './tts-health.js';
 import { initTelemetry } from './telemetry.js';
 import { initTelemetryUI } from './telemetry-ui.js';
 import { registerServiceWorker } from './sw-register.js';
+import { initVintageVfd } from './vintage-vfd.js';
 
 applyThemeCss();
 initThemeManager();
+initVintageVfd();
 initTelemetry().then(() => initTelemetryUI());
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();

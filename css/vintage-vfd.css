@@ -1,0 +1,109 @@
+/**
+ * Винтаж: VFD/LCD приборная панель 1980-х (только html.theme-vintage).
+ */
+@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
+
+html.theme-vintage {
+  --vfd-ghost-cyan: rgba(0, 255, 200, 0.04);
+  --vfd-ghost-red: rgba(255, 0, 0, 0.04);
+  --vfd-emissive-red: #ff3333;
+}
+
+html.theme-vintage[data-mode="night"] {
+  --vfd-ghost-cyan: rgba(255, 170, 0, 0.045);
+}
+
+/* Сканлайны / сетка стекла VFD */
+html.theme-vintage #vfd-scanlines{
+  display:none;pointer-events:none;position:absolute;inset:0;z-index:45;
+  mix-blend-mode:overlay;opacity:0.14;
+  background:
+    repeating-linear-gradient(0deg,
+      transparent 0, transparent 2px,
+      rgba(0, 0, 0, 0.42) 2px, rgba(0, 0, 0, 0.42) 3px),
+    repeating-linear-gradient(90deg,
+      transparent 0, transparent 3px,
+      rgba(255, 255, 255, 0.025) 3px, rgba(255, 255, 255, 0.025) 4px);
+}
+html.theme-vintage #hud.on #vfd-scanlines{display:block}
+
+/* Статусбар и улица — моноширинный матричный шрифт */
+html.theme-vintage .statusbar,
+html.theme-vintage .statusbar #mid-info,
+html.theme-vintage .statusbar #clock,
+html.theme-vintage .statusbar #gps-txt,
+html.theme-vintage .statusbar #cam-txt,
+html.theme-vintage .street{
+  font-family:"Share Tech Mono","VT323",Consolas,monospace;
+  font-weight:400;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+/* LED-индикаторы 5 mm */
+html.theme-vintage .statusbar .dot{
+  width:10px;height:10px;border-radius:50%;border:none;
+  background:radial-gradient(circle at 32% 28%, #fff 0%, #ffb020 18%, #cc8800 55%, #442200 100%);
+  box-shadow:0 0 5px rgba(255, 176, 32, 0.55), inset 0 -1px 2px rgba(0, 0, 0, 0.45);
+}
+html.theme-vintage .statusbar .dot.ok{
+  background:radial-gradient(circle at 32% 28%, #fff 0%, #6f6 22%, #2a8 58%, #042 100%);
+  box-shadow:0 0 6px rgba(80, 255, 160, 0.65), inset 0 -1px 2px rgba(0, 0, 0, 0.45);
+}
+html.theme-vintage .statusbar .dot.err{
+  background:radial-gradient(circle at 32% 28%, #fff 0%, #f66 20%, #c22 55%, #400 100%);
+  box-shadow:0 0 6px rgba(255, 80, 80, 0.6), inset 0 -1px 2px rgba(0, 0, 0, 0.45);
+}
+
+/* 7-segment: DSEG7 + ghost «888» */
+html.theme-vintage .speed-ghost,
+html.theme-vintage .mdist-ghost{
+  display:flex;align-items:center;justify-content:center;
+  position:absolute;inset:0;pointer-events:none;z-index:0;
+  font-family:"DSEG7 Classic",monospace;
+  font-feature-settings:normal;font-variant-numeric:normal;
+  color:var(--vfd-ghost-cyan);
+  opacity:1;
+}
+html.theme-vintage .mdist{position:relative}
+html.theme-vintage .mdist-ghost{
+  font-size:clamp(48px,min(18vw,16vh),140px);
+  letter-spacing:.06em;
+}
+
+html.theme-vintage .speed-val,
+html.theme-vintage .mdist,
+html.theme-vintage .mdist .u,
+html.theme-vintage #arrow-box svg.arrow-vintage{
+  shape-rendering:geometricPrecision;
+}
+
+/* Эмissive VFD + glow filter */
+html.theme-vintage .vfd-emissive-cyan{
+  filter:url(#vfd-glow-cyan);
+  color:var(--accent);
+  position:relative;z-index:2;
+}
+html.theme-vintage .speed-val.vfd-emissive-cyan.over{
+  filter:url(#vfd-glow-red);
+  color:var(--vfd-emissive-red);
+}
+html.theme-vintage .mdist-inner{
+  position:relative;z-index:2;display:inline-flex;align-items:baseline;justify-content:center;
+  filter:url(#vfd-glow-cyan);
+  color:var(--accent);
+}
+html.theme-vintage .mdist-inner .u{
+  color:var(--accent);
+}
+
+html.theme-vintage .street,
+html.theme-vintage .speed-unit,
+html.theme-vintage .fi-k,
+html.theme-vintage .fi-v,
+html.theme-vintage .cb-lbl{
+  letter-spacing:.1em;
+}
+html.theme-vintage .fi-v{
+  font-family:"DSEG7 Classic",monospace;
+}
