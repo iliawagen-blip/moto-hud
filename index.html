@@ -126,6 +126,9 @@
     <div id="route-map" class="route-map" aria-label="Карта маршрута"></div>
     <div id="route-alts" class="route-alts"></div>
     <div class="route-info" id="route-info"></div>
+    <div class="btnrow c1 route-export-row hidden" id="route-export-row" style="margin-top:8px">
+      <button type="button" class="secondary" id="btn-yandex-navi">🧭 Открыть в Яндекс Навигаторе</button>
+    </div>
   </div>
 
   <div id="tts-banner" class="setup-banner hidden" role="status"></div>
@@ -197,6 +200,8 @@
       <div class="toggle" style="margin-top:12px;font-size:14px;color:var(--fg-dim)">Тестовая телеметрия</div>
       <div class="toggle" style="margin-top:6px">📊 Запись сессии (JSONL) <input type="checkbox" id="opt-telemetry"></div>
       <div class="hint" style="margin-top:4px;font-size:12px">Локально в IndexedDB. Экспорт в разделе ниже. URL: <code>?telemetry=1</code></div>
+      <div class="toggle" style="margin-top:8px">📍 Запись трека (GPX, 1 Гц) <input type="checkbox" id="opt-track-record"></div>
+      <div class="hint" style="margin-top:4px;font-size:12px">Во время HUD. Скачать GPX — в разделе «Сессии телеметрии». URL: <code>?track=1</code></div>
     </div>
   </details>
 
@@ -206,6 +211,30 @@
       <div class="hint" id="telemetry-stats" style="margin-bottom:8px">—</div>
       <div id="telemetry-sessions"></div>
       <button type="button" class="secondary" id="btn-telemetry-export-all" style="margin-top:10px">📤 Экспортировать все сессии</button>
+      <button type="button" class="secondary hidden" id="btn-track-gpx" style="margin-top:8px">📤 GPX последней поездки</button>
+    </div>
+  </details>
+
+  <details class="setup-details" id="drawer-trip">
+    <summary>🗓 Планировщик поездки</summary>
+    <div class="drawer-body">
+      <p class="hint" style="margin-bottom:8px">Многодневный план: сегменты как в <code>route-jul2026</code> — waypoints, радиалки, спокойно/интенсив.</p>
+      <div class="btnrow c2" style="margin-bottom:8px">
+        <button type="button" class="secondary" id="btn-trip-demo">📥 Кавказ 2026</button>
+        <button type="button" class="secondary" id="btn-trip-new">➕ Новый план</button>
+      </div>
+      <div id="trip-list"></div>
+      <div id="trip-variant-bar" class="trip-variant-bar hidden" role="tablist">
+        <button type="button" class="mode-btn active" data-mode="calm">🌄 Спокойно</button>
+        <button type="button" class="mode-btn" data-mode="intense">⛰ Интенсив</button>
+      </div>
+      <div id="trip-days" class="trip-days"></div>
+      <div class="status" id="trip-status" style="margin-top:8px"></div>
+      <div class="btnrow c2 hidden" id="trip-export-row" style="margin-top:8px">
+        <button type="button" class="secondary" id="btn-trip-export">📤 Текст</button>
+        <button type="button" class="secondary" id="btn-trip-clear">✕ Сброс</button>
+      </div>
+      <button type="button" class="secondary" id="btn-trip-delete" style="margin-top:8px;width:100%">🗑 Удалить план</button>
     </div>
   </details>
 
@@ -347,6 +376,22 @@
   </div>
 </div>
 
+<!-- новый план поездки -->
+<div class="modal" id="tripNewModal">
+  <div class="modal-card">
+    <h3>Новый план поездки</h3>
+    <div class="sub">Старт → ночёвки (по одной на строку) → финиш. Координаты: <code>55.59, 37.53 Название</code></div>
+    <label class="toggle" style="margin-top:10px;display:block">Название<input type="text" id="trip-new-title" placeholder="Москва → Кавказ" style="width:100%;margin-top:4px"></label>
+    <label class="toggle" style="margin-top:8px;display:block">Старт<input type="text" id="trip-new-start" placeholder="55.591477, 37.538641 Дом" style="width:100%;margin-top:4px"></label>
+    <label class="toggle" style="margin-top:8px;display:block">Ночёвки (необяз.)<textarea id="trip-new-nights" rows="4" placeholder="52.612211, 38.527587 Елец&#10;51.720490, 39.142984 Воронеж" style="width:100%;margin-top:4px;font:inherit"></textarea></label>
+    <label class="toggle" style="margin-top:8px;display:block">Финиш<input type="text" id="trip-new-finish" placeholder="55.591477, 37.538641 Дом" style="width:100%;margin-top:4px"></label>
+    <div class="btnrow c2" style="margin-top:12px">
+      <button type="button" id="trip-new-cancel">Отмена</button>
+      <button type="button" class="ok" id="trip-new-save">Создать</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ HUD (grid) ============ -->
 <div id="hud">
   <div class="statusbar">
@@ -355,6 +400,7 @@
     <span id="mid-info">—</span>
     <span id="clock">--:--</span>
   </div>
+  <div id="trip-hud-badge" class="trip-hud-badge hidden" aria-live="polite"></div>
 
   <div id="nav-map-pane" class="nav-map-pane" aria-hidden="true"></div>
 

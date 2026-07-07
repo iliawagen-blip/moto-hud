@@ -247,8 +247,12 @@ var init_state = __esm({
       // 0 выкл, 1 «по маршруту», 2 «ближайшая + маршрут»
       fuelSel: null,
       // выбранная АЗС
-      fuelOrigFinish: null
+      fuelOrigFinish: null,
       // финиш до перехвата ассистентом (для восстановления)
+      /** Активный план: { trip, dayN, variantId, segmentLabel } */
+      tripContext: null,
+      /** Текущий загруженный план (редактор) */
+      activeTrip: null
     };
     L2 = {
       W: 1e3,
@@ -16496,6 +16500,7 @@ function refreshRouteUi() {
   updateRouteInfo(S.route);
   syncSimPath();
   setGoBarVisible(true);
+  $("route-export-row")?.classList.toggle("hidden", !S.route?.coords?.length);
   loadCameras();
   checkStartReady();
   scheduleGeometryBuild(S.routeAlternatives, () => {
@@ -16508,6 +16513,7 @@ function invalidateRoute() {
   S.selectedRouteIdx = 0;
   clearRouteMap();
   setGoBarVisible(false);
+  $("route-export-row")?.classList.add("hidden");
   checkStartReady();
   const b = $("btn-build-route");
   if (b) b.disabled = !(S.gps && S.finish);
@@ -18093,6 +18099,701 @@ var init_view_mode = __esm({
   }
 });
 
+// js/trip-model.js
+function parseRtext(rtext) {
+  if (!rtext?.trim()) return [];
+  return rtext.split("~").map((part, i) => {
+    const c = part.trim().match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
+    if (!c) return null;
+    return { lat: +c[1], lon: +c[2], label: i === 0 ? "\u0421\u0442\u0430\u0440\u0442" : i === rtext.split("~").length - 1 ? "\u0424\u0438\u043D\u0438\u0448" : `\u0422\u043E\u0447\u043A\u0430 ${i + 1}` };
+  }).filter(Boolean);
+}
+function rtextFromPoints(points) {
+  return points.map((p) => `${p.lat},${p.lon}`).join("~");
+}
+function auditSegment(rtext) {
+  const pts = parseRtext(rtext);
+  const warnings = [];
+  if (pts.length < 2) {
+    return { ok: false, km: 0, warnings: ["\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A"] };
+  }
+  let km = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const seg = haversine(pts[i - 1], pts[i]) / 1e3;
+    km += seg;
+    if (seg > 250) warnings.push(`\u0414\u043B\u0438\u043D\u043D\u044B\u0439 \u0441\u0435\u0433\u043C\u0435\u043D\u0442 ${Math.round(seg)} \u043A\u043C`);
+  }
+  for (const p of pts) {
+    if (p.lat < 40 || p.lat > 57 || p.lon < 30 || p.lon > 52) {
+      warnings.push(`\u0422\u043E\u0447\u043A\u0430 \u0432\u043D\u0435 \u0431\u043E\u043A\u0441\u0430: ${p.lat}, ${p.lon}`);
+    }
+  }
+  if (km > 550) warnings.push(`\u0421\u0443\u043C\u043C\u0430\u0440\u043D\u043E ~${Math.round(km)} \u043A\u043C (\u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435)`);
+  const isLoop = pts.length >= 3 && haversine(pts[0], pts[pts.length - 1]) < 2;
+  return { ok: warnings.length === 0, km: Math.round(km * 10) / 10, warnings, isLoop };
+}
+function getDayVariant(day, variantId) {
+  if (!day?.variants?.length) return null;
+  return day.variants.find((v) => v.id === variantId) || day.variants[0];
+}
+function validateTrip(trip) {
+  if (!trip?.id || !trip.title || !trip.days?.length) throw new Error("\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0439 \u043F\u043B\u0430\u043D");
+  return trip;
+}
+function buildTripFromNights({ id, title, start: start2, finish, nights, startDate }) {
+  const trip = {
+    id: id || crypto.randomUUID(),
+    version: TRIP_MODEL_REV,
+    title,
+    startDate: startDate || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+    start: start2,
+    finish,
+    days: [],
+    meta: {}
+  };
+  const chain = [start2, ...nights || [], finish];
+  for (let i = 0; i < chain.length - 1; i++) {
+    const a = chain[i];
+    const b = chain[i + 1];
+    const rtext = rtextFromPoints([a, b]);
+    trip.days.push({
+      n: i + 1,
+      date: "",
+      badge: i === chain.length - 2 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D",
+      variants: [{
+        id: "calm",
+        label: "\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439",
+        summary: `${a.label || "\u0421\u0442\u0430\u0440\u0442"} \u2192 ${b.label || "\u0424\u0438\u043D\u0438\u0448"}`,
+        night: b.label ? `\u{1F319} ${b.label}` : "",
+        segments: [{ label: "\u041F\u0435\u0440\u0435\u0433\u043E\u043D", rtext, type: "transfer" }]
+      }]
+    });
+  }
+  return trip;
+}
+function tripSummaryText(trip, variantId = "calm") {
+  const lines = [trip.title, ""];
+  for (const day of trip.days) {
+    const v = getDayVariant(day, variantId);
+    lines.push(`\u0414\u0435\u043D\u044C ${day.n}${day.date ? " " + day.date : ""}${day.badge ? " \xB7 " + day.badge : ""}`);
+    if (v?.summary) lines.push("  " + v.summary);
+    if (v?.night) lines.push("  " + v.night);
+    for (const seg of v?.segments || []) {
+      const a = auditSegment(seg.rtext);
+      lines.push(`  \u2192 ${seg.label} (~${a.km} \u043A\u043C${a.warnings.length ? " \u26A0" : ""})`);
+    }
+    lines.push("");
+  }
+  return lines.join("\n").trim();
+}
+var TRIP_MODEL_REV;
+var init_trip_model = __esm({
+  "js/trip-model.js"() {
+    init_geo();
+    TRIP_MODEL_REV = 1;
+  }
+});
+
+// js/trip-storage.js
+function openDb3() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME3, DB_VER3);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("trips")) {
+        db.createObjectStore("trips", { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveTrip(trip) {
+  validateTrip(trip);
+  const rec = { ...trip, version: trip.version || TRIP_MODEL_REV, updatedAt: Date.now() };
+  const db = await openDb3();
+  await new Promise((resolve, reject) => {
+    const tx2 = db.transaction("trips", "readwrite");
+    tx2.objectStore("trips").put(rec);
+    tx2.oncomplete = () => resolve();
+    tx2.onerror = () => reject(tx2.error);
+  });
+  const all = await listTrips(db);
+  if (all.length > MAX_TRIPS) {
+    const drop = all.sort((a, b) => (a.updatedAt || 0) - (b.updatedAt || 0)).slice(0, all.length - MAX_TRIPS);
+    const tx2 = db.transaction("trips", "readwrite");
+    drop.forEach((t) => tx2.objectStore("trips").delete(t.id));
+  }
+  db.close();
+  return rec;
+}
+async function listTrips(db) {
+  db = db || await openDb3();
+  return new Promise((resolve, reject) => {
+    const tx2 = db.transaction("trips", "readonly");
+    const req = tx2.objectStore("trips").getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function loadAllTrips() {
+  const db = await openDb3();
+  const rows = await listTrips(db);
+  db.close();
+  return rows.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+}
+async function loadTrip(id) {
+  const db = await openDb3();
+  const row = await new Promise((resolve, reject) => {
+    const tx2 = db.transaction("trips", "readonly");
+    const req = tx2.objectStore("trips").get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return row || null;
+}
+async function deleteTrip(id) {
+  const db = await openDb3();
+  await new Promise((resolve, reject) => {
+    const tx2 = db.transaction("trips", "readwrite");
+    tx2.objectStore("trips").delete(id);
+    tx2.oncomplete = () => resolve();
+    tx2.onerror = () => reject(tx2.error);
+  });
+  db.close();
+}
+async function loadDemoTrip() {
+  const r = await fetch("fixtures/trip-jul2026.json");
+  if (!r.ok) throw new Error("\u0414\u0435\u043C\u043E-\u043F\u043B\u0430\u043D \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+  return validateTrip(await r.json());
+}
+var DB_NAME3, DB_VER3, MAX_TRIPS;
+var init_trip_storage = __esm({
+  "js/trip-storage.js"() {
+    init_trip_model();
+    DB_NAME3 = "moto-hud-trips";
+    DB_VER3 = 1;
+    MAX_TRIPS = 12;
+  }
+});
+
+// js/yandex-export.js
+function round6(n) {
+  return Math.round(n * 1e6) / 1e6;
+}
+function sampleViaPoints(coords, maxVia = MAX_VIA_POINTS) {
+  if (!coords?.length || coords.length <= 2) return [];
+  const inner = coords.slice(1, -1);
+  if (inner.length <= maxVia) {
+    return inner.map((c) => ({ lat: c[0], lon: c[1] }));
+  }
+  const out = [];
+  for (let i = 0; i < maxVia; i++) {
+    const idx = Math.min(
+      inner.length - 1,
+      Math.round((i + 1) * inner.length / (maxVia + 1)) - 1
+    );
+    const c = inner[Math.max(0, idx)];
+    out.push({ lat: c[0], lon: c[1] });
+  }
+  return out;
+}
+function buildYandexNaviUrl({ from, to, via = [] }) {
+  const p = new URLSearchParams();
+  if (from) {
+    p.set("lat_from", String(round6(from.lat)));
+    p.set("lon_from", String(round6(from.lon)));
+  }
+  p.set("lat_to", String(round6(to.lat)));
+  p.set("lon_to", String(round6(to.lon)));
+  via.forEach((pt, i) => {
+    p.set(`lat_via_${i}`, String(round6(pt.lat)));
+    p.set(`lon_via_${i}`, String(round6(pt.lon)));
+  });
+  return `yandexnavi://build_route_on_map?${p.toString()}`;
+}
+function buildYandexNaviUrlFromRoute(route, gps) {
+  const coords = route?.coords;
+  if (!coords?.length) throw new Error("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
+  const to = { lat: coords[coords.length - 1][0], lon: coords[coords.length - 1][1] };
+  const from = gps ? { lat: gps.lat, lon: gps.lon } : { lat: coords[0][0], lon: coords[0][1] };
+  return buildYandexNaviUrl({ from, to, via: sampleViaPoints(coords) });
+}
+function openYandexNavigator(route, gps) {
+  const url = buildYandexNaviUrlFromRoute(route, gps);
+  const a = document.createElement("a");
+  a.href = url;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+function initYandexExportUi() {
+  $("btn-yandex-navi")?.addEventListener("click", () => {
+    try {
+      openYandexNavigator(S.route, S.gps);
+    } catch (e) {
+      alert(e.message || "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u042F\u043D\u0434\u0435\u043A\u0441 \u041D\u0430\u0432\u0438\u0433\u0430\u0442\u043E\u0440");
+    }
+  });
+}
+var MAX_VIA_POINTS;
+var init_yandex_export = __esm({
+  "js/yandex-export.js"() {
+    init_state();
+    init_util();
+    MAX_VIA_POINTS = 8;
+  }
+});
+
+// js/gpx.js
+function escXml(s2) {
+  return String(s2).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function serializeGpxTrack(points, name = "Moto HUD") {
+  if (!points?.length || points.length < 2) throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0434\u043B\u044F GPX");
+  const trkpts = points.map((p) => {
+    const ts = p.timeMs ?? p.ts;
+    let inner = "";
+    if (p.ele != null && Number.isFinite(p.ele)) inner += `
+      <ele>${p.ele}</ele>`;
+    if (ts != null) inner += `
+      <time>${new Date(ts).toISOString()}</time>`;
+    return `    <trkpt lat="${p.lat}" lon="${p.lon}">${inner}
+    </trkpt>`;
+  }).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Moto HUD" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>${escXml(name)}</name>
+    <trkseg>
+${trkpts}
+    </trkseg>
+  </trk>
+</gpx>`;
+}
+var init_gpx = __esm({
+  "js/gpx.js"() {
+  }
+});
+
+// js/trip-planner.js
+async function applyTripSegment(segment, mode = "osrm") {
+  const waypoints = parseRtext(segment.rtext);
+  if (waypoints.length < 2) throw new Error("\u041D\u0443\u0436\u043D\u043E \u22652 \u0442\u043E\u0447\u0435\u043A \u0432 \u0441\u0435\u0433\u043C\u0435\u043D\u0442\u0435");
+  let route;
+  if (mode === "direct") {
+    route = buildDirectRouteFromWaypoints(waypoints);
+  } else {
+    route = await fetchRouteThroughWaypoints(waypoints);
+  }
+  attachRouteFromImport(route, waypoints);
+  const { refreshRouteUi: refreshRouteUi2 } = await Promise.resolve().then(() => (init_setup(), setup_exports));
+  refreshRouteUi2();
+  return route;
+}
+function setTripContext(ctx) {
+  S.tripContext = ctx;
+}
+function clearTripContext() {
+  S.tripContext = null;
+}
+function openSegmentInYandex(segment) {
+  const waypoints = parseRtext(segment.rtext);
+  openYandexNavigator({ coords: waypoints.map((w) => [w.lat, w.lon]) }, S.gps);
+}
+function downloadSegmentGpx(segment, name) {
+  const pts = parseRtext(segment.rtext);
+  if (pts.length < 2) return false;
+  const ts = Date.now();
+  const track = pts.map((p, i) => ({ ...p, ts: ts + i * 6e4 }));
+  const xml = serializeGpxTrack(track, name || segment.label);
+  const blob = new Blob([xml], { type: "application/gpx+xml" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = (name || "segment").replace(/[^\w\-а-яА-ЯёЁ]+/g, "_") + ".gpx";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  return true;
+}
+function formatSegmentAudit(segment) {
+  const a = auditSegment(segment.rtext);
+  if (a.ok) return `~${a.km} \u043A\u043C`;
+  return `~${a.km} \u043A\u043C \u26A0 ${a.warnings[0]}`;
+}
+var init_trip_planner = __esm({
+  "js/trip-planner.js"() {
+    init_state();
+    init_trip_model();
+    init_route();
+    init_yandex_export();
+    init_gpx();
+  }
+});
+
+// js/trip-ui.js
+function variantForTrip(tripId) {
+  return _variantMode[tripId] || "calm";
+}
+function setStatus(msg, err) {
+  const el = $("trip-status");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.className = "status" + (err ? " err" : msg ? " ok" : "");
+}
+function renderTripList(trips) {
+  const el = $("trip-list");
+  if (!el) return;
+  if (!trips.length) {
+    el.innerHTML = '<p class="hint">\u041D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0445 \u043F\u043B\u0430\u043D\u043E\u0432. \u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0434\u0435\u043C\u043E \u0438\u043B\u0438 \u0441\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u043D\u043E\u0432\u044B\u0439.</p>';
+    return;
+  }
+  el.innerHTML = trips.map((t) => `
+    <button type="button" class="trip-list-item${S.activeTrip?.id === t.id ? " active" : ""}" data-trip-id="${escapeHtml(t.id)}">
+      <strong>${escapeHtml(t.title)}</strong>
+      <span class="hint">${t.days?.length || 0} \u0434\u043D. \xB7 ${new Date(t.updatedAt || 0).toLocaleDateString("ru-RU")}</span>
+    </button>
+  `).join("");
+  el.querySelectorAll("[data-trip-id]").forEach((btn) => {
+    btn.addEventListener("click", () => openTrip(btn.getAttribute("data-trip-id")));
+  });
+}
+function renderActiveTrip() {
+  const wrap = $("trip-days");
+  const trip = S.activeTrip;
+  if (!wrap) return;
+  if (!trip) {
+    wrap.innerHTML = '<p class="hint">\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u043B\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u043F\u043B\u0430\u043D \u043F\u043E\u0435\u0437\u0434\u043A\u0438.</p>';
+    $("trip-export-row")?.classList.add("hidden");
+    return;
+  }
+  $("trip-export-row")?.classList.remove("hidden");
+  const vid = variantForTrip(trip.id);
+  const hasIntense = trip.days.some((d) => d.variants.some((v) => v.id === "intense"));
+  $("trip-variant-bar")?.classList.toggle("hidden", !hasIntense);
+  wrap.innerHTML = trip.days.map((day) => {
+    const v = getDayVariant(day, vid);
+    const segs = v?.segments || [];
+    return `
+    <article class="trip-day-card" data-day="${day.n}">
+      <div class="trip-day-head">
+        <strong>\u0414\u0435\u043D\u044C ${day.n}</strong>
+        <span class="hint">${escapeHtml(day.date || "")}${day.badge ? " \xB7 " + escapeHtml(day.badge) : ""}</span>
+      </div>
+      ${v?.schedule ? `<p class="trip-schedule">${escapeHtml(v.schedule)}</p>` : ""}
+      ${v?.summary ? `<p class="trip-summary">${escapeHtml(v.summary)}</p>` : ""}
+      ${v?.stats ? `<p class="trip-stats">${escapeHtml(v.stats)}</p>` : ""}
+      ${v?.night ? `<p class="trip-night">${escapeHtml(v.night)}</p>` : ""}
+      <div class="trip-segments">
+        ${segs.map((seg, i) => `
+          <div class="trip-seg">
+            <span class="trip-seg-label">${escapeHtml(seg.label)}</span>
+            <span class="trip-seg-audit">${escapeHtml(formatSegmentAudit(seg))}</span>
+            <div class="btnrow c3 trip-seg-actions">
+              <button type="button" class="secondary trip-osrm" data-day="${day.n}" data-seg="${i}">\u{1F5FA} OSRM</button>
+              <button type="button" class="secondary trip-yandex" data-day="${day.n}" data-seg="${i}">\u{1F9ED} \u042F\u043D\u0434\u0435\u043A\u0441</button>
+              <button type="button" class="secondary trip-gpx" data-day="${day.n}" data-seg="${i}">GPX</button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </article>`;
+  }).join("");
+  wrap.querySelectorAll(".trip-osrm").forEach((btn) => {
+    btn.addEventListener("click", () => onApplySegment(+btn.dataset.day, +btn.dataset.seg, "osrm"));
+  });
+  wrap.querySelectorAll(".trip-yandex").forEach((btn) => {
+    btn.addEventListener("click", () => onYandexSegment(+btn.dataset.day, +btn.dataset.seg));
+  });
+  wrap.querySelectorAll(".trip-gpx").forEach((btn) => {
+    btn.addEventListener("click", () => onGpxSegment(+btn.dataset.day, +btn.dataset.seg));
+  });
+}
+async function refreshTripList() {
+  const trips = await loadAllTrips();
+  renderTripList(trips);
+}
+async function openTrip(id) {
+  const trip = await loadTrip(id);
+  if (!trip) return;
+  S.activeTrip = trip;
+  setStatus("");
+  renderActiveTrip();
+  await refreshTripList();
+}
+async function onApplySegment(dayN, segIdx, mode) {
+  if (_busy2) return;
+  const trip = S.activeTrip;
+  if (!trip) return;
+  const day = trip.days.find((d) => d.n === dayN);
+  const v = getDayVariant(day, variantForTrip(trip.id));
+  const seg = v?.segments?.[segIdx];
+  if (!seg) return;
+  _busy2 = true;
+  setStatus("\u0421\u0442\u0440\u043E\u0438\u043C \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u2026");
+  try {
+    await applyTripSegment(seg, mode);
+    setTripContext({
+      tripId: trip.id,
+      tripTitle: trip.title,
+      dayN,
+      variantId: v.id,
+      segmentLabel: seg.label
+    });
+    setStatus(`\u2713 \u0414\u0435\u043D\u044C ${dayN}: ${seg.label}`);
+    document.getElementById("setup")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    setStatus("\u274C " + (e.message || e), true);
+  } finally {
+    _busy2 = false;
+  }
+}
+function onYandexSegment(dayN, segIdx) {
+  const trip = S.activeTrip;
+  const day = trip?.days.find((d) => d.n === dayN);
+  const v = getDayVariant(day, variantForTrip(trip.id));
+  const seg = v?.segments?.[segIdx];
+  if (!seg) return;
+  try {
+    openSegmentInYandex(seg);
+  } catch (e) {
+    setStatus("\u274C " + e.message, true);
+  }
+}
+function onGpxSegment(dayN, segIdx) {
+  const trip = S.activeTrip;
+  const day = trip?.days.find((d) => d.n === dayN);
+  const v = getDayVariant(day, variantForTrip(trip.id));
+  const seg = v?.segments?.[segIdx];
+  if (!seg) return;
+  downloadSegmentGpx(seg, `day${dayN}-${seg.label}`);
+}
+async function loadDemo() {
+  setStatus("\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0435\u043C\u043E\u2026");
+  try {
+    const trip = await loadDemoTrip();
+    trip.updatedAt = Date.now();
+    await saveTrip(trip);
+    S.activeTrip = trip;
+    renderActiveTrip();
+    await refreshTripList();
+    setStatus("\u2713 \u041A\u0430\u0432\u043A\u0430\u0437 \u0438\u044E\u043B\u044C 2026");
+  } catch (e) {
+    setStatus("\u274C " + (e.message || e), true);
+  }
+}
+function showNewTripModal(on) {
+  $("tripNewModal")?.classList.toggle("on", !!on);
+}
+async function createTripFromForm() {
+  const title = $("trip-new-title")?.value?.trim() || "\u041D\u043E\u0432\u0430\u044F \u043F\u043E\u0435\u0437\u0434\u043A\u0430";
+  const startRaw = $("trip-new-start")?.value?.trim();
+  const finishRaw = $("trip-new-finish")?.value?.trim();
+  const nightsRaw = $("trip-new-nights")?.value?.trim();
+  if (!startRaw || !finishRaw) {
+    setStatus("\u274C \u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0441\u0442\u0430\u0440\u0442 \u0438 \u0444\u0438\u043D\u0438\u0448", true);
+    return;
+  }
+  const start2 = parseInput(startRaw);
+  const finish = parseInput(finishRaw);
+  if (!start2 || !finish) {
+    setStatus("\u274C \u041D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D\u044B \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B \u0441\u0442\u0430\u0440\u0442\u0430/\u0444\u0438\u043D\u0438\u0448\u0430", true);
+    return;
+  }
+  start2.label = start2.label || "\u0421\u0442\u0430\u0440\u0442";
+  finish.label = finish.label || "\u0424\u0438\u043D\u0438\u0448";
+  const nights = [];
+  for (const line of (nightsRaw || "").split(/\n/)) {
+    const t = line.trim();
+    if (!t) continue;
+    const p = parseInput(t);
+    if (p) nights.push({ ...p, label: p.label || t.split(/\s+/).slice(2).join(" ") || "\u041D\u043E\u0447\u0451\u0432\u043A\u0430" });
+  }
+  const trip = buildTripFromNights({
+    title,
+    start: start2,
+    finish,
+    nights,
+    startDate: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10)
+  });
+  await saveTrip(trip);
+  S.activeTrip = trip;
+  showNewTripModal(false);
+  renderActiveTrip();
+  await refreshTripList();
+  setStatus("\u2713 \u041F\u043B\u0430\u043D \u0441\u043E\u0437\u0434\u0430\u043D \u2014 \u0443\u0442\u043E\u0447\u043D\u0438\u0442\u0435 \u0441\u0435\u0433\u043C\u0435\u043D\u0442\u044B \u0438 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 OSRM");
+}
+function exportTripText() {
+  const trip = S.activeTrip;
+  if (!trip) return;
+  const text = tripSummaryText(trip, variantForTrip(trip.id));
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = (trip.id || "trip") + ".txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function initTripPlannerUi() {
+  $("btn-trip-demo")?.addEventListener("click", loadDemo);
+  $("btn-trip-new")?.addEventListener("click", () => showNewTripModal(true));
+  $("trip-new-cancel")?.addEventListener("click", () => showNewTripModal(false));
+  $("trip-new-save")?.addEventListener("click", () => createTripFromForm().catch((e) => setStatus("\u274C " + e.message, true)));
+  $("btn-trip-export")?.addEventListener("click", exportTripText);
+  $("btn-trip-clear")?.addEventListener("click", () => {
+    S.activeTrip = null;
+    clearTripContext();
+    renderActiveTrip();
+    setStatus("");
+  });
+  $("btn-trip-delete")?.addEventListener("click", async () => {
+    const trip = S.activeTrip;
+    if (!trip || !confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043F\u043B\u0430\u043D \xAB" + trip.title + "\xBB?")) return;
+    await deleteTrip(trip.id);
+    S.activeTrip = null;
+    clearTripContext();
+    renderActiveTrip();
+    await refreshTripList();
+    setStatus("");
+  });
+  document.querySelectorAll("#trip-variant-bar .mode-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const trip = S.activeTrip;
+      if (!trip) return;
+      _variantMode[trip.id] = btn.getAttribute("data-mode") || "calm";
+      document.querySelectorAll("#trip-variant-bar .mode-btn").forEach((b) => {
+        b.classList.toggle("active", b === btn);
+      });
+      renderActiveTrip();
+    });
+  });
+  refreshTripList().catch(() => {
+  });
+  renderActiveTrip();
+}
+function getTripHudLabel() {
+  const ctx = S.tripContext;
+  if (!ctx) return "";
+  let s2 = `\u0414\u0435\u043D\u044C ${ctx.dayN}`;
+  if (ctx.segmentLabel) s2 += " \xB7 " + ctx.segmentLabel.replace(/\s*→\s*$/, "");
+  return s2;
+}
+function syncTripHudBadge() {
+  const el = $("trip-hud-badge");
+  if (!el) return;
+  const on = $("hud")?.classList.contains("on");
+  const label = getTripHudLabel();
+  el.textContent = label;
+  el.classList.toggle("hidden", !on || !label);
+}
+var _variantMode, _busy2;
+var init_trip_ui = __esm({
+  "js/trip-ui.js"() {
+    init_state();
+    init_util();
+    init_trip_model();
+    init_trip_storage();
+    init_trip_planner();
+    init_geo();
+    _variantMode = {};
+    _busy2 = false;
+  }
+});
+
+// js/track-recorder.js
+function isTrackRecordEnabled() {
+  try {
+    if (new URLSearchParams(location.search).get("track") === "1") return true;
+    return localStorage.getItem(TRACK_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
+}
+function setTrackRecordEnabled(on) {
+  try {
+    localStorage.setItem(TRACK_KEY, on ? "1" : "0");
+  } catch (e) {
+  }
+}
+function startTrackRecorder() {
+  _active2 = true;
+  _points = [];
+  _lastSample = 0;
+}
+function stopTrackRecorder() {
+  _active2 = false;
+  const out = _points.slice();
+  _points = [];
+  return out;
+}
+function hasLastTrack() {
+  return _lastRide.length >= 2;
+}
+function rememberLastRide(points) {
+  if (points.length >= 2) _lastRide = points.slice();
+  updateTrackGpxButton();
+}
+function downloadTrackGpx(points, name) {
+  if (!points?.length || points.length < 2) return false;
+  const ts = points[0].ts || Date.now();
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, "0");
+  const fname = `motohud-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.gpx`;
+  const xml = serializeGpxTrack(points, name || "Moto HUD");
+  const blob = new Blob([xml], { type: "application/gpx+xml" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  return true;
+}
+function downloadLastTrackGpx() {
+  return downloadTrackGpx(_lastRide);
+}
+function tickTrackRecorder(sample) {
+  if (!_active2 || sample?.lat == null || sample?.lon == null) return;
+  const now = Date.now();
+  if (now - _lastSample < INTERVAL_MS) return;
+  _lastSample = now;
+  _points.push({
+    lat: sample.lat,
+    lon: sample.lon,
+    spd: sample.spd,
+    acc: sample.acc,
+    hdg: sample.hdg,
+    ts: now
+  });
+}
+function updateTrackGpxButton() {
+  $("btn-track-gpx")?.classList.toggle("hidden", !hasLastTrack());
+}
+function initTrackRecorderUi() {
+  const opt = $("opt-track-record");
+  if (opt) {
+    opt.checked = isTrackRecordEnabled();
+    opt.addEventListener("change", (e) => setTrackRecordEnabled(e.target.checked));
+  }
+  $("btn-track-gpx")?.addEventListener("click", () => {
+    if (!downloadLastTrackGpx()) alert("\u041D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u0442\u0440\u0435\u043A\u0430");
+  });
+  updateTrackGpxButton();
+}
+var TRACK_KEY, INTERVAL_MS, _active2, _points, _lastRide, _lastSample;
+var init_track_recorder = __esm({
+  "js/track-recorder.js"() {
+    init_gpx();
+    init_util();
+    TRACK_KEY = "moto-hud-track-record";
+    INTERVAL_MS = 1e3;
+    _active2 = false;
+    _points = [];
+    _lastRide = [];
+    _lastSample = 0;
+  }
+});
+
 // js/hud.js
 function getLastMarkContext() {
   return _lastMarkCtx;
@@ -18204,6 +18905,15 @@ function updateFinishInfo(remaining, kmh, now) {
 }
 function onTick() {
   if (!S.gps) return;
+  if ($("hud").classList.contains("on")) {
+    tickTrackRecorder({
+      lat: S.gps.lat,
+      lon: S.gps.lon,
+      spd: S.gps.speed,
+      acc: S.gps.acc,
+      hdg: S.smoothedHeading ?? S.gps.heading
+    });
+  }
   const now = /* @__PURE__ */ new Date();
   $("clock").textContent = fmtClock(now);
   const dot = $("gps-dot");
@@ -18357,6 +19067,7 @@ function onTick() {
   checkCurveSpeedWarn(kmh);
   refreshFuelPanel();
   tickNavMap();
+  syncTripHudBadge();
 }
 function checkCurveSpeedWarn(kmh) {
   if (!S.curveWarn || kmh < 20 || !S.route?.geometry?.curveReady) return;
@@ -18384,6 +19095,7 @@ async function startHud() {
     telemetry_default.start({ routeKm: S.route?.distance ? r22(S.route.distance / 1e3) : null });
     telemetry_default.updateMarkButtonVisibility();
   }
+  if (isTrackRecordEnabled()) startTrackRecorder();
   S.startTs = Date.now();
   S.distDone = 0;
   S.camWarned.clear();
@@ -18421,6 +19133,8 @@ function stopHud() {
   telemetry_default.stop().catch(() => {
   });
   telemetry_default.updateMarkButtonVisibility();
+  const trackPts = stopTrackRecorder();
+  if (trackPts.length >= 2) rememberLastRide(trackPts);
   stopVisualLoop();
   resetVintageVfd();
   stopNavigationGps().catch(() => {
@@ -18439,6 +19153,7 @@ function stopHud() {
   clearVoiceQueue();
   resetOffRouteMachine();
   resetViewMode();
+  syncTripHudBadge();
   try {
     document.exitFullscreen && document.exitFullscreen();
   } catch (e) {
@@ -18616,6 +19331,8 @@ var init_hud = __esm({
     init_offroute();
     init_telemetry();
     init_view_mode();
+    init_trip_ui();
+    init_track_recorder();
     _lastMarkCtx = null;
     _fuelBusy = false;
     _fuelPanelShownAt = 0;
@@ -19009,12 +19726,18 @@ function initYandexShare() {
 
 // js/main.js
 init_view_mode();
+init_yandex_export();
+init_track_recorder();
+init_trip_ui();
 applyThemeCss();
 initLegalConsent();
 initYandexImportUi();
 initYandexClipboard();
 initYandexShare();
 initViewMode();
+initYandexExportUi();
+initTrackRecorderUi();
+initTripPlannerUi();
 initThemeManager();
 initVintageVfd();
 initTelemetry().then(() => initTelemetryUI());

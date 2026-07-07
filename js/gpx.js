@@ -87,3 +87,36 @@ export function buildGpxReplay(points, stepM){
 
   return { coords, segSpeed, hasTime };
 }
+
+function escXml(s){
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Сериализация трека в GPX 1.1 для скачивания.
+ * @param {Array<{ lat: number, lon: number, ts?: number, timeMs?: number, ele?: number }>} points
+ * @param {string} [name]
+ */
+export function serializeGpxTrack(points, name = 'Moto HUD'){
+  if(!points?.length || points.length < 2) throw new Error('Мало точек для GPX');
+  const trkpts = points.map(p => {
+    const ts = p.timeMs ?? p.ts;
+    let inner = '';
+    if(p.ele != null && Number.isFinite(p.ele)) inner += `\n      <ele>${p.ele}</ele>`;
+    if(ts != null) inner += `\n      <time>${new Date(ts).toISOString()}</time>`;
+    return `    <trkpt lat="${p.lat}" lon="${p.lon}">${inner}\n    </trkpt>`;
+  }).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Moto HUD" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>${escXml(name)}</name>
+    <trkseg>
+${trkpts}
+    </trkseg>
+  </trk>
+</gpx>`;
+}

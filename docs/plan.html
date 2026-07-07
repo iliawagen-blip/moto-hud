@@ -81,7 +81,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <h1>🏍 Мото ИЛС — план развития</h1>
 <p class="sub">
   Живой документ продукта · HUD-навигатор для мотоцикла<br>
-  Обновлено: <strong>2026-07-07</strong> · package: <code>ru.vagin.motohud</code> ·
+  Обновлено: <strong>2026-07-07</strong> (nav v3.1, pre-Valhalla) · package: <code>ru.vagin.motohud</code> ·
   исходник: <a href="../MASTERPLAN.md">MASTERPLAN.md</a> ·
   <a href="nav-plan.html">план навигации v3</a>
 </p>
@@ -98,6 +98,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <ol>
   <li><a href="#vision">Видение</a></li>
   <li><a href="#status">Текущее состояние</a></li>
+  <li><a href="#nav-pre">Навигация pre-Valhalla</a></li>
   <li><a href="#principles">Принципы</a></li>
   <li><a href="#stack">Стек</a></li>
   <li><a href="#phases">Дорожная карта (фазы 0–8)</a></li>
@@ -114,9 +115,9 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 </nav>
 
 <div class="ok-box">
-  <strong>Сводка прогресса:</strong> прототип HUD и прогноз-дорожка v2 готовы;
-  PWA-оболочка и Capacitor Android — в основном собраны;
-  офлайн-навигация и гарантированный голос в гарнитуру — ключевые разрывы до «настоящего мотонавигатора».
+  <strong>Сводка прогресса:</strong> HUD и прогноз-дорожка v2 готовы; PWA + Capacitor Android собраны;
+  <strong>nav v3.1</strong> закрывает snap/reroute (S0–S3), импорт маршрутов из Яндекса, HUD↔карта, экспорт в Яндекс Навигатор и GPX-трек.
+  Ключевые разрывы до «настоящего мотонавигатора»: <strong>Valhalla онлайн</strong> (замена OSRM), офлайн-карты, гарантированный голос в гарнитуру, OEM-полевые тесты.
 </div>
 
 <!-- ===== VISION ===== -->
@@ -151,19 +152,72 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
       <li class="done">Топливный ассистент ⛽ (OSM + ГдеБЕНЗ в native)</li>
       <li class="done">6 тем оформления × день/ночь/авто</li>
       <li class="done">Модули esbuild → <code>js/app.js</code>, деплой GitHub Pages</li>
+      <li class="done">Юридика: оферта, privacy, отказ; store-flavor (без оплаты в APK)</li>
+      <li class="done">Drawer «💚 Поддержать» (PWA), СБП handoff Phase A</li>
+      <li class="done">Телеметрия JSONL + harness <code>npm run nav:replay</code></li>
+      <li class="done">Яндекс: импорт rtext, Share Target, буфер обмена</li>
+      <li class="done">Экспорт маршрута <code>yandexnavi://</code></li>
+      <li class="done">HUD↔карта (dbltap), Leaflet в режиме навигации</li>
+      <li class="done">Запись трека 1 Гц → GPX (локально)</li>
     </ul>
   </div>
   <div class="warn">
     <h4>Критичные разрывы</h4>
     <ul class="checklist">
-      <li class="todo">Офлайн: маршрут OSRM, POI Overpass, поиск Nominatim — всё онлайн</li>
+      <li class="todo">Офлайн: маршрут и карты — всё ещё онлайн (OSRM; Valhalla — следующий шаг)</li>
+      <li class="todo">POI Overpass, поиск Nominatim — онлайн</li>
       <li class="todo">Фоновый GPS в браузере умирает через 30–60 с</li>
       <li class="todo">Audio focus / BT-маршрутизация в гарнитуру не гарантированы</li>
       <li class="todo">OEM-тесты фонового сервиса (≥ 3 вендора)</li>
       <li class="todo">Closed testing Play Console</li>
-      <li class="part">Курс: sensor fusion MVP, полный ROTATION_VECTOR — далее</li>
+      <li class="part">Курс: sensor fusion MVP; полный ROTATION_VECTOR — далее</li>
+      <li class="part">S4 baseline: целевой <code>baseline_v1.json</code> — нужен прогон 5 треков</li>
     </ul>
   </div>
+</div>
+
+<!-- ===== NAV PRE-VALHALLA ===== -->
+<h2 id="nav-pre">2b. Навигация pre-Valhalla (nav v3.1)</h2>
+<p>
+  Детали — <a href="nav-plan.html">план навигации v3</a> ·
+  спайк роутеров — <a href="router-spike.md">router-spike.md</a>.
+  Решение: <strong>Valhalla онлайн первым</strong> (MIT, <code>trace_route</code>); BRouter офлайн v2 только после AGPL; GraphHopper не приоритет.
+</p>
+
+<div class="grid2">
+  <div class="note">
+    <h4>S0–S3 + harness</h4>
+    <ul class="checklist">
+      <li class="done">Константы, snap-quality, GPS converge, off-route machine</li>
+      <li class="done">Maneuver filter, heading health, route quality, reroute gate</li>
+      <li class="done">LOST → «GPS ПОТЕРЯН»; DEGRADED → freeze s0</li>
+      <li class="done"><code>scripts/nav-replay.mjs</code>, <code>fixtures/baseline_v0.json</code></li>
+      <li class="part"><code>baseline_v1.json</code> — целевые метрики; переснять после 5 треков</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h4>Яндекс + UX (№15–16, pre-Valhalla)</h4>
+    <ul class="checklist">
+      <li class="done">Парсер <code>rtext</code>, short-link follow, гибрид OSRM / прямая polyline</li>
+      <li class="done">Share Target PWA + Android <code>ACTION_SEND</code></li>
+      <li class="done">Баннер буфера обмена, история импортов IndexedDB</li>
+      <li class="done">Экспорт <code>yandexnavi://build_route_on_map</code> (до 8 via)</li>
+      <li class="done">HUD → map overview → map zoom (dbltap), скорость ⅓ экрана</li>
+    </ul>
+  </div>
+</div>
+
+<div class="phase" style="margin-top:12px">
+  <div class="phase-head">
+    <h3>Следующее по навигации</h3>
+    <span class="badge b-next">→ Valhalla №7</span>
+  </div>
+  <ul class="checklist">
+    <li class="todo">Docker VPS + Valhalla <code>/route</code> + <code>trace_route</code></li>
+    <li class="todo">Парсер ответа Valhalla в <code>js/router.js</code> (замена OSRM)</li>
+    <li class="todo">Прогон 5 телеметрий → <code>npm run nav:baseline</code></li>
+    <li class="todo">Map-matching на сервере (после trace_route в проде)</li>
+  </ul>
 </div>
 
 <!-- ===== PRINCIPLES ===== -->
@@ -184,7 +238,8 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <tr><td>Оболочка</td><td><strong>Capacitor</strong></td><td>90% веб-кода; стор; нативные плагины точечно</td></tr>
 <tr><td>UI / рендер</td><td><strong>HTML + SVG + rAF</strong></td><td>Уже плавно (~0.5 мс/кадр); без тяжёлого WebGL в HUD</td></tr>
 <tr><td>Карты офлайн</td><td><strong>MapLibre GL + PMTiles</strong></td><td>Свободные векторные тайлы, self-host</td></tr>
-<tr><td>Роутинг офлайн</td><td><strong>Valhalla / GraphHopper / BRouter</strong></td><td>Спайк-выбор; мото-профили, round-trip</td></tr>
+<tr><td>Роутинг онлайн</td><td><strong>Valhalla</strong> (решение) · OSRM (сейчас)</td><td>MIT, trace_route, Docker на VPS; замена OSRM — №7</td></tr>
+<tr><td>Роутинг офлайн</td><td><strong>BRouter</strong> v2 / Valhalla Mobile</td><td>После онлайн; BRouter — AGPL, нужен юрист</td></tr>
 <tr><td>Голос</td><td>TTS Capacitor + <strong>audio focus</strong></td><td>Доставка в гарнитуру, ducking музыки</td></tr>
 <tr><td>Темы</td><td>CSS custom properties</td><td>6 тем × день/ночь; семантика warn/danger/ok единая</td></tr>
 </tbody>
@@ -258,31 +313,32 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <div class="phase">
   <div class="phase-head">
     <h3>Фаза 4 — Офлайн-карты и офлайн-роутинг</h3>
-    <span class="badge b-todo">○ ключевая ценность</span>
-    <span class="badge b-next">→ спайк</span>
+    <span class="badge b-part">◐ ~18%</span>
+    <span class="badge b-next">→ Valhalla</span>
   </div>
-  <div class="progress-bar"><i style="width:8%"></i></div>
+  <div class="progress-bar"><i style="width:18%"></i></div>
   <ul class="checklist">
-    <li class="part">Спайк CLI: <code>npm run spike:routers</code> — <a href="router-spike.md">router-spike.md</a></li>
-    <li class="todo">Выбор роутера: Valhalla vs GraphHopper vs BRouter</li>
+    <li class="done">Спайк и решение: Valhalla онлайн — <a href="router-spike.md">router-spike.md</a></li>
+    <li class="done">Абстракция <code>js/router.js</code> (OSRM сейчас; Valhalla — заглушка)</li>
+    <li class="part">Valhalla Docker на VPS + клиентский парсер — <strong>ближайший шаг №7</strong></li>
     <li class="todo">MapLibre + PMTiles, пайплайн Planetiler, менеджер регионов</li>
     <li class="todo">Мото-профиль: веса surface/smoothness, профили «быстро/извилисто/красиво»</li>
-    <li class="todo">Абстракция OSRM ↔ офлайн; пересчёт при сходе ≤ 3 с</li>
+    <li class="todo">Офлайн BRouter v2 (AGPL) или Valhalla Mobile</li>
     <li class="todo">IndexedDB для кеша поездок и метаданных регионов</li>
   </ul>
-  <p class="note" style="margin-top:10px;margin-bottom:0">Пробки — только онлайн-планирование. В офлайн-навигации пробок нет и не обещаем.</p>
+  <p class="note" style="margin-top:10px;margin-bottom:0">Пробки — только онлайн-планирование (Яндекс / внешний навигатор). В офлайн-навигации пробок нет и не обещаем.</p>
 </div>
 
 <div class="phase">
   <div class="phase-head">
     <h3>Фаза 5 — Мото-функции</h3>
-    <span class="badge b-part">◐ ~15%</span>
+    <span class="badge b-part">◐ ~22%</span>
   </div>
-  <div class="progress-bar"><i style="width:15%"></i></div>
+  <div class="progress-bar"><i style="width:22%"></i></div>
   <ul class="checklist">
     <li class="done">Топливный ассистент ⛽ (3 тапа: по маршруту / перестроить / отмена)</li>
+    <li class="part">Запись треков: 1 Гц → GPX локально (<code>js/track-recorder.js</code>); SAF/SQLite — позже</li>
     <li class="todo">Камеры офлайн (OSM + ФВФ ГИБДД + открытые данные; geo-toggle для ЕС)</li>
-    <li class="todo">Запись треков (SQLite/JSONL 1 Гц → GPX через SAF)</li>
     <li class="todo">POI по интересам (еда, кемпинг, сервис, виды) + голос «заправка/кофе/сервис»</li>
     <li class="todo">Профили поездки и покрытия (асфальт / смешанный / бездорожье)</li>
     <li class="todo">Round-trip «N часов / M км, поизвилистее»</li>
@@ -293,29 +349,35 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <div class="phase">
   <div class="phase-head">
     <h3>Фаза 6 — Планировщик многодневных путешествий</h3>
-    <span class="badge b-todo">○</span>
+    <span class="badge b-part">◐ MVP ~45%</span>
+    <span class="badge b-next">→ в приложении</span>
   </div>
-  <div class="progress-bar"><i style="width:0%"></i></div>
+  <div class="progress-bar"><i style="width:45%"></i></div>
   <ul class="checklist">
-    <li class="todo">MVP: маршрут + коридорный POI + разбивка по дням (лимит км)</li>
-    <li class="todo">Модель Trip → Day → Segment; базы, радиалки, бюджеты отклонения</li>
-    <li class="todo">Ручное редактирование, экспорт GPX / yandexnavi:// / текст</li>
-    <li class="todo">HUD: «день N, до ночёвки X км», следующий POI дня</li>
+    <li class="done">Модель Trip → Day → Variant → Segment + IndexedDB</li>
+    <li class="done">Демо «Кавказ июль 2026» из <code>route-jul2026.html</code> (49 сегментов, calm/intense)</li>
+    <li class="done">Аудит сегментов (км, длинные перегоны, бокс РФ) — как <code>audit-routes.py</code></li>
+    <li class="done">Применить сегмент → OSRM / Яндекс / GPX; HUD «День N»</li>
+    <li class="done">Wizard: старт → ночёвки → финиш (базовые перегоны)</li>
+    <li class="part">Ручное редактирование waypoints в UI — следующая итерация</li>
+    <li class="todo">Коридорный POI + бюджет отклонения (orienteering)</li>
+    <li class="todo">Офлайн-скачивание региона под план</li>
   </ul>
 </div>
 
 <div class="phase">
   <div class="phase-head">
     <h3>Фаза 7 — UX-полировка и настройки</h3>
-    <span class="badge b-part">◐ ~40%</span>
+    <span class="badge b-part">◐ ~48%</span>
   </div>
-  <div class="progress-bar"><i style="width:40%"></i></div>
+  <div class="progress-bar"><i style="width:48%"></i></div>
   <ul class="checklist">
     <li class="done">6 тем × день/ночь/авто (NOAA + гистерезис ±20 мин)</li>
     <li class="done">Переключатель тем в настройках + быстрая кнопка 🌓 на HUD (≥48 px)</li>
     <li class="done">Крупные тач-зоны, finish-info (ETA / время / дистанция)</li>
+    <li class="done">Деградация GPS: LOST / DEGRADED / compass-to-finish (nav S0–S3)</li>
+    <li class="done">HUD↔карта dbltap, тактический обзор Leaflet в поездке</li>
     <li class="todo">Яркость/контраст под визор, единицы, ru/en</li>
-    <li class="todo">Деградация при потере GPS, «нет маршрута»</li>
     <li class="todo">Локальные шрифты woff2 (сейчас @font-face-заглушки)</li>
   </ul>
 </div>
@@ -323,12 +385,14 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <div class="phase">
   <div class="phase-head">
     <h3>Фаза 8 — Релиз и рост</h3>
-    <span class="badge b-todo">○</span>
+    <span class="badge b-part">◐ ~12%</span>
   </div>
-  <div class="progress-bar"><i style="width:5%"></i></div>
+  <div class="progress-bar"><i style="width:12%"></i></div>
   <ul class="checklist">
     <li class="part">Три канала: Web PWA · APK sideload · RuStore — <a href="release-plan.html">release-plan.html</a></li>
-    <li class="todo">Play Store открытый релиз, privacy policy, скриншоты</li>
+    <li class="done">Privacy policy, оферта, отказ; consent при первом запуске</li>
+    <li class="part">Поддержка проекта (СБП) — PWA only; CloudKassir/webhook — блокер владельца</li>
+    <li class="todo">Play Store открытый релиз, скриншоты, closed testing</li>
     <li class="todo">Крэш/аналитика (минимально, приватно)</li>
     <li class="todo">Free/premium: «красиво», round-trip, планировщик, ИИ-ассистент</li>
     <li class="todo">Android Auto / внешний дисплей — перспектива</li>
@@ -355,11 +419,12 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <h2 id="milestones">7. Вехи (releases)</h2>
 
 <div class="milestone"><div class="milestone-id">M1</div><div><strong>Installable</strong> — фазы 0–1<br><span class="badge b-done">✓</span> PWA на домашнем экране, UI офлайн</div></div>
-<div class="milestone"><div class="milestone-id">M2</div><div><strong>Real app</strong> — фаза 2<br><span class="badge b-part">◐</span> APK, фон GPS; нужны OEM-тесты + closed testing</div></div>
+<div class="milestone"><div class="milestone-id">M2</div><div><strong>Real app</strong> — фаза 2<br><span class="badge b-part">◐</span> APK, фон GPS, nav v3.1; нужны OEM-тесты + closed testing</div></div>
 <div class="milestone"><div class="milestone-id">M3</div><div><strong>Helmet-ready</strong> — фаза 3<br><span class="badge b-part">◐</span> Голос в гарнитуру без наложения + стабильный курс</div></div>
-<div class="milestone"><div class="milestone-id">M4</div><div><strong>Offline nav</strong> — фаза 4<br><span class="badge b-todo">○</span> Маршрут в авиарежиме на скачанном регионе</div></div>
-<div class="milestone"><div class="milestone-id">M5</div><div><strong>Moto product</strong> — фазы 5 + 7<br><span class="badge b-part">◐</span> POI, профили, промышленный UX</div></div>
-<div class="milestone"><div class="milestone-id">M5a</div><div><strong>Trip planner MVP</strong> — фаза 6<br><span class="badge b-todo">○</span> План онлайн → поездка офлайн</div></div>
+<div class="milestone"><div class="milestone-id">M3a</div><div><strong>Nav beta</strong> — nav v3.1<br><span class="badge b-done">✓</span> Snap, Яндекс in/out, HUD↔карта; Valhalla — следующий инкремент</div></div>
+<div class="milestone"><div class="milestone-id">M4</div><div><strong>Offline nav</strong> — фаза 4<br><span class="badge b-part">◐</span> Valhalla онлайн → офлайн карты + BRouter v2</div></div>
+<div class="milestone"><div class="milestone-id">M5</div><div><strong>Moto product</strong> — фазы 5 + 7<br><span class="badge b-part">◐</span> Топливо, GPX-трек; POI и промышленный UX — далее</div></div>
+<div class="milestone"><div class="milestone-id">M5a</div><div><strong>Trip planner MVP</strong> — фаза 6<br><span class="badge b-part">◐</span> Кавказ 2026 в приложении; wizard + OSRM; POI-коридор — далее</div></div>
 <div class="milestone"><div class="milestone-id">M6</div><div><strong>Public</strong> — фаза 8<br><span class="badge b-todo">○</span> Открытый релиз Play Store / RuStore</div></div>
 
 <!-- ===== INTEGRATION ===== -->
@@ -368,7 +433,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
   <li><strong>Audio focus:</strong> ducking музыки только на время фразы; очередь, если говорит Стрелка/Яндекс</li>
   <li><strong>HUD-оверлей</strong> (<code>SYSTEM_ALERT_WINDOW</code>): скорость + манёвр поверх чужого навигатора</li>
   <li><strong>Режим спидометр + камеры</strong> без активного маршрута</li>
-  <li><strong>yandexnavi://</strong> — легальный экспорт точки/маршрута во внешний навигатор</li>
+  <li><strong>yandexnavi://</strong> — экспорт маршрута во внешний навигатор <span class="badge b-done">✓</span> (один маршрут, до 8 via)</li>
   <li><strong>Запрет:</strong> парсинг данных Яндекса (карты, пробки, камеры) — только MapKit как альтернатива всему стеку</li>
 </ul>
 
@@ -417,9 +482,10 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <h2 id="next">12. Ближайший шаг</h2>
 <div class="ok-box">
   <ol style="margin-bottom:0">
+    <li><strong>S4 baseline:</strong> прогон 5 телеметрий → <code>npm run nav:baseline</code> (<code>fixtures/baseline_v1.json</code>)</li>
+    <li><strong>Valhalla №7:</strong> Docker VPS, <code>/route</code> + <code>trace_route</code>, парсер в <code>js/router.js</code></li>
     <li><strong>OEM-полевые тесты</strong> фонового GPS (Xiaomi / Samsung / Huawei+) — <a href="oem-gps-matrix.md">матрица</a></li>
     <li><strong>Closed testing</strong> Play Console — <a href="play-console-closed-testing.md">чек-лист</a></li>
-    <li><strong>Спайк офлайн-роутеров</strong> — <code>npm run spike:routers</code></li>
     <li><strong>Audio focus</strong> + реальная BT-гарнитура шлема</li>
     <li><strong>Шрифты woff2</strong> в <code>/fonts</code> (сейчас fallback на системные)</li>
   </ol>
@@ -428,10 +494,11 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <h3>Бэклог «на потом»</h3>
 <ul>
   <li>ИИ-ассистент планирования (premium, только на остановке)</li>
-  <li>Импорт GPX/ссылок, шаринг треков</li>
+  <li>Многодневный планировщик + экспорт GPX/текстом</li>
   <li>«Пора заправиться» по запасу хода и расходу</li>
   <li>Калибровка <code>a_lat</code> по GPX для curve warning</li>
   <li>Vintage pixel-стрелка манёвра</li>
+  <li>CloudKassir + webhook для донатов (блокер: приватный репо, ключи)</li>
 </ul>
 
 <!-- ===== DOCS ===== -->
@@ -440,7 +507,9 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <thead><tr><th>Документ</th><th>Назначение</th></tr></thead>
 <tbody>
 <tr><td><a href="../MASTERPLAN.md">MASTERPLAN.md</a></td><td>Полный мастер-план (исходник, markdown)</td></tr>
-<tr><td><a href="NAV-PLAN.md">NAV-PLAN.md</a> · <a href="nav-plan.html">nav-plan.html</a></td><td>План навигации v3: snap, Яндекс, HUD↔карта</td></tr>
+<tr><td><a href="NAV-PLAN.md">NAV-PLAN.md</a> · <a href="nav-plan.html">nav-plan.html</a></td><td>План навигации v3.1: snap, Яндекс, HUD↔карта, Valhalla</td></tr>
+<tr><td><a href="privacy.html">privacy.html</a> · <a href="offer.html">offer.html</a></td><td>152-ФЗ, публичная оферта</td></tr>
+<tr><td><a href="HANDOFF-SBP-LEGAL.md">HANDOFF-SBP-LEGAL.md</a></td><td>Чек-лист СБП / store / юридика Phase A</td></tr>
 <tr><td><a href="release-plan.html">release-plan.html</a></td><td>RuStore · APK · Web — каналы релиза</td></tr>
 <tr><td><a href="ROADPATH-PLAN.md">ROADPATH-PLAN.md</a></td><td>Прогноз-дорожка v2</td></tr>
 <tr><td><a href="route-geometry.md">route-geometry.md</a></td><td>RouteGeometry API</td></tr>
