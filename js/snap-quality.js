@@ -19,6 +19,8 @@ let _degradedSince = 0;
 let _jumpUntil = 0;
 let _frozenS = null;
 let _lastNm = null;
+let _forceReeval = false;
+let _lostSince = 0;
 
 export function resetSnapQuality(){
   S.snapQuality = SnapQuality.GOOD;
@@ -27,6 +29,15 @@ export function resetSnapQuality(){
   _jumpUntil = 0;
   _frozenS = null;
   _lastNm = null;
+  _forceReeval = false;
+  _lostSince = 0;
+}
+
+/** Запрос широкого пересчёта snap после длительного DEGRADED */
+export function takeForceReeval(){
+  const v = _forceReeval;
+  _forceReeval = false;
+  return v;
 }
 
 function curvatureMult(geom, s, override){
@@ -92,11 +103,6 @@ export function updateSnapQuality(snap, gps, geom, opts){
     const exitQ = classifyExit(score, snap.lateral, mult);
     if(instant === SnapQuality.LOST && histAgrees(SnapQuality.LOST)) next = SnapQuality.LOST;
     else if(exitQ === SnapQuality.GOOD && histAgrees(SnapQuality.GOOD)) next = SnapQuality.GOOD;
-    if(next === SnapQuality.DEGRADED && _degradedSince &&
-       now - _degradedSince > SNAP_QUALITY_DEGRADED_TIMEOUT_MS){
-      next = SnapQuality.DEGRADED;
-      if(opts) opts.forceReeval = true;
-    }
   } else {
     const exitQ = classifyExit(score, snap.lateral, mult);
     if(exitQ !== SnapQuality.LOST && histAgrees(SnapQuality.DEGRADED)) next = SnapQuality.DEGRADED;
@@ -105,6 +111,13 @@ export function updateSnapQuality(snap, gps, geom, opts){
 
   if(next === SnapQuality.DEGRADED && prev !== SnapQuality.DEGRADED) _degradedSince = now;
   if(next === SnapQuality.GOOD) _degradedSince = 0;
+  if(next === SnapQuality.LOST && prev !== SnapQuality.LOST) _lostSince = now;
+  if(next !== SnapQuality.LOST) _lostSince = 0;
+
+  if(prev === SnapQuality.DEGRADED && _degradedSince &&
+     now - _degradedSince > SNAP_QUALITY_DEGRADED_TIMEOUT_MS){
+    _forceReeval = true;
+  }
 
   S.snapQuality = next;
 
@@ -126,6 +139,9 @@ export function navSFromSnap(snap){
 
 export function isSnapLost(){ return S.snapQuality === SnapQuality.LOST; }
 export function isSnapDegraded(){ return S.snapQuality === SnapQuality.DEGRADED; }
+export function lostDurationMs(){
+  return _lostSince ? Date.now() - _lostSince : 0;
+}
 
 export function cacheLastManeuver(nm){ _lastNm = nm; }
 export function getCachedManeuver(){ return _lastNm; }

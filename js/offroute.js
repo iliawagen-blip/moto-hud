@@ -235,7 +235,7 @@ function tryReturnOnRoute(feed){
 }
 
 export function tickOffRouteMachine(feed){
-  if(feed.lateral == null || !S.route) return;
+  if(S.compassMode || feed.lateral == null || !S.route) return;
 
   const now = Date.now();
   const dtMs = _ctx.lastFeedMs ? Math.min(3000, now - _ctx.lastFeedMs) : 0;

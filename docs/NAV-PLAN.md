@@ -215,7 +215,16 @@ score = lateral + SNAP_ANGLE_PENALTY · (1 - dot) · 50
 
 **Проблема:** OSRM не даёт качественных манёвров и HMM map-matching.
 
-**Решение:** `getRouter()` valhalla → OSRM fallback → OFFLINE_GUIDE; trace 25 точек / 2 с.
+**Решение:** без изменений UI-контракта `{ coords, steps, distance, duration }`.
+
+**Выбор спайка (2026-07-07):** [`docs/router-spike.md`](router-spike.md) — **Valhalla** онлайн первым; GraphHopper не приоритет; BRouter офлайн v2 только с решением **AGPL**.
+
+| Тема | Решение |
+|------|---------|
+| RAM | Geofabrik RU; бюджет **6–8 GB** на VPS |
+| Мото | costing auto + `use_highways`, `maneuver_penalty` |
+| **Fallback** | `getRouter()`: valhalla → OSRM → OFFLINE_GUIDE |
+| trace | 25 точек / 2 с → `s0_nav` |
 
 **Трудозатраты:** 3–5 нед.
 

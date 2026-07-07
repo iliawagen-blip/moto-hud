@@ -17,6 +17,8 @@ import {
 import { updateCamStatusUI } from './cam-status.js';
 import { resetRouteSnap, getNavSnap } from './route-geometry.js';
 import { isSnapLost, isSnapDegraded, getCachedManeuver, cacheLastManeuver, resetSnapQuality } from './snap-quality.js';
+import { RouteQuality } from './route-quality.js';
+import { stepTurnAngleDeg } from './maneuver-filter.js';
 import { getActiveRoundabout, isCrossingContextEnabled } from './crossings.js';
 import { ensureRouteGeometry } from './route.js';
 import { pickCurveVoiceWarn, resetCurveRibbonState } from './curve-speed.js';
@@ -28,6 +30,27 @@ import { tickAutoMode } from './theme-manager.js';
 import { applyFinishInfoVisibility } from './hud-opts.js';
 import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide } from './offroute.js';
 import telemetry from './telemetry.js';
+
+let _lastMarkCtx = null;
+
+/** Контекст для телеметрической метки (phantom_turn и др.) */
+export function getLastMarkContext(){ return _lastMarkCtx; }
+
+function logManeuverContext(nm, snap, shown, filterReason){
+  const snap2 = getNavSnap(S.smoothedHeading);
+  _lastMarkCtx = {
+    maneuver_id: S.route?.steps?.indexOf(nm.step),
+    type: nm.step.type,
+    modifier: nm.step.modifier,
+    dist: Math.round(nm.dist),
+    ang_osrm: stepTurnAngleDeg(nm.step, nm),
+    lat_off: snap2?.lateral != null ? Math.round(snap2.lateral) : null,
+    snap_quality: S.snapQuality,
+    shown: !!shown,
+    filter_reason: filterReason || null
+  };
+  telemetry.log('nav', { sub: 'maneuver_context', ..._lastMarkCtx });
+}
 function maneuverVoiceThresholds(kmh){
   const mps = Math.max(kmh / 3.6, 4);
   return {
@@ -181,14 +204,6 @@ export function onTick(){
 
   const remaining = getRemainingDistance();
   const near = findNearestOnRoute();
-  tickOffRouteMachine({
-    lateral: near?.dist,
-    acc: S.gps.acc || 0,
-    spdMps,
-    spdKmh: kmh,
-    heading: S.smoothedHeading,
-    tangent: snap?.tangent ?? null
-  });
 
   if(S.compassMode && S.finish && S.gps && !isOfflineGuide()){
     const brg = bearing(S.gps, S.finish);
@@ -207,8 +222,10 @@ export function onTick(){
     }
     $('street').textContent = 'К ФИНИШУ';
     $('rb-exit-label')?.classList.add('hidden');
+    const mid = $('mid-info');
+    const tStr = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
+    mid.textContent = tStr + ' · КОМПАС';
     updateFinishInfo(remaining, kmh, now);
-    $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
     tickAutoMode();
     checkCamerasILS();
     refreshFuelPanel();
@@ -216,6 +233,15 @@ export function onTick(){
   }
 
   if(!gpsOk) return;
+
+  tickOffRouteMachine({
+    lateral: near?.dist,
+    acc: S.gps.acc || 0,
+    spdMps,
+    spdKmh: kmh,
+    heading: S.smoothedHeading,
+    tangent: snap?.tangent ?? null
+  });
 
   if(isOfflineGuide() && snap && S.gps){
     const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
@@ -239,6 +265,7 @@ export function onTick(){
     if(!nm) nm = findNextManeuver();
     if(nm){
       cacheLastManeuver(nm);
+      logManeuverContext(nm, snap, true, null);
       $('arrow-box').innerHTML = buildArrowSVG(nm.step);
       const rbEl = $('rb-exit-label');
       if(rbEl){
@@ -282,7 +309,12 @@ export function onTick(){
     }
   }
   updateFinishInfo(remaining, kmh, now);
-  $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
+  const midLine = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
+  if(S.routeQuality === RouteQuality.LOW && !S.compassMode){
+    $('mid-info').textContent = midLine + ' · НИЗК. OSM';
+  } else {
+    $('mid-info').textContent = midLine;
+  }
 
   if(remaining < 30 && !S.camWarned.has('arrived')){
     S.camWarned.add('arrived');

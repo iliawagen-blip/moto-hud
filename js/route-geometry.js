@@ -5,9 +5,9 @@
 import { haversine, bearing, angleDiff } from './geo.js';
 import { S, CAM_PITCH } from './state.js';
 import { curPos } from './gps.js';
-import { refineManeuvers } from './maneuver-filter.js';
+import { refineManeuvers, resetManeuverFilterLog, HIGHWAY_CLASSES } from './maneuver-filter.js';
 import {
-  updateSnapQuality, navSFromSnap, resetSnapQuality, SnapQuality
+  updateSnapQuality, navSFromSnap, resetSnapQuality, SnapQuality, takeForceReeval
 } from './snap-quality.js';
 import {
   SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD,
@@ -243,6 +243,7 @@ function denseStepForCoords(coords){
 /** Построение RouteGeometry из route.coords + steps */
 export function buildRouteGeometry(route){
   if(!route || !route.coords || route.coords.length < 2) return null;
+  resetManeuverFilterLog();
   const stepM = denseStepForCoords(route.coords);
   const { lat: latArr, lon: lonArr } = densifyCoords(route.coords, stepM);
   const n = latArr.length;
@@ -376,6 +377,11 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx){
     if(requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs)) continue;
     if(requireDir && dot < SNAP_MIN_DOT) continue;
 
+    if(requireDir && spd > 1 && ctx?.prevPos){
+      const moveBrg = bearing(ctx.prevPos, gps);
+      if(headingDot(tangent, moveBrg) < 0) continue;
+    }
+
     let score = proj.lateral + SNAP_ANGLE_PENALTY * (gpsHdg != null ? (1 - dot) * 50 : 0);
     if(!skipJump && prevS > 0){
       const maxJump = spd * dt + acc;
@@ -425,10 +431,20 @@ export function snapToRoute(gps, geom, gpsHeadingDeg, meta){
 
   const ctx = {
     spd, acc, headingAgeMs, prevS, dt,
-    skipJumpPenalty: prevS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES
+    skipJumpPenalty: prevS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES,
+    prevPos: _prevFixPos
   };
 
-  let best = scanSnap(gps, geom, sMin, sMax, gpsHeadingDeg, true, ctx);
+  let best = null;
+  if(takeForceReeval() && prevS > 0){
+    const wide = 3 * acc + 100;
+    best = scanSnap(gps, geom, Math.max(0, prevS - wide),
+      Math.min(total, prevS + wide), gpsHeadingDeg, false, ctx);
+  }
+
+  if(!best){
+    best = scanSnap(gps, geom, sMin, sMax, gpsHeadingDeg, true, ctx);
+  }
 
   if(!best){
     best = scanSnap(gps, geom, Math.max(0, prevS - SNAP_FALLBACK_BACK_M),

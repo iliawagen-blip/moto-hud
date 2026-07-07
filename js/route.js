@@ -1,5 +1,5 @@
 import { S, RUN_KEY } from './state.js';
-import { haversine, bearing, distToSegment } from './geo.js';
+import { haversine, bearing, distToSegment, angleDiff } from './geo.js';
 import { curPos } from './gps.js';
 import { updateCamStatusUI } from './cam-status.js';
 import {
@@ -21,8 +21,9 @@ import {
 import {
   MANEUVER_PASSED_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG
 } from './nav-constants.js';
+import { buildRouteRequestUrl, parseRouteResponse } from './router.js';
+import { HIGHWAY_CLASSES } from './maneuver-filter.js';
 import { assessRouteQuality, RouteQuality } from './route-quality.js';
-import { angleDiff } from './geo.js';
 
 export { isSignificantManeuver, MANEUVER_MIN_ANGLE, MANEUVER_BEND_ANGLE, MANEUVER_PASSED_M };
 
@@ -141,6 +142,15 @@ export async function searchAddress(query){
 }
 
 /** Разбор одного маршрута OSRM в наш формат */
+function highwayFromIntersections(intersections){
+  for(const ix of intersections || []){
+    for(const c of ix.classes || []){
+      if(HIGHWAY_CLASSES.includes(c)) return c;
+    }
+  }
+  return '';
+}
+
 function parseOsrmRoute(rt){
   const coords = rt.geometry.coordinates.map(c => [c[1], c[0]]);
   const steps = [];
@@ -148,6 +158,15 @@ function parseOsrmRoute(rt){
     leg.steps.forEach(st => {
       const loc = st.maneuver.location;
       const m = st.maneuver;
+      const intersections = (st.intersections || []).map(ix => ({
+        lat: ix.location[1],
+        lon: ix.location[0],
+        bearings: ix.bearings || [],
+        entry: ix.entry,
+        in: ix.in,
+        out: ix.out,
+        classes: ix.classes || []
+      }));
       steps.push({
         lat: loc[1], lon: loc[0],
         type: m.type,
@@ -157,14 +176,8 @@ function parseOsrmRoute(rt){
         exit: m.exit,
         bearing_before: m.bearing_before,
         bearing_after: m.bearing_after,
-        intersections: (st.intersections || []).map(ix => ({
-          lat: ix.location[1],
-          lon: ix.location[0],
-          bearings: ix.bearings || [],
-          entry: ix.entry,
-          in: ix.in,
-          out: ix.out
-        }))
+        highway: highwayFromIntersections(st.intersections),
+        intersections
       });
     });
   });
@@ -175,14 +188,11 @@ function parseOsrmRoute(rt){
 export async function fetchRouteAlternatives(){
   if(!S.gps || !S.finish) throw new Error('Нужны GPS и финиш');
   S._usedCache = false;
-  const url = 'https://router.project-osrm.org/route/v1/driving/' +
-    `${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}` +
-    '?overview=full&geometries=geojson&steps=true&annotations=false&alternatives=2';
+  const url = buildRouteRequestUrl(S.gps, S.finish, { alternatives: true });
   const r = await fetch(url);
   if(!r.ok) throw new Error('OSRM HTTP ' + r.status);
   const j = await r.json();
-  if(!j.routes || !j.routes.length) throw new Error('Маршрут не найден');
-  return j.routes.map(parseOsrmRoute);
+  return parseRouteResponse(j).map(parseOsrmRoute);
 }
 
 /** Выбор активного варианта из уже загруженных alternatives */
@@ -201,24 +211,21 @@ export async function buildRoute(opts = {}){
     return;
   }
   S._usedCache = false;
-  let url = 'https://router.project-osrm.org/route/v1/driving/' +
-    `${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}` +
-    '?overview=full&geometries=geojson&steps=true&annotations=false';
+  const rerouteOpts = {};
   if(reroute){
     const spd = S.gps.speed != null ? S.gps.speed : 0;
     const hdg = S.smoothedHeading;
     if(spd > 3 && hdg != null && !isNaN(hdg)){
-      const brg = Math.round(hdg);
-      const rad = Math.max(30, Math.round(S.gps.acc || 30));
-      url += '&bearings=' + brg + ',45;&radiuses=' + rad + ';';
+      rerouteOpts.rerouteBearing = Math.round(hdg);
+      rerouteOpts.rerouteRadius = Math.max(30, Math.round(S.gps.acc || 30));
     }
   }
+  const url = buildRouteRequestUrl(S.gps, S.finish, rerouteOpts);
   try{
     const r = await fetch(url);
     if(!r.ok) throw new Error('OSRM HTTP ' + r.status);
     const j = await r.json();
-    if(!j.routes || !j.routes.length) throw new Error('Маршрут не найден');
-    S.route = parseOsrmRoute(j.routes[0]);
+    S.route = parseOsrmRoute(parseRouteResponse(j)[0]);
     attachRouteGeometry(S.route);
     if(!reroute) telemetry.log('nav', { sub: 'route_built' });
   }catch(err){

@@ -9,6 +9,23 @@ import { FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN } from './nav-constants.j
 let sensorHeading = null;
 let sensorTs = 0;
 let listening = false;
+let motionListening = false;
+let gyroHeading = null;
+let gyroTs = 0;
+let lastMotionTs = 0;
+
+function readMotion(e){
+  const rr = e.rotationRate;
+  if(!rr || rr.alpha == null || isNaN(rr.alpha)) return;
+  const now = Date.now();
+  const dt = lastMotionTs ? Math.min(0.5, (now - lastMotionTs) / 1000) : 0;
+  lastMotionTs = now;
+  if(dt <= 0) return;
+  const base = gyroHeading != null ? gyroHeading : sensorHeading;
+  if(base == null) return;
+  gyroHeading = (base - rr.alpha * dt + 360) % 360;
+  gyroTs = now;
+}
 
 let forceGps = false;
 let disagreeSince = 0;
@@ -39,18 +56,31 @@ function blendAngles(a, b, wB){
 
 /** Запуск слушателя ориентации (без iOS prompt — только если уже разрешено) */
 export function startHeadingSensors(){
-  if(listening || typeof window === 'undefined') return;
-  window.addEventListener('deviceorientationabsolute', readOrientation, true);
-  window.addEventListener('deviceorientation', readOrientation, true);
-  listening = true;
+  if(typeof window === 'undefined') return;
+  if(!listening){
+    window.addEventListener('deviceorientationabsolute', readOrientation, true);
+    window.addEventListener('deviceorientation', readOrientation, true);
+    listening = true;
+  }
+  if(!motionListening && window.DeviceMotionEvent){
+    window.addEventListener('devicemotion', readMotion, true);
+    motionListening = true;
+  }
 }
 
 export function stopHeadingSensors(){
-  if(!listening || typeof window === 'undefined') return;
-  window.removeEventListener('deviceorientationabsolute', readOrientation, true);
-  window.removeEventListener('deviceorientation', readOrientation, true);
-  listening = false;
+  if(typeof window === 'undefined') return;
+  if(listening){
+    window.removeEventListener('deviceorientationabsolute', readOrientation, true);
+    window.removeEventListener('deviceorientation', readOrientation, true);
+    listening = false;
+  }
+  if(motionListening){
+    window.removeEventListener('devicemotion', readMotion, true);
+    motionListening = false;
+  }
   sensorHeading = null;
+  gyroHeading = null;
   forceGps = false;
   disagreeSince = 0;
   calibratingUntil = 0;
@@ -130,24 +160,26 @@ export function updateHeadingHealth(gpsHeading, speedMps){
  */
 export function fuseHeading(gpsHeading, speedMps){
   const sensorFresh = sensorHeading != null && (Date.now() - sensorTs) < 2500;
+  const gyroFresh = gyroHeading != null && (Date.now() - gyroTs) < 1500;
   const spd = speedMps ?? 0;
 
   if(forceGps && !isCalibrating() && gpsHeading != null && !isNaN(gpsHeading) && spd >= 3.2){
     return gpsHeading;
   }
 
-  if(!sensorFresh) return gpsHeading ?? null;
+  const blendSensor = gyroFresh && spd < 5 ? gyroHeading : (sensorFresh ? sensorHeading : null);
+  if(!blendSensor) return gpsHeading ?? null;
 
   const gpsWeight = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
 
-  if(gpsHeading == null || isNaN(gpsHeading)) return sensorHeading;
+  if(gpsHeading == null || isNaN(gpsHeading)) return blendSensor;
   if(gpsWeight >= 0.95) return gpsHeading;
-  if(gpsWeight <= 0.05) return sensorHeading;
+  if(gpsWeight <= 0.05) return blendSensor;
 
-  if(angleDiff(gpsHeading, sensorHeading) > 45 && spd < 3){
-    return sensorHeading;
+  if(angleDiff(gpsHeading, blendSensor) > 45 && spd < 3){
+    return blendSensor;
   }
-  return blendAngles(gpsHeading, sensorHeading, 1 - gpsWeight);
+  return blendAngles(gpsHeading, blendSensor, 1 - gpsWeight);
 }
 
 export function getSensorHeading(){ return sensorHeading; }

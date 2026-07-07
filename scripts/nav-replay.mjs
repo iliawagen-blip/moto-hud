@@ -133,6 +133,17 @@ function printMetrics(m){
 const args = process.argv.slice(2);
 if(!args.length) usage();
 
+if(args[0] === '--self-test'){
+  const baselinePath = path.join(ROOT, 'fixtures', 'baseline_v0.json');
+  if(!fs.existsSync(baselinePath)){
+    console.error('baseline missing:', baselinePath);
+    process.exit(1);
+  }
+  JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+  console.log('nav:self-test OK');
+  process.exit(0);
+}
+
 let mode = 'analyze';
 let baselinePath = path.join(ROOT, 'fixtures', 'baseline_v0.json');
 const files = [];

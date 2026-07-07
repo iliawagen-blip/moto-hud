@@ -12,6 +12,10 @@ import {
   interpolateAtS, turnAngleAtS
 } from './route-geometry.js';
 import { isSnapLost } from './snap-quality.js';
+import { PATH_SKIP_DS_M, PATH_SKIP_FRAMES } from './nav-constants.js';
+
+let _pathLastS = null;
+let _pathSkipFrames = 0;
 import { renderElevProfile, getElevExag, getElevProfileH } from './elevation.js';
 import { ribbonCurveColor } from './curve-speed.js';
 import { getThemeTokens } from './theme-tokens.js';
@@ -495,6 +499,14 @@ export function renderPathway(){
     return;
   }
 
+  if(S.snapQuality === 'GOOD' && _pathLastS != null &&
+     Math.abs(snap.s - _pathLastS) < PATH_SKIP_DS_M && kmh >= 25){
+    _pathSkipFrames++;
+    if(_pathSkipFrames <= PATH_SKIP_FRAMES) return;
+  }
+  _pathSkipFrames = 0;
+  _pathLastS = snap.s;
+
   const maxDist = Math.max(100, Math.min(ROAD_MAX, Math.round(kmh * 8)));
   const rect = block.getBoundingClientRect();
   computePathLayout(rect.width || block.clientWidth || 300, rect.height || block.clientHeight || 200);
@@ -768,9 +780,13 @@ export function renderCompass(){
   const el = $('compass-svg');
   if(!el) return;
   const tok = getThemeTokens();
+  const hdg = effectiveHeading();
+  if(tok.compassStyle === 'rose'){
+    renderCompassRose(el, tok, hdg);
+    return;
+  }
   const W = 400, H = 36, cx = W / 2, px = 1.8;
   let html = '<line x1="' + cx + '" y1="2" x2="' + cx + '" y2="' + H + '" stroke="' + tok.accent + '" stroke-width="2"/>';
-  const hdg = effectiveHeading();
   if(hdg != null && !isNaN(hdg)){
     [['N',0],['E',90],['S',180],['W',270]].forEach(d => {
       let diff = ((d[1] - hdg + 540) % 360) - 180;
@@ -781,6 +797,27 @@ export function renderCompass(){
         'font-family="' + tok.fontLabel + ',sans-serif" font-size="27" font-weight="900" ' +
         'fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + '</text>';
     });
+  }
+  el.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  el.innerHTML = html;
+}
+
+function renderCompassRose(el, tok, hdg){
+  const W = 400, H = 120, cx = W / 2, cy = H / 2, r = 44;
+  let html = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + tok.dim + '" stroke-width="1.5"/>';
+  if(hdg != null && !isNaN(hdg)){
+    [['N',0],['E',90],['S',180],['W',270]].forEach(d => {
+      const a = (d[1] - hdg) * Math.PI / 180;
+      const x = cx + Math.sin(a) * r;
+      const y = cy - Math.cos(a) * r;
+      const near = Math.abs(((d[1] - hdg + 540) % 360) - 180) < 18;
+      html += '<text x="' + x.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" ' +
+        'font-family="' + tok.fontLabel + ',sans-serif" font-size="22" font-weight="900" ' +
+        'fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + '</text>';
+    });
+    const a = -hdg * Math.PI / 180;
+    html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.sin(a) * (r - 8)).toFixed(1) +
+      '" y2="' + (cy - Math.cos(a) * (r - 8)).toFixed(1) + '" stroke="' + tok.accent + '" stroke-width="3"/>';
   }
   el.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
   el.innerHTML = html;

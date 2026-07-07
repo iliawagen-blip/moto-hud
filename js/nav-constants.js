@@ -70,6 +70,8 @@ export const MANEUVER_MIN_ANGLE_DEG = 12;
 export const MANEUVER_COLLAPSE_SEG_M = 30;
 export const MANEUVER_COLLAPSE_GAP_M = 45;
 export const MANEUVER_PASSED_M = 8;
+export const MANEUVER_FORK_DROP_ANGLE_DEG = 20;
+export const MANEUVER_FORK_MIN_SEG_M = 200;
 
 /** --- Route quality / compass mode (направление 13) --- */
 export const ROUTE_LOW_AVG_SEG_M = 15;
@@ -78,3 +80,9 @@ export const ROUTE_LOW_MANEUVER_PER_KM = 25;
 /** --- Heading fusion (направление 8) --- */
 export const FUSION_GPS_WEIGHT_MIN = 0.02;
 export const FUSION_GPS_WEIGHT_SPAN = 25;
+
+/** --- Battery / render (направление 12) --- */
+export const PATH_SKIP_DS_M = 2;
+export const PATH_SKIP_FRAMES = 2;
+export const GPS_INVALIDATE_ACC_M = 50;
+export const GPS_LOST_RECONVERGE_MS = 60000;

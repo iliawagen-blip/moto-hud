@@ -10528,6 +10528,75 @@ var init_esm2 = __esm({
   }
 });
 
+// node_modules/@capacitor/app/dist/esm/definitions.js
+var init_definitions3 = __esm({
+  "node_modules/@capacitor/app/dist/esm/definitions.js"() {
+  }
+});
+
+// node_modules/@capacitor/app/dist/esm/web.js
+var web_exports5 = {};
+__export(web_exports5, {
+  AppWeb: () => AppWeb
+});
+var AppWeb;
+var init_web5 = __esm({
+  "node_modules/@capacitor/app/dist/esm/web.js"() {
+    init_dist();
+    AppWeb = class extends WebPlugin {
+      constructor() {
+        super();
+        this.handleVisibilityChange = () => {
+          const data = {
+            isActive: document.hidden !== true
+          };
+          this.notifyListeners("appStateChange", data);
+          if (document.hidden) {
+            this.notifyListeners("pause", null);
+          } else {
+            this.notifyListeners("resume", null);
+          }
+        };
+        document.addEventListener("visibilitychange", this.handleVisibilityChange, false);
+      }
+      exitApp() {
+        throw this.unimplemented("Not implemented on web.");
+      }
+      async getInfo() {
+        throw this.unimplemented("Not implemented on web.");
+      }
+      async getLaunchUrl() {
+        return { url: "" };
+      }
+      async getState() {
+        return { isActive: document.hidden !== true };
+      }
+      async minimizeApp() {
+        throw this.unimplemented("Not implemented on web.");
+      }
+      async toggleBackButtonHandler() {
+        throw this.unimplemented("Not implemented on web.");
+      }
+    };
+  }
+});
+
+// node_modules/@capacitor/app/dist/esm/index.js
+var esm_exports3 = {};
+__export(esm_exports3, {
+  App: () => App
+});
+var App;
+var init_esm3 = __esm({
+  "node_modules/@capacitor/app/dist/esm/index.js"() {
+    init_dist();
+    init_definitions3();
+    App = registerPlugin("App", {
+      web: () => Promise.resolve().then(() => (init_web5(), web_exports5)).then((m) => new m.AppWeb())
+    });
+  }
+});
+
 // js/theme-tokens.js
 var _cache = null;
 function readProp(style, name, fallback) {
@@ -10666,6 +10735,7 @@ var S = {
   lastReliableHeadingTs: 0,
   routeQuality: "OK",
   compassMode: false,
+  routerBackend: "osrm",
   rerouting: false,
   rerouteBackoffStep: 0,
   rerouteBackoffUntil: 0,
@@ -10944,7 +11014,7 @@ var setupWatchId = null;
 var navWatcherId = null;
 function mapCapPosition(pos) {
   const c = pos.coords;
-  return {
+  const fix = {
     lat: c.latitude,
     lon: c.longitude,
     speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
@@ -10952,16 +11022,26 @@ function mapCapPosition(pos) {
     acc: c.accuracy,
     ts: pos.timestamp
   };
+  return tagFixQuality(fix);
 }
 function mapBgLocation(loc) {
-  return {
+  const fix = {
     lat: loc.latitude,
     lon: loc.longitude,
     speed: loc.speed != null && !isNaN(loc.speed) && loc.speed >= 0 ? loc.speed : null,
     heading: loc.bearing == null || isNaN(loc.bearing) ? null : loc.bearing,
     acc: loc.accuracy,
-    ts: loc.time
+    ts: loc.time,
+    provider: loc.provider || null
   };
+  return tagFixQuality(fix);
+}
+function tagFixQuality(fix) {
+  const acc = fix.acc;
+  if (acc == null) return fix;
+  if (acc > 80 || fix.provider === "network") fix.provider = "network";
+  else if (acc > 40) fix.lowAccuracy = true;
+  return fix;
 }
 async function ensureNativePermissions(forNavigation) {
   const geo = await Geolocation2.requestPermissions();
@@ -11093,15 +11173,37 @@ var MANEUVER_MIN_ANGLE_DEG = 12;
 var MANEUVER_COLLAPSE_SEG_M = 30;
 var MANEUVER_COLLAPSE_GAP_M = 45;
 var MANEUVER_PASSED_M = 8;
+var MANEUVER_FORK_DROP_ANGLE_DEG = 20;
+var MANEUVER_FORK_MIN_SEG_M = 200;
 var ROUTE_LOW_AVG_SEG_M = 15;
 var ROUTE_LOW_MANEUVER_PER_KM = 25;
 var FUSION_GPS_WEIGHT_MIN = 0.02;
 var FUSION_GPS_WEIGHT_SPAN = 25;
+var PATH_SKIP_DS_M = 2;
+var PATH_SKIP_FRAMES = 2;
+var GPS_INVALIDATE_ACC_M = 50;
+var GPS_LOST_RECONVERGE_MS = 6e4;
 
 // js/heading.js
 var sensorHeading = null;
 var sensorTs = 0;
 var listening = false;
+var motionListening = false;
+var gyroHeading = null;
+var gyroTs = 0;
+var lastMotionTs = 0;
+function readMotion(e) {
+  const rr = e.rotationRate;
+  if (!rr || rr.alpha == null || isNaN(rr.alpha)) return;
+  const now = Date.now();
+  const dt = lastMotionTs ? Math.min(0.5, (now - lastMotionTs) / 1e3) : 0;
+  lastMotionTs = now;
+  if (dt <= 0) return;
+  const base = gyroHeading != null ? gyroHeading : sensorHeading;
+  if (base == null) return;
+  gyroHeading = (base - rr.alpha * dt + 360) % 360;
+  gyroTs = now;
+}
 var forceGps = false;
 var disagreeSince = 0;
 var calibratingUntil = 0;
@@ -11126,10 +11228,16 @@ function blendAngles(a, b, wB) {
   return (Math.atan2(sx, sy) * 180 / Math.PI + 360) % 360;
 }
 function startHeadingSensors() {
-  if (listening || typeof window === "undefined") return;
-  window.addEventListener("deviceorientationabsolute", readOrientation, true);
-  window.addEventListener("deviceorientation", readOrientation, true);
-  listening = true;
+  if (typeof window === "undefined") return;
+  if (!listening) {
+    window.addEventListener("deviceorientationabsolute", readOrientation, true);
+    window.addEventListener("deviceorientation", readOrientation, true);
+    listening = true;
+  }
+  if (!motionListening && window.DeviceMotionEvent) {
+    window.addEventListener("devicemotion", readMotion, true);
+    motionListening = true;
+  }
 }
 async function requestHeadingPermission() {
   const DO = window.DeviceOrientationEvent;
@@ -11184,19 +11292,21 @@ function updateHeadingHealth(gpsHeading, speedMps) {
 }
 function fuseHeading(gpsHeading, speedMps) {
   const sensorFresh = sensorHeading != null && Date.now() - sensorTs < 2500;
+  const gyroFresh = gyroHeading != null && Date.now() - gyroTs < 1500;
   const spd = speedMps ?? 0;
   if (forceGps && !isCalibrating() && gpsHeading != null && !isNaN(gpsHeading) && spd >= 3.2) {
     return gpsHeading;
   }
-  if (!sensorFresh) return gpsHeading ?? null;
+  const blendSensor = gyroFresh && spd < 5 ? gyroHeading : sensorFresh ? sensorHeading : null;
+  if (!blendSensor) return gpsHeading ?? null;
   const gpsWeight = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
-  if (gpsHeading == null || isNaN(gpsHeading)) return sensorHeading;
+  if (gpsHeading == null || isNaN(gpsHeading)) return blendSensor;
   if (gpsWeight >= 0.95) return gpsHeading;
-  if (gpsWeight <= 0.05) return sensorHeading;
-  if (angleDiff(gpsHeading, sensorHeading) > 45 && spd < 3) {
-    return sensorHeading;
+  if (gpsWeight <= 0.05) return blendSensor;
+  if (angleDiff(gpsHeading, blendSensor) > 45 && spd < 3) {
+    return blendSensor;
   }
-  return blendAngles(gpsHeading, sensorHeading, 1 - gpsWeight);
+  return blendAngles(gpsHeading, blendSensor, 1 - gpsWeight);
 }
 
 // js/telemetry.js
@@ -11434,6 +11544,30 @@ function logSnapFromResult(snap) {
   if (s0 != null) _lastSnapS0 = s0;
   log("snap", { s0, lat_off: latOff, jump, quality: S.snapQuality || "GOOD" });
 }
+function pct(arr, p) {
+  if (!arr.length) return null;
+  const s2 = [...arr].sort((a, b) => a - b);
+  const i = Math.min(s2.length - 1, Math.floor(p / 100 * s2.length));
+  return s2[i];
+}
+function computeSessionAggregate() {
+  if (!_buffer.length) return null;
+  const snaps = _buffer.map((b) => b.ev).filter((e) => e.type === "snap");
+  const latOffs = snaps.map((s2) => s2.lat_off).filter((v) => v != null && Number.isFinite(v));
+  const marks = _buffer.map((b) => b.ev).filter((e) => e.type === "mark");
+  return {
+    snap_count: snaps.length,
+    lat_off_p50: r2(pct(latOffs, 50)),
+    lat_off_p95: r2(pct(latOffs, 95)),
+    snap_jumps: snaps.filter((s2) => s2.jump).length,
+    snap_lost: snaps.filter((s2) => s2.quality === "LOST").length,
+    snap_degraded: snaps.filter((s2) => s2.quality === "DEGRADED").length,
+    mark_count: marks.length,
+    phantom_marks: marks.filter(
+      (m) => (m.tags || []).includes("phantom_turn") || /phantom/i.test(m.note || "")
+    ).length
+  };
+}
 async function start(meta) {
   if (_active) return _sessionId;
   if (!isEnabledPref()) return null;
@@ -11465,6 +11599,8 @@ async function start(meta) {
 async function stop() {
   if (!_active) return;
   flushPerfAggregate();
+  const agg = computeSessionAggregate();
+  if (agg) log("meta", { sub: "session_aggregate", ...agg });
   log("meta", { sub: "stop" });
   await flushBuffer(true);
   const id = _sessionId;
@@ -11665,6 +11801,24 @@ var HIGHWAY_BEND = {
   living_street: 12,
   unclassified: 18
 };
+var HIGHWAY_CLASSES = Object.keys(HIGHWAY_BEND);
+var _filterLogged = /* @__PURE__ */ new Set();
+function resetManeuverFilterLog() {
+  _filterLogged.clear();
+}
+function logFiltered(step, s2, reason) {
+  const key = (step?.type || "") + "|" + (step?.modifier || "") + "|" + Math.round((s2 || 0) / 50) + "|" + reason;
+  if (_filterLogged.has(key)) return;
+  _filterLogged.add(key);
+  telemetry_default.log("nav", {
+    sub: "maneuver_filtered",
+    type: step?.type,
+    modifier: step?.modifier,
+    highway: step?.highway || null,
+    s: s2 != null ? Math.round(s2) : null,
+    reason
+  });
+}
 function bendThresholdForStep(step) {
   const hw = step?.highway || step?.roadClass || "";
   return HIGHWAY_BEND[hw] ?? MANEUVER_BEND_DEFAULT_DEG;
@@ -11713,6 +11867,9 @@ function isSignificantManeuver(m, _geom) {
     return mod === "uturn" || m.step.type === "roundabout" || m.step.type === "rotary";
   }
   const bend = bendThresholdForStep(m.step);
+  if (m.step.type === "fork" && ang < MANEUVER_FORK_DROP_ANGLE_DEG && (m.step.distance || 0) > MANEUVER_FORK_MIN_SEG_M) {
+    return false;
+  }
   if (mod.includes("slight") && ang < bend) return false;
   if ((mod === "straight" || !mod) && ang < bend) return false;
   if (mod === "uturn" || mod.includes("sharp")) return ang >= 8;
@@ -11738,13 +11895,17 @@ function refineManeuvers(maneuvers) {
   const kept = [];
   for (let i = 0; i < sorted.length; i++) {
     const m = sorted[i];
-    if (!isNavManeuverType(m.step)) continue;
+    if (!isNavManeuverType(m.step)) {
+      logFiltered(m.step, m.s, "not_nav_type");
+      continue;
+    }
     const segM = m.step.distance || 0;
     const ang = stepTurnAngleDeg(m.step, m) || 0;
     const bend = bendThresholdForStep(m.step);
     const next = sorted[i + 1];
     if (segM < MANEUVER_COLLAPSE_SEG_M && ang < bend) {
       if (next && isNavManeuverType(next.step) && next.s - m.s < MANEUVER_COLLAPSE_GAP_M) {
+        logFiltered(m.step, m.s, "collapse_micro");
         continue;
       }
     }
@@ -11753,13 +11914,18 @@ function refineManeuvers(maneuvers) {
       const gap = m.s - prev.s;
       const prevAng = stepTurnAngleDeg(prev.step, prev) || 0;
       if (gap < MANEUVER_COLLAPSE_GAP_M && prevAng < bend && ang < bend) {
+        logFiltered(prev.step, prev.s, "collapse_pair");
         kept[kept.length - 1] = pickStrongerManeuver(prev, m);
         continue;
       }
     }
     kept.push(m);
   }
-  return kept.filter((m) => isSignificantManeuver(m));
+  return kept.filter((m) => {
+    const ok = isSignificantManeuver(m);
+    if (!ok) logFiltered(m.step, m.s, "not_significant");
+    return ok;
+  });
 }
 
 // js/snap-quality.js
@@ -11769,6 +11935,8 @@ var _degradedSince = 0;
 var _jumpUntil = 0;
 var _frozenS = null;
 var _lastNm = null;
+var _forceReeval = false;
+var _lostSince = 0;
 function resetSnapQuality() {
   S.snapQuality = SnapQuality.GOOD;
   _hist.length = 0;
@@ -11776,6 +11944,13 @@ function resetSnapQuality() {
   _jumpUntil = 0;
   _frozenS = null;
   _lastNm = null;
+  _forceReeval = false;
+  _lostSince = 0;
+}
+function takeForceReeval() {
+  const v = _forceReeval;
+  _forceReeval = false;
+  return v;
 }
 function curvatureMult(geom, s2, override) {
   if (override != null) return override;
@@ -11826,10 +12001,6 @@ function updateSnapQuality(snap, gps, geom, opts) {
     const exitQ = classifyExit(score, snap.lateral, mult);
     if (instant === SnapQuality.LOST && histAgrees(SnapQuality.LOST)) next = SnapQuality.LOST;
     else if (exitQ === SnapQuality.GOOD && histAgrees(SnapQuality.GOOD)) next = SnapQuality.GOOD;
-    if (next === SnapQuality.DEGRADED && _degradedSince && now - _degradedSince > SNAP_QUALITY_DEGRADED_TIMEOUT_MS) {
-      next = SnapQuality.DEGRADED;
-      if (opts) opts.forceReeval = true;
-    }
   } else {
     const exitQ = classifyExit(score, snap.lateral, mult);
     if (exitQ !== SnapQuality.LOST && histAgrees(SnapQuality.DEGRADED)) next = SnapQuality.DEGRADED;
@@ -11837,6 +12008,11 @@ function updateSnapQuality(snap, gps, geom, opts) {
   }
   if (next === SnapQuality.DEGRADED && prev !== SnapQuality.DEGRADED) _degradedSince = now;
   if (next === SnapQuality.GOOD) _degradedSince = 0;
+  if (next === SnapQuality.LOST && prev !== SnapQuality.LOST) _lostSince = now;
+  if (next !== SnapQuality.LOST) _lostSince = 0;
+  if (prev === SnapQuality.DEGRADED && _degradedSince && now - _degradedSince > SNAP_QUALITY_DEGRADED_TIMEOUT_MS) {
+    _forceReeval = true;
+  }
   S.snapQuality = next;
   if (next === SnapQuality.DEGRADED) {
     if (_frozenS == null) _frozenS = snap.s;
@@ -11855,6 +12031,9 @@ function isSnapLost() {
 }
 function isSnapDegraded() {
   return S.snapQuality === SnapQuality.DEGRADED;
+}
+function lostDurationMs() {
+  return _lostSince ? Date.now() - _lostSince : 0;
 }
 function cacheLastManeuver(nm) {
   _lastNm = nm;
@@ -12064,6 +12243,7 @@ function denseStepForCoords(coords) {
 }
 function buildRouteGeometry(route) {
   if (!route || !route.coords || route.coords.length < 2) return null;
+  resetManeuverFilterLog();
   const stepM = denseStepForCoords(route.coords);
   const { lat: latArr, lon: lonArr } = densifyCoords(route.coords, stepM);
   const n = latArr.length;
@@ -12197,6 +12377,10 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx) {
     const dot = headingDot(tangent, gpsHdg);
     if (requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs)) continue;
     if (requireDir && dot < SNAP_MIN_DOT) continue;
+    if (requireDir && spd > 1 && ctx?.prevPos) {
+      const moveBrg = bearing(ctx.prevPos, gps);
+      if (headingDot(tangent, moveBrg) < 0) continue;
+    }
     let score = proj.lateral + SNAP_ANGLE_PENALTY * (gpsHdg != null ? (1 - dot) * 50 : 0);
     if (!skipJump && prevS > 0) {
       const maxJump2 = spd * dt + acc;
@@ -12245,9 +12429,25 @@ function snapToRoute(gps, geom, gpsHeadingDeg, meta) {
     headingAgeMs,
     prevS,
     dt,
-    skipJumpPenalty: prevS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES
+    skipJumpPenalty: prevS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES,
+    prevPos: _prevFixPos
   };
-  let best = scanSnap(gps, geom, sMin, sMax, gpsHeadingDeg, true, ctx);
+  let best = null;
+  if (takeForceReeval() && prevS > 0) {
+    const wide = 3 * acc + 100;
+    best = scanSnap(
+      gps,
+      geom,
+      Math.max(0, prevS - wide),
+      Math.min(total, prevS + wide),
+      gpsHeadingDeg,
+      false,
+      ctx
+    );
+  }
+  if (!best) {
+    best = scanSnap(gps, geom, sMin, sMax, gpsHeadingDeg, true, ctx);
+  }
   if (!best) {
     best = scanSnap(
       gps,
@@ -12671,6 +12871,9 @@ function feedGpsConverge(fix) {
   else if (!re && _buf.length < minFixes) S.gpsConverged = false;
   return S.gpsConverged;
 }
+function invalidateGpsConverge() {
+  S.gpsConverged = false;
+}
 
 // js/gps.js
 var RENDER_POS = null;
@@ -12756,6 +12959,7 @@ function checkStartReady() {
 function onGpsError() {
   $("s-gps").textContent = "\u274C GPS";
   $("s-gps").className = "chip err";
+  invalidateGpsConverge();
   if (!_gpsLost) {
     _gpsLost = true;
     telemetry_default.log("nav", { sub: "gps_lost" });
@@ -12796,6 +13000,8 @@ function applyGpsFix(next) {
   S.fixPos = { lat: next.lat, lon: next.lon };
   S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
   feedGpsConverge(next);
+  if (next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge();
+  if ($("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge();
   updateGpsConvergeUI();
   if ($("hud").classList.contains("on")) _onTick();
   const rcv = Date.now();
@@ -14130,6 +14336,29 @@ function isCameraBehind(cam, heading) {
   return angleDiff(cam.dir, heading) <= S.tolerance;
 }
 
+// js/router.js
+var RouterBackend = { OSRM: "osrm", VALHALLA: "valhalla" };
+var OSRM_BASE = "https://router.project-osrm.org/route/v1/driving/";
+function getRouterBackend() {
+  return S.routerBackend || RouterBackend.OSRM;
+}
+function buildRouteRequestUrl(from, to, opts = {}) {
+  const backend = getRouterBackend();
+  if (backend === RouterBackend.VALHALLA) {
+    throw new Error("Valhalla: \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043F\u0430\u0439\u043A \u0424\u0430\u0437\u0430 4)");
+  }
+  let url = OSRM_BASE + `${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson&steps=true&annotations=false`;
+  if (opts.alternatives) url += "&alternatives=2";
+  if (opts.rerouteBearing != null && opts.rerouteRadius != null) {
+    url += "&bearings=" + opts.rerouteBearing + ",45;&radiuses=" + opts.rerouteRadius + ";";
+  }
+  return url;
+}
+function parseRouteResponse(json) {
+  if (!json?.routes?.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+  return json.routes;
+}
+
 // js/route-quality.js
 var RouteQuality = { OK: "OK", LOW: "LOW" };
 function assessRouteQuality(route) {
@@ -14256,6 +14485,14 @@ async function searchAddress(query) {
   if (!r.ok) throw new Error("Nominatim " + r.status);
   return r.json();
 }
+function highwayFromIntersections(intersections) {
+  for (const ix of intersections || []) {
+    for (const c of ix.classes || []) {
+      if (HIGHWAY_CLASSES.includes(c)) return c;
+    }
+  }
+  return "";
+}
 function parseOsrmRoute(rt) {
   const coords = rt.geometry.coordinates.map((c) => [c[1], c[0]]);
   const steps = [];
@@ -14263,6 +14500,15 @@ function parseOsrmRoute(rt) {
     leg.steps.forEach((st) => {
       const loc = st.maneuver.location;
       const m = st.maneuver;
+      const intersections = (st.intersections || []).map((ix) => ({
+        lat: ix.location[1],
+        lon: ix.location[0],
+        bearings: ix.bearings || [],
+        entry: ix.entry,
+        in: ix.in,
+        out: ix.out,
+        classes: ix.classes || []
+      }));
       steps.push({
         lat: loc[1],
         lon: loc[0],
@@ -14273,14 +14519,8 @@ function parseOsrmRoute(rt) {
         exit: m.exit,
         bearing_before: m.bearing_before,
         bearing_after: m.bearing_after,
-        intersections: (st.intersections || []).map((ix) => ({
-          lat: ix.location[1],
-          lon: ix.location[0],
-          bearings: ix.bearings || [],
-          entry: ix.entry,
-          in: ix.in,
-          out: ix.out
-        }))
+        highway: highwayFromIntersections(st.intersections),
+        intersections
       });
     });
   });
@@ -14289,12 +14529,11 @@ function parseOsrmRoute(rt) {
 async function fetchRouteAlternatives() {
   if (!S.gps || !S.finish) throw new Error("\u041D\u0443\u0436\u043D\u044B GPS \u0438 \u0444\u0438\u043D\u0438\u0448");
   S._usedCache = false;
-  const url = `https://router.project-osrm.org/route/v1/driving/${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}?overview=full&geometries=geojson&steps=true&annotations=false&alternatives=2`;
+  const url = buildRouteRequestUrl(S.gps, S.finish, { alternatives: true });
   const r = await fetch(url);
   if (!r.ok) throw new Error("OSRM HTTP " + r.status);
   const j = await r.json();
-  if (!j.routes || !j.routes.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-  return j.routes.map(parseOsrmRoute);
+  return parseRouteResponse(j).map(parseOsrmRoute);
 }
 function selectRouteIndex(idx) {
   if (!S.routeAlternatives.length) return;
@@ -14310,22 +14549,21 @@ async function buildRoute(opts = {}) {
     return;
   }
   S._usedCache = false;
-  let url = `https://router.project-osrm.org/route/v1/driving/${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}?overview=full&geometries=geojson&steps=true&annotations=false`;
+  const rerouteOpts = {};
   if (reroute) {
     const spd = S.gps.speed != null ? S.gps.speed : 0;
     const hdg = S.smoothedHeading;
     if (spd > 3 && hdg != null && !isNaN(hdg)) {
-      const brg = Math.round(hdg);
-      const rad = Math.max(30, Math.round(S.gps.acc || 30));
-      url += "&bearings=" + brg + ",45;&radiuses=" + rad + ";";
+      rerouteOpts.rerouteBearing = Math.round(hdg);
+      rerouteOpts.rerouteRadius = Math.max(30, Math.round(S.gps.acc || 30));
     }
   }
+  const url = buildRouteRequestUrl(S.gps, S.finish, rerouteOpts);
   try {
     const r = await fetch(url);
     if (!r.ok) throw new Error("OSRM HTTP " + r.status);
     const j = await r.json();
-    if (!j.routes || !j.routes.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    S.route = parseOsrmRoute(j.routes[0]);
+    S.route = parseOsrmRoute(parseRouteResponse(j)[0]);
     attachRouteGeometry(S.route);
     if (!reroute) telemetry_default.log("nav", { sub: "route_built" });
   } catch (err) {
@@ -14611,6 +14849,8 @@ function maneuverTurnAngle(step) {
 }
 
 // js/render.js
+var _pathLastS = null;
+var _pathSkipFrames = 0;
 var PROFILE_GAP = 6;
 function computePathLayout(w, h) {
   const aspect = Math.max(0.2, w / Math.max(1, h));
@@ -15008,6 +15248,12 @@ function renderPathway() {
     svg.innerHTML = "";
     return;
   }
+  if (S.snapQuality === "GOOD" && _pathLastS != null && Math.abs(snap.s - _pathLastS) < PATH_SKIP_DS_M && kmh >= 25) {
+    _pathSkipFrames++;
+    if (_pathSkipFrames <= PATH_SKIP_FRAMES) return;
+  }
+  _pathSkipFrames = 0;
+  _pathLastS = snap.s;
   const maxDist = Math.max(100, Math.min(ROAD_MAX, Math.round(kmh * 8)));
   const rect = block.getBoundingClientRect();
   computePathLayout(rect.width || block.clientWidth || 300, rect.height || block.clientHeight || 200);
@@ -15250,9 +15496,13 @@ function renderCompass() {
   const el = $("compass-svg");
   if (!el) return;
   const tok = getThemeTokens();
+  const hdg = effectiveHeading();
+  if (tok.compassStyle === "rose") {
+    renderCompassRose(el, tok, hdg);
+    return;
+  }
   const W = 400, H = 36, cx = W / 2, px = 1.8;
   let html = '<line x1="' + cx + '" y1="2" x2="' + cx + '" y2="' + H + '" stroke="' + tok.accent + '" stroke-width="2"/>';
-  const hdg = effectiveHeading();
   if (hdg != null && !isNaN(hdg)) {
     [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
       let diff = (d[1] - hdg + 540) % 360 - 180;
@@ -15261,6 +15511,23 @@ function renderCompass() {
       const near = Math.abs(diff) < 12;
       html += '<text x="' + x.toFixed(1) + '" y="29" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="27" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
     });
+  }
+  el.setAttribute("viewBox", "0 0 " + W + " " + H);
+  el.innerHTML = html;
+}
+function renderCompassRose(el, tok, hdg) {
+  const W = 400, H = 120, cx = W / 2, cy = H / 2, r = 44;
+  let html = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + tok.dim + '" stroke-width="1.5"/>';
+  if (hdg != null && !isNaN(hdg)) {
+    [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
+      const a2 = (d[1] - hdg) * Math.PI / 180;
+      const x = cx + Math.sin(a2) * r;
+      const y = cy - Math.cos(a2) * r;
+      const near = Math.abs((d[1] - hdg + 540) % 360 - 180) < 18;
+      html += '<text x="' + x.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="22" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
+    });
+    const a = -hdg * Math.PI / 180;
+    html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.sin(a) * (r - 8)).toFixed(1) + '" y2="' + (cy - Math.cos(a) * (r - 8)).toFixed(1) + '" stroke="' + tok.accent + '" stroke-width="3"/>';
   }
   el.setAttribute("viewBox", "0 0 " + W + " " + H);
   el.innerHTML = html;
@@ -17002,7 +17269,7 @@ function tryReturnOnRoute(feed) {
   return true;
 }
 function tickOffRouteMachine(feed) {
-  if (feed.lateral == null || !S.route) return;
+  if (S.compassMode || feed.lateral == null || !S.route) return;
   const now = Date.now();
   const dtMs = _ctx.lastFeedMs ? Math.min(3e3, now - _ctx.lastFeedMs) : 0;
   _ctx.lastFeedMs = now;
@@ -17035,6 +17302,25 @@ function tickOffRouteMachine(feed) {
 }
 
 // js/hud.js
+var _lastMarkCtx = null;
+function getLastMarkContext() {
+  return _lastMarkCtx;
+}
+function logManeuverContext(nm, snap, shown, filterReason) {
+  const snap2 = getNavSnap(S.smoothedHeading);
+  _lastMarkCtx = {
+    maneuver_id: S.route?.steps?.indexOf(nm.step),
+    type: nm.step.type,
+    modifier: nm.step.modifier,
+    dist: Math.round(nm.dist),
+    ang_osrm: stepTurnAngleDeg(nm.step, nm),
+    lat_off: snap2?.lateral != null ? Math.round(snap2.lateral) : null,
+    snap_quality: S.snapQuality,
+    shown: !!shown,
+    filter_reason: filterReason || null
+  };
+  telemetry_default.log("nav", { sub: "maneuver_context", ..._lastMarkCtx });
+}
 function maneuverVoiceThresholds(kmh) {
   const mps = Math.max(kmh / 3.6, 4);
   return {
@@ -17167,14 +17453,6 @@ function onTick() {
   }
   const remaining = getRemainingDistance();
   const near = findNearestOnRoute();
-  tickOffRouteMachine({
-    lateral: near?.dist,
-    acc: S.gps.acc || 0,
-    spdMps,
-    spdKmh: kmh,
-    heading: S.smoothedHeading,
-    tangent: snap?.tangent ?? null
-  });
   if (S.compassMode && S.finish && S.gps && !isOfflineGuide()) {
     const brg = bearing(S.gps, S.finish);
     const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
@@ -17191,14 +17469,24 @@ function onTick() {
     }
     $("street").textContent = "\u041A \u0424\u0418\u041D\u0418\u0428\u0423";
     $("rb-exit-label")?.classList.add("hidden");
+    const mid = $("mid-info");
+    const tStr = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
+    mid.textContent = tStr + " \xB7 \u041A\u041E\u041C\u041F\u0410\u0421";
     updateFinishInfo(remaining, kmh, now);
-    $("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
     tickAutoMode();
     checkCamerasILS();
     refreshFuelPanel();
     return;
   }
   if (!gpsOk) return;
+  tickOffRouteMachine({
+    lateral: near?.dist,
+    acc: S.gps.acc || 0,
+    spdMps,
+    spdKmh: kmh,
+    heading: S.smoothedHeading,
+    tangent: snap?.tangent ?? null
+  });
   if (isOfflineGuide() && snap && S.gps) {
     const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
     const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
@@ -17220,6 +17508,7 @@ function onTick() {
     if (!nm) nm = findNextManeuver();
     if (nm) {
       cacheLastManeuver(nm);
+      logManeuverContext(nm, snap, true, null);
       $("arrow-box").innerHTML = buildArrowSVG(nm.step);
       const rbEl = $("rb-exit-label");
       if (rbEl) {
@@ -17262,7 +17551,12 @@ function onTick() {
     }
   }
   updateFinishInfo(remaining, kmh, now);
-  $("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
+  const midLine = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
+  if (S.routeQuality === RouteQuality.LOW && !S.compassMode) {
+    $("mid-info").textContent = midLine + " \xB7 \u041D\u0418\u0417\u041A. OSM";
+  } else {
+    $("mid-info").textContent = midLine;
+  }
   if (remaining < 30 && !S.camWarned.has("arrived")) {
     S.camWarned.add("arrived");
     speak("\u0412\u044B \u043F\u0440\u0438\u0431\u044B\u043B\u0438");
@@ -17504,29 +17798,50 @@ async function selectQuickFinish(id, loadFavs2, buildAndLoad) {
 }
 
 // js/telemetry-ui.js
-var _lastMarkTap = 0;
-var MARK_DBL_MS = 400;
+var _tapCount = 0;
+var _tapTimer = null;
+var MARK_TAP_MS = 450;
 function bindMarkButton() {
   const btn = $("btn-telemetry-mark");
   if (!btn || btn.dataset.bound) return;
   btn.dataset.bound = "1";
   btn.addEventListener("click", () => {
-    const now = Date.now();
-    const dbl = now - _lastMarkTap < MARK_DBL_MS;
-    _lastMarkTap = now;
-    if (dbl) {
-      telemetry_default.mark("critical");
-      btn.classList.add("critical-flash");
-      setTimeout(() => btn.classList.remove("critical-flash"), 400);
-    } else {
-      telemetry_default.mark();
-    }
-    try {
-      navigator.vibrate?.(dbl ? [30, 40, 30] : 25);
-    } catch (e) {
-    }
-    btn.classList.add("flash");
-    setTimeout(() => btn.classList.remove("flash"), 200);
+    _tapCount++;
+    clearTimeout(_tapTimer);
+    _tapTimer = setTimeout(() => {
+      const n = _tapCount;
+      _tapCount = 0;
+      const ctx = getLastMarkContext();
+      if (n >= 3) {
+        telemetry_default.mark({
+          tags: ["phantom_turn"],
+          note: "phantom_turn",
+          ...ctx || {}
+        });
+        btn.classList.add("critical-flash");
+        setTimeout(() => btn.classList.remove("critical-flash"), 400);
+        try {
+          navigator.vibrate?.([30, 40, 30, 40, 30]);
+        } catch (e) {
+        }
+      } else if (n >= 2) {
+        telemetry_default.mark("critical");
+        btn.classList.add("critical-flash");
+        setTimeout(() => btn.classList.remove("critical-flash"), 400);
+        try {
+          navigator.vibrate?.([30, 40, 30]);
+        } catch (e) {
+        }
+      } else {
+        telemetry_default.mark(ctx ? { note: "mark", ...ctx } : void 0);
+        try {
+          navigator.vibrate?.(25);
+        } catch (e) {
+        }
+      }
+      btn.classList.add("flash");
+      setTimeout(() => btn.classList.remove("flash"), 200);
+    }, MARK_TAP_MS);
   });
 }
 function fmtDur(ms) {
@@ -17641,8 +17956,64 @@ function registerServiceWorker() {
   });
 }
 
+// js/legal-consent.js
+var LEGAL_DISCLAIMER_VERSION = 1;
+var LEGAL_STORAGE_KEY = "moto-hud-legal-consent";
+function readConsent() {
+  try {
+    const raw = localStorage.getItem(LEGAL_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+function hasValidLegalConsent() {
+  const data = readConsent();
+  return data?.version === LEGAL_DISCLAIMER_VERSION && typeof data?.ts === "string";
+}
+function saveConsent() {
+  localStorage.setItem(LEGAL_STORAGE_KEY, JSON.stringify({
+    version: LEGAL_DISCLAIMER_VERSION,
+    ts: (/* @__PURE__ */ new Date()).toISOString()
+  }));
+}
+function showBlockedScreen() {
+  document.getElementById("legalModal")?.classList.remove("on");
+  document.getElementById("legalBlocked")?.classList.add("on");
+  document.body.classList.add("legal-blocked");
+}
+async function onDecline() {
+  try {
+    const { App: App2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports3));
+    const { Capacitor: Capacitor2 } = await Promise.resolve().then(() => (init_dist(), dist_exports));
+    if (Capacitor2.isNativePlatform()) {
+      await App2.exitApp();
+      return;
+    }
+  } catch {
+  }
+  showBlockedScreen();
+}
+function initLegalConsent() {
+  if (hasValidLegalConsent()) return;
+  const modal = document.getElementById("legalModal");
+  if (!modal) return;
+  modal.classList.add("on");
+  document.body.classList.add("legal-gate");
+  document.getElementById("legal-accept")?.addEventListener("click", () => {
+    saveConsent();
+    modal.classList.remove("on");
+    document.body.classList.remove("legal-gate");
+  }, { once: true });
+  document.getElementById("legal-decline")?.addEventListener("click", () => {
+    void onDecline();
+  }, { once: true });
+}
+
 // js/main.js
 applyThemeCss();
+initLegalConsent();
 initThemeManager();
 initVintageVfd();
 initTelemetry().then(() => initTelemetryUI());

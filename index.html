@@ -227,12 +227,47 @@
       <b>Места ⭐:</b> тап в списке у финиша — подставить точку. Редактирование — в «⭐ Избранное — редактирование».<br>
       <b>Камера «в спину»:</b> объектив смотрит вслед уходящему мотоциклу (direction ≈ курс).<br>
       Данные мест хранятся в браузере этого устройства.
+      <p style="margin-top:10px">
+        <a href="docs/offer.html" target="_blank" rel="noopener">Публичная оферта</a> ·
+        <a href="docs/disclaimer.html" target="_blank" rel="noopener">Отказ от ответственности</a> ·
+        <a href="docs/support.html" target="_blank" rel="noopener">Поддержать проект</a>
+      </p>
     </div>
   </details>
 
   <!-- «ПОЕХАЛИ» — закреплена внизу, видна после построения маршрута -->
   <div id="go-bar" class="go-bar hidden">
     <button type="button" class="primary" id="btn-start" disabled>▶ ПОЕХАЛИ</button>
+  </div>
+</div>
+
+<!-- отказ от ответственности — первый запуск -->
+<div class="modal legal-modal" id="legalModal" role="dialog" aria-modal="true" aria-labelledby="legal-title">
+  <div class="modal-card legal-card">
+    <h3 id="legal-title">Отказ от ответственности</h3>
+    <div class="legal-body">
+      <p><strong>Прежде чем использовать приложение, внимательно прочитайте:</strong></p>
+      <p>Это приложение является <strong>вспомогательным</strong>. Оно не заменяет Правила дорожного движения, внимание к дороге, дорожные знаки, разметку и указания сотрудников ГИБДД.</p>
+      <p>Приложение может содержать ошибки в маршрутах, неточности в отображении камер, устаревшие данные о дорогах. Не полагайтесь на приложение полностью.</p>
+      <p>Разработчик не несёт ответственности за ДТП, штрафы, ущерб жизни и здоровью, повреждение имущества и иные негативные последствия использования приложения.</p>
+      <p>Разработчик не гарантирует бесперебойную работу, точность данных, полноту базы камер фотовидеофиксации, корректность построения маршрутов.</p>
+      <p>Используя приложение, вы принимаете на себя все риски, связанные с его использованием во время управления мотоциклом или иным транспортным средством.</p>
+      <p>Использование во время движения допустимо только при соблюдении ПДД РФ. Рекомендуется кронштейн и голосовые подсказки через гарнитуру шлема.</p>
+      <p>Если вы не согласны — закройте приложение и не используйте его.</p>
+      <p class="legal-link"><a href="docs/offer.html" target="_blank" rel="noopener">Полный текст: публичная оферта</a></p>
+    </div>
+    <div class="btnrow legal-btns">
+      <button type="button" id="legal-decline">Не согласен, выйти</button>
+      <button type="button" class="ok" id="legal-accept">Я прочитал и согласен</button>
+    </div>
+  </div>
+</div>
+
+<div id="legalBlocked" class="legal-blocked">
+  <div class="legal-blocked-inner">
+    <h2>Использование недоступно</h2>
+    <p>Без согласия с условиями отказа от ответственности приложение не может быть использовано.</p>
+    <p>Закройте вкладку или окно браузера.</p>
   </div>
 </div>
 
@@ -281,7 +316,7 @@
       <button type="button" class="corner-btn fuel btn-fuel" id="btn-fuel"><span class="cb-icon">⛽</span><span class="cb-lbl">ЗАПР.</span></button>
       <button type="button" class="corner-btn btn-fs" id="btn-fs"><span class="cb-icon">⛶</span><span class="cb-lbl">ЭКРАН</span></button>
       <button type="button" class="corner-btn btn-gear" id="btn-gear"><span class="cb-icon">⚙</span><span class="cb-lbl">НАСТР.</span></button>
-      <button type="button" class="corner-btn btn-telemetry-mark hidden" id="btn-telemetry-mark" title="Метка (двойной тап — critical)" aria-label="Метка"><span class="cb-icon">📍</span><span class="cb-lbl">МЕТКА</span></button>
+      <button type="button" class="corner-btn btn-telemetry-mark hidden" id="btn-telemetry-mark" title="Метка: 1× — метка, 2× — critical, 3× — ложный поворот" aria-label="Метка"><span class="cb-icon">📍</span><span class="cb-lbl">МЕТКА</span></button>
     </div>
     <div class="speed-stack">
       <div class="speed-ghost" id="speed-ghost" aria-hidden="true">888</div>
