@@ -10660,6 +10660,12 @@ var S = {
   // idle | loading | ok | err | off
   camWarned: /* @__PURE__ */ new Set(),
   offRouteState: "ON_ROUTE",
+  snapQuality: "GOOD",
+  gpsConverged: false,
+  gpsFixCount: 0,
+  lastReliableHeadingTs: 0,
+  routeQuality: "OK",
+  compassMode: false,
   rerouting: false,
   rerouteBackoffStep: 0,
   rerouteBackoffUntil: 0,
@@ -11032,6 +11038,66 @@ async function stopNavGps() {
   }
 }
 
+// js/nav-constants.js
+var SNAP_QUALITY_GOOD_OUT = 1;
+var SNAP_QUALITY_DEGRADED_IN = 2.5;
+var SNAP_QUALITY_LOST_IN = 2.5;
+var SNAP_QUALITY_DEGRADED_OUT = 2;
+var SNAP_QUALITY_LOST_LATERAL_M = 80;
+var SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M = 60;
+var SNAP_QUALITY_ACC_FLOOR_M = 5;
+var SNAP_QUALITY_TICKS_REQUIRED = 2;
+var SNAP_QUALITY_TICK_WINDOW = 3;
+var SNAP_QUALITY_JUMP_DEGRADED_MS = 3e3;
+var SNAP_QUALITY_JUMP_DS_M = 50;
+var SNAP_QUALITY_DEGRADED_TIMEOUT_MS = 3e4;
+var SNAP_CURVATURE_RADIUS_M = 30;
+var SNAP_CURVATURE_THRESHOLD_MULT = 1.5;
+var SNAP_HEADING_ACCEPT_DEG = 45;
+var SNAP_HEADING_REJECT_DEG = 90;
+var SNAP_HEADING_GATE_MIN_SPD = 3;
+var SNAP_HEADING_GATE_ACC_MAX_M = 25;
+var SNAP_HEADING_MAX_AGE_MS = 3e3;
+var SNAP_MIN_DOT = 0.71;
+var SNAP_WINDOW_BASE_M = 10;
+var SNAP_WINDOW_ACC_MULT = 3;
+var SNAP_WINDOW_DT_CAP_S = 2;
+var SNAP_JUMP_PENALTY = 3;
+var SNAP_ANGLE_PENALTY = 2;
+var SNAP_COLD_START_SKIP_FIXES = 3;
+var SNAP_REVERSE_EPS = 5;
+var SNAP_FALLBACK_BACK_M = 60;
+var SNAP_FALLBACK_FWD_M = 220;
+var GPS_CONVERGE_MIN_FIXES = 5;
+var GPS_CONVERGE_LAST3_ACC_M = 15;
+var GPS_CONVERGE_ACC_M = 20;
+var GPS_CONVERGE_RE_MIN_FIXES = 2;
+var GPS_CONVERGE_RE_ACC_M = 25;
+var GPS_CONVERGE_JUMP_PAD_M = 5;
+var OFF_ROUTE_ENTER_M = 50;
+var OFF_ROUTE_EXIT_M = 25;
+var OFF_ROUTE_CONFIRM_MS = 8e3;
+var OFF_ROUTE_CONFIRM_MS_HIGH_SPD = 1e4;
+var OFF_ROUTE_CONFIRM_DIST_M = 100;
+var OFF_ROUTE_CONFIRM_DIST_HIGH_M = 200;
+var OFF_ROUTE_HIGH_SPD_MPS = 25;
+var OFF_ROUTE_GPS_ACC_GATE_M = 30;
+var OFF_ROUTE_ACC_FACTOR = 1.5;
+var OFF_ROUTE_HEADING_DIVERGE_DEG = 45;
+var OFF_ROUTE_HEADING_DIVERGE_MS = 3e3;
+var OFF_ROUTE_HEADING_MIN_SPD = 5;
+var REROUTE_SEED_MAX_LATERAL_M = 80;
+var REROUTE_SEED_MAX_ANGLE_DEG = 90;
+var MANEUVER_BEND_DEFAULT_DEG = 20;
+var MANEUVER_MIN_ANGLE_DEG = 12;
+var MANEUVER_COLLAPSE_SEG_M = 30;
+var MANEUVER_COLLAPSE_GAP_M = 45;
+var MANEUVER_PASSED_M = 8;
+var ROUTE_LOW_AVG_SEG_M = 15;
+var ROUTE_LOW_MANEUVER_PER_KM = 25;
+var FUSION_GPS_WEIGHT_MIN = 0.02;
+var FUSION_GPS_WEIGHT_SPAN = 25;
+
 // js/heading.js
 var sensorHeading = null;
 var sensorTs = 0;
@@ -11123,7 +11189,7 @@ function fuseHeading(gpsHeading, speedMps) {
     return gpsHeading;
   }
   if (!sensorFresh) return gpsHeading ?? null;
-  const gpsWeight = Math.min(1, Math.max(0, (spd - 1.5) / 8));
+  const gpsWeight = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
   if (gpsHeading == null || isNaN(gpsHeading)) return sensorHeading;
   if (gpsWeight >= 0.95) return gpsHeading;
   if (gpsWeight <= 0.05) return sensorHeading;
@@ -11366,7 +11432,7 @@ function logSnapFromResult(snap) {
   let jump = false;
   if (_lastSnapS0 != null && s0 != null && Math.abs(s0 - _lastSnapS0) > 50) jump = true;
   if (s0 != null) _lastSnapS0 = s0;
-  log("snap", { s0, lat_off: latOff, jump });
+  log("snap", { s0, lat_off: latOff, jump, quality: S.snapQuality || "GOOD" });
 }
 async function start(meta) {
   if (_active) return _sessionId;
@@ -11418,9 +11484,13 @@ async function stop() {
   stopTimers();
   updateMarkButtonVisibility();
 }
-function mark(note) {
+function mark(noteOrObj) {
   if (!_active) return;
-  log("mark", note ? { note } : {});
+  if (typeof noteOrObj === "string") {
+    log("mark", noteOrObj ? { note: noteOrObj } : {});
+  } else {
+    log("mark", noteOrObj || {});
+  }
 }
 function isActive() {
   return _active;
@@ -11583,18 +11653,226 @@ var telemetry = {
 };
 var telemetry_default = telemetry;
 
+// js/maneuver-filter.js
+var MANEUVER_BEND_ANGLE = MANEUVER_BEND_DEFAULT_DEG;
+var HIGHWAY_BEND = {
+  motorway: 25,
+  trunk: 25,
+  primary: 18,
+  secondary: 16,
+  tertiary: 14,
+  residential: 12,
+  living_street: 12,
+  unclassified: 18
+};
+function bendThresholdForStep(step) {
+  const hw = step?.highway || step?.roadClass || "";
+  return HIGHWAY_BEND[hw] ?? MANEUVER_BEND_DEFAULT_DEG;
+}
+var INFO_TYPES = /* @__PURE__ */ new Set(["new name", "continue", "notification"]);
+var NAV_TYPES = /* @__PURE__ */ new Set([
+  "turn",
+  "fork",
+  "on ramp",
+  "off ramp",
+  "roundabout",
+  "rotary",
+  "exit roundabout",
+  "end of road"
+]);
+function hasTurnModifier(step) {
+  const m = step.modifier || "";
+  if (!m || m === "straight") return false;
+  return m === "uturn" || m.includes("left") || m.includes("right");
+}
+function isNavManeuverType(step) {
+  if (!step || step.type === "depart" || step.type === "arrive") return false;
+  if (INFO_TYPES.has(step.type) || step.type === "merge") return false;
+  if (step.type === "roundabout" || step.type === "rotary" || step.type === "exit roundabout") return true;
+  if (step.type === "on ramp" || step.type === "off ramp") return hasTurnModifier(step) || !!step.exit;
+  if (!NAV_TYPES.has(step.type)) return false;
+  if (step.type === "fork" || step.type === "end of road") return hasTurnModifier(step);
+  return step.type === "turn" && hasTurnModifier(step);
+}
+function stepTurnAngleDeg(step, maneuver) {
+  if (step?.bearing_before != null && step?.bearing_after != null) {
+    let d = step.bearing_after - step.bearing_before;
+    while (d > 180) d -= 360;
+    while (d < -180) d += 360;
+    return Math.abs(d);
+  }
+  if (maneuver?.angle != null && Number.isFinite(maneuver.angle)) return Math.abs(maneuver.angle);
+  return null;
+}
+function isSignificantManeuver(m, _geom) {
+  if (!m?.step || !isNavManeuverType(m.step)) return false;
+  const mod = m.step.modifier || "";
+  const ang = stepTurnAngleDeg(m.step, m);
+  if (mod === "straight") return false;
+  if (ang == null) {
+    return mod === "uturn" || m.step.type === "roundabout" || m.step.type === "rotary";
+  }
+  const bend = bendThresholdForStep(m.step);
+  if (mod.includes("slight") && ang < bend) return false;
+  if ((mod === "straight" || !mod) && ang < bend) return false;
+  if (mod === "uturn" || mod.includes("sharp")) return ang >= 8;
+  if (ang < MANEUVER_MIN_ANGLE_DEG) return false;
+  if (ang < bend && (mod.includes("slight") || mod === "straight")) return false;
+  return true;
+}
+function pickStrongerManeuver(a, b) {
+  const aa = stepTurnAngleDeg(a.step, a) || 0;
+  const ab = stepTurnAngleDeg(b.step, b) || 0;
+  if (ab > aa + 4) return b;
+  if (aa > ab + 4) return a;
+  const pri = (s2) => {
+    if (s2.type === "roundabout" || s2.type === "rotary") return 3;
+    if (s2.modifier === "uturn" || (s2.modifier || "").includes("sharp")) return 2;
+    return 1;
+  };
+  return pri(b.step) > pri(a.step) ? b : a;
+}
+function refineManeuvers(maneuvers) {
+  if (!maneuvers?.length) return [];
+  const sorted = [...maneuvers].sort((a, b) => a.s - b.s);
+  const kept = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const m = sorted[i];
+    if (!isNavManeuverType(m.step)) continue;
+    const segM = m.step.distance || 0;
+    const ang = stepTurnAngleDeg(m.step, m) || 0;
+    const bend = bendThresholdForStep(m.step);
+    const next = sorted[i + 1];
+    if (segM < MANEUVER_COLLAPSE_SEG_M && ang < bend) {
+      if (next && isNavManeuverType(next.step) && next.s - m.s < MANEUVER_COLLAPSE_GAP_M) {
+        continue;
+      }
+    }
+    if (kept.length) {
+      const prev = kept[kept.length - 1];
+      const gap = m.s - prev.s;
+      const prevAng = stepTurnAngleDeg(prev.step, prev) || 0;
+      if (gap < MANEUVER_COLLAPSE_GAP_M && prevAng < bend && ang < bend) {
+        kept[kept.length - 1] = pickStrongerManeuver(prev, m);
+        continue;
+      }
+    }
+    kept.push(m);
+  }
+  return kept.filter((m) => isSignificantManeuver(m));
+}
+
+// js/snap-quality.js
+var SnapQuality = { GOOD: "GOOD", DEGRADED: "DEGRADED", LOST: "LOST" };
+var _hist = [];
+var _degradedSince = 0;
+var _jumpUntil = 0;
+var _frozenS = null;
+var _lastNm = null;
+function resetSnapQuality() {
+  S.snapQuality = SnapQuality.GOOD;
+  _hist.length = 0;
+  _degradedSince = 0;
+  _jumpUntil = 0;
+  _frozenS = null;
+  _lastNm = null;
+}
+function curvatureMult(geom, s2, override) {
+  if (override != null) return override;
+  return 1;
+}
+function rawScore(snap, gps) {
+  const acc = Math.max(gps?.acc ?? SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_ACC_FLOOR_M);
+  return snap.lateral / acc;
+}
+function classifyInstant(score, lateral, mult) {
+  const s2 = score / mult;
+  if (lateral > SNAP_QUALITY_LOST_LATERAL_M || s2 > SNAP_QUALITY_LOST_IN) return SnapQuality.LOST;
+  if (s2 > SNAP_QUALITY_DEGRADED_IN) return SnapQuality.DEGRADED;
+  return SnapQuality.GOOD;
+}
+function classifyExit(score, lateral, mult) {
+  const s2 = score / mult;
+  if (lateral > SNAP_QUALITY_LOST_LATERAL_M || s2 > SNAP_QUALITY_LOST_IN) return SnapQuality.LOST;
+  if (lateral < SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M && s2 <= SNAP_QUALITY_DEGRADED_OUT) return SnapQuality.GOOD;
+  if (s2 <= SNAP_QUALITY_GOOD_OUT) return SnapQuality.GOOD;
+  return SnapQuality.DEGRADED;
+}
+function pushHist(q) {
+  _hist.push(q);
+  while (_hist.length > SNAP_QUALITY_TICK_WINDOW) _hist.shift();
+}
+function histAgrees(target) {
+  const n = _hist.filter((x) => x === target).length;
+  return n >= SNAP_QUALITY_TICKS_REQUIRED;
+}
+function updateSnapQuality(snap, gps, geom, opts) {
+  if (!snap || !gps) {
+    S.snapQuality = SnapQuality.LOST;
+    return S.snapQuality;
+  }
+  const now = Date.now();
+  if (opts?.jump) _jumpUntil = now + SNAP_QUALITY_JUMP_DEGRADED_MS;
+  const mult = curvatureMult(geom, snap.s, opts?.curvMult);
+  const score = rawScore(snap, gps);
+  const instant = now < _jumpUntil ? SnapQuality.DEGRADED : classifyInstant(score, snap.lateral, mult);
+  pushHist(instant);
+  const prev = S.snapQuality || SnapQuality.GOOD;
+  let next = prev;
+  if (prev === SnapQuality.GOOD) {
+    if (instant === SnapQuality.LOST && histAgrees(SnapQuality.LOST)) next = SnapQuality.LOST;
+    else if (instant !== SnapQuality.GOOD && histAgrees(SnapQuality.DEGRADED)) next = SnapQuality.DEGRADED;
+  } else if (prev === SnapQuality.DEGRADED) {
+    const exitQ = classifyExit(score, snap.lateral, mult);
+    if (instant === SnapQuality.LOST && histAgrees(SnapQuality.LOST)) next = SnapQuality.LOST;
+    else if (exitQ === SnapQuality.GOOD && histAgrees(SnapQuality.GOOD)) next = SnapQuality.GOOD;
+    if (next === SnapQuality.DEGRADED && _degradedSince && now - _degradedSince > SNAP_QUALITY_DEGRADED_TIMEOUT_MS) {
+      next = SnapQuality.DEGRADED;
+      if (opts) opts.forceReeval = true;
+    }
+  } else {
+    const exitQ = classifyExit(score, snap.lateral, mult);
+    if (exitQ !== SnapQuality.LOST && histAgrees(SnapQuality.DEGRADED)) next = SnapQuality.DEGRADED;
+    if (exitQ === SnapQuality.GOOD && histAgrees(SnapQuality.GOOD)) next = SnapQuality.GOOD;
+  }
+  if (next === SnapQuality.DEGRADED && prev !== SnapQuality.DEGRADED) _degradedSince = now;
+  if (next === SnapQuality.GOOD) _degradedSince = 0;
+  S.snapQuality = next;
+  if (next === SnapQuality.DEGRADED) {
+    if (_frozenS == null) _frozenS = snap.s;
+  } else if (next === SnapQuality.GOOD) {
+    _frozenS = null;
+  }
+  return next;
+}
+function navSFromSnap(snap) {
+  if (!snap) return null;
+  if (S.snapQuality === SnapQuality.DEGRADED && _frozenS != null) return _frozenS;
+  return snap.s;
+}
+function isSnapLost() {
+  return S.snapQuality === SnapQuality.LOST;
+}
+function isSnapDegraded() {
+  return S.snapQuality === SnapQuality.DEGRADED;
+}
+function cacheLastManeuver(nm) {
+  _lastNm = nm;
+}
+function getCachedManeuver() {
+  return _lastNm;
+}
+
 // js/route-geometry.js
 var DENSE_STEP = 3;
 var ARC_ANGLE_THRESH = 15;
-var SNAP_BACK_M = 150;
-var SNAP_FWD_M = 150;
-var SNAP_REVERSE_EPS = 5;
-var SNAP_MIN_DOT = 0.3;
-var SNAP_ANGLE_PENALTY = 2;
 var CAM_TANGENT_WINDOW = 25;
 var CAM_SMOOTH_ALPHA = 0.11;
 var RIBBON_STEP_M = 2;
 var _snap = null;
+var _prevFixTs = 0;
+var _prevFixPos = null;
+var _fixesSinceReset = 0;
 var _camHeadingRad = null;
 var _camPitchRad = null;
 var _snapMemoTs = null;
@@ -11602,7 +11880,7 @@ var _disp = { s: 0, inited: false };
 var _dispLastTs = 0;
 var _camLastTs = 0;
 var _camPitchLastTs = 0;
-function resetRouteSnap() {
+function resetRouteSnap(opts) {
   _snap = null;
   _camHeadingRad = null;
   _camPitchRad = null;
@@ -11611,6 +11889,25 @@ function resetRouteSnap() {
   _dispLastTs = 0;
   _camLastTs = 0;
   _camPitchLastTs = 0;
+  _prevFixTs = 0;
+  _prevFixPos = null;
+  _fixesSinceReset = 0;
+  resetSnapQuality();
+  if (opts?.seedS != null && S.route?.geometry) {
+    const geom = S.route.geometry;
+    const p = interpolateAtS(geom, opts.seedS);
+    _snap = {
+      s: opts.seedS,
+      segIdx: findSegAtS(geom, opts.seedS),
+      lat: p.lat,
+      lon: p.lon,
+      lateral: opts.lateral ?? 0,
+      tangent: avgTangentDeg(geom, opts.seedS, 20),
+      confidence: 0.7
+    };
+    _disp.s = opts.seedS;
+    _disp.inited = true;
+  }
 }
 function destPoint2(from, brgDeg, distM) {
   const r = Math.PI / 180;
@@ -11715,21 +12012,7 @@ function buildArcLength(lat, lon) {
   return s2;
 }
 function findSForManeuver(sparseCoords, geom, targetLat, targetLon) {
-  let bi = 0;
-  let bd = Infinity;
-  for (let i = 0; i < sparseCoords.length; i++) {
-    const d = haversine(
-      { lat: sparseCoords[i][0], lon: sparseCoords[i][1] },
-      { lat: targetLat, lon: targetLon }
-    );
-    if (d < bd) {
-      bd = d;
-      bi = i;
-    }
-  }
-  const t = bi / Math.max(1, sparseCoords.length - 1);
-  const idx = Math.min(geom.n - 1, Math.round(t * (geom.n - 1)));
-  return geom.s[idx];
+  return findSForLatLon(geom, targetLat, targetLon);
 }
 function findSForLatLon(geom, lat, lon) {
   if (!geom || geom.n < 2) return 0;
@@ -11755,13 +12038,17 @@ function findSForLatLon(geom, lat, lon) {
 }
 function buildManeuvers(steps, sparseCoords, geom) {
   if (!steps || !sparseCoords) return [];
-  return steps.filter((st) => st.type !== "depart" && st.type !== "arrive").map((st) => ({
-    s: findSForManeuver(sparseCoords, geom, st.lat, st.lon),
-    lat: st.lat,
-    lon: st.lon,
-    angle: 0,
-    step: st
-  }));
+  const full = { lat: geom.lat, lon: geom.lon, s: geom.s, n: geom.n };
+  return steps.filter((st) => st.type !== "depart" && st.type !== "arrive").map((st) => {
+    const s2 = findSForManeuver(sparseCoords, geom, st.lat, st.lon);
+    return {
+      s: s2,
+      lat: st.lat,
+      lon: st.lon,
+      angle: Math.abs(turnAngleAtS(full, s2)),
+      step: st
+    };
+  });
 }
 function denseStepForCoords(coords) {
   let total = 0;
@@ -11786,7 +12073,7 @@ function buildRouteGeometry(route) {
   const s2 = buildArcLength(latArr, lonArr);
   const elev = new Float64Array(n);
   const grade = new Float64Array(n);
-  const maneuvers = buildManeuvers(route.steps, route.coords, { s: s2, n });
+  const maneuvers = refineManeuvers(buildManeuvers(route.steps, route.coords, { s: s2, n, lat, lon }));
   return {
     lat,
     lon,
@@ -11866,9 +12153,34 @@ function headingDot(tangentDeg, gpsHdg) {
   const diff = angleDiff(tangentDeg, gpsHdg);
   return Math.cos(diff * Math.PI / 180);
 }
-function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir) {
+function computeSnapWindow(spd, dt, acc) {
+  const v = Math.max(spd || 0, 0);
+  const a = Math.max(acc || 8, 8);
+  if (v < 1) return Math.max(25, SNAP_WINDOW_ACC_MULT * a);
+  return v * Math.min(dt, SNAP_WINDOW_DT_CAP_S) + SNAP_WINDOW_ACC_MULT * a + SNAP_WINDOW_BASE_M;
+}
+function headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs) {
+  if (gpsHdg == null || isNaN(gpsHdg)) return false;
+  const diff = angleDiff(tangent, gpsHdg);
+  if (diff > SNAP_HEADING_REJECT_DEG) return true;
+  const softGate = acc > SNAP_HEADING_GATE_ACC_MAX_M || headingAgeMs > SNAP_HEADING_MAX_AGE_MS;
+  if (softGate) return false;
+  if (spd >= SNAP_HEADING_GATE_MIN_SPD && diff > SNAP_HEADING_ACCEPT_DEG) return true;
+  if (spd >= SNAP_HEADING_GATE_MIN_SPD) {
+    const dot = headingDot(tangent, gpsHdg);
+    if (dot < SNAP_MIN_DOT) return true;
+  }
+  return false;
+}
+function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx) {
   let best = null;
   const i0 = findSegAtS(geom, sMin);
+  const spd = ctx?.spd ?? 0;
+  const acc = ctx?.acc ?? 8;
+  const headingAgeMs = ctx?.headingAgeMs ?? 0;
+  const prevS = ctx?.prevS ?? 0;
+  const skipJump = ctx?.skipJumpPenalty ?? false;
+  const dt = ctx?.dt ?? 1;
   for (let i = i0; i < geom.n - 1; i++) {
     if (geom.s[i] > sMax) break;
     const proj = projectOnSegment(
@@ -11883,8 +12195,14 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir) {
     if (s2 < sMin - 1 || s2 > sMax + 1) continue;
     const tangent = segmentBearing(geom, i);
     const dot = headingDot(tangent, gpsHdg);
+    if (requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs)) continue;
     if (requireDir && dot < SNAP_MIN_DOT) continue;
-    const score = proj.lateral + SNAP_ANGLE_PENALTY * (gpsHdg != null ? (1 - dot) * 50 : 0);
+    let score = proj.lateral + SNAP_ANGLE_PENALTY * (gpsHdg != null ? (1 - dot) * 50 : 0);
+    if (!skipJump && prevS > 0) {
+      const maxJump2 = spd * dt + acc;
+      const jumpExcess = Math.max(0, Math.abs(s2 - prevS) - maxJump2);
+      score += SNAP_JUMP_PENALTY * jumpExcess / 10;
+    }
     if (!best || score < best.score) {
       best = {
         s: s2,
@@ -11907,29 +12225,46 @@ function snapNearS(gps, geom, hintS, gpsHdg) {
   const sMax = Math.min(total, hintS + 85);
   return scanSnap(gps, geom, sMin, sMax, gpsHdg, false);
 }
-function snapToRoute(gps, geom, gpsHeadingDeg) {
+function snapToRoute(gps, geom, gpsHeadingDeg, meta) {
   if (!gps || !geom || geom.n < 2) return null;
   const prev = _snap;
   const total = geom.s[geom.n - 1];
   const prevS = prev ? prev.s : 0;
-  const sMin = Math.max(0, prevS - SNAP_BACK_M);
-  const sMax = Math.min(total, prevS + SNAP_FWD_M);
-  let best = scanSnap(gps, geom, sMin, sMax, gpsHeadingDeg, true);
+  const now = gps.ts || Date.now();
+  const dt = _prevFixTs ? Math.min(SNAP_WINDOW_DT_CAP_S, (now - _prevFixTs) / 1e3) : 1;
+  const spd = gps.speed != null && gps.speed >= 0 ? gps.speed : 0;
+  const acc = gps.acc || 8;
+  const headingAgeMs = meta?.headingAgeMs ?? 0;
+  _fixesSinceReset++;
+  const sWin = prevS > 0 ? computeSnapWindow(spd, dt, acc) : Math.min(200, total * 0.05);
+  const sMin = Math.max(0, prevS - sWin);
+  const sMax = Math.min(total, prevS + sWin);
+  const ctx = {
+    spd,
+    acc,
+    headingAgeMs,
+    prevS,
+    dt,
+    skipJumpPenalty: prevS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES
+  };
+  let best = scanSnap(gps, geom, sMin, sMax, gpsHeadingDeg, true, ctx);
   if (!best) {
     best = scanSnap(
       gps,
       geom,
-      Math.max(0, prevS - 60),
-      Math.min(total, prevS + 220),
+      Math.max(0, prevS - SNAP_FALLBACK_BACK_M),
+      Math.min(total, prevS + SNAP_FALLBACK_FWD_M),
       gpsHeadingDeg,
-      false
+      false,
+      ctx
     );
   }
   if (!best) {
     if (prev) return prev;
-    best = scanSnap(gps, geom, 0, Math.min(total, 200), gpsHeadingDeg, false);
+    best = scanSnap(gps, geom, 0, Math.min(total, 200), gpsHeadingDeg, false, ctx);
     if (!best) return null;
   }
+  const jump = prev && Math.abs(best.s - prev.s) > SNAP_QUALITY_JUMP_DS_M;
   if (prev && best.lateral < 40 && best.s < prev.s - SNAP_REVERSE_EPS) {
     best = { ...best, s: prev.s, segIdx: prev.segIdx, confidence: 0.4 };
   }
@@ -11938,8 +12273,29 @@ function snapToRoute(gps, geom, gpsHeadingDeg) {
     if (ds > 0 && ds < 30) best.s = prev.s + ds * 0.65;
   }
   if (best.lateral > 60) best.confidence = Math.min(best.confidence, 0.3);
+  const { R } = radiusAtS(geom, best.s);
+  const curvMult = !isFinite(R) || R >= SNAP_CURVATURE_RADIUS_M ? 1 : SNAP_CURVATURE_THRESHOLD_MULT;
+  updateSnapQuality(best, gps, geom, { jump, curvMult });
   _snap = best;
+  _prevFixTs = now;
+  _prevFixPos = { lat: gps.lat, lon: gps.lon };
   return best;
+}
+function getNavSnap(gpsHeadingDeg) {
+  const raw = getRouteSnapForNav(gpsHeadingDeg);
+  if (!raw) return null;
+  const ns = navSFromSnap(raw);
+  if (ns == null || ns === raw.s) return raw;
+  const geom = S.route?.geometry;
+  if (!geom) return raw;
+  const p = interpolateAtS(geom, ns);
+  return {
+    ...raw,
+    s: ns,
+    lat: p.lat,
+    lon: p.lon,
+    segIdx: findSegAtS(geom, ns)
+  };
 }
 function getRouteSnapForNav(gpsHeadingDeg) {
   const geom = S.route?.geometry;
@@ -11947,7 +12303,8 @@ function getRouteSnapForNav(gpsHeadingDeg) {
   if (!geom || !gps) return null;
   if (_snapMemoTs === gps.ts && _snap) return _snap;
   _snapMemoTs = gps.ts;
-  return snapToRoute(gps, geom, gpsHeadingDeg);
+  const headingAgeMs = S.lastReliableHeadingTs ? Date.now() - S.lastReliableHeadingTs : SNAP_HEADING_MAX_AGE_MS + 1;
+  return snapToRoute(gps, geom, gpsHeadingDeg, { headingAgeMs });
 }
 function frameDtSec() {
   const now = typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -12261,6 +12618,60 @@ function remainingDistanceS(geom, snap) {
   return Math.max(0, geom.s[geom.n - 1] - snap.s);
 }
 
+// js/gps-converge.js
+var _buf = [];
+var _gpsFixCount = 0;
+function isNetworkFix(fix) {
+  return fix.provider === "network" || fix.lowAccuracy === true;
+}
+function maxJump(v, dt, acc) {
+  return (v || 0) * dt + (acc || GPS_CONVERGE_ACC_M) + GPS_CONVERGE_JUMP_PAD_M;
+}
+function checkBuffer(minFixes, accLimit) {
+  if (_buf.length < minFixes) return false;
+  const recent = _buf.slice(-minFixes);
+  if (recent.some((f2) => isNetworkFix(f2) || f2.acc > accLimit)) return false;
+  let gpsStreak = 0;
+  for (const f2 of recent) {
+    if (isNetworkFix(f2)) gpsStreak = 0;
+    else gpsStreak++;
+  }
+  if (gpsStreak < 2) return false;
+  for (let i = 1; i < recent.length; i++) {
+    const a = recent[i - 1];
+    const b = recent[i];
+    const dt = Math.max(0.2, (b.ts - a.ts) / 1e3);
+    const v = Math.max(a.speed || 0, b.speed || 0);
+    const d = haversine(a, b);
+    if (d > maxJump(v, dt, Math.max(a.acc, b.acc))) return false;
+  }
+  if (minFixes >= GPS_CONVERGE_MIN_FIXES) {
+    const last3 = _buf.slice(-3);
+    if (last3.length < 3 || last3.some((f2) => f2.acc > GPS_CONVERGE_LAST3_ACC_M)) return false;
+  }
+  return true;
+}
+function feedGpsConverge(fix) {
+  if (!fix || fix.acc == null) return S.gpsConverged;
+  if (!isNetworkFix(fix)) _gpsFixCount++;
+  S.gpsFixCount = _gpsFixCount;
+  _buf.push({
+    lat: fix.lat,
+    lon: fix.lon,
+    acc: fix.acc,
+    speed: fix.speed,
+    ts: fix.ts,
+    provider: fix.provider
+  });
+  while (_buf.length > 8) _buf.shift();
+  const re = S.gpsConverged === false && _buf.length >= 2;
+  const minFixes = re ? GPS_CONVERGE_RE_MIN_FIXES : GPS_CONVERGE_MIN_FIXES;
+  const accLim = re ? GPS_CONVERGE_RE_ACC_M : GPS_CONVERGE_ACC_M;
+  if (checkBuffer(minFixes, accLim)) S.gpsConverged = true;
+  else if (!re && _buf.length < minFixes) S.gpsConverged = false;
+  return S.gpsConverged;
+}
+
 // js/gps.js
 var RENDER_POS = null;
 var _navMode = false;
@@ -12327,6 +12738,15 @@ function stopVisualLoop() {
     S.rafId = null;
   }
 }
+function updateGpsConvergeUI() {
+  const el = $("gps-converge");
+  if (el) {
+    el.classList.toggle("on", $("hud").classList.contains("on") && !S.gpsConverged);
+  }
+  $("s-gps").textContent = S.gpsConverged ? "\u2705 GPS \xB1" + Math.round(S.gps?.acc || 0) + "\u043C" : "\u23F3 GPS \u0441\u0445\u043E\u0434\u0438\u0442\u0441\u044F\u2026";
+  $("s-gps").className = S.gpsConverged ? "chip ok" : "chip";
+  checkStartReady();
+}
 function checkStartReady() {
   const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
   $("btn-start").disabled = !(S.gps && S.finish && hasRoute);
@@ -12359,11 +12779,15 @@ function applyGpsFix(next) {
   const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
   if (fused != null && !isNaN(fused)) next.heading = fused;
   if (next.heading != null && !isNaN(next.heading)) {
+    if ((next.speed ?? 0) >= 3.2) S.lastReliableHeadingTs = Date.now();
     if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
     else {
+      const spd = next.speed ?? S.measSpeed ?? 0;
+      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
+      const keep = 1 - alpha;
       const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * 0.82 + Math.sin(next.heading * r) * 0.18;
-      const sy = Math.cos(S.smoothedHeading * r) * 0.82 + Math.cos(next.heading * r) * 0.18;
+      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
+      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
       S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
     }
   }
@@ -12371,9 +12795,8 @@ function applyGpsFix(next) {
   S.gps = next;
   S.fixPos = { lat: next.lat, lon: next.lon };
   S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
-  $("s-gps").textContent = "\u2705 GPS \xB1" + Math.round(next.acc) + "\u043C";
-  $("s-gps").className = "chip ok";
-  checkStartReady();
+  feedGpsConverge(next);
+  updateGpsConvergeUI();
   if ($("hud").classList.contains("on")) _onTick();
   const rcv = Date.now();
   if (_gpsLost) {
@@ -12391,7 +12814,7 @@ function applyGpsFix(next) {
     rcv
   });
   if ($("hud").classList.contains("on") && S.route?.geometry) {
-    const snap = getRouteSnapForNav(S.smoothedHeading);
+    const snap = getNavSnap(S.smoothedHeading);
     telemetry_default.logSnapFromResult(snap);
   }
 }
@@ -13070,8 +13493,6 @@ var CROSSING_MAX_VISIBLE = 6;
 var CROSSING_AHEAD_M = 30;
 var CROSSING_MIN_BACK_M = 150;
 var CROSSING_TIME_S = 15;
-var MANEUVER_PASSED_M = 8;
-var MANEUVER_NEXT_DELAY_M = 90;
 var _crossLimitLoggedS = null;
 function projectGround(x, z, elevDelta) {
   const pitch = getCamPitchRad();
@@ -13229,14 +13650,9 @@ function isCrossingContextEnabled() {
 }
 function getNextTurnManeuverS(geom, curS) {
   if (!geom?.maneuvers?.length || curS == null) return null;
-  const sorted = geom.maneuvers.filter((m) => m.step.type !== "depart" && m.step.type !== "arrive").sort((a, b) => a.s - b.s);
-  let blockUntilS = -Infinity;
+  const sorted = geom.maneuvers.filter((m) => isSignificantManeuver(m, geom)).sort((a, b) => a.s - b.s);
   for (const m of sorted) {
-    if (curS > m.s + MANEUVER_PASSED_M) {
-      blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
-      continue;
-    }
-    if (m.s < blockUntilS) continue;
+    if (curS > m.s + MANEUVER_PASSED_M) continue;
     return m.s;
   }
   return null;
@@ -13532,465 +13948,6 @@ function fuelStationsForRoad(maxDist) {
   return S.fuelStations.filter((s2) => s2.aheadOnRoute && s2.distAhead <= (maxDist || 3e3)).sort((a, b) => a.distAhead - b.distAhead).slice(0, 4);
 }
 
-// js/route.js
-var MANEUVER_PASSED_M2 = 8;
-var MANEUVER_NEXT_DELAY_M2 = 90;
-function isPathTurnStep(st) {
-  return st && st.type !== "depart" && st.type !== "arrive" && st.modifier && st.modifier !== "straight";
-}
-function getVisibleTurnManeuvers(geom, curS, limit) {
-  if (!geom?.maneuvers?.length || curS == null) return [];
-  const maxN = limit || 3;
-  const sorted = geom.maneuvers.filter((m) => isPathTurnStep(m.step)).sort((a, b) => a.s - b.s);
-  const out = [];
-  let blockUntilS = -Infinity;
-  for (const m of sorted) {
-    if (curS > m.s + MANEUVER_PASSED_M2) {
-      blockUntilS = m.s + MANEUVER_NEXT_DELAY_M2;
-      continue;
-    }
-    if (m.s < blockUntilS) continue;
-    const ahead = m.s - curS;
-    if (ahead > 500) continue;
-    out.push({ maneuver: m, distAhead: Math.max(0, ahead) });
-    if (out.length >= maxN) break;
-  }
-  return out;
-}
-function ensureRouteGeometry(route) {
-  if (!route) return null;
-  if (route.geometry?.n > 1) {
-    if (route.geometry.crossings == null && route.steps?.some((st) => st.intersections?.length)) {
-      const { crossings, roundabouts } = buildCrossingsData(route.steps, route.geometry);
-      route.geometry.crossings = crossings;
-      route.geometry.roundabouts = roundabouts;
-    }
-    computeCurveSpeed(route.geometry, route);
-    return route.geometry;
-  }
-  try {
-    route.geometry = buildRouteGeometry(route);
-    if (route.geometry) {
-      const { crossings, roundabouts } = buildCrossingsData(route.steps, route.geometry);
-      route.geometry.crossings = crossings;
-      route.geometry.roundabouts = roundabouts;
-      computeCurveSpeed(route.geometry, route);
-    }
-    loadRouteElevation();
-    return route.geometry;
-  } catch (e) {
-    console.warn("RouteGeometry:", e);
-    route.geometry = null;
-    return null;
-  }
-}
-function attachRouteGeometry(route) {
-  ensureRouteGeometry(route);
-  resetRouteSnap();
-  resetCrossingTelemetry();
-  resetFuelRouteBinding();
-}
-function scheduleGeometryBuild(routes, onDone) {
-  if (!routes?.length) {
-    if (onDone) onDone();
-    return;
-  }
-  let i = 0;
-  const step = () => {
-    if (i >= routes.length) {
-      if (onDone) onDone();
-      return;
-    }
-    ensureRouteGeometry(routes[i]);
-    i++;
-    setTimeout(step, 0);
-  };
-  setTimeout(step, 50);
-}
-function saveLastRun() {
-  try {
-    const route = S.route ? { ...S.route, geometry: void 0 } : null;
-    localStorage.setItem(RUN_KEY, JSON.stringify({
-      route,
-      cameras: S.cameras,
-      finish: S.finish,
-      ts: Date.now()
-    }));
-  } catch (e) {
-  }
-}
-function loadLastRun() {
-  try {
-    const r = localStorage.getItem(RUN_KEY);
-    return r ? JSON.parse(r) : null;
-  } catch (e) {
-    return null;
-  }
-}
-async function searchAddress(query) {
-  const url = "https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ru&q=" + encodeURIComponent(query) + "&email=moto-hud-dev@users.noreply.github.com";
-  const r = await fetch(url, {
-    headers: { Accept: "application/json" },
-    referrerPolicy: "no-referrer"
-  });
-  if (!r.ok) throw new Error("Nominatim " + r.status);
-  return r.json();
-}
-function parseOsrmRoute(rt) {
-  const coords = rt.geometry.coordinates.map((c) => [c[1], c[0]]);
-  const steps = [];
-  rt.legs.forEach((leg) => {
-    leg.steps.forEach((st) => {
-      const loc = st.maneuver.location;
-      const m = st.maneuver;
-      steps.push({
-        lat: loc[1],
-        lon: loc[0],
-        type: m.type,
-        modifier: m.modifier,
-        name: st.name || "",
-        distance: st.distance,
-        exit: m.exit,
-        intersections: (st.intersections || []).map((ix) => ({
-          lat: ix.location[1],
-          lon: ix.location[0],
-          bearings: ix.bearings || [],
-          entry: ix.entry,
-          in: ix.in,
-          out: ix.out
-        }))
-      });
-    });
-  });
-  return { coords, steps, distance: rt.distance, duration: rt.duration };
-}
-async function fetchRouteAlternatives() {
-  if (!S.gps || !S.finish) throw new Error("\u041D\u0443\u0436\u043D\u044B GPS \u0438 \u0444\u0438\u043D\u0438\u0448");
-  S._usedCache = false;
-  const url = `https://router.project-osrm.org/route/v1/driving/${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}?overview=full&geometries=geojson&steps=true&annotations=false&alternatives=2`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error("OSRM HTTP " + r.status);
-  const j = await r.json();
-  if (!j.routes || !j.routes.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-  return j.routes.map(parseOsrmRoute);
-}
-function selectRouteIndex(idx) {
-  if (!S.routeAlternatives.length) return;
-  S.selectedRouteIdx = Math.max(0, Math.min(S.routeAlternatives.length - 1, idx));
-  S.route = S.routeAlternatives[S.selectedRouteIdx];
-  resetRouteSnap();
-  resetFuelRouteBinding();
-}
-async function buildRoute(opts = {}) {
-  const { reroute = false, allowCache = true } = opts;
-  if (S.routeAlternatives.length) {
-    selectRouteIndex(S.selectedRouteIdx);
-    return;
-  }
-  S._usedCache = false;
-  let url = `https://router.project-osrm.org/route/v1/driving/${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}?overview=full&geometries=geojson&steps=true&annotations=false`;
-  if (reroute) {
-    const spd = S.gps.speed != null ? S.gps.speed : 0;
-    const hdg = S.smoothedHeading;
-    if (spd > 3 && hdg != null && !isNaN(hdg)) {
-      const brg = Math.round(hdg);
-      const rad = Math.max(30, Math.round(S.gps.acc || 30));
-      url += "&bearings=" + brg + ",45;&radiuses=" + rad + ";";
-    }
-  }
-  try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error("OSRM HTTP " + r.status);
-    const j = await r.json();
-    if (!j.routes || !j.routes.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    S.route = parseOsrmRoute(j.routes[0]);
-    attachRouteGeometry(S.route);
-    if (!reroute) telemetry_default.log("nav", { sub: "route_built" });
-  } catch (err) {
-    if (!allowCache) {
-      throw err;
-    }
-    const last = loadLastRun();
-    if (last && last.route && S.finish && last.finish && haversine(last.finish, S.finish) < 60) {
-      S.route = last.route;
-      delete S.route.geometry;
-      attachRouteGeometry(S.route);
-      if (Array.isArray(last.cameras)) S.cameras = last.cameras;
-      S._usedCache = true;
-      return;
-    }
-    throw new Error("\u041D\u0435\u0442 \u0441\u0435\u0442\u0438 \u0438 \u043D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 \u043A \u044D\u0442\u043E\u0439 \u0442\u043E\u0447\u043A\u0435");
-  }
-}
-function classifyRerouteError(err) {
-  const msg = String(err?.message || err || "");
-  if (err instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg)) {
-    return "network";
-  }
-  if (/не найден|no route|NoRoute/i.test(msg)) return "no_route";
-  if (/OSRM HTTP/i.test(msg)) return "osrm_error";
-  return "network";
-}
-async function recalcRoute() {
-  if (S.rerouting) return false;
-  S.rerouting = true;
-  const t0 = Date.now();
-  try {
-    S.routeAlternatives = [];
-    await buildRoute({ reroute: true, allowCache: false });
-    telemetry_default.log("nav", { sub: "reroute" });
-    Array.from(S.camWarned).forEach((k) => {
-      if (typeof k === "string" && k.startsWith("st_")) S.camWarned.delete(k);
-    });
-    await loadCameras();
-    if (S.camLoadStatus === "err") {
-      console.warn("\u041A\u0430\u043C\u0435\u0440\u044B \u043F\u043E\u0441\u043B\u0435 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C");
-      telemetry_default.log("nav", { sub: "cameras_reload_failed" });
-    }
-    S.rerouteBackoffStep = 0;
-    S.rerouteBackoffUntil = 0;
-    return true;
-  } catch (e) {
-    console.warn("\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:", e);
-    const reason = classifyRerouteError(e);
-    telemetry_default.log("nav", {
-      sub: "reroute_failed",
-      reason,
-      dur_ms: Date.now() - t0
-    });
-    const delays = [5e3, 15e3, 6e4];
-    const step = Math.min(S.rerouteBackoffStep, 2);
-    S.rerouteBackoffUntil = Date.now() + delays[step];
-    S.rerouteBackoffStep = Math.min(S.rerouteBackoffStep + 1, 2);
-    return false;
-  } finally {
-    S.rerouting = false;
-  }
-}
-async function loadCameras() {
-  if (!S.cams || !S.route) {
-    S.cameras = [];
-    S.camLoadStatus = S.cams ? "idle" : "off";
-    updateCamStatusUI();
-    return;
-  }
-  if (S._usedCache && S.cameras.length) {
-    S.camLoadStatus = "ok";
-    updateCamStatusUI();
-    return;
-  }
-  S.camLoadStatus = "loading";
-  updateCamStatusUI();
-  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
-  S.route.coords.forEach((c) => {
-    if (c[0] < minLat) minLat = c[0];
-    if (c[0] > maxLat) maxLat = c[0];
-    if (c[1] < minLon) minLon = c[1];
-    if (c[1] > maxLon) maxLon = c[1];
-  });
-  const buf = 0.02;
-  minLat -= buf;
-  maxLat += buf;
-  minLon -= buf;
-  maxLon += buf;
-  const q = `[out:json][timeout:20];
-    (node["highway"="speed_camera"](${minLat},${minLon},${maxLat},${maxLon});
-     node["enforcement"="maxspeed"](${minLat},${minLon},${maxLat},${maxLon}););
-    out body;`;
-  try {
-    const r = await fetch(
-      "https://overpass-api.de/api/interpreter",
-      { method: "POST", body: "data=" + encodeURIComponent(q) }
-    );
-    if (!r.ok) throw new Error("Overpass " + r.status);
-    const j = await r.json();
-    S.cameras = (j.elements || []).map((e) => {
-      const t = e.tags || {};
-      let dir = null;
-      if (t.direction != null) {
-        const raw = String(t.direction).trim();
-        const num = parseFloat(raw);
-        if (!isNaN(num)) dir = (num % 360 + 360) % 360;
-        else {
-          const CARD = {
-            N: 0,
-            NNE: 22.5,
-            NE: 45,
-            ENE: 67.5,
-            E: 90,
-            ESE: 112.5,
-            SE: 135,
-            SSE: 157.5,
-            S: 180,
-            SSW: 202.5,
-            SW: 225,
-            WSW: 247.5,
-            W: 270,
-            WNW: 292.5,
-            NW: 315,
-            NNW: 337.5
-          };
-          const up = raw.toUpperCase();
-          if (CARD[up] != null) dir = CARD[up];
-        }
-      }
-      return { lat: e.lat, lon: e.lon, speed: t.maxspeed ? parseInt(t.maxspeed, 10) : null, dir };
-    });
-    S.camLoadStatus = "ok";
-  } catch (e) {
-    console.warn("\u041A\u0430\u043C\u0435\u0440\u044B \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C:", e);
-    S.cameras = [];
-    S.camLoadStatus = "err";
-  }
-  updateCamStatusUI();
-}
-var _nearMemoPos = null;
-var _nearMemoVal = null;
-var _nearIdx = 0;
-function findNearestOnRoute() {
-  if (!S.route) return null;
-  const pos = curPos();
-  if (!pos) return null;
-  if (_nearMemoPos === pos) return _nearMemoVal;
-  const geom = S.route.geometry || ensureRouteGeometry(S.route);
-  if (geom) {
-    const snap = getRouteSnapForNav(S.smoothedHeading);
-    if (snap) {
-      _nearIdx = snap.segIdx;
-      _nearMemoPos = pos;
-      _nearMemoVal = { idx: snap.segIdx, dist: snap.lateral, s: snap.s };
-      return _nearMemoVal;
-    }
-  }
-  const c = S.route.coords, n = c.length;
-  const scan = (lo2, hi2) => {
-    let best2 = { idx: lo2, dist: Infinity };
-    for (let i = lo2; i < hi2; i++) {
-      const d = distToSegment(
-        pos,
-        { lat: c[i][0], lon: c[i][1] },
-        { lat: c[i + 1][0], lon: c[i + 1][1] }
-      );
-      if (d < best2.dist) {
-        best2.dist = d;
-        best2.idx = i;
-      }
-    }
-    return best2;
-  };
-  const lo = Math.max(0, _nearIdx - 8), hi = Math.min(n - 1, _nearIdx + 60);
-  let best = scan(lo, hi);
-  if (best.dist > 60) best = scan(0, n - 1);
-  _nearIdx = best.idx;
-  _nearMemoPos = pos;
-  _nearMemoVal = best;
-  return best;
-}
-function stepCoordIndex(step) {
-  if (step._ci != null) return step._ci;
-  const c = S.route.coords;
-  let bi = 0, bd = Infinity;
-  for (let i = 0; i < c.length; i++) {
-    const d = haversine({ lat: c[i][0], lon: c[i][1] }, step);
-    if (d < bd) {
-      bd = d;
-      bi = i;
-    }
-  }
-  step._ci = bi;
-  return bi;
-}
-function findNextManeuver() {
-  if (!S.route || !S.route.steps.length) return null;
-  const geom = S.route.geometry;
-  const snap = geom ? getRouteSnapForNav(S.smoothedHeading) : null;
-  const curS = snap ? snap.s : null;
-  const curIdx = snap ? snap.segIdx : findNearestOnRoute()?.idx ?? 0;
-  if (geom && curS != null) {
-    const sorted = geom.maneuvers.filter((m) => m.step.type !== "depart").sort((a, b) => a.s - b.s);
-    let blockUntilS = -Infinity;
-    for (const m of sorted) {
-      if (m.step.type === "arrive") {
-        if (curS <= m.s + MANEUVER_PASSED_M2 && m.s >= blockUntilS) {
-          const along2 = Math.max(0, m.s - curS);
-          return { step: m.step, dist: along2 > 0 ? along2 : haversine(S.gps, m.step) };
-        }
-        continue;
-      }
-      if (curS > m.s + MANEUVER_PASSED_M2) {
-        blockUntilS = m.s + MANEUVER_NEXT_DELAY_M2;
-        continue;
-      }
-      if (m.s < blockUntilS) continue;
-      const along = Math.max(0, m.s - curS);
-      return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
-    }
-    return null;
-  }
-  for (const st of S.route.steps) {
-    if (st.type === "depart") continue;
-    if (stepCoordIndex(st) >= curIdx) {
-      return { step: st, dist: haversine(S.gps, st) };
-    }
-  }
-  return null;
-}
-function getRemainingDistance() {
-  if (!S.route || !S.gps) return 0;
-  const geom = S.route.geometry;
-  const snap = geom ? getRouteSnapForNav(S.smoothedHeading) : null;
-  if (snap) return remainingDistanceS(geom, snap);
-  const near = findNearestOnRoute();
-  let remaining = 0;
-  if (near) {
-    const c = S.route.coords;
-    remaining = distToSegment(
-      S.gps,
-      { lat: c[near.idx][0], lon: c[near.idx][1] },
-      { lat: c[near.idx + 1][0], lon: c[near.idx + 1][1] }
-    );
-    for (let i = near.idx + 1; i < c.length - 1; i++) {
-      remaining += haversine(
-        { lat: c[i][0], lon: c[i][1] },
-        { lat: c[i + 1][0], lon: c[i + 1][1] }
-      );
-    }
-  } else {
-    remaining = haversine(S.gps, S.finish);
-  }
-  return remaining;
-}
-function maneuverTurnAngle(step) {
-  if (!S.route || !step) return 0;
-  const coords = S.route.coords;
-  const si = stepCoordIndex(step);
-  const distM = (i, j) => haversine(
-    { lat: coords[i][0], lon: coords[i][1] },
-    { lat: coords[j][0], lon: coords[j][1] }
-  );
-  let bi = si, ai = si;
-  let acc = 0;
-  while (bi > 0 && acc < 25) {
-    bi--;
-    acc += distM(bi, bi + 1);
-  }
-  acc = 0;
-  while (ai < coords.length - 1 && acc < 25) {
-    ai++;
-    acc += distM(ai - 1, ai);
-  }
-  if (bi >= ai) return 0;
-  const bIn = bearing(
-    { lat: coords[bi][0], lon: coords[bi][1] },
-    { lat: coords[bi + 1][0], lon: coords[bi + 1][1] }
-  );
-  const bOut = bearing(
-    { lat: coords[ai - 1][0], lon: coords[ai - 1][1] },
-    { lat: coords[ai][0], lon: coords[ai][1] }
-  );
-  return (bOut - bIn + 540) % 360 - 180;
-}
-
 // js/tts-ru.js
 var _nativeVoiceIdx = -1;
 var _webVoice = null;
@@ -14160,12 +14117,6 @@ function clearVoiceQueue() {
     }
   }
 }
-function isTurnStep(step) {
-  if (!step || step.type === "depart" || step.type === "arrive") return false;
-  const m = step.modifier || "";
-  if (!m || m === "straight") return false;
-  return m === "uturn" || m.includes("left") || m.includes("right");
-}
 function maneuverText(step) {
   if (!isTurnStep(step)) return "";
   const m = step.modifier || "";
@@ -14177,6 +14128,486 @@ function maneuverText(step) {
 function isCameraBehind(cam, heading) {
   if (cam.dir == null || heading == null) return S.noDirPolicy === "warn";
   return angleDiff(cam.dir, heading) <= S.tolerance;
+}
+
+// js/route-quality.js
+var RouteQuality = { OK: "OK", LOW: "LOW" };
+function assessRouteQuality(route) {
+  const geom = route?.geometry;
+  if (!geom || geom.n < 2) return RouteQuality.OK;
+  const totalM = geom.s[geom.n - 1] || 0;
+  if (totalM < 500) return RouteQuality.OK;
+  let segSum = 0;
+  for (let i = 1; i < geom.n; i++) segSum += geom.s[i] - geom.s[i - 1];
+  const avgSeg = segSum / Math.max(1, geom.n - 1);
+  const maneuvers = geom.maneuvers?.length || 0;
+  const perKm = totalM > 0 ? maneuvers / totalM * 1e3 : 0;
+  if (avgSeg < ROUTE_LOW_AVG_SEG_M || perKm > ROUTE_LOW_MANEUVER_PER_KM) {
+    return RouteQuality.LOW;
+  }
+  return RouteQuality.OK;
+}
+
+// js/route.js
+function getVisibleTurnManeuvers(geom, curS, limit) {
+  const maxN = limit || 3;
+  const sorted = geom.maneuvers.filter((m) => isSignificantManeuver(m, geom)).sort((a, b) => a.s - b.s);
+  const out = [];
+  for (const m of sorted) {
+    if (curS > m.s + MANEUVER_PASSED_M) continue;
+    const ahead = m.s - curS;
+    if (ahead > 500) continue;
+    out.push({ maneuver: m, distAhead: Math.max(0, ahead) });
+    if (out.length >= maxN) break;
+  }
+  return out;
+}
+function ensureRouteGeometry(route) {
+  if (!route) return null;
+  if (route.geometry?.n > 1) {
+    if (route.geometry.crossings == null && route.steps?.some((st) => st.intersections?.length)) {
+      const { crossings, roundabouts } = buildCrossingsData(route.steps, route.geometry);
+      route.geometry.crossings = crossings;
+      route.geometry.roundabouts = roundabouts;
+    }
+    computeCurveSpeed(route.geometry, route);
+    return route.geometry;
+  }
+  try {
+    route.geometry = buildRouteGeometry(route);
+    if (route.geometry) {
+      const { crossings, roundabouts } = buildCrossingsData(route.steps, route.geometry);
+      route.geometry.crossings = crossings;
+      route.geometry.roundabouts = roundabouts;
+      computeCurveSpeed(route.geometry, route);
+    }
+    loadRouteElevation();
+    return route.geometry;
+  } catch (e) {
+    console.warn("RouteGeometry:", e);
+    route.geometry = null;
+    return null;
+  }
+}
+function attachRouteGeometry(route) {
+  ensureRouteGeometry(route);
+  S.routeQuality = assessRouteQuality(route);
+  S.compassMode = S.routeQuality === RouteQuality.LOW;
+  resetRouteSnap();
+  resetCrossingTelemetry();
+  resetFuelRouteBinding();
+}
+function seedSnapAfterReroute() {
+  const geom = S.route?.geometry;
+  const gps = S.gps;
+  if (!geom || !gps) return;
+  const s0 = findSForLatLon(geom, gps.lat, gps.lon);
+  const p = interpolateAtS(geom, s0);
+  const lat = haversine(gps, p);
+  const tan = avgTangentDeg(geom, s0, 25);
+  const hdg = S.smoothedHeading;
+  if (lat > REROUTE_SEED_MAX_LATERAL_M) return;
+  if (hdg != null && angleDiff(hdg, tan) > REROUTE_SEED_MAX_ANGLE_DEG) return;
+  resetRouteSnap({ seedS: s0, lateral: lat });
+}
+function scheduleGeometryBuild(routes, onDone) {
+  if (!routes?.length) {
+    if (onDone) onDone();
+    return;
+  }
+  let i = 0;
+  const step = () => {
+    if (i >= routes.length) {
+      if (onDone) onDone();
+      return;
+    }
+    ensureRouteGeometry(routes[i]);
+    i++;
+    setTimeout(step, 0);
+  };
+  setTimeout(step, 50);
+}
+function saveLastRun() {
+  try {
+    const route = S.route ? { ...S.route, geometry: void 0 } : null;
+    localStorage.setItem(RUN_KEY, JSON.stringify({
+      route,
+      cameras: S.cameras,
+      finish: S.finish,
+      ts: Date.now()
+    }));
+  } catch (e) {
+  }
+}
+function loadLastRun() {
+  try {
+    const r = localStorage.getItem(RUN_KEY);
+    return r ? JSON.parse(r) : null;
+  } catch (e) {
+    return null;
+  }
+}
+async function searchAddress(query) {
+  const url = "https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ru&q=" + encodeURIComponent(query) + "&email=moto-hud-dev@users.noreply.github.com";
+  const r = await fetch(url, {
+    headers: { Accept: "application/json" },
+    referrerPolicy: "no-referrer"
+  });
+  if (!r.ok) throw new Error("Nominatim " + r.status);
+  return r.json();
+}
+function parseOsrmRoute(rt) {
+  const coords = rt.geometry.coordinates.map((c) => [c[1], c[0]]);
+  const steps = [];
+  rt.legs.forEach((leg) => {
+    leg.steps.forEach((st) => {
+      const loc = st.maneuver.location;
+      const m = st.maneuver;
+      steps.push({
+        lat: loc[1],
+        lon: loc[0],
+        type: m.type,
+        modifier: m.modifier,
+        name: st.name || "",
+        distance: st.distance,
+        exit: m.exit,
+        bearing_before: m.bearing_before,
+        bearing_after: m.bearing_after,
+        intersections: (st.intersections || []).map((ix) => ({
+          lat: ix.location[1],
+          lon: ix.location[0],
+          bearings: ix.bearings || [],
+          entry: ix.entry,
+          in: ix.in,
+          out: ix.out
+        }))
+      });
+    });
+  });
+  return { coords, steps, distance: rt.distance, duration: rt.duration };
+}
+async function fetchRouteAlternatives() {
+  if (!S.gps || !S.finish) throw new Error("\u041D\u0443\u0436\u043D\u044B GPS \u0438 \u0444\u0438\u043D\u0438\u0448");
+  S._usedCache = false;
+  const url = `https://router.project-osrm.org/route/v1/driving/${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}?overview=full&geometries=geojson&steps=true&annotations=false&alternatives=2`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("OSRM HTTP " + r.status);
+  const j = await r.json();
+  if (!j.routes || !j.routes.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+  return j.routes.map(parseOsrmRoute);
+}
+function selectRouteIndex(idx) {
+  if (!S.routeAlternatives.length) return;
+  S.selectedRouteIdx = Math.max(0, Math.min(S.routeAlternatives.length - 1, idx));
+  S.route = S.routeAlternatives[S.selectedRouteIdx];
+  resetRouteSnap();
+  resetFuelRouteBinding();
+}
+async function buildRoute(opts = {}) {
+  const { reroute = false, allowCache = true } = opts;
+  if (S.routeAlternatives.length) {
+    selectRouteIndex(S.selectedRouteIdx);
+    return;
+  }
+  S._usedCache = false;
+  let url = `https://router.project-osrm.org/route/v1/driving/${S.gps.lon},${S.gps.lat};${S.finish.lon},${S.finish.lat}?overview=full&geometries=geojson&steps=true&annotations=false`;
+  if (reroute) {
+    const spd = S.gps.speed != null ? S.gps.speed : 0;
+    const hdg = S.smoothedHeading;
+    if (spd > 3 && hdg != null && !isNaN(hdg)) {
+      const brg = Math.round(hdg);
+      const rad = Math.max(30, Math.round(S.gps.acc || 30));
+      url += "&bearings=" + brg + ",45;&radiuses=" + rad + ";";
+    }
+  }
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("OSRM HTTP " + r.status);
+    const j = await r.json();
+    if (!j.routes || !j.routes.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    S.route = parseOsrmRoute(j.routes[0]);
+    attachRouteGeometry(S.route);
+    if (!reroute) telemetry_default.log("nav", { sub: "route_built" });
+  } catch (err) {
+    if (!allowCache) {
+      throw err;
+    }
+    const last = loadLastRun();
+    if (last && last.route && S.finish && last.finish && haversine(last.finish, S.finish) < 60) {
+      S.route = last.route;
+      delete S.route.geometry;
+      attachRouteGeometry(S.route);
+      if (Array.isArray(last.cameras)) S.cameras = last.cameras;
+      S._usedCache = true;
+      return;
+    }
+    throw new Error("\u041D\u0435\u0442 \u0441\u0435\u0442\u0438 \u0438 \u043D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 \u043A \u044D\u0442\u043E\u0439 \u0442\u043E\u0447\u043A\u0435");
+  }
+}
+function classifyRerouteError(err) {
+  const msg = String(err?.message || err || "");
+  if (err instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg)) {
+    return "network";
+  }
+  if (/не найден|no route|NoRoute/i.test(msg)) return "no_route";
+  if (/OSRM HTTP/i.test(msg)) return "osrm_error";
+  return "network";
+}
+async function recalcRoute() {
+  if (S.rerouting) return false;
+  S.rerouting = true;
+  const t0 = Date.now();
+  try {
+    S.routeAlternatives = [];
+    await buildRoute({ reroute: true, allowCache: false });
+    seedSnapAfterReroute();
+    telemetry_default.log("nav", { sub: "reroute" });
+    Array.from(S.camWarned).forEach((k) => {
+      if (typeof k === "string" && k.startsWith("st_")) S.camWarned.delete(k);
+    });
+    await loadCameras();
+    if (S.camLoadStatus === "err") {
+      console.warn("\u041A\u0430\u043C\u0435\u0440\u044B \u043F\u043E\u0441\u043B\u0435 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C");
+      telemetry_default.log("nav", { sub: "cameras_reload_failed" });
+    }
+    S.rerouteBackoffStep = 0;
+    S.rerouteBackoffUntil = 0;
+    return true;
+  } catch (e) {
+    console.warn("\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:", e);
+    const reason = classifyRerouteError(e);
+    telemetry_default.log("nav", {
+      sub: "reroute_failed",
+      reason,
+      dur_ms: Date.now() - t0
+    });
+    const delays = [5e3, 15e3, 6e4];
+    const step = Math.min(S.rerouteBackoffStep, 2);
+    S.rerouteBackoffUntil = Date.now() + delays[step];
+    S.rerouteBackoffStep = Math.min(S.rerouteBackoffStep + 1, 2);
+    return false;
+  } finally {
+    S.rerouting = false;
+  }
+}
+async function loadCameras() {
+  if (!S.cams || !S.route) {
+    S.cameras = [];
+    S.camLoadStatus = S.cams ? "idle" : "off";
+    updateCamStatusUI();
+    return;
+  }
+  if (S._usedCache && S.cameras.length) {
+    S.camLoadStatus = "ok";
+    updateCamStatusUI();
+    return;
+  }
+  S.camLoadStatus = "loading";
+  updateCamStatusUI();
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  S.route.coords.forEach((c) => {
+    if (c[0] < minLat) minLat = c[0];
+    if (c[0] > maxLat) maxLat = c[0];
+    if (c[1] < minLon) minLon = c[1];
+    if (c[1] > maxLon) maxLon = c[1];
+  });
+  const buf = 0.02;
+  minLat -= buf;
+  maxLat += buf;
+  minLon -= buf;
+  maxLon += buf;
+  const q = `[out:json][timeout:20];
+    (node["highway"="speed_camera"](${minLat},${minLon},${maxLat},${maxLon});
+     node["enforcement"="maxspeed"](${minLat},${minLon},${maxLat},${maxLon}););
+    out body;`;
+  try {
+    const r = await fetch(
+      "https://overpass-api.de/api/interpreter",
+      { method: "POST", body: "data=" + encodeURIComponent(q) }
+    );
+    if (!r.ok) throw new Error("Overpass " + r.status);
+    const j = await r.json();
+    S.cameras = (j.elements || []).map((e) => {
+      const t = e.tags || {};
+      let dir = null;
+      if (t.direction != null) {
+        const raw = String(t.direction).trim();
+        const num = parseFloat(raw);
+        if (!isNaN(num)) dir = (num % 360 + 360) % 360;
+        else {
+          const CARD = {
+            N: 0,
+            NNE: 22.5,
+            NE: 45,
+            ENE: 67.5,
+            E: 90,
+            ESE: 112.5,
+            SE: 135,
+            SSE: 157.5,
+            S: 180,
+            SSW: 202.5,
+            SW: 225,
+            WSW: 247.5,
+            W: 270,
+            WNW: 292.5,
+            NW: 315,
+            NNW: 337.5
+          };
+          const up = raw.toUpperCase();
+          if (CARD[up] != null) dir = CARD[up];
+        }
+      }
+      return { lat: e.lat, lon: e.lon, speed: t.maxspeed ? parseInt(t.maxspeed, 10) : null, dir };
+    });
+    S.camLoadStatus = "ok";
+  } catch (e) {
+    console.warn("\u041A\u0430\u043C\u0435\u0440\u044B \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C:", e);
+    S.cameras = [];
+    S.camLoadStatus = "err";
+  }
+  updateCamStatusUI();
+}
+var _nearMemoPos = null;
+var _nearMemoVal = null;
+var _nearIdx = 0;
+function findNearestOnRoute() {
+  if (!S.route) return null;
+  const pos = curPos();
+  if (!pos) return null;
+  if (_nearMemoPos === pos) return _nearMemoVal;
+  const geom = S.route.geometry || ensureRouteGeometry(S.route);
+  if (geom) {
+    const snap = getRouteSnapForNav(S.smoothedHeading);
+    if (snap) {
+      _nearIdx = snap.segIdx;
+      _nearMemoPos = pos;
+      _nearMemoVal = { idx: snap.segIdx, dist: snap.lateral, s: snap.s };
+      return _nearMemoVal;
+    }
+  }
+  const c = S.route.coords, n = c.length;
+  const scan = (lo2, hi2) => {
+    let best2 = { idx: lo2, dist: Infinity };
+    for (let i = lo2; i < hi2; i++) {
+      const d = distToSegment(
+        pos,
+        { lat: c[i][0], lon: c[i][1] },
+        { lat: c[i + 1][0], lon: c[i + 1][1] }
+      );
+      if (d < best2.dist) {
+        best2.dist = d;
+        best2.idx = i;
+      }
+    }
+    return best2;
+  };
+  const lo = Math.max(0, _nearIdx - 8), hi = Math.min(n - 1, _nearIdx + 60);
+  let best = scan(lo, hi);
+  if (best.dist > 60) best = scan(0, n - 1);
+  _nearIdx = best.idx;
+  _nearMemoPos = pos;
+  _nearMemoVal = best;
+  return best;
+}
+function stepCoordIndex(step) {
+  if (step._ci != null) return step._ci;
+  const c = S.route.coords;
+  let bi = 0, bd = Infinity;
+  for (let i = 0; i < c.length; i++) {
+    const d = haversine({ lat: c[i][0], lon: c[i][1] }, step);
+    if (d < bd) {
+      bd = d;
+      bi = i;
+    }
+  }
+  step._ci = bi;
+  return bi;
+}
+function findNextManeuver() {
+  if (!S.route || !S.route.steps.length) return null;
+  const geom = S.route.geometry;
+  const snap = geom ? getNavSnap(S.smoothedHeading) : null;
+  const curS = snap ? snap.s : null;
+  const curIdx = snap ? snap.segIdx : findNearestOnRoute()?.idx ?? 0;
+  if (geom && curS != null) {
+    const sorted = geom.maneuvers.filter((m) => m.step.type !== "depart" && m.step.type !== "arrive").sort((a, b) => a.s - b.s);
+    for (const m of sorted) {
+      if (m.step.type === "arrive") {
+        if (curS <= m.s + MANEUVER_PASSED_M) {
+          const along2 = Math.max(0, m.s - curS);
+          return { step: m.step, dist: along2 > 0 ? along2 : haversine(S.gps, m.step) };
+        }
+        continue;
+      }
+      if (!isSignificantManeuver(m, geom)) continue;
+      if (curS > m.s + MANEUVER_PASSED_M) continue;
+      const along = Math.max(0, m.s - curS);
+      return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
+    }
+    return null;
+  }
+  for (const st of S.route.steps) {
+    if (st.type === "depart") continue;
+    if (stepCoordIndex(st) >= curIdx) {
+      return { step: st, dist: haversine(S.gps, st) };
+    }
+  }
+  return null;
+}
+function getRemainingDistance() {
+  if (!S.route || !S.gps) return 0;
+  const geom = S.route.geometry;
+  const snap = geom ? getNavSnap(S.smoothedHeading) : null;
+  if (snap) return remainingDistanceS(geom, snap);
+  const near = findNearestOnRoute();
+  let remaining = 0;
+  if (near) {
+    const c = S.route.coords;
+    remaining = distToSegment(
+      S.gps,
+      { lat: c[near.idx][0], lon: c[near.idx][1] },
+      { lat: c[near.idx + 1][0], lon: c[near.idx + 1][1] }
+    );
+    for (let i = near.idx + 1; i < c.length - 1; i++) {
+      remaining += haversine(
+        { lat: c[i][0], lon: c[i][1] },
+        { lat: c[i + 1][0], lon: c[i + 1][1] }
+      );
+    }
+  } else {
+    remaining = haversine(S.gps, S.finish);
+  }
+  return remaining;
+}
+function maneuverTurnAngle(step) {
+  if (!S.route || !step) return 0;
+  const coords = S.route.coords;
+  const si = stepCoordIndex(step);
+  const distM = (i, j) => haversine(
+    { lat: coords[i][0], lon: coords[i][1] },
+    { lat: coords[j][0], lon: coords[j][1] }
+  );
+  let bi = si, ai = si;
+  let acc = 0;
+  while (bi > 0 && acc < 25) {
+    bi--;
+    acc += distM(bi, bi + 1);
+  }
+  acc = 0;
+  while (ai < coords.length - 1 && acc < 25) {
+    ai++;
+    acc += distM(ai - 1, ai);
+  }
+  if (bi >= ai) return 0;
+  const bIn = bearing(
+    { lat: coords[bi][0], lon: coords[bi][1] },
+    { lat: coords[bi + 1][0], lon: coords[bi + 1][1] }
+  );
+  const bOut = bearing(
+    { lat: coords[ai - 1][0], lon: coords[ai - 1][1] },
+    { lat: coords[ai][0], lon: coords[ai][1] }
+  );
+  return (bOut - bIn + 540) % 360 - 180;
 }
 
 // js/render.js
@@ -14449,7 +14880,7 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
     }
   }
 }
-function isPathTurnStep2(st) {
+function isPathTurnStep(st) {
   return st && st.type !== "depart" && st.type !== "arrive" && st.modifier && st.modifier !== "straight";
 }
 function renderTurnsStr(svg, snap, headingRad, geom, curS) {
@@ -14464,7 +14895,7 @@ function renderTurnsStr(svg, snap, headingRad, geom, curS) {
   const vbW = bv ? bv.width : L2.W;
   const vbH = bv ? bv.height : L2.H;
   const pos = curPos();
-  const items = geom && curS != null ? getVisibleTurnManeuvers(geom, curS, maxChevrons) : S.route.steps.filter(isPathTurnStep2).map((st) => ({ maneuver: { step: st }, distAhead: haversine(pos, st) }));
+  const items = geom && curS != null ? getVisibleTurnManeuvers(geom, curS, maxChevrons) : S.route.steps.filter(isPathTurnStep).map((st) => ({ maneuver: { step: st }, distAhead: haversine(pos, st) }));
   const markers = [];
   for (const item of items) {
     if (markers.length >= maxChevrons) break;
@@ -14555,7 +14986,7 @@ function renderPathway() {
   if (!block || !svg) return;
   const hud = $("hud");
   const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  if (!S.showPath || kmh < 25) {
+  if (!S.showPath || kmh < 25 || isSnapLost() || S.compassMode || S.gpsConverged === false) {
     block.classList.add("hidden");
     hud.classList.add("no-path");
     svg.innerHTML = "";
@@ -14565,7 +14996,7 @@ function renderPathway() {
   hud.classList.remove("no-path");
   const gpsHdg = S.smoothedHeading;
   if (S.route && !S.route.geometry) ensureRouteGeometry(S.route);
-  const rawSnap = getRouteSnapForNav(gpsHdg);
+  const rawSnap = getNavSnap(gpsHdg);
   const geomReady = S.route?.geometry;
   if (!geomReady || !rawSnap) {
     svg.innerHTML = "";
@@ -14802,10 +15233,15 @@ function buildArrowSVG(step) {
   if (!step) return "";
   if (step.type === "arrive") return arriveFlagSVG();
   let turn = maneuverTurnAngle(step);
-  if (Math.abs(turn) < 4 && step.modifier) {
+  if (Math.abs(turn) < MANEUVER_BEND_ANGLE) {
     if (step.modifier === "uturn") turn = 175;
-    else if (step.modifier.includes("left")) turn = -8;
-    else if (step.modifier.includes("right")) turn = 8;
+    else if (Math.abs(turn) < 4 && step.modifier) {
+      if (step.modifier.includes("left")) turn = -8;
+      else if (step.modifier.includes("right")) turn = 8;
+      else turn = 0;
+    } else {
+      turn = 0;
+    }
   }
   turn = Math.max(-178, Math.min(178, turn));
   return renderManeuverArrow(turn);
@@ -16391,15 +16827,6 @@ var OffRouteState = {
   REROUTING: "REROUTING",
   OFFLINE_GUIDE: "OFFLINE_GUIDE"
 };
-var OFF_ROUTE_ENTER_M = 50;
-var OFF_ROUTE_EXIT_M = 25;
-var OFF_ROUTE_CONFIRM_MS = 8e3;
-var OFF_ROUTE_CONFIRM_DIST_M = 100;
-var GPS_ACC_GATE_M = 30;
-var ACC_FACTOR = 1.5;
-var HEADING_DIVERGE_DEG = 60;
-var HEADING_DIVERGE_MS = 3e3;
-var HEADING_DIVERGE_MIN_SPD = 5;
 var OFFLINE_VOICE_STEP_M = 200;
 var OFF_ROUTE_WARN_OK = "\u25C6 \u041F\u0415\u0420\u0415\u0421\u0427\u0401\u0422 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0410 \u25C6";
 var OFF_ROUTE_WARN_FAIL = "\u25C6 \u041D\u0415\u0422 \u0421\u0412\u042F\u0417\u0418 \u2014 \u0412\u0415\u0420\u041D\u0418\u0422\u0415\u0421\u042C \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422 \u25C6";
@@ -16477,12 +16904,31 @@ function metaFromFeed(feed) {
     trigger: feed.trigger
   };
 }
-function pickSuspectTrigger(now) {
-  if (_ctx.confirmMs >= OFF_ROUTE_CONFIRM_MS) return "time";
-  if (_ctx.suspectDistM >= OFF_ROUTE_CONFIRM_DIST_M) return "dist";
-  if (_ctx.headingDivergeSince && now - _ctx.headingDivergeSince >= HEADING_DIVERGE_MS) {
-    return "heading";
-  }
+function confirmDistForSpeed(spdMps) {
+  return spdMps > OFF_ROUTE_HIGH_SPD_MPS ? OFF_ROUTE_CONFIRM_DIST_HIGH_M : OFF_ROUTE_CONFIRM_DIST_M;
+}
+function confirmMsForSpeed(spdMps) {
+  return spdMps > OFF_ROUTE_HIGH_SPD_MPS ? OFF_ROUTE_CONFIRM_MS_HIGH_SPD : OFF_ROUTE_CONFIRM_MS;
+}
+function headingDiverged(feed, now) {
+  if (feed.spdMps <= OFF_ROUTE_HEADING_MIN_SPD) return false;
+  if (feed.heading == null || isNaN(feed.heading)) return false;
+  if (feed.tangent == null || isNaN(feed.tangent)) return false;
+  if (angleDiff(feed.heading, feed.tangent) <= OFF_ROUTE_HEADING_DIVERGE_DEG) return false;
+  if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
+  return now - _ctx.headingDivergeSince >= OFF_ROUTE_HEADING_DIVERGE_MS;
+}
+function canTriggerReroute(feed, now) {
+  const distNeed = confirmDistForSpeed(feed.spdMps);
+  const msNeed = confirmMsForSpeed(feed.spdMps);
+  const distOk = _ctx.suspectDistM >= distNeed;
+  const timeOk = _ctx.confirmMs >= msNeed;
+  const hdgOk = headingDiverged(feed, now);
+  const snapBad = S.snapQuality !== SnapQuality.GOOD || feed.lateral != null && feed.lateral > 80;
+  if (!snapBad) return null;
+  if (distOk && hdgOk) return "dist_heading";
+  if (distOk && timeOk && hdgOk) return "conjunct";
+  if (timeOk && hdgOk && feed.lateral > OFF_ROUTE_ENTER_M) return "time_heading";
   return null;
 }
 function enterOfflineGuide(feed) {
@@ -16532,8 +16978,8 @@ function tickSuspectConfirm(feed, inDeadZone) {
   const dtMs = feed.dtMs || 0;
   _ctx.confirmMs += dtMs;
   if (feed.spdMps > 0) _ctx.suspectDistM += feed.spdMps * (dtMs / 1e3);
-  if (feed.spdMps > HEADING_DIVERGE_MIN_SPD && feed.heading != null && !isNaN(feed.heading) && feed.tangent != null && !isNaN(feed.tangent)) {
-    if (angleDiff(feed.heading, feed.tangent) > HEADING_DIVERGE_DEG) {
+  if (feed.spdMps > OFF_ROUTE_HEADING_MIN_SPD && feed.heading != null && !isNaN(feed.heading) && feed.tangent != null && !isNaN(feed.tangent)) {
+    if (angleDiff(feed.heading, feed.tangent) > OFF_ROUTE_HEADING_DIVERGE_DEG) {
       if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
     } else {
       _ctx.headingDivergeSince = 0;
@@ -16541,7 +16987,7 @@ function tickSuspectConfirm(feed, inDeadZone) {
   } else {
     _ctx.headingDivergeSince = 0;
   }
-  const trigger = pickSuspectTrigger(now);
+  const trigger = canTriggerReroute(feed, now);
   if (!trigger) return;
   if (S.rerouteBackoffUntil && Date.now() < S.rerouteBackoffUntil) return;
   beginReroute(OffRouteState.SUSPECT, { ...feed, trigger }, trigger);
@@ -16573,8 +17019,8 @@ function tickOffRouteMachine(feed) {
     }
     return;
   }
-  if (feed.acc > GPS_ACC_GATE_M) return;
-  const enterM = Math.max(OFF_ROUTE_ENTER_M, ACC_FACTOR * feed.acc);
+  if (feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
+  const enterM = Math.max(OFF_ROUTE_ENTER_M, OFF_ROUTE_ACC_FACTOR * feed.acc);
   const inDeadZone = feed.lateral >= OFF_ROUTE_EXIT_M && feed.lateral <= OFF_ROUTE_ENTER_M;
   if (S.offRouteState === OffRouteState.ON_ROUTE) {
     if (feed.lateral > enterM) {
@@ -16584,8 +17030,6 @@ function tickOffRouteMachine(feed) {
     return;
   }
   if (S.offRouteState === OffRouteState.SUSPECT) {
-    if (feed.lateral <= enterM && !inDeadZone) {
-    }
     tickSuspectConfirm(feed, inDeadZone);
   }
 }
@@ -16702,10 +17146,27 @@ function onTick() {
     updateFinishInfo(0, kmh, now);
     return;
   }
+  const gpsOk = S.gpsConverged !== false;
+  const snap = gpsOk ? getNavSnap(S.smoothedHeading) : null;
+  const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
+  if ($("hud").classList.contains("on") && !gpsOk) {
+    $("street").textContent = "GPS \u0421\u0425\u041E\u0414\u0418\u0422\u0421\u042F";
+    $("v-mdist").textContent = "\u2014";
+    $("arrow-box").innerHTML = buildTurnArrowSVG(0);
+    updateFinishInfo(getRemainingDistance(), kmh, now);
+  }
+  if (isSnapLost()) {
+    $("street").textContent = "GPS \u041F\u041E\u0422\u0415\u0420\u042F\u041D";
+    $("v-mdist").textContent = "\u2014";
+    $("v-mdist-u").textContent = "";
+    $("arrow-box").innerHTML = buildTurnArrowSVG(0);
+    $("rb-exit-label")?.classList.add("hidden");
+    updateFinishInfo(getRemainingDistance(), kmh, now);
+    $("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
+    return;
+  }
   const remaining = getRemainingDistance();
   const near = findNearestOnRoute();
-  const snap = getRouteSnapForNav(S.smoothedHeading);
-  const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
   tickOffRouteMachine({
     lateral: near?.dist,
     acc: S.gps.acc || 0,
@@ -16714,6 +17175,30 @@ function onTick() {
     heading: S.smoothedHeading,
     tangent: snap?.tangent ?? null
   });
+  if (S.compassMode && S.finish && S.gps && !isOfflineGuide()) {
+    const brg = bearing(S.gps, S.finish);
+    const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
+    let turn = 0;
+    if (hdg != null && !isNaN(hdg)) turn = (brg - hdg + 540) % 360 - 180;
+    $("arrow-box").innerHTML = buildTurnArrowSVG(turn);
+    const dFin = haversine(S.gps, S.finish);
+    if (dFin < 1e3) {
+      $("v-mdist").textContent = Math.max(0, Math.round(dFin / 10) * 10);
+      $("v-mdist-u").textContent = "\u043C";
+    } else {
+      $("v-mdist").textContent = (dFin / 1e3).toFixed(1);
+      $("v-mdist-u").textContent = "\u043A\u043C";
+    }
+    $("street").textContent = "\u041A \u0424\u0418\u041D\u0418\u0428\u0423";
+    $("rb-exit-label")?.classList.add("hidden");
+    updateFinishInfo(remaining, kmh, now);
+    $("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
+    tickAutoMode();
+    checkCamerasILS();
+    refreshFuelPanel();
+    return;
+  }
+  if (!gpsOk) return;
   if (isOfflineGuide() && snap && S.gps) {
     const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
     const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
@@ -16731,8 +17216,10 @@ function onTick() {
     $("street").textContent = "\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422";
     $("rb-exit-label")?.classList.add("hidden");
   } else {
-    const nm = findNextManeuver();
+    let nm = isSnapDegraded() ? getCachedManeuver() : null;
+    if (!nm) nm = findNextManeuver();
     if (nm) {
+      cacheLastManeuver(nm);
       $("arrow-box").innerHTML = buildArrowSVG(nm.step);
       const rbEl = $("rb-exit-label");
       if (rbEl) {
@@ -16758,7 +17245,7 @@ function onTick() {
       const stIdx = S.route.steps.indexOf(nm.step);
       const kFar = "st_" + stIdx + "_far";
       const kNear = "st_" + stIdx + "_near";
-      if (isTurnStep(nm.step)) {
+      if (isNavManeuverType(nm.step)) {
         const txt = maneuverText(nm.step);
         const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
         if (nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt) {
@@ -16787,7 +17274,7 @@ function onTick() {
 }
 function checkCurveSpeedWarn(kmh) {
   if (!S.curveWarn || kmh < 20 || !S.route?.geometry?.curveReady) return;
-  const snap = getRouteSnapForNav(S.smoothedHeading);
+  const snap = getNavSnap(S.smoothedHeading);
   if (!snap) return;
   const speedMps = kmh / 3.6;
   const warn = pickCurveVoiceWarn(S.route.geometry, snap.s, speedMps);
@@ -16816,6 +17303,7 @@ async function startHud() {
   S.camWarned.clear();
   resetOffRouteMachine();
   resetRouteSnap();
+  resetSnapQuality();
   resetCurveRibbonState();
   ensureRouteGeometry(S.route);
   $("setup").style.display = "none";

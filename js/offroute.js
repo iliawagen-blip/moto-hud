@@ -4,6 +4,15 @@ import { angleDiff } from './geo.js';
 import { recalcRoute } from './route.js';
 import { speak } from './voice.js';
 import telemetry from './telemetry.js';
+import { SnapQuality } from './snap-quality.js';
+import {
+  OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS,
+  OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M,
+  OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS,
+  OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR,
+  OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS,
+  OFF_ROUTE_HEADING_MIN_SPD
+} from './nav-constants.js';
 
 export const OffRouteState = {
   ON_ROUTE: 'ON_ROUTE',
@@ -12,27 +21,16 @@ export const OffRouteState = {
   OFFLINE_GUIDE: 'OFFLINE_GUIDE'
 };
 
-/** Порог входа в «подозрение на уход с маршрута», м */
-export const OFF_ROUTE_ENTER_M = 50;
-/** Порог выхода из подозрения (гистерезис), м */
-export const OFF_ROUTE_EXIT_M = 25;
-/** Время подтверждения ухода до пересчёта, мс */
-export const OFF_ROUTE_CONFIRM_MS = 8000;
-/** Пройденный путь в SUSPECT для подтверждения, м */
-export const OFF_ROUTE_CONFIRM_DIST_M = 100;
-/** При acc выше — тик детектора пропускается (кроме выхода на маршрут) */
-export const GPS_ACC_GATE_M = 30;
-/** Множитель точности GPS к порогу входа */
-export const ACC_FACTOR = 1.5;
-/** Расхождение курса и касательной маршрута для явного съезда, ° */
-export const HEADING_DIVERGE_DEG = 60;
-/** Непрерывность расхождения курса для подтверждения, мс */
-export const HEADING_DIVERGE_MS = 3000;
-/** Минимальная скорость для критерия расхождения курса, м/с */
-export const HEADING_DIVERGE_MIN_SPD = 5;
-/** Шаг озвучки «до маршрута» в OFFLINE_GUIDE, м */
-export const OFFLINE_VOICE_STEP_M = 200;
+export {
+  OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS,
+  OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_GPS_ACC_GATE_M as GPS_ACC_GATE_M,
+  OFF_ROUTE_ACC_FACTOR as ACC_FACTOR,
+  OFF_ROUTE_HEADING_DIVERGE_DEG as HEADING_DIVERGE_DEG,
+  OFF_ROUTE_HEADING_DIVERGE_MS as HEADING_DIVERGE_MS,
+  OFF_ROUTE_HEADING_MIN_SPD as HEADING_DIVERGE_MIN_SPD
+};
 
+const OFFLINE_VOICE_STEP_M = 200;
 const OFF_ROUTE_WARN_OK = '◆ ПЕРЕСЧЁТ МАРШРУТА ◆';
 const OFF_ROUTE_WARN_FAIL = '◆ НЕТ СВЯЗИ — ВЕРНИТЕСЬ НА МАРШРУТ ◆';
 
@@ -122,12 +120,38 @@ function metaFromFeed(feed){
   };
 }
 
-function pickSuspectTrigger(now){
-  if(_ctx.confirmMs >= OFF_ROUTE_CONFIRM_MS) return 'time';
-  if(_ctx.suspectDistM >= OFF_ROUTE_CONFIRM_DIST_M) return 'dist';
-  if(_ctx.headingDivergeSince && now - _ctx.headingDivergeSince >= HEADING_DIVERGE_MS){
-    return 'heading';
-  }
+function confirmDistForSpeed(spdMps){
+  return spdMps > OFF_ROUTE_HIGH_SPD_MPS
+    ? OFF_ROUTE_CONFIRM_DIST_HIGH_M
+    : OFF_ROUTE_CONFIRM_DIST_M;
+}
+
+function confirmMsForSpeed(spdMps){
+  return spdMps > OFF_ROUTE_HIGH_SPD_MPS
+    ? OFF_ROUTE_CONFIRM_MS_HIGH_SPD
+    : OFF_ROUTE_CONFIRM_MS;
+}
+
+function headingDiverged(feed, now){
+  if(feed.spdMps <= OFF_ROUTE_HEADING_MIN_SPD) return false;
+  if(feed.heading == null || isNaN(feed.heading)) return false;
+  if(feed.tangent == null || isNaN(feed.tangent)) return false;
+  if(angleDiff(feed.heading, feed.tangent) <= OFF_ROUTE_HEADING_DIVERGE_DEG) return false;
+  if(!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
+  return now - _ctx.headingDivergeSince >= OFF_ROUTE_HEADING_DIVERGE_MS;
+}
+
+function canTriggerReroute(feed, now){
+  const distNeed = confirmDistForSpeed(feed.spdMps);
+  const msNeed = confirmMsForSpeed(feed.spdMps);
+  const distOk = _ctx.suspectDistM >= distNeed;
+  const timeOk = _ctx.confirmMs >= msNeed;
+  const hdgOk = headingDiverged(feed, now);
+  const snapBad = S.snapQuality !== SnapQuality.GOOD || (feed.lateral != null && feed.lateral > 80);
+  if(!snapBad) return null;
+  if(distOk && hdgOk) return 'dist_heading';
+  if(distOk && timeOk && hdgOk) return 'conjunct';
+  if(timeOk && hdgOk && feed.lateral > OFF_ROUTE_ENTER_M) return 'time_heading';
   return null;
 }
 
@@ -182,10 +206,10 @@ function tickSuspectConfirm(feed, inDeadZone){
   _ctx.confirmMs += dtMs;
   if(feed.spdMps > 0) _ctx.suspectDistM += feed.spdMps * (dtMs / 1000);
 
-  if(feed.spdMps > HEADING_DIVERGE_MIN_SPD &&
+  if(feed.spdMps > OFF_ROUTE_HEADING_MIN_SPD &&
      feed.heading != null && !isNaN(feed.heading) &&
      feed.tangent != null && !isNaN(feed.tangent)){
-    if(angleDiff(feed.heading, feed.tangent) > HEADING_DIVERGE_DEG){
+    if(angleDiff(feed.heading, feed.tangent) > OFF_ROUTE_HEADING_DIVERGE_DEG){
       if(!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
     } else {
       _ctx.headingDivergeSince = 0;
@@ -194,7 +218,7 @@ function tickSuspectConfirm(feed, inDeadZone){
     _ctx.headingDivergeSince = 0;
   }
 
-  const trigger = pickSuspectTrigger(now);
+  const trigger = canTriggerReroute(feed, now);
   if(!trigger) return;
   if(S.rerouteBackoffUntil && Date.now() < S.rerouteBackoffUntil) return;
   beginReroute(OffRouteState.SUSPECT, { ...feed, trigger }, trigger);
@@ -210,10 +234,6 @@ function tryReturnOnRoute(feed){
   return true;
 }
 
-/**
- * Один тик машины ухода с маршрута. onTick передаёт lateral, acc, spd, heading, tangent.
- * @param {{ lateral:number, acc:number, spdMps:number, spdKmh:number, heading:number|null, tangent:number|null, dtMs:number }} feed
- */
 export function tickOffRouteMachine(feed){
   if(feed.lateral == null || !S.route) return;
 
@@ -237,9 +257,9 @@ export function tickOffRouteMachine(feed){
     return;
   }
 
-  if(feed.acc > GPS_ACC_GATE_M) return;
+  if(feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
 
-  const enterM = Math.max(OFF_ROUTE_ENTER_M, ACC_FACTOR * feed.acc);
+  const enterM = Math.max(OFF_ROUTE_ENTER_M, OFF_ROUTE_ACC_FACTOR * feed.acc);
   const inDeadZone = feed.lateral >= OFF_ROUTE_EXIT_M && feed.lateral <= OFF_ROUTE_ENTER_M;
 
   if(S.offRouteState === OffRouteState.ON_ROUTE){
@@ -251,9 +271,6 @@ export function tickOffRouteMachine(feed){
   }
 
   if(S.offRouteState === OffRouteState.SUSPECT){
-    if(feed.lateral <= enterM && !inDeadZone){
-      // still suspect until exit threshold
-    }
     tickSuspectConfirm(feed, inDeadZone);
   }
 }

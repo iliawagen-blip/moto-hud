@@ -69,9 +69,10 @@
         <option value="430x932">iPhone Pro Max (430×932)</option>
       </select>
     </label>
-    <label>Скорость: <span class="val" id="spd-val">50</span> км/ч
-      <input type="range" id="spd" min="0" max="120" value="50" step="5">
+    <label>Макс. на прямой: <span class="val" id="spd-val">90</span> км/ч
+      <input type="range" id="spd" min="20" max="120" value="90" step="5">
     </label>
+    <span class="status" id="sim-spd-live" title="Текущая скорость симуляции">GPS: —</span>
     <button id="btn-play" class="ok">⏸ Пауза</button>
     <button id="btn-reset">↺ Сброс</button>
     <button id="btn-reload">⟳ Перезагрузить</button>
@@ -129,7 +130,7 @@
   </div>
 
   <div class="hint">
-    Маршрут и движение эмулируются автоматически: HUD стартует сам через ~1 с.
+    Маршрут и движение эмулируются автоматически: HUD стартует сам (~1 с). На прямых — до 120 км/ч, перед поворотами скорость снижается.
     <strong>Адрес:</strong> «НАСТР.» → очистите поле финиша → «🔎 Найти» (демо-координаты не мешают поиску).
     <strong>GPX replay:</strong> загрузите файл или «GPX демо» — GPS идёт по треку; при timestamps скорость берётся из записи.
     URL: <code>?sim=1&amp;gpx=fixtures/serpentine-demo.gpx</code>.
@@ -141,7 +142,7 @@
   (function(){
     const mob = window.matchMedia('(max-width:720px)').matches ||
       /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
-    if(mob) location.replace('index.html?sim=1');
+    if(mob) location.replace('index.html?sim=1&autohud=1');
   })();
 </script>
 <script>
@@ -168,7 +169,7 @@
   function frameUrl(){
     const t = simTheme?.value || 'avionics';
     const m = simMode?.value || 'night';
-    return 'index.html?sim=1&theme=' + encodeURIComponent(t) +
+    return 'index.html?sim=1&autohud=1&theme=' + encodeURIComponent(t) +
       '&mode=' + encodeURIComponent(m) + '&t=' + Date.now();
   }
 
@@ -183,6 +184,15 @@
       const pref = simMode?.value || '?';
       return (names[id] || id) + ' · ' + mode + (pref === 'auto' ? ' (авто)' : '');
     }catch(e){ return null; }
+  }
+
+  function updateLiveSpeed(){
+    const el = document.getElementById('sim-spd-live');
+    if(!el) return;
+    try{
+      const s = sim();
+      el.textContent = s ? ('GPS: ' + (s.speedKmh || 0) + ' км/ч') : 'GPS: —';
+    }catch(e){ el.textContent = 'GPS: —'; }
   }
 
   function updateOffRouteDebug(){
@@ -339,7 +349,7 @@
     setTimeout(() => { const s = sim(); if(s) s.setSpeed(Number(spd.value) / 3.6); }, 800);
   });
 
-  setInterval(() => { updateThemeStatus(); updateOffRouteDebug(); }, 500);
+  setInterval(() => { updateThemeStatus(); updateOffRouteDebug(); updateLiveSpeed(); }, 500);
 
   applySize();
   frame.src = frameUrl();

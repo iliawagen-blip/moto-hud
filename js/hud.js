@@ -15,7 +15,8 @@ import {
   fuelColor, fuelStatusText
 } from './fuel.js';
 import { updateCamStatusUI } from './cam-status.js';
-import { resetRouteSnap, getRouteSnapForNav } from './route-geometry.js';
+import { resetRouteSnap, getNavSnap } from './route-geometry.js';
+import { isSnapLost, isSnapDegraded, getCachedManeuver, cacheLastManeuver, resetSnapQuality } from './snap-quality.js';
 import { getActiveRoundabout, isCrossingContextEnabled } from './crossings.js';
 import { ensureRouteGeometry } from './route.js';
 import { pickCurveVoiceWarn, resetCurveRibbonState } from './curve-speed.js';
@@ -156,10 +157,30 @@ export function onTick(){
     return;
   }
 
+  const gpsOk = S.gpsConverged !== false;
+  const snap = gpsOk ? getNavSnap(S.smoothedHeading) : null;
+  const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
+
+  if($('hud').classList.contains('on') && !gpsOk){
+    $('street').textContent = 'GPS СХОДИТСЯ';
+    $('v-mdist').textContent = '—';
+    $('arrow-box').innerHTML = buildTurnArrowSVG(0);
+    updateFinishInfo(getRemainingDistance(), kmh, now);
+  }
+
+  if(isSnapLost()){
+    $('street').textContent = 'GPS ПОТЕРЯН';
+    $('v-mdist').textContent = '—';
+    $('v-mdist-u').textContent = '';
+    $('arrow-box').innerHTML = buildTurnArrowSVG(0);
+    $('rb-exit-label')?.classList.add('hidden');
+    updateFinishInfo(getRemainingDistance(), kmh, now);
+    $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
+    return;
+  }
+
   const remaining = getRemainingDistance();
   const near = findNearestOnRoute();
-  const snap = getRouteSnapForNav(S.smoothedHeading);
-  const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
   tickOffRouteMachine({
     lateral: near?.dist,
     acc: S.gps.acc || 0,
@@ -168,6 +189,33 @@ export function onTick(){
     heading: S.smoothedHeading,
     tangent: snap?.tangent ?? null
   });
+
+  if(S.compassMode && S.finish && S.gps && !isOfflineGuide()){
+    const brg = bearing(S.gps, S.finish);
+    const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading)
+      ? S.smoothedHeading : S.gps.heading;
+    let turn = 0;
+    if(hdg != null && !isNaN(hdg)) turn = ((brg - hdg + 540) % 360) - 180;
+    $('arrow-box').innerHTML = buildTurnArrowSVG(turn);
+    const dFin = haversine(S.gps, S.finish);
+    if(dFin < 1000){
+      $('v-mdist').textContent = Math.max(0, Math.round(dFin / 10) * 10);
+      $('v-mdist-u').textContent = 'м';
+    } else {
+      $('v-mdist').textContent = (dFin / 1000).toFixed(1);
+      $('v-mdist-u').textContent = 'км';
+    }
+    $('street').textContent = 'К ФИНИШУ';
+    $('rb-exit-label')?.classList.add('hidden');
+    updateFinishInfo(remaining, kmh, now);
+    $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
+    tickAutoMode();
+    checkCamerasILS();
+    refreshFuelPanel();
+    return;
+  }
+
+  if(!gpsOk) return;
 
   if(isOfflineGuide() && snap && S.gps){
     const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
@@ -187,8 +235,10 @@ export function onTick(){
     $('street').textContent = 'ВОЗВРАТ НА МАРШРУТ';
     $('rb-exit-label')?.classList.add('hidden');
   } else {
-    const nm = findNextManeuver();
+    let nm = isSnapDegraded() ? getCachedManeuver() : null;
+    if(!nm) nm = findNextManeuver();
     if(nm){
+      cacheLastManeuver(nm);
       $('arrow-box').innerHTML = buildArrowSVG(nm.step);
       const rbEl = $('rb-exit-label');
       if(rbEl){
@@ -246,7 +296,7 @@ export function onTick(){
 
 function checkCurveSpeedWarn(kmh){
   if(!S.curveWarn || kmh < 20 || !S.route?.geometry?.curveReady) return;
-  const snap = getRouteSnapForNav(S.smoothedHeading);
+  const snap = getNavSnap(S.smoothedHeading);
   if(!snap) return;
   const speedMps = kmh / 3.6;
   const warn = pickCurveVoiceWarn(S.route.geometry, snap.s, speedMps);
@@ -275,6 +325,7 @@ export async function startHud(){
   S.camWarned.clear();
   resetOffRouteMachine();
   resetRouteSnap();
+  resetSnapQuality();
   resetCurveRibbonState();
   ensureRouteGeometry(S.route);
   $('setup').style.display = 'none';

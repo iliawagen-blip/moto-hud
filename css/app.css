@@ -301,6 +301,13 @@ html,body{height:100%;overflow:hidden}
 }
 #offRouteWarn.on{display:block;animation:blink .8s infinite alternate}
 
+#gps-converge{
+  position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);
+  color:var(--sem-warn);font-size:18px;letter-spacing:2px;
+  display:none;z-index:4
+}
+#gps-converge.on{display:block;animation:blink .8s infinite alternate}
+
 /* ---------- Топливный ассистент — крупная панель выбора ---------- */
 #fuelPanel{
   position:absolute;top:12%;left:50%;transform:translateX(-50%);

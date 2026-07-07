@@ -57,10 +57,16 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
   let SEG_SPEED = null;
   let gpxMeta = null;
 
-  function setPathFromCoords(coords, loop, segSpeed){
+  function setPathFromCoords(coords, loop, segSpeed, gpxTimed){
     if(!coords || coords.length < 2) return;
     PATH = coords.length > 80 ? coords : densify(coords, 25);
-    SEG_SPEED = segSpeed && segSpeed.length === PATH.length - 1 ? segSpeed : null;
+    if(segSpeed && segSpeed.length === PATH.length - 1){
+      SEG_SPEED = segSpeed;
+      sim.useGpxSpeed = !!gpxTimed;
+    } else {
+      sim.useGpxSpeed = false;
+      rebuildSegSpeed();
+    }
     sim.idx = 0;
     sim.frac = 0;
     sim.loop = !!loop;
@@ -93,17 +99,88 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
   }
 
+  function distLL(a, b){
+    const R = 6371000, r = Math.PI / 180;
+    const dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+  }
+
+  const STRAIGHT_CAP_MS = 120 / 3.6;
+  const MIN_TURN_MS = 14 / 3.6;
+  const BRAKE_A = 6.5;
+  const ACCEL_A = 4.0;
+  const TURN_LOOK_M = 200;
+
+  function turnDegAt(path, vi){
+    if(vi <= 0 || vi >= path.length - 1) return 0;
+    const b1 = bearingLL(path[vi - 1], path[vi]);
+    const b2 = bearingLL(path[vi], path[vi + 1]);
+    let d = Math.abs(b2 - b1);
+    if(d > 180) d = 360 - d;
+    return d;
+  }
+
+  function speedForTurn(deg, maxStraight){
+    if(deg < 6) return maxStraight;
+    const t = Math.min(1, (deg - 6) / 95);
+    const ease = t * t;
+    return MIN_TURN_MS + (maxStraight - MIN_TURN_MS) * (1 - ease);
+  }
+
+  /** Скорости по сегментам: до 120 км/ч на прямых, сброс перед поворотами */
+  function buildMotoSpeeds(path, maxCruiseMs){
+    const n = path.length - 1;
+    if(n < 1) return null;
+    const maxStraight = Math.min(Math.max(maxCruiseMs, 0), STRAIGHT_CAP_MS);
+
+    const cum = [0];
+    for(let i = 0; i < n; i++) cum.push(cum[i] + (distLL(path[i], path[i + 1]) || 0.01));
+
+    const target = new Array(path.length);
+    for(let i = 0; i < path.length; i++){
+      let worst = 0;
+      for(let j = i; j < path.length && cum[j] - cum[i] < TURN_LOOK_M; j++){
+        worst = Math.max(worst, turnDegAt(path, j));
+      }
+      target[i] = speedForTurn(worst, maxStraight);
+    }
+
+    const seg = new Array(n);
+    for(let i = 0; i < n; i++) seg[i] = Math.min(target[i], target[i + 1]);
+
+    for(let i = n - 2; i >= 0; i--){
+      const d = cum[i + 1] - cum[i];
+      const vNext = seg[i + 1];
+      const vBrake = Math.sqrt(vNext * vNext + 2 * BRAKE_A * d);
+      seg[i] = Math.min(seg[i], vBrake);
+    }
+    for(let i = 1; i < n; i++){
+      const d = cum[i] - cum[i - 1];
+      const vPrev = seg[i - 1];
+      const vAccel = Math.sqrt(vPrev * vPrev + 2 * ACCEL_A * d);
+      seg[i] = Math.min(seg[i], vAccel);
+    }
+    return seg;
+  }
+
   const sim = {
-    idx: 0, frac: 0, speed: 14, running: true, loop: true,
+    idx: 0, frac: 0, maxCruise: 50 / 3.6, running: true, loop: true,
     useGpxSpeed: false, speedScale: 1,
     cb: null, err: null, timer: null
   };
+
+  function rebuildSegSpeed(){
+    if(sim.useGpxSpeed) return;
+    SEG_SPEED = PATH.length > 1 ? buildMotoSpeeds(PATH, sim.maxCruise) : null;
+  }
 
   function segSpeedNow(){
     if(sim.useGpxSpeed && SEG_SPEED && sim.idx < SEG_SPEED.length){
       return SEG_SPEED[sim.idx] * sim.speedScale;
     }
-    return sim.speed;
+    if(SEG_SPEED && sim.idx < SEG_SPEED.length) return SEG_SPEED[sim.idx];
+    return sim.maxCruise;
   }
 
   function curPos(){
@@ -164,7 +241,7 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     gpxMeta = { name: track.name, hasTime: replay.hasTime, points: track.points.length };
     sim.useGpxSpeed = opts?.useTimestamps !== false && replay.hasTime;
     sim.speedScale = opts?.speedScale || 1;
-    setPathFromCoords(replay.coords, !!opts?.loop, replay.segSpeed);
+    setPathFromCoords(replay.coords, !!opts?.loop, replay.segSpeed, sim.useGpxSpeed);
     applyGpxToFinish(track);
     return gpxMeta;
   }
@@ -227,10 +304,14 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
   window.__SIM__ = {
     get path(){ return PATH; },
     get gpxMeta(){ return gpxMeta; },
-    setSpeed(v){ sim.speed = Math.max(0, v); },
+    get speedKmh(){ return Math.round(segSpeedNow() * 3.6); },
+    setSpeed(v){
+      sim.maxCruise = Math.max(0, v);
+      rebuildSegSpeed();
+    },
     setSpeedScale(v){ sim.speedScale = Math.max(0.1, v); },
     setUseGpxSpeed(on){ sim.useGpxSpeed = !!on; },
-    setRoutePath(coords){ setPathFromCoords(coords, false, null); sim.useGpxSpeed = false; },
+    setRoutePath(coords){ setPathFromCoords(coords, false, null, false); },
     loadGpxReplay,
     loadGpxUrl,
     play(){ sim.running = sim.idx < PATH.length - 1 || sim.loop; },

@@ -1,8 +1,8 @@
 /* Service worker Мото-ИЛС.
-   Версия кеша = mr702zw8 (подставляется npm run build).
+   Версия кеша = mr7mot5k (подставляется npm run build).
    HTML и бандл — network-first; офлайн-оболочка без устаревшего index.html. */
 
-const CACHE = 'moto-hud-shell-mr702zw8';
+const CACHE = 'moto-hud-shell-mr7mot5k';
 
 /** Только статика, не зависящая от релиза приложения */
 const SHELL = [
@@ -46,6 +46,7 @@ function respondNetworkFirst(req){
 
 function isAppShell(url){
   if(url.pathname.endsWith('/js/app.js') || url.pathname.endsWith('/js/app.js.map')) return true;
+  if(url.pathname.endsWith('/js/sim.js')) return true;
   if(url.pathname.includes('/css/')) return true;
   if(url.pathname.endsWith('.html') || url.pathname.endsWith('/')) return true;
   return false;
