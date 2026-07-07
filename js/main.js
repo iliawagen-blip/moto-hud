@@ -17,9 +17,17 @@ import { initTelemetryUI } from './telemetry-ui.js';
 import { registerServiceWorker } from './sw-register.js';
 import { initVintageVfd } from './vintage-vfd.js';
 import { initLegalConsent } from './legal-consent.js';
+import { initYandexImportUi } from './yandex-import.js';
+import { initYandexClipboard } from './yandex-clipboard.js';
+import { initYandexShare } from './yandex-share.js';
+import { initViewMode } from './view-mode.js';
 
 applyThemeCss();
 initLegalConsent();
+initYandexImportUi();
+initYandexClipboard();
+initYandexShare();
+initViewMode();
 initThemeManager();
 initVintageVfd();
 initTelemetry().then(() => initTelemetryUI());

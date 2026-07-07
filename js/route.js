@@ -195,6 +195,52 @@ export async function fetchRouteAlternatives(){
   return parseRouteResponse(j).map(parseOsrmRoute);
 }
 
+/** OSRM через цепочку waypoints (Яндекс rtext → наш роутер) */
+export async function fetchRouteThroughWaypoints(waypoints){
+  if(!waypoints || waypoints.length < 2) throw new Error('Нужно ≥2 точек');
+  S._usedCache = false;
+  const url = buildRouteRequestUrl(null, null, { waypoints });
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('OSRM HTTP ' + r.status);
+  const j = await r.json();
+  return parseOsrmRoute(parseRouteResponse(j)[0]);
+}
+
+/** Прямая polyline между точками (быстрый старт без OSRM) */
+export function buildDirectRouteFromWaypoints(waypoints){
+  if(!waypoints || waypoints.length < 2) throw new Error('Нужно ≥2 точек');
+  const coords = waypoints.map(w => [w.lat, w.lon]);
+  let distance = 0;
+  for(let i = 1; i < waypoints.length; i++){
+    distance += haversine(waypoints[i - 1], waypoints[i]);
+  }
+  const duration = distance / (50 / 3.6);
+  const steps = waypoints.map((w, i) => ({
+    lat: w.lat,
+    lon: w.lon,
+    type: i === 0 ? 'depart' : (i === waypoints.length - 1 ? 'arrive' : 'turn'),
+    modifier: '',
+    name: w.label || '',
+    distance: i > 0 ? haversine(waypoints[i - 1], w) : 0,
+    bearing_before: i > 1 ? bearing(waypoints[i - 2], waypoints[i - 1]) : null,
+    bearing_after: i < waypoints.length - 1 ? bearing(w, waypoints[i + 1]) : null,
+    highway: '',
+    intersections: []
+  }));
+  return { coords, steps, distance, duration, _direct: true };
+}
+
+/** Применить импортированный маршрут в state */
+export function attachRouteFromImport(route, waypoints){
+  S.routeAlternatives = [route];
+  S.selectedRouteIdx = 0;
+  S.route = route;
+  attachRouteGeometry(S.route);
+  const last = waypoints[waypoints.length - 1];
+  S.finish = { lat: last.lat, lon: last.lon, label: last.label || 'Яндекс' };
+  S._usedCache = false;
+}
+
 /** Выбор активного варианта из уже загруженных alternatives */
 export function selectRouteIndex(idx){
   if(!S.routeAlternatives.length) return;

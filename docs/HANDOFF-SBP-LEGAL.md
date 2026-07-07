@@ -171,7 +171,7 @@ moto-hud/
 |--------|--------|
 | **Webhook** | Private repo; `POST /webhook/alfa-sbp` → CloudKassir API `sell` |
 | **Email binding** | Form on support → server session или query token |
-| **Drawer «💚 Поддержать»** | Только PWA (`index.html`), не store |
+| **Drawer «💚 Поддержать»** | Только PWA (`index.html`), не store | ✅ |
 | **NAV-PLAN.md** | «Финансирование» | ✅ |
 
 ---

@@ -113,6 +113,14 @@
 
   <button type="button" class="secondary" id="btn-build-route" disabled>🗺 Построить маршрут</button>
 
+  <div id="yandex-banner" class="setup-banner hidden" role="status">
+    <span id="yandex-banner-msg">Найдена ссылка Яндекс.Карт</span>
+    <div class="btnrow c2" style="margin-top:8px">
+      <button type="button" id="yandex-banner-dismiss">Нет</button>
+      <button type="button" class="ok" id="yandex-banner-apply">Применить</button>
+    </div>
+  </div>
+
   <!-- Карта маршрута и варианты (после построения) -->
   <div id="route-section" class="route-section hidden">
     <div id="route-map" class="route-map" aria-label="Карта маршрута"></div>
@@ -216,21 +224,58 @@
     </div>
   </details>
 
+  <!-- ПОДДЕРЖКА — только PWA / браузер (не RuStore APK) -->
+  <details class="setup-details support-drawer pwa-only" id="drawer-support">
+    <summary>💚 Поддержать</summary>
+    <div class="drawer-body">
+      <p class="hint" style="line-height:1.55;margin-bottom:8px">
+        «Мото ИЛС» — <strong>бесплатное</strong> ПО. Все функции доступны без оплаты.
+        Добровольное вознаграждение — по <a href="docs/offer.html" target="_blank" rel="noopener">публичной оферте</a> (УСН 6%, от 1&nbsp;₽, СБП).
+      </p>
+      <a class="support-link-btn" href="docs/support.html" target="_blank" rel="noopener">Открыть оплату СБП</a>
+      <p class="hint" style="margin-top:8px;font-size:12px">На странице — QR-код и поле email для кассового чека. Контакт: <a href="mailto:iliawagen@gmail.com">iliawagen@gmail.com</a></p>
+    </div>
+  </details>
+
   <!-- ПОМОЩЬ — нативный details -->
   <details class="setup-details" id="drawer-help">
     <summary>❓ Как пользоваться</summary>
     <div class="drawer-body hint" style="line-height:1.6">
-      <b>1. Финиш:</b> адрес (🔎 Найти), координаты <code>55.75, 37.61</code> или ссылка карты (📌 Коорд.), либо буфер (📋).<br>
-      <b>2. Маршрут:</b> «🗺 Построить маршрут» — карта с реальными дорогами (OSRM) и варианты. Выберите подложку и маршрут. Жёлтая кнопка «▶ ПОЕХАЛИ» закреплена внизу экрана.<br>
-      <b>3. В пути (HUD):</b> крупная стрелка, скорость, прогноз-дорожка. Карты в движении нет — только то, что нужно на скорости.<br>
-      <b>Кнопки HUD:</b> «ЭКРАН» — полный экран · «НАСТР.» — вернуться сюда · «⛽ ЗАПР.» — поиск АЗС · «СТОП» — завершить (двойной тап).<br>
-      <b>Места ⭐:</b> тап в списке у финиша — подставить точку. Редактирование — в «⭐ Избранное — редактирование».<br>
-      <b>Камера «в спину»:</b> объектив смотрит вслед уходящему мотоциклу (direction ≈ курс).<br>
-      Данные мест хранятся в браузере этого устройства.
+      <span class="help-section">
+        <b>Быстрый старт</b>
+        1. Финиш: 🔎 адрес · 📌 координаты или ссылка карты · 📋 буфер · ⭐ «Мои места».<br>
+        2. «🗺 Построить маршрут» — варианты на карте, выберите подложку OSM.<br>
+        3. «▶ ПОЕХАЛИ» (жёлтая кнопка внизу) — режим HUD.
+      </span>
+      <span class="help-section">
+        <b>HUD в пути</b>
+        Крупная стрелка, скорость, прогноз-дорожка (рельеф, шевроны). Карты в движении нет — только то, что читается через визор.<br>
+        <b>Кнопки:</b> ЭКРАН — полный экран · НАСТР. — сюда · ⛽ ЗАПР. — ближайшая АЗС (1-й тап по маршруту, 2-й — перестроение) · СТОП — двойной тап.
+      </span>
+      <span class="help-section">
+        <b>Избранное и опции</b>
+        «⭐ Избранное — редактирование» — сохранение, импорт/экспорт мест. В «⚙ Опции»: голос, тема HUD, камеры «в спину», калибровка компаса (восьмёрка на стоянке), телеметрия (opt-in, 📊 сессии).
+      </span>
+      <span class="help-section">
+        <b>HUD ↔ карта</b>
+        Двойной тап по экрану HUD (не по кнопкам): HUD → обзор маршрута → zoom улиц → снова HUD. Навигация и голос не останавливаются.
+      </span>
+      <span class="help-section">
+        <b>Яндекс.Карты</b>
+        Вставьте ссылку «Поделиться» с маршрутом (📋 Буфер или поле финиша) — импорт waypoints и пересчёт OSRM. Для точности добавляйте промежуточные точки каждые 3–5 км в Яндексе.
+      </span>
+      <span class="help-section">
+        <b>Данные и сеть</b>
+        Настройки и места — локально на устройстве. Маршрут и карта — через интернет (OSRM, OpenStreetMap). При плохом GPS HUD может показать «GPS ПОТЕРЯН» — ориентируйтесь по дороге.
+      </span>
+      <span class="help-section pwa-only" id="help-support-hint">
+        <b>Поддержка разработки</b>
+        Раздел «💚 Поддержать» — добровольное вознаграждение по оферте (СБП). Paywall нет.
+      </span>
       <p style="margin-top:10px" id="help-legal-links">
         <a href="docs/privacy.html" target="_blank" rel="noopener">Конфиденциальность</a> ·
-        <a href="docs/offer.html" target="_blank" rel="noopener">Публичная оферта</a> ·
-        <a href="docs/disclaimer.html" target="_blank" rel="noopener">Отказ от ответственности</a><span id="help-support-sep"> · </span><a href="docs/support.html" target="_blank" rel="noopener" id="help-support-link">Поддержать проект</a>
+        <a href="docs/offer.html" target="_blank" rel="noopener">Оферта</a> ·
+        <a href="docs/disclaimer.html" target="_blank" rel="noopener">Отказ от ответственности</a>
       </p>
     </div>
   </details>
@@ -271,6 +316,23 @@
   </div>
 </div>
 
+<!-- модалка импорта Яндекс.Карт -->
+<div class="modal" id="yandexImportModal">
+  <div class="modal-card">
+    <h3>Маршрут из Яндекс.Карт</h3>
+    <div class="sub" id="yandex-import-info">—</div>
+    <div class="btnrow" style="grid-template-columns:1fr;margin-top:12px">
+      <button type="button" class="ok" id="yandex-import-routed">🗺 Пересчёт OSRM</button>
+    </div>
+    <div class="btnrow" style="grid-template-columns:1fr;margin-top:8px">
+      <button type="button" class="secondary" id="yandex-import-direct">⚡ Быстрый старт (прямая линия)</button>
+    </div>
+    <div class="btnrow c2" style="margin-top:12px">
+      <button type="button" id="yandex-import-cancel">Отмена</button>
+    </div>
+  </div>
+</div>
+
 <!-- модалка сохранения места -->
 <div class="modal" id="favModal">
   <div class="modal-card">
@@ -293,6 +355,8 @@
     <span id="mid-info">—</span>
     <span id="clock">--:--</span>
   </div>
+
+  <div id="nav-map-pane" class="nav-map-pane" aria-hidden="true"></div>
 
   <!-- компас N E S W (опционально) -->
   <div class="compass"><svg id="compass-svg" viewBox="0 0 400 36" preserveAspectRatio="xMidYMid meet"></svg></div>

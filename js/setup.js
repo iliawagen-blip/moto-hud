@@ -2,6 +2,8 @@ import { S, DEFAULT_ELEV_EXAG, DEFAULT_ELEV_PROFILE_H, MIN_ELEV_PROFILE_H, MAX_E
 
 import { $, escapeHtml } from './util.js';
 import { parseInput } from './geo.js';
+import { isYandexMapsUrl } from './yandex-link.js';
+import { importYandexFromText } from './yandex-import.js';
 
 import { startGps, checkStartReady } from './gps.js';
 
@@ -44,6 +46,21 @@ function syncSimPath(){
 export function setGoBarVisible(visible){
   $('go-bar')?.classList.toggle('hidden', !visible);
   $('setup')?.classList.toggle('has-go-bar', !!visible);
+}
+
+/** Обновить карту/инфо после построения или импорта маршрута */
+export function refreshRouteUi(){
+  if(!S.route) return;
+  renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+  renderRouteAlts(S.routeAlternatives, S.selectedRouteIdx, pickRoute);
+  updateRouteInfo(S.route);
+  syncSimPath();
+  setGoBarVisible(true);
+  loadCameras();
+  checkStartReady();
+  scheduleGeometryBuild(S.routeAlternatives, () => {
+    renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+  });
 }
 
 
@@ -359,11 +376,13 @@ export function setFinishQuiet(lat, lon, label = 'Точка'){
 
 
 
-export function applyCoordsOrLink(opts = {}){
+export async function applyCoordsOrLink(opts = {}){
 
   const hideSearch = opts.hideSearch !== false;
 
   const raw = $('finish-input').value.trim();
+
+  if(await tryYandexRouteImport(raw)) return;
 
   const p = parseInput(raw);
 
@@ -418,9 +437,19 @@ function toggleFullscreen(){
 
 
 function looksLikeCoordsOrLink(s){
+  return /-?\d{1,2}\.\d+.*-?\d{1,3}\.\d+/.test(s) || /[?&](ll|pt)=/.test(s) || isYandexMapsUrl(s);
+}
 
-  return /-?\d{1,2}\.\d+.*-?\d{1,3}\.\d+/.test(s) || /[?&](ll|pt)=/.test(s);
-
+async function tryYandexRouteImport(raw){
+  if(!isYandexMapsUrl(raw)) return false;
+  try{
+    await importYandexFromText(raw);
+    return true;
+  }catch(e){
+    $('s-finish').textContent = '❌ ' + (e.message || e);
+    $('s-finish').className = 'status err';
+    return true;
+  }
 }
 
 
@@ -479,7 +508,9 @@ export function bindSetupUI(){
 
         $('finish-input').value = t;
 
-        if(looksLikeCoordsOrLink(t)) applyCoordsOrLink();
+        if(await tryYandexRouteImport(t)) return;
+
+        if(looksLikeCoordsOrLink(t)) await applyCoordsOrLink();
 
         else doAddressSearch();
 
@@ -875,14 +906,12 @@ export function initNativeHints(){
 
   help.innerHTML +=
 
-    '<br><br><b>Android-приложение:</b> при навигации появится уведомление «Навигация активна» — ' +
+    '<span class="help-section"><b>Android-приложение</b> ' +
 
-    'это foreground-service GPS (требование Android).<br>' +
+    'При навигации — уведомление «Навигация активна» (foreground-service GPS). ' +
 
-    '<b>Батарея:</b> в настройках системы отключите оптимизацию батареи для «Мото ИЛС» ' +
+    'В настройках системы отключите оптимизацию батареи для «Мото ИЛС», иначе GPS может отваливаться на Samsung/Xiaomi/Huawei. ' +
 
-    '(Батарея → приложения → без ограничений), иначе GPS может отваливаться на прошивках Samsung/Xiaomi/Huawei.<br>' +
-
-    'Чек-лист OEM-тестов: <code>docs/oem-gps-matrix.md</code>.';
+    'Чек-лист: <code>docs/oem-gps-matrix.md</code>.</span>';
 
 }

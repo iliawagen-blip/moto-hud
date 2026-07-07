@@ -26,5 +26,14 @@
       "type": "image/svg+xml",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "share_target": {
+    "action": "./index.html",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "shared_text",
+      "url": "shared_url"
+    }
+  }
 }
