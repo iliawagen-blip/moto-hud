@@ -7,7 +7,7 @@ const WWW = path.join(ROOT, 'www');
 const BUILD_ID = Date.now().toString(36);
 
 const STATIC_FILES = ['index.html', 'sim.html', 'manifest.json', 'icon.svg', 'sw.js', 'serve.json', 'preview.bat'];
-const STATIC_DIRS = ['css', 'js', 'fixtures'];
+const STATIC_DIRS = ['css', 'js', 'fixtures', 'docs'];
 
 function rmrf(p){
   if(fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });

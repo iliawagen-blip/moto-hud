@@ -50,6 +50,20 @@
 **План подготовки к RuStore / APK / web-тестам:**  
 [docs/release-plan.html](https://iliawagen-blip.github.io/moto-hud/docs/release-plan.html) (локально: `docs/release-plan.html`).
 
+## Поддержать проект
+
+ПО **бесплатное** — все функции доступны без оплаты. Добровольное вознаграждение за право использования по [публичной оферте](https://iliawagen-blip.github.io/moto-hud/docs/offer.html):
+
+- **Страница оплаты (СБП):** [docs/support.html](https://iliawagen-blip.github.io/moto-hud/docs/support.html)  
+- **Оферта:** [docs/offer.html](https://iliawagen-blip.github.io/moto-hud/docs/offer.html)  
+- **Конфиденциальность:** [docs/privacy.html](https://iliawagen-blip.github.io/moto-hud/docs/privacy.html)  
+- **Отказ от ответственности:** [docs/disclaimer.html](https://iliawagen-blip.github.io/moto-hud/docs/disclaimer.html)
+
+Оплата через СБП (QR или ссылка), сумма от 1 ₽ на ваш выбор. Кассовый чек формируется в соответствии с 54-ФЗ.  
+В **APK для RuStore** кнопки оплаты в интерфейсе нет — ссылка на support только в описании приложения в магазине.
+
+Контакт: [iliawagen@gmail.com](mailto:iliawagen@gmail.com)
+
 ## Демо для друзей (симуляция)
 
 Одна ссылка для рассылки — **HTTPS**, работает с телефона и ПК:

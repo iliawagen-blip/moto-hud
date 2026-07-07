@@ -6,38 +6,33 @@
 <title>Мото ИЛС — поддержать проект</title>
 <link rel="stylesheet" href="legal-doc.css">
 <style>
-.qr-box{text-align:center;margin:20px 0;padding:20px;border:1px dashed var(--border);border-radius:12px;background:var(--panel)}
-.qr-box img{max-width:280px;width:100%;height:auto}
+.qr-box{text-align:center;margin:20px 0;padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+.qr-box img{max-width:280px;width:100%;height:auto;border-radius:8px}
 .btn{display:inline-block;margin-top:12px;padding:12px 20px;border-radius:10px;background:var(--accent);color:#000;
   font-weight:800;text-decoration:none}
 .field{margin:12px 0}
 .field label{display:block;font-size:.9rem;color:var(--dim);margin-bottom:6px}
 .field input{width:100%;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);
   background:var(--panel2);color:var(--fg);font-size:16px}
+.hint{font-size:.9rem;color:var(--dim);margin-top:8px}
 </style>
 </head>
 <body>
 
 <h1>Поддержать развитие «Мото ИЛС»</h1>
-<p class="meta">ПО бесплатное. Оплата — добровольное вознаграждение по <a href="offer.html">публичной оферте</a> (УСН 6%).</p>
-
-<div class="note">
-  После подключения СБП в Альфа-Банке добавьте PNG QR-кода (<code>docs/assets/sbp-qr.png</code>) и ссылку <code>https://qr.nspk.ru/…</code> на кнопку ниже. До этого можно перевести по реквизитам через СБП «По номеру телефона / реквизитам» в приложении банка.
-</div>
+<p class="meta">ПО бесплатное. Оплата — добровольное вознаграждение по <a href="offer.html">публичной оферте</a> (УСН 6%, от 1 ₽).</p>
 
 <div class="requisites" style="margin-bottom:20px">
   <strong>Получатель:</strong> ИП Вагин Илья Александрович<br>
   <strong>ИНН:</strong> 772872195683<br>
-  <strong>Р/с:</strong> 40802810302280007293 (RUR)<br>
-  <strong>Банк:</strong> АО «АЛЬФА-БАНК» · <strong>БИК:</strong> 044525593<br>
-  <strong>К/с:</strong> 30101810200000000593<br>
-  <strong>Назначение платежа:</strong> Вознаграждение по оферте за ПО «Мото ИЛС»<br>
+  <strong>Назначение:</strong> Вознаграждение по оферте за ПО «Мото ИЛС»<br>
   <strong>Контакт:</strong> <a href="mailto:iliawagen@gmail.com">iliawagen@gmail.com</a>
 </div>
 
-<div class="qr-box" id="qr-placeholder">
-  <p><strong>QR-код СБП</strong> (замените на <code>docs/assets/sbp-qr.png</code>)</p>
-  <!-- <img src="assets/sbp-qr.png" width="280" height="280" alt="QR-код СБП для поддержки Мото ИЛС"> -->
+<div class="qr-box">
+  <p><strong>Отсканируйте QR-код СБП</strong></p>
+  <img src="assets/sbp-qr.png" width="280" height="280" alt="QR-код СБП для поддержки Мото ИЛС">
+  <p class="hint">Сумму выбираете сами (не менее 1 ₽)</p>
 </div>
 
 <div class="field">
@@ -46,15 +41,32 @@
 </div>
 
 <p>
-  <a class="btn" id="sbp-link" href="#" aria-disabled="true">Перейти к оплате СБП</a>
-  <span class="meta" style="display:block;margin-top:8px">Ссылка будет активна после настройки QR в банке.</span>
+  <a class="btn" id="sbp-link" href="https://qr.nspk.ru/AS1A0073KULGI2489639NQM5QPNBUIOH" target="_blank" rel="noopener">
+    Перейти к оплате СБП
+  </a>
 </p>
 
-<p>На iPhone откройте QR в приложении банка или отсканируйте код с другого экрана.</p>
+<p class="hint">На телефоне ссылка откроет приложение банка. На iPhone, если не сработает — отсканируйте QR камерой или из другого банковского приложения.</p>
+
+<p class="hint">Альтернатива: перевод по реквизитам в приложении банка (р/с 40802810302280007293, БИК 044525593).</p>
 
 <footer>
-<a href="offer.html">Оферта</a> · <a href="disclaimer.html">Отказ от ответственности</a> · <a href="../index.html">В приложение</a>
+<a href="privacy.html">Конфиденциальность</a> · <a href="offer.html">Оферта</a> · <a href="disclaimer.html">Отказ от ответственности</a> · <a href="../index.html">В приложение</a>
 </footer>
+
+<script>
+(function(){
+  var link = document.getElementById('sbp-link');
+  var emailInput = document.getElementById('receipt-email');
+  if(!link) return;
+  link.addEventListener('click', function(){
+    var email = emailInput && emailInput.value ? emailInput.value.trim() : '';
+    if(email){
+      try{ sessionStorage.setItem('moto-hud-receipt-email', email); }catch(e){}
+    }
+  });
+})();
+</script>
 
 </body>
 </html>
