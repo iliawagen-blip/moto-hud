@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мото ИЛС — план навигации v3</title>
+<style>
+:root{
+  --bg:#000; --fg:#e8eef5; --dim:#8b9cb3;
+  --accent:#00ff66; --accent2:#ffd400;
+  --ok:#39d353; --warn:#ffb000; --danger:#e10600;
+  --panel:#0a0f16; --panel2:#141d2a; --border:#1a2332;
+  --link:#6eb5ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--fg);
+  font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  padding:24px 16px 64px;max-width:960px;margin:0 auto;
+}
+h1{font-size:1.75rem;color:var(--accent);margin-bottom:6px;line-height:1.25}
+.sub{color:var(--dim);font-size:.95rem;margin-bottom:24px;line-height:1.5}
+h2{font-size:1.2rem;color:var(--accent2);margin:36px 0 14px;padding-top:10px;border-top:1px solid var(--border)}
+h3{font-size:1.02rem;color:var(--fg);margin:22px 0 10px}
+h4{font-size:.95rem;color:var(--dim);margin:16px 0 8px}
+p,li{margin-bottom:.45em}
+ul,ol{padding-left:1.35em;margin-bottom:1em}
+a{color:var(--link)}
+table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:.9rem}
+th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--panel2);color:var(--accent2);font-weight:700}
+tr:nth-child(even) td{background:rgba(20,29,42,.4)}
+code,pre{background:var(--panel2);border:1px solid var(--border);border-radius:6px}
+code{padding:2px 6px;font-size:.86em;color:#c5e8ff}
+pre{padding:12px 14px;overflow-x:auto;font-size:.84rem;line-height:1.45;margin:12px 0}
+.note,.warn,.ok-box{
+  border-radius:10px;padding:12px 14px;margin:14px 0;font-size:.93rem;border:1px solid var(--border);
+}
+.note{background:var(--panel);border-left:3px solid var(--link)}
+.warn{background:rgba(255,176,0,.07);border-left:3px solid var(--warn)}
+.ok-box{background:rgba(57,211,83,.07);border-left:3px solid var(--ok)}
+nav.toc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:28px}
+nav.toc ol{margin-bottom:0;columns:2;column-gap:24px}
+nav.toc a{text-decoration:none}
+.badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:800;margin-right:4px}
+.b-new{background:rgba(0,255,102,.1);color:var(--accent);border:1px solid rgba(0,255,102,.3)}
+.b-done{background:rgba(57,211,83,.15);color:var(--ok);border:1px solid rgba(57,211,83,.35)}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color:var(--dim);font-size:.85rem}
+@media(max-width:640px){nav.toc ol{columns:1}}
+</style>
+</head>
+<body>
+
+<h1>🧭 План улучшения навигации — ревизия v3</h1>
+<p class="sub">
+  Мото ИЛС · snap, манёвры, reroute, интеграции<br>
+  Обновлено: <strong>2026-07-07</strong> ·
+  исходник: <a href="NAV-PLAN.md">NAV-PLAN.md</a> ·
+  <a href="plan.html">мастер-план продукта</a>
+</p>
+
+<div class="ok-box">
+  <strong>v3:</strong> направления <span class="badge b-new">15</span> Яндекс-waypoints и
+  <span class="badge b-new">16</span> HUD↔карта (dbltap).
+  Направления 1–14 из v2 без переписывания. В коде реализовано S0–S3 + pre-Valhalla доработки.
+</div>
+
+<nav class="toc" aria-label="Содержание">
+<strong>Содержание</strong>
+<ol>
+  <li><a href="#priority">Приоритеты</a></li>
+  <li><a href="#roadmap">Дорожная карта M1</a></li>
+  <li><a href="#d1-14">Направления 1–14</a></li>
+  <li><a href="#d15">Направление 15 — Яндекс</a></li>
+  <li><a href="#d16">Направление 16 — HUD↔карта</a></li>
+  <li><a href="#metrics">Метрики M6</a></li>
+  <li><a href="#risks">Риски</a></li>
+  <li><a href="#scope">Out of scope</a></li>
+</ol>
+</nav>
+
+<h2 id="priority">Приоритизация (v3)</h2>
+<table>
+<thead><tr><th>№</th><th>Направление</th><th>Эффект</th><th>Трудозатраты</th><th>Риск</th></tr></thead>
+<tbody>
+<tr><td>10</td><td>Regression harness</td><td>Критичен</td><td>2–3 вечера</td><td>Низкий</td></tr>
+<tr><td>1–6</td><td>Snap, gate, filter…</td><td>Высокий</td><td>S0–S3</td><td>Средний</td></tr>
+<tr class="highlight"><td><strong>15</strong></td><td><strong>Яндекс-маршруты</strong> (сх. 1/5/6/7)</td><td><strong>Очень высокий (РФ)</strong></td><td>2–3 веч + 1–2 дня (Share)</td><td>Низк.–средн.</td></tr>
+<tr class="highlight"><td><strong>16</strong></td><td><strong>HUD↔карта dbltap</strong></td><td><strong>Высокий UX</strong></td><td>2–3 вечера</td><td>Низкий</td></tr>
+<tr><td>7</td><td>Valhalla + trace</td><td>Очень высокий</td><td>3–5 нед</td><td>Высокий</td></tr>
+<tr><td>8–14</td><td>Fusion, ML, offline…</td><td>Долгосрочно</td><td>M2–M6</td><td>Разный</td></tr>
+</tbody>
+</table>
+<p class="note"><strong>Стратегически (M4–M6):</strong> ymaps3 JS API с коммерческим ключом — отдельно от №15, бюджет от десятков тысяч ₽/мес.</p>
+
+<h2 id="roadmap">Дорожная карта — 1 месяц</h2>
+<table>
+<thead><tr><th>Спринт</th><th>Содержание</th></tr></thead>
+<tbody>
+<tr><td>S0</td><td>constants + baseline + harness №10</td></tr>
+<tr><td><strong>S1</strong></td><td>№6 + №2 + №4 + <strong>№15 сх. 1/5/7</strong> + <strong>№16</strong></td></tr>
+<tr><td><strong>S2</strong></td><td>№1 + №3 + <strong>№15 сх. 6 Share Target</strong></td></tr>
+<tr><td>S3</td><td>№5 reroute + №9 telemetry + №13 compass OSM</td></tr>
+<tr><td>S4</td><td>Replay 5 треков, baseline_v1, деплой</td></tr>
+</tbody>
+</table>
+
+<h2 id="d1-14">Направления 1–14</h2>
+<p>Без изменений относительно <a href="NAV-PLAN.md">NAV-PLAN.md</a> v2/v3: snap-quality, heading-gate, inertia, cold start, reroute, OSRM filter, Valhalla, fusion, telemetry, harness, offline, battery, bad OSM, monitoring.</p>
+<p><span class="badge b-done">код</span> S0–S3 + pre-Valhalla: <code>nav-constants.js</code>, <code>snap-quality.js</code>, <code>gps-converge.js</code>, <code>maneuver-filter.js</code>, <code>offroute.js</code>, <code>router.js</code>, <code>nav-replay.mjs</code>.</p>
+
+<h2 id="d15">Направление 15 — Яндекс как источник маршрутов</h2>
+<div class="warn">
+  <strong>Запрещено:</strong> парсинг HTML yandex.ru/maps, закрытые API Навигатора, steps из фонового Яндекс.Навигатора.
+  Только waypoints из URL (<code>rtext</code>) + redirect short-link.
+</div>
+
+<h3>Схема 15.1 — Ссылка «Поделиться» → waypoints</h3>
+<p>Пользователь строит маршрут в Яндекс.Картах → копирует ссылку → Moto HUD парсит <code>rtext</code> → OSRM/Valhalla между точками.</p>
+<p class="note">UX: для совпадения с Яндексом — промежуточные точки <strong>каждые 3–5 км</strong>.</p>
+<pre>async function parseYandexRouteLink(rawUrl){
+  let url = rawUrl.trim();
+  if(SHORT_RE.test(url)){
+    const res = await fetch(url, { redirect: 'follow', method: 'HEAD' });
+    url = res.url;
+  }
+  const m = url.match(/[?&]rtext=([^&]+)/);
+  if(!m) throw new Error('Нет rtext');
+  return decodeURIComponent(m[1]).split('~').map(parseRtextPoint).filter(Boolean);
+}</pre>
+<table>
+<thead><tr><th>Критерий</th><th>Цель</th></tr></thead>
+<tbody>
+<tr><td>Полилиния в пределах 200 м от Яндекса</td><td>≥80% при waypoints раз в 3 км</td></tr>
+<tr><td>Разбор валидных ссылок (фикстуры)</td><td>100%</td></tr>
+</tbody>
+</table>
+
+<h3>Схема 15.5 — Гибрид: планирование Яндекс, ведение наше</h3>
+<p>Диалог: <strong>быстрый старт</strong> (прямые отрезки) или <strong>пересчёт движком</strong>. История в IndexedDB.</p>
+<table><tr><th>Критерий</th><th>Цель</th></tr>
+<tr><td>Время от ссылки до старта</td><td>&lt;15 с</td></tr></table>
+
+<h3>Схема 15.6 — Web Share Target</h3>
+<pre>"share_target": {
+  "action": "/",
+  "method": "GET",
+  "params": { "url": "shared_url", "text": "shared_text" }
+}</pre>
+<p>PWA: Add to Home Screen (Android). Capacitor: <code>ACTION_SEND</code> + <code>text/plain</code> в AndroidManifest.</p>
+<table><tr><th>Критерий</th><th>Цель</th></tr>
+<tr><td>Доля бета с Share Target за месяц</td><td>&gt;40%</td></tr></table>
+
+<h3>Схема 15.7 — Мониторинг буфера обмена</h3>
+<p><code>visibilitychange</code> → <code>clipboard.readText</code> → баннер «Применить» (debounce 400 ms, hash URL).</p>
+<table><tr><th>Критерий</th><th>Цель</th></tr>
+<tr><td>Успешное применение за 1 тап (Android Chrome)</td><td>≥90%</td></tr></table>
+
+<h2 id="d16">Направление 16 — HUD↔карта (двойной тап)</h2>
+<p>Цикл: <strong>HUD → MAP_OVERVIEW → MAP_ZOOM → HUD</strong>. Навигация (snap, голос, камеры) не останавливается.</p>
+
+<table>
+<thead><tr><th>Режим</th><th>Поведение</th></tr></thead>
+<tbody>
+<tr><td>HUD</td><td>Стрелка + дорожка (как сейчас)</td></tr>
+<tr><td>MAP_OVERVIEW</td><td><code>fitBounds</code> остаток маршрута, padding 40 px</td></tr>
+<tr><td>MAP_ZOOM</td><td>zoom 16–17, центр на GPS, обновление каждые 2 с</td></tr>
+</tbody>
+</table>
+
+<h4>Компоновка (жёстко)</h4>
+<p>Блок скорости — <strong>ровно ⅓ экрана</strong> во всех режимах. Карта занимает оставшиеся ⅔ (верх в портрете, слева в альбоме).</p>
+
+<h4>Детектор dbltap</h4>
+<pre>const DBL_TAP_MS = 400, DBL_TAP_MAX_PX = 40;
+// touchend: два касания &lt;400 ms, расстояние &lt;40 px, кроме statusbar и кнопок</pre>
+
+<h4>Leaflet</h4>
+<ul>
+  <li>Инстанс в <code>S.map</code>, не пересоздавать</li>
+  <li>При HUD: <code>display:none</code> + <code>map.stop()</code></li>
+  <li>При показе: <code>invalidateSize()</code></li>
+  <li>Тайлы: OSM, CyclOSM, Wikimedia, CARTO Voyager, OpenTopoMap</li>
+</ul>
+
+<table>
+<thead><tr><th>Критерий</th><th>Цель</th></tr></thead>
+<tbody>
+<tr><td>Переключение режимов</td><td>&lt;300 мс</td></tr>
+<tr><td>Скорость: позиция/размер</td><td>без регрессии</td></tr>
+<tr><td>Голос манёвров/камер</td><td>во всех режимах</td></tr>
+<tr><td>Батарея в MAP vs HUD</td><td>не более +15%</td></tr>
+</tbody>
+</table>
+
+<h2 id="metrics">Метрики M6 (дополнение v3)</h2>
+<table>
+<thead><tr><th>Метрика</th><th>Цель</th></tr></thead>
+<tbody>
+<tr><td>p95 lat_off, acc&lt;15 м</td><td>&lt;12 м</td></tr>
+<tr><td>jump / 100 km</td><td>&lt;0.5</td></tr>
+<tr><td><strong>Поездки с ≥1 переключением в карту</strong></td><td><strong>&gt;60%</strong></td></tr>
+<tr><td><strong>Новые поездки через Share/буфер Яндекс</strong></td><td><strong>&gt;30%</strong></td></tr>
+</tbody>
+</table>
+
+<h2 id="risks">Риски (дополнение v3)</h2>
+<table>
+<thead><tr><th>Риск</th><th>Mitigation</th></tr></thead>
+<tbody>
+<tr><td>Блокировка short-link redirect Яндекса</td><td>Rate limit; кеш 24 ч; fallback rtext / ручной ввод</td></tr>
+<tr><td>Изменение формата URL Яндекса</td><td>CI 20+ ссылок; <code>YANDEX_PARSER_REV</code>; fallback-эвристики</td></tr>
+</tbody>
+</table>
+
+<h2 id="scope">Out of scope</h2>
+<ul>
+  <li>Парсинг HTML Яндекс.Карт · фоновый Яндекс.Навигатор · закрытые API Навигатора</li>
+  <li>ymaps3/MapKit как источник данных в №15 (только M4–M6 с ключом)</li>
+  <li>CarPlay · ML без 1500+ поездок · полный offline РФ</li>
+</ul>
+
+<footer>
+  Мото ИЛС · план навигации v3 · <a href="NAV-PLAN.md">NAV-PLAN.md</a> · 2026-07-07
+</footer>
+
+</body>
+</html>
