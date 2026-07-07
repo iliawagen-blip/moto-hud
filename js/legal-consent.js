@@ -42,10 +42,7 @@ function showBlockedScreen(){
 /** RuStore/APK: без ссылки на оплату в UI (только в описании карточки). */
 export function applyStoreLegalUi(){
   if(!isNative()) return;
-  const link = document.getElementById('help-support-link');
-  const sep = document.getElementById('help-support-sep');
-  if(link) link.style.display = 'none';
-  if(sep) sep.style.display = 'none';
+  document.querySelectorAll('.pwa-only').forEach(el => { el.style.display = 'none'; });
 }
 
 async function onDecline(){

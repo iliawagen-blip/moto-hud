@@ -30,6 +30,7 @@ import { tickAutoMode } from './theme-manager.js';
 import { applyFinishInfoVisibility } from './hud-opts.js';
 import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide } from './offroute.js';
 import telemetry from './telemetry.js';
+import { tickNavMap, resetViewMode } from './view-mode.js';
 
 let _lastMarkCtx = null;
 
@@ -324,6 +325,7 @@ export function onTick(){
   checkCamerasILS();
   checkCurveSpeedWarn(kmh);
   refreshFuelPanel();
+  tickNavMap();
 }
 
 function checkCurveSpeedWarn(kmh){
@@ -398,6 +400,7 @@ export function stopHud(){
   releaseWakeLock();
   clearVoiceQueue();
   resetOffRouteMachine();
+  resetViewMode();
   try{ document.exitFullscreen && document.exitFullscreen(); }catch(e){}
 }
 

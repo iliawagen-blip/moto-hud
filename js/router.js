@@ -18,16 +18,21 @@ export function getRouterBackend(){
  * @param {{ lon: number, lat: number }} from
  * @param {{ lon: number, lat: number }} to
  * @param {object} [opts]
+ * @param {Array<{lon:number,lat:number}>} [opts.waypoints] — полная цепочка (from/to игнорируются)
  */
 export function buildRouteRequestUrl(from, to, opts = {}){
   const backend = getRouterBackend();
   if(backend === RouterBackend.VALHALLA){
     throw new Error('Valhalla: не подключён (спайк Фаза 4)');
   }
-  let url = OSRM_BASE + `${from.lon},${from.lat};${to.lon},${to.lat}` +
+  const pts = opts.waypoints?.length
+    ? opts.waypoints
+    : [from, to];
+  const coordStr = pts.map(p => `${p.lon},${p.lat}`).join(';');
+  let url = OSRM_BASE + coordStr +
     '?overview=full&geometries=geojson&steps=true&annotations=false';
   if(opts.alternatives) url += '&alternatives=2';
-  if(opts.rerouteBearing != null && opts.rerouteRadius != null){
+  if(opts.rerouteBearing != null && opts.rerouteRadius != null && pts.length === 2){
     url += '&bearings=' + opts.rerouteBearing + ',45;&radiuses=' + opts.rerouteRadius + ';';
   }
   return url;

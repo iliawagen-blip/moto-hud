@@ -29,6 +29,8 @@ export const S = {
   rerouting: false,
   rerouteBackoffStep: 0,
   rerouteBackoffUntil: 0,
+  viewMode: 'hud',
+  lastAppliedClipboardHash: '',
   watchId: null,
   wakeLock: null,
   startTs: null,

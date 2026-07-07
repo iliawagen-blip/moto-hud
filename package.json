@@ -9,6 +9,7 @@
     "build": "node scripts/build-web.mjs",
     "nav:replay": "node scripts/nav-replay.mjs --baseline fixtures/baseline_v0.json",
     "nav:test": "node scripts/nav-replay.mjs --self-test",
+    "yandex:test": "node scripts/yandex-link-test.mjs",
     "cap:sync": "npm run build && npx cap sync",
     "cap:android": "npm run cap:sync && npx cap open android"
   },
