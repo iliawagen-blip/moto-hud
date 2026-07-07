@@ -4,6 +4,7 @@
  * При помехах магнитометра — fallback на GPS-курс.
  */
 import { angleDiff } from './geo.js';
+import { FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN } from './nav-constants.js';
 
 let sensorHeading = null;
 let sensorTs = 0;
@@ -137,7 +138,7 @@ export function fuseHeading(gpsHeading, speedMps){
 
   if(!sensorFresh) return gpsHeading ?? null;
 
-  const gpsWeight = Math.min(1, Math.max(0, (spd - 1.5) / 8));
+  const gpsWeight = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
 
   if(gpsHeading == null || isNaN(gpsHeading)) return sensorHeading;
   if(gpsWeight >= 0.95) return gpsHeading;

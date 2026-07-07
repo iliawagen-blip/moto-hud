@@ -3,40 +3,38 @@ import { haversine, bearing, distToSegment } from './geo.js';
 import { curPos } from './gps.js';
 import { updateCamStatusUI } from './cam-status.js';
 import {
-  buildRouteGeometry, resetRouteSnap, getRouteSnapForNav, remainingDistanceS
+  buildRouteGeometry, resetRouteSnap, getRouteSnapForNav, getNavSnap,
+  remainingDistanceS, findSForLatLon, interpolateAtS, avgTangentDeg
 } from './route-geometry.js';
 import { buildCrossingsData, resetCrossingTelemetry } from './crossings.js';
 import { loadRouteElevation } from './elevation.js';
 import { computeCurveSpeed } from './curve-speed.js';
 import { resetFuelRouteBinding } from './fuel.js';
+import { isTurnStep } from './voice.js';
 import telemetry from './telemetry.js';
+import {
+  isSignificantManeuver,
+  MANEUVER_MIN_ANGLE,
+  MANEUVER_BEND_ANGLE
+} from './maneuver-filter.js';
 
-/** Скрыть указатель поворота после прохождения, м (по s маршрута) */
-export const MANEUVER_PASSED_M = 8;
-/** Пауза перед показом следующего указателя после прохождения, м */
-export const MANEUVER_NEXT_DELAY_M = 90;
+import {
+  MANEUVER_PASSED_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG
+} from './nav-constants.js';
+import { assessRouteQuality, RouteQuality } from './route-quality.js';
+import { angleDiff } from './geo.js';
 
-function isPathTurnStep(st){
-  return st && st.type !== 'depart' && st.type !== 'arrive' &&
-    st.modifier && st.modifier !== 'straight';
-}
+export { isSignificantManeuver, MANEUVER_MIN_ANGLE, MANEUVER_BEND_ANGLE, MANEUVER_PASSED_M };
 
-/** Видимые на прогноз-дорожке повороты: без «хвоста» после проезда, с паузой до следующего */
 export function getVisibleTurnManeuvers(geom, curS, limit){
-  if(!geom?.maneuvers?.length || curS == null) return [];
   const maxN = limit || 3;
   const sorted = geom.maneuvers
-    .filter(m => isPathTurnStep(m.step))
+    .filter(m => isSignificantManeuver(m, geom))
     .sort((a, b) => a.s - b.s);
   const out = [];
-  let blockUntilS = -Infinity;
 
   for(const m of sorted){
-    if(curS > m.s + MANEUVER_PASSED_M){
-      blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
-      continue;
-    }
-    if(m.s < blockUntilS) continue;
+    if(curS > m.s + MANEUVER_PASSED_M) continue;
     const ahead = m.s - curS;
     if(ahead > 500) continue;
     out.push({ maneuver: m, distAhead: Math.max(0, ahead) });
@@ -76,9 +74,25 @@ export function ensureRouteGeometry(route){
 
 function attachRouteGeometry(route){
   ensureRouteGeometry(route);
+  S.routeQuality = assessRouteQuality(route);
+  S.compassMode = S.routeQuality === RouteQuality.LOW;
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
+}
+
+function seedSnapAfterReroute(){
+  const geom = S.route?.geometry;
+  const gps = S.gps;
+  if(!geom || !gps) return;
+  const s0 = findSForLatLon(geom, gps.lat, gps.lon);
+  const p = interpolateAtS(geom, s0);
+  const lat = haversine(gps, p);
+  const tan = avgTangentDeg(geom, s0, 25);
+  const hdg = S.smoothedHeading;
+  if(lat > REROUTE_SEED_MAX_LATERAL_M) return;
+  if(hdg != null && angleDiff(hdg, tan) > REROUTE_SEED_MAX_ANGLE_DEG) return;
+  resetRouteSnap({ seedS: s0, lateral: lat });
 }
 
 /** Фоновая сборка geometry для всех вариантов после открытия карты */
@@ -141,6 +155,8 @@ function parseOsrmRoute(rt){
         name: st.name || '',
         distance: st.distance,
         exit: m.exit,
+        bearing_before: m.bearing_before,
+        bearing_after: m.bearing_after,
         intersections: (st.intersections || []).map(ix => ({
           lat: ix.location[1],
           lon: ix.location[0],
@@ -240,6 +256,7 @@ export async function recalcRoute(){
   try{
     S.routeAlternatives = [];
     await buildRoute({ reroute: true, allowCache: false });
+    seedSnapAfterReroute();
     telemetry.log('nav', { sub: 'reroute' });
     Array.from(S.camWarned).forEach(k => {
       if(typeof k === 'string' && k.startsWith('st_')) S.camWarned.delete(k);
@@ -379,29 +396,25 @@ export function stepCoordIndex(step){
 export function findNextManeuver(){
   if(!S.route || !S.route.steps.length) return null;
   const geom = S.route.geometry;
-  const snap = geom ? getRouteSnapForNav(S.smoothedHeading) : null;
+  const snap = geom ? getNavSnap(S.smoothedHeading) : null;
   const curS = snap ? snap.s : null;
   const curIdx = snap ? snap.segIdx : (findNearestOnRoute()?.idx ?? 0);
 
   if(geom && curS != null){
     const sorted = geom.maneuvers
-      .filter(m => m.step.type !== 'depart')
+      .filter(m => m.step.type !== 'depart' && m.step.type !== 'arrive')
       .sort((a, b) => a.s - b.s);
-    let blockUntilS = -Infinity;
 
     for(const m of sorted){
       if(m.step.type === 'arrive'){
-        if(curS <= m.s + MANEUVER_PASSED_M && m.s >= blockUntilS){
+        if(curS <= m.s + MANEUVER_PASSED_M){
           const along = Math.max(0, m.s - curS);
           return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
         }
         continue;
       }
-      if(curS > m.s + MANEUVER_PASSED_M){
-        blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
-        continue;
-      }
-      if(m.s < blockUntilS) continue;
+      if(!isSignificantManeuver(m, geom)) continue;
+      if(curS > m.s + MANEUVER_PASSED_M) continue;
       const along = Math.max(0, m.s - curS);
       return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
     }
@@ -420,7 +433,7 @@ export function findNextManeuver(){
 export function getRemainingDistance(){
   if(!S.route || !S.gps) return 0;
   const geom = S.route.geometry;
-  const snap = geom ? getRouteSnapForNav(S.smoothedHeading) : null;
+  const snap = geom ? getNavSnap(S.smoothedHeading) : null;
   if(snap) return remainingDistanceS(geom, snap);
 
   const near = findNearestOnRoute();

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "capturedAt": "2026-07-07T00:00:00.000Z",
+  "source": [
+    "telemetry_2026-07-06_19-33.jsonl",
+    "telemetry_2026-07-07_07-07.jsonl"
+  ],
+  "note": "Целевые верхние границы после S0–S3 (не снимок старого кода). Переснять: npm run nav:replay -- --capture",
+  "metrics": {
+    "lat_off_p95": 15,
+    "lat_off_gt30": 5,
+    "snap_jumps": 2,
+    "snap_lost_ticks": 10,
+    "reroutes": 3,
+    "phantom_marks": 0
+  }
+}

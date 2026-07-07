@@ -2,15 +2,16 @@ import { S, L, CAM_H, CAM_B, CAM_PITCH, ROAD_MAX, ROAD_HALF } from './state.js';
 import { $ } from './util.js';
 import { haversine, bearing } from './geo.js';
 import { curPos } from './gps.js';
-import { maneuverTurnAngle, getVisibleTurnManeuvers } from './route.js';
+import { maneuverTurnAngle, getVisibleTurnManeuvers, MANEUVER_BEND_ANGLE } from './route.js';
 import { fuelStationsForRoad, fuelColor } from './fuel.js';
 import { ensureRouteGeometry } from './route.js';
 import {
-  getRouteSnapForNav, getDisplaySnap, updateCamHeading, getCamHeadingRad,
+  getNavSnap, getDisplaySnap, updateCamHeading, getCamHeadingRad,
   updateCamPitch, getCamPitchRad,
   computeRibbonSectionsCam, worldToCamXZ, extendRibbonNearCam,
   interpolateAtS, turnAngleAtS
 } from './route-geometry.js';
+import { isSnapLost } from './snap-quality.js';
 import { renderElevProfile, getElevExag, getElevProfileH } from './elevation.js';
 import { ribbonCurveColor } from './curve-speed.js';
 import { getThemeTokens } from './theme-tokens.js';
@@ -469,7 +470,7 @@ export function renderPathway(){
   if(!block || !svg) return;
   const hud = $('hud');
   const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  if(!S.showPath || kmh < 25){
+  if(!S.showPath || kmh < 25 || isSnapLost() || S.compassMode || S.gpsConverged === false){
     block.classList.add('hidden');
     hud.classList.add('no-path');
     svg.innerHTML = '';
@@ -481,7 +482,7 @@ export function renderPathway(){
   const gpsHdg = S.smoothedHeading;
   if(S.route && !S.route.geometry) ensureRouteGeometry(S.route);
 
-  const rawSnap = getRouteSnapForNav(gpsHdg);
+  const rawSnap = getNavSnap(gpsHdg);
   const geomReady = S.route?.geometry;
   if(!geomReady || !rawSnap){
     svg.innerHTML = '';
@@ -749,10 +750,15 @@ export function buildArrowSVG(step){
   if(!step) return '';
   if(step.type === 'arrive') return arriveFlagSVG();
   let turn = maneuverTurnAngle(step);
-  if(Math.abs(turn) < 4 && step.modifier){
+  if(Math.abs(turn) < MANEUVER_BEND_ANGLE){
     if(step.modifier === 'uturn') turn = 175;
-    else if(step.modifier.includes('left')) turn = -8;
-    else if(step.modifier.includes('right')) turn = 8;
+    else if(Math.abs(turn) < 4 && step.modifier){
+      if(step.modifier.includes('left')) turn = -8;
+      else if(step.modifier.includes('right')) turn = 8;
+      else turn = 0;
+    } else {
+      turn = 0;
+    }
   }
   turn = Math.max(-178, Math.min(178, turn));
   return renderManeuverArrow(turn);

@@ -18,9 +18,7 @@ export const CROSSING_AHEAD_M = 30;
 export const CROSSING_MIN_BACK_M = 150;
 export const CROSSING_TIME_S = 15;
 
-/** Совпадает с route.js MANEUVER_PASSED_M / MANEUVER_NEXT_DELAY_M */
-const MANEUVER_PASSED_M = 8;
-const MANEUVER_NEXT_DELAY_M = 90;
+import { MANEUVER_PASSED_M, isSignificantManeuver } from './route.js';
 
 /**
  * @typedef {Object} CrossingWhisker
@@ -260,16 +258,11 @@ export function isCrossingContextEnabled(){
 export function getNextTurnManeuverS(geom, curS){
   if(!geom?.maneuvers?.length || curS == null) return null;
   const sorted = geom.maneuvers
-    .filter(m => m.step.type !== 'depart' && m.step.type !== 'arrive')
+    .filter(m => isSignificantManeuver(m, geom))
     .sort((a, b) => a.s - b.s);
-  let blockUntilS = -Infinity;
 
   for(const m of sorted){
-    if(curS > m.s + MANEUVER_PASSED_M){
-      blockUntilS = m.s + MANEUVER_NEXT_DELAY_M;
-      continue;
-    }
-    if(m.s < blockUntilS) continue;
+    if(curS > m.s + MANEUVER_PASSED_M) continue;
     return m.s;
   }
   return null;

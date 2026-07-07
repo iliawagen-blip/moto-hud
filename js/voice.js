@@ -96,13 +96,8 @@ export function clearVoiceQueue(){
   }
 }
 
-/** Манёвр с реальным поворотом (не «прямо» / continue) */
-export function isTurnStep(step){
-  if(!step || step.type === 'depart' || step.type === 'arrive') return false;
-  const m = step.modifier || '';
-  if(!m || m === 'straight') return false;
-  return m === 'uturn' || m.includes('left') || m.includes('right');
-}
+/** Манёвр с реальным поворотом (не «прямо» / continue / new name) */
+export { isNavManeuverType as isTurnStep } from './maneuver-filter.js';
 
 export function maneuverText(step){
   if(!isTurnStep(step)) return '';

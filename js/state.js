@@ -19,6 +19,12 @@ export const S = {
   camLoadStatus: 'idle',  // idle | loading | ok | err | off
   camWarned: new Set(),
   offRouteState: 'ON_ROUTE',
+  snapQuality: 'GOOD',
+  gpsConverged: false,
+  gpsFixCount: 0,
+  lastReliableHeadingTs: 0,
+  routeQuality: 'OK',
+  compassMode: false,
   rerouting: false,
   rerouteBackoffStep: 0,
   rerouteBackoffUntil: 0,

@@ -32,7 +32,7 @@ function cpDir(srcDir, dstDir, filter){
 function stampBuildId(filePath){
   if(!fs.existsSync(filePath)) return;
   let text = fs.readFileSync(filePath, 'utf8');
-  text = text.replace(/__BUILD_ID__/g, BUILD_ID);
+  text = text.replace(/%%BUILD_ID%%/g, BUILD_ID);
   fs.writeFileSync(filePath, text);
 }
 

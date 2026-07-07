@@ -9,7 +9,10 @@ import {
   fuseHeading, startHeadingSensors, stopHeadingSensors, updateHeadingHealth
 } from './heading.js';
 import telemetry from './telemetry.js';
-import { getRouteSnapForNav } from './route-geometry.js';
+import { getNavSnap } from './route-geometry.js';
+import { FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN } from './nav-constants.js';
+import { feedGpsConverge, resetGpsConverge } from './gps-converge.js';
+import { SNAP_HEADING_MAX_AGE_MS } from './nav-constants.js';
 
 let RENDER_POS = null;
 let _navMode = false;
@@ -71,6 +74,18 @@ export function stopVisualLoop(){
   if(S.rafId){ cancelAnimationFrame(S.rafId); S.rafId = null; }
 }
 
+function updateGpsConvergeUI(){
+  const el = $('gps-converge');
+  if(el){
+    el.classList.toggle('on', $('hud').classList.contains('on') && !S.gpsConverged);
+  }
+  $('s-gps').textContent = S.gpsConverged
+    ? '✅ GPS ±' + Math.round(S.gps?.acc || 0) + 'м'
+    : '⏳ GPS сходится…';
+  $('s-gps').className = S.gpsConverged ? 'chip ok' : 'chip';
+  checkStartReady();
+}
+
 export function checkStartReady(){
   const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
   $('btn-start').disabled = !(S.gps && S.finish && hasRoute);
@@ -106,11 +121,15 @@ export function applyGpsFix(next){
   if(fused != null && !isNaN(fused)) next.heading = fused;
 
   if(next.heading != null && !isNaN(next.heading)){
+    if((next.speed ?? 0) >= 3.2) S.lastReliableHeadingTs = Date.now();
     if(S.smoothedHeading == null) S.smoothedHeading = next.heading;
     else {
+      const spd = next.speed ?? S.measSpeed ?? 0;
+      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
+      const keep = 1 - alpha;
       const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * 0.82 + Math.sin(next.heading * r) * 0.18;
-      const sy = Math.cos(S.smoothedHeading * r) * 0.82 + Math.cos(next.heading * r) * 0.18;
+      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
+      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
       S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
     }
   }
@@ -118,9 +137,8 @@ export function applyGpsFix(next){
   S.gps = next;
   S.fixPos = { lat: next.lat, lon: next.lon };
   S.fixAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-  $('s-gps').textContent = '✅ GPS ±' + Math.round(next.acc) + 'м';
-  $('s-gps').className = 'chip ok';
-  checkStartReady();
+  feedGpsConverge(next);
+  updateGpsConvergeUI();
   if($('hud').classList.contains('on')) _onTick();
 
   const rcv = Date.now();
@@ -134,7 +152,7 @@ export function applyGpsFix(next){
     ts: next.ts, rcv
   });
   if($('hud').classList.contains('on') && S.route?.geometry){
-    const snap = getRouteSnapForNav(S.smoothedHeading);
+    const snap = getNavSnap(S.smoothedHeading);
     telemetry.logSnapFromResult(snap);
   }
 }

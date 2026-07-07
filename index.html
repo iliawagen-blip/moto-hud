@@ -9,6 +9,21 @@
 <meta name="theme-color" content="#000">
 <script>
 (function(){
+  if(new URLSearchParams(location.search).get('sim')!=='1') return;
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      return Promise.all(regs.map(function(r){ return r.unregister(); }));
+    }).catch(function(){});
+  }
+  if(window.caches){
+    caches.keys().then(function(keys){
+      return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+    }).catch(function(){});
+  }
+})();
+</script>
+<script>
+(function(){
   try{
     var p=JSON.parse(localStorage.getItem('moto-hud-theme')||'{}');
     var themes=['avionics','hitech','space','sport','chopper','vintage'];
@@ -36,7 +51,7 @@
 })();
 </script>
 <link rel="stylesheet" href="css/leaflet.css">
-<link rel="stylesheet" href="css/app.css?v=mr7h37i4">
+<link rel="stylesheet" href="css/app.css?v=mra785ev">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -292,6 +307,7 @@
   </div>
 
   <div id="offRouteWarn">◆ ПЕРЕСЧЁТ МАРШРУТА ◆</div>
+  <div id="gps-converge">◆ GPS СХОДИТСЯ ◆</div>
 
   <!-- Топливный ассистент: крупная панель выбора (читаемо на 120 км/ч) -->
   <div id="fuelPanel">
@@ -310,9 +326,9 @@
   <div id="vfd-scanlines" aria-hidden="true"></div>
 </div>
 
-<script>window.mr7h37i4='mr7h37i4';</script>
-<script src="js/sim.js"></script>
-<script type="module" src="js/app.js?v=mr7h37i4"></script>
+<script>window.__BUILD_ID__='mra785ev';</script>
+<script src="js/sim.js?v=mra785ev"></script>
+<script type="module" src="js/app.js?v=mra785ev"></script>
 
 </body>
 </html>

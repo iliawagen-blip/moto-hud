@@ -246,7 +246,7 @@ function logSnapFromResult(snap){
   let jump = false;
   if(_lastSnapS0 != null && s0 != null && Math.abs(s0 - _lastSnapS0) > 50) jump = true;
   if(s0 != null) _lastSnapS0 = s0;
-  log('snap', { s0, lat_off: latOff, jump });
+  log('snap', { s0, lat_off: latOff, jump, quality: S.snapQuality || 'GOOD' });
 }
 
 async function start(meta){
@@ -301,9 +301,13 @@ async function stop(){
   updateMarkButtonVisibility();
 }
 
-function mark(note){
+function mark(noteOrObj){
   if(!_active) return;
-  log('mark', note ? { note } : {});
+  if(typeof noteOrObj === 'string'){
+    log('mark', noteOrObj ? { note: noteOrObj } : {});
+  } else {
+    log('mark', noteOrObj || {});
+  }
 }
 
 function isActive(){ return _active; }
