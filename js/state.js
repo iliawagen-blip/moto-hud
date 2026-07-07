@@ -75,7 +75,12 @@ export const S = {
   fuelStatus: 'idle',     // idle | loading | ready | error
   fuelMode: 0,            // 0 выкл, 1 «по маршруту», 2 «ближайшая + маршрут»
   fuelSel: null,          // выбранная АЗС
-  fuelOrigFinish: null    // финиш до перехвата ассистентом (для восстановления)
+  fuelOrigFinish: null,   // финиш до перехвата ассистентом (для восстановления)
+
+  /** Активный план: { trip, dayN, variantId, segmentLabel } */
+  tripContext: null,
+  /** Текущий загруженный план (редактор) */
+  activeTrip: null
 };
 
 export const L = {

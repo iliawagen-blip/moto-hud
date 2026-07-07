@@ -56,6 +56,7 @@ export function refreshRouteUi(){
   updateRouteInfo(S.route);
   syncSimPath();
   setGoBarVisible(true);
+  $('route-export-row')?.classList.toggle('hidden', !S.route?.coords?.length);
   loadCameras();
   checkStartReady();
   scheduleGeometryBuild(S.routeAlternatives, () => {
@@ -78,6 +79,7 @@ export function invalidateRoute(){
   clearRouteMap();
 
   setGoBarVisible(false);
+  $('route-export-row')?.classList.add('hidden');
 
   checkStartReady();
 

@@ -31,6 +31,11 @@ import { applyFinishInfoVisibility } from './hud-opts.js';
 import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide } from './offroute.js';
 import telemetry from './telemetry.js';
 import { tickNavMap, resetViewMode } from './view-mode.js';
+import { syncTripHudBadge } from './trip-ui.js';
+import {
+  startTrackRecorder, stopTrackRecorder, isTrackRecordEnabled, rememberLastRide,
+  tickTrackRecorder
+} from './track-recorder.js';
 
 let _lastMarkCtx = null;
 
@@ -160,6 +165,15 @@ function updateFinishInfo(remaining, kmh, now){
 
 export function onTick(){
   if(!S.gps) return;
+  if($('hud').classList.contains('on')){
+    tickTrackRecorder({
+      lat: S.gps.lat,
+      lon: S.gps.lon,
+      spd: S.gps.speed,
+      acc: S.gps.acc,
+      hdg: S.smoothedHeading ?? S.gps.heading
+    });
+  }
   const now = new Date();
   $('clock').textContent = fmtClock(now);
   const dot = $('gps-dot');
@@ -326,6 +340,7 @@ export function onTick(){
   checkCurveSpeedWarn(kmh);
   refreshFuelPanel();
   tickNavMap();
+  syncTripHudBadge();
 }
 
 function checkCurveSpeedWarn(kmh){
@@ -354,6 +369,7 @@ export async function startHud(){
     telemetry.start({ routeKm: S.route?.distance ? r2(S.route.distance / 1000) : null });
     telemetry.updateMarkButtonVisibility();
   }
+  if(isTrackRecordEnabled()) startTrackRecorder();
   S.startTs = Date.now();
   S.distDone = 0;
   S.camWarned.clear();
@@ -384,6 +400,8 @@ export async function startHud(){
 export function stopHud(){
   telemetry.stop().catch(() => {});
   telemetry.updateMarkButtonVisibility();
+  const trackPts = stopTrackRecorder();
+  if(trackPts.length >= 2) rememberLastRide(trackPts);
   stopVisualLoop();
   resetVintageVfd();
   stopNavigationGps().catch(() => {});
@@ -401,6 +419,7 @@ export function stopHud(){
   clearVoiceQueue();
   resetOffRouteMachine();
   resetViewMode();
+  syncTripHudBadge();
   try{ document.exitFullscreen && document.exitFullscreen(); }catch(e){}
 }
 

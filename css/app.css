@@ -450,6 +450,28 @@ body.legal-blocked #hud{display:none!important}
 .tel-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:10px 0;border-bottom:1px solid var(--border)}
 .tel-main{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+
+/* ---------- Планировщик поездок (фаза 6) ---------- */
+.trip-list-item{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+  background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--fg);cursor:pointer}
+.trip-list-item.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.trip-variant-bar{display:flex;gap:8px;margin:10px 0}
+.trip-variant-bar .mode-btn{flex:1;min-height:44px;border-radius:10px;border:1px solid var(--border);
+  background:var(--panel2);color:var(--fg);font-weight:700;font-size:14px}
+.trip-variant-bar .mode-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.trip-days{max-height:min(52vh,520px);overflow-y:auto;margin-top:8px;padding-right:4px}
+.trip-day-card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;
+  padding:12px;margin-bottom:10px}
+.trip-day-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.trip-schedule,.trip-summary,.trip-stats,.trip-night{font-size:13px;color:var(--dim);margin:4px 0}
+.trip-seg{margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.trip-seg-label{font-weight:700;font-size:14px;display:block}
+.trip-seg-audit{font-size:12px;color:var(--dim)}
+.trip-seg-actions{margin-top:6px}
+.trip-seg-actions button{min-height:44px;font-size:12px;padding:4px}
+.trip-hud-badge{text-align:center;font-size:13px;font-weight:800;color:var(--accent2);
+  padding:4px 8px;background:rgba(77,171,247,.12);border-bottom:1px solid var(--border)}
+.trip-hud-badge.hidden{display:none}
 .tel-meta{font-size:12px;color:var(--dim)}
 .tel-dirty{color:var(--sem-warn);font-size:11px;font-weight:800}
 .tel-actions{display:flex;gap:6px;flex-shrink:0}

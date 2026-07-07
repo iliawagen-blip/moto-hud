@@ -134,22 +134,24 @@ const args = process.argv.slice(2);
 if(!args.length) usage();
 
 if(args[0] === '--self-test'){
-  const baselinePath = path.join(ROOT, 'fixtures', 'baseline_v0.json');
-  if(!fs.existsSync(baselinePath)){
-    console.error('baseline missing:', baselinePath);
-    process.exit(1);
+  for(const name of ['baseline_v0.json', 'baseline_v1.json']){
+    const baselinePath = path.join(ROOT, 'fixtures', name);
+    if(!fs.existsSync(baselinePath)){
+      console.error('baseline missing:', baselinePath);
+      process.exit(1);
+    }
+    JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
   }
-  JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
   console.log('nav:self-test OK');
   process.exit(0);
 }
 
 let mode = 'analyze';
-let baselinePath = path.join(ROOT, 'fixtures', 'baseline_v0.json');
+let baselinePath = path.join(ROOT, 'fixtures', 'baseline_v1.json');
 const files = [];
 
 for(let i = 0; i < args.length; i++){
-  if(args[i] === '--baseline'){ mode = 'compare'; baselinePath = args[++i]; }
+  if(args[i] === '--baseline'){ baselinePath = args[++i]; if(mode !== 'capture') mode = 'compare'; }
   else if(args[i] === '--capture'){ mode = 'capture'; }
   else files.push(args[i]);
 }

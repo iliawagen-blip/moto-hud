@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "capturedAt": "2026-07-07T15:00:00.000Z",
+  "source": [
+    "telemetry sessions (S4 target)"
+  ],
+  "note": "Целевые верхние границы после S0–S3 и pre-Valhalla (15/16). Переснять: npm run nav:baseline",
+  "metrics": {
+    "lat_off_p95": 15,
+    "lat_off_gt30": 5,
+    "snap_jumps": 2,
+    "snap_lost_ticks": 10,
+    "reroutes": 3,
+    "phantom_marks": 0
+  }
+}
