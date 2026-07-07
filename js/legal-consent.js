@@ -5,6 +5,11 @@ export const LEGAL_STORAGE_KEY = 'moto-hud-legal-consent';
 
 export const OFFER_URL = 'docs/offer.html';
 export const DISCLAIMER_URL = 'docs/disclaimer.html';
+export const PRIVACY_URL = 'docs/privacy.html';
+export const SUPPORT_URL = 'docs/support.html';
+export const SBP_PAY_URL = 'https://qr.nspk.ru/AS1A0073KULGI2489639NQM5QPNBUIOH';
+
+import { isNative } from './platform.js';
 
 function readConsent(){
   try{
@@ -34,6 +39,15 @@ function showBlockedScreen(){
   document.body.classList.add('legal-blocked');
 }
 
+/** RuStore/APK: без ссылки на оплату в UI (только в описании карточки). */
+export function applyStoreLegalUi(){
+  if(!isNative()) return;
+  const link = document.getElementById('help-support-link');
+  const sep = document.getElementById('help-support-sep');
+  if(link) link.style.display = 'none';
+  if(sep) sep.style.display = 'none';
+}
+
 async function onDecline(){
   try{
     const { App } = await import('@capacitor/app');
@@ -48,6 +62,8 @@ async function onDecline(){
 
 /** Блокирующий экран при первом запуске до согласия с отказом от ответственности. */
 export function initLegalConsent(){
+  applyStoreLegalUi();
+
   if(hasValidLegalConsent()) return;
 
   const modal = document.getElementById('legalModal');

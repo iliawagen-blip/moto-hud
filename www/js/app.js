@@ -17983,6 +17983,13 @@ function showBlockedScreen() {
   document.getElementById("legalBlocked")?.classList.add("on");
   document.body.classList.add("legal-blocked");
 }
+function applyStoreLegalUi() {
+  if (!isNative()) return;
+  const link = document.getElementById("help-support-link");
+  const sep = document.getElementById("help-support-sep");
+  if (link) link.style.display = "none";
+  if (sep) sep.style.display = "none";
+}
 async function onDecline() {
   try {
     const { App: App2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports3));
@@ -17996,6 +18003,7 @@ async function onDecline() {
   showBlockedScreen();
 }
 function initLegalConsent() {
+  applyStoreLegalUi();
   if (hasValidLegalConsent()) return;
   const modal = document.getElementById("legalModal");
   if (!modal) return;
