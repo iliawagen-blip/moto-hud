@@ -10,7 +10,7 @@ let navWatcherId = null;
 
 function mapCapPosition(pos){
   const c = pos.coords;
-  return {
+  const fix = {
     lat: c.latitude,
     lon: c.longitude,
     speed: (c.speed != null && !isNaN(c.speed) && c.speed >= 0) ? c.speed : null,
@@ -18,17 +18,29 @@ function mapCapPosition(pos){
     acc: c.accuracy,
     ts: pos.timestamp
   };
+  return tagFixQuality(fix);
 }
 
 function mapBgLocation(loc){
-  return {
+  const fix = {
     lat: loc.latitude,
     lon: loc.longitude,
     speed: (loc.speed != null && !isNaN(loc.speed) && loc.speed >= 0) ? loc.speed : null,
     heading: loc.bearing == null || isNaN(loc.bearing) ? null : loc.bearing,
     acc: loc.accuracy,
-    ts: loc.time
+    ts: loc.time,
+    provider: loc.provider || null
   };
+  return tagFixQuality(fix);
+}
+
+/** Сетевой/грубый fix — для cold-start фильтра */
+function tagFixQuality(fix){
+  const acc = fix.acc;
+  if(acc == null) return fix;
+  if(acc > 80 || fix.provider === 'network') fix.provider = 'network';
+  else if(acc > 40) fix.lowAccuracy = true;
+  return fix;
 }
 
 export async function ensureNativePermissions(forNavigation){

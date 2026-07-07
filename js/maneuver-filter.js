@@ -5,8 +5,10 @@
 
 import {
   MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG as MANEUVER_MIN_ANGLE,
-  MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M
+  MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M,
+  MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M
 } from './nav-constants.js';
+import telemetry from './telemetry.js';
 
 export const MANEUVER_BEND_ANGLE = MANEUVER_BEND_DEFAULT_DEG;
 export { MANEUVER_MIN_ANGLE, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M };
@@ -15,6 +17,27 @@ const HIGHWAY_BEND = {
   motorway: 25, trunk: 25, primary: 18, secondary: 16,
   tertiary: 14, residential: 12, living_street: 12, unclassified: 18
 };
+
+export const HIGHWAY_CLASSES = Object.keys(HIGHWAY_BEND);
+
+const _filterLogged = new Set();
+
+export function resetManeuverFilterLog(){ _filterLogged.clear(); }
+
+function logFiltered(step, s, reason){
+  const key = (step?.type || '') + '|' + (step?.modifier || '') + '|' +
+    Math.round((s || 0) / 50) + '|' + reason;
+  if(_filterLogged.has(key)) return;
+  _filterLogged.add(key);
+  telemetry.log('nav', {
+    sub: 'maneuver_filtered',
+    type: step?.type,
+    modifier: step?.modifier,
+    highway: step?.highway || null,
+    s: s != null ? Math.round(s) : null,
+    reason
+  });
+}
 
 function bendThresholdForStep(step){
   const hw = step?.highway || step?.roadClass || '';
@@ -70,6 +93,11 @@ export function isSignificantManeuver(m, _geom){
 
   const bend = bendThresholdForStep(m.step);
 
+  if(m.step.type === 'fork' && ang < MANEUVER_FORK_DROP_ANGLE_DEG &&
+     (m.step.distance || 0) > MANEUVER_FORK_MIN_SEG_M){
+    return false;
+  }
+
   if(mod.includes('slight') && ang < bend) return false;
   if((mod === 'straight' || !mod) && ang < bend) return false;
 
@@ -103,7 +131,10 @@ export function refineManeuvers(maneuvers){
 
   for(let i = 0; i < sorted.length; i++){
     const m = sorted[i];
-    if(!isNavManeuverType(m.step)) continue;
+    if(!isNavManeuverType(m.step)){
+      logFiltered(m.step, m.s, 'not_nav_type');
+      continue;
+    }
 
     const segM = m.step.distance || 0;
     const ang = stepTurnAngleDeg(m.step, m) || 0;
@@ -112,6 +143,7 @@ export function refineManeuvers(maneuvers){
 
     if(segM < MANEUVER_COLLAPSE_SEG_M && ang < bend){
       if(next && isNavManeuverType(next.step) && (next.s - m.s) < MANEUVER_COLLAPSE_GAP_M){
+        logFiltered(m.step, m.s, 'collapse_micro');
         continue;
       }
     }
@@ -121,6 +153,7 @@ export function refineManeuvers(maneuvers){
       const gap = m.s - prev.s;
       const prevAng = stepTurnAngleDeg(prev.step, prev) || 0;
       if(gap < MANEUVER_COLLAPSE_GAP_M && prevAng < bend && ang < bend){
+        logFiltered(prev.step, prev.s, 'collapse_pair');
         kept[kept.length - 1] = pickStrongerManeuver(prev, m);
         continue;
       }
@@ -129,5 +162,9 @@ export function refineManeuvers(maneuvers){
     kept.push(m);
   }
 
-  return kept.filter(m => isSignificantManeuver(m));
+  return kept.filter(m => {
+    const ok = isSignificantManeuver(m);
+    if(!ok) logFiltered(m.step, m.s, 'not_significant');
+    return ok;
+  });
 }

@@ -81,8 +81,9 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <h1>🏍 Мото ИЛС — план развития</h1>
 <p class="sub">
   Живой документ продукта · HUD-навигатор для мотоцикла<br>
-  Обновлено: <strong>2026-07-05</strong> · package: <code>ru.vagin.motohud</code> ·
-  исходник: <a href="../MASTERPLAN.md">MASTERPLAN.md</a>
+  Обновлено: <strong>2026-07-07</strong> · package: <code>ru.vagin.motohud</code> ·
+  исходник: <a href="../MASTERPLAN.md">MASTERPLAN.md</a> ·
+  <a href="nav-plan.html">план навигации v3</a>
 </p>
 
 <p class="legend">
@@ -108,6 +109,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
   <li><a href="#scope">Вне скоупа</a></li>
   <li><a href="#next">Ближайший шаг</a></li>
   <li><a href="#docs">Связанные документы</a></li>
+  <li><a href="nav-plan.html">План навигации v3</a></li>
 </ol>
 </nav>
 
@@ -382,6 +384,8 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <tr><td>Размер офлайн-тайлов</td><td>PMTiles по регионам, показ размера до скачивания</td></tr>
 <tr><td>Камеры запрещены в ЕС</td><td>Geo-toggle авто-отключения</td></tr>
 <tr><td>Пробелы POI в OSM по РФ</td><td>Ручное добавление точек в план; не обещать полноту</td></tr>
+<tr><td>Блокировка short-link Яндекса</td><td>Rate limit; кеш; fallback rtext (<a href="nav-plan.html">nav v3</a>)</td></tr>
+<tr><td>Изменение формата URL Яндекс.Карт</td><td>Регресс-тесты парсера; <code>YANDEX_PARSER_REV</code></td></tr>
 </tbody>
 </table>
 
@@ -395,6 +399,8 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <tr><td>Фон GPS</td><td>2 ч, 0 разрывов &gt; 5 с на 3 вендорах</td></tr>
 <tr><td>Голос</td><td>100% манёвров; не позже N с до поворота; без потери на музыке</td></tr>
 <tr><td>Офлайн-пересчёт</td><td>≤ 3 с на скачанном регионе</td></tr>
+<tr><td>Режим карты в поездке (nav v3)</td><td>≥ 60% поездок с ≥1 переключением HUD↔карта</td></tr>
+<tr><td>Импорт маршрута из Яндекса (nav v3)</td><td>≥ 30% новых поездок через Share Target / буфер</td></tr>
 </tbody>
 </table>
 
@@ -404,6 +410,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
   <li>iOS до M6 · групповые поездки · краудсорсинг камер · CAN/OBD</li>
   <li>Мобильные засады (радар) — пользователь запускает антирадар параллельно</li>
   <li>ИИ-диалог в движении — запрещён; только на остановке</li>
+  <li>Парсинг HTML Яндекс.Карт · интеграция с фоновым Яндекс.Навигатором · закрытые API Навигатора (<a href="nav-plan.html">nav v3</a>)</li>
 </ul>
 
 <!-- ===== NEXT ===== -->
@@ -433,6 +440,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--border);color
 <thead><tr><th>Документ</th><th>Назначение</th></tr></thead>
 <tbody>
 <tr><td><a href="../MASTERPLAN.md">MASTERPLAN.md</a></td><td>Полный мастер-план (исходник, markdown)</td></tr>
+<tr><td><a href="NAV-PLAN.md">NAV-PLAN.md</a> · <a href="nav-plan.html">nav-plan.html</a></td><td>План навигации v3: snap, Яндекс, HUD↔карта</td></tr>
 <tr><td><a href="release-plan.html">release-plan.html</a></td><td>RuStore · APK · Web — каналы релиза</td></tr>
 <tr><td><a href="ROADPATH-PLAN.md">ROADPATH-PLAN.md</a></td><td>Прогноз-дорожка v2</td></tr>
 <tr><td><a href="route-geometry.md">route-geometry.md</a></td><td>RouteGeometry API</td></tr>

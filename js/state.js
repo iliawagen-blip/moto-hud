@@ -25,6 +25,7 @@ export const S = {
   lastReliableHeadingTs: 0,
   routeQuality: 'OK',
   compassMode: false,
+  routerBackend: 'osrm',
   rerouting: false,
   rerouteBackoffStep: 0,
   rerouteBackoffUntil: 0,

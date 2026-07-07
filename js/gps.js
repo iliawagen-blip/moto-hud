@@ -11,7 +11,9 @@ import {
 import telemetry from './telemetry.js';
 import { getNavSnap } from './route-geometry.js';
 import { FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN } from './nav-constants.js';
-import { feedGpsConverge, resetGpsConverge } from './gps-converge.js';
+import { feedGpsConverge, invalidateGpsConverge } from './gps-converge.js';
+import { GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS } from './nav-constants.js';
+import { isSnapLost, lostDurationMs } from './snap-quality.js';
 import { SNAP_HEADING_MAX_AGE_MS } from './nav-constants.js';
 
 let RENDER_POS = null;
@@ -96,6 +98,7 @@ export function checkStartReady(){
 function onGpsError(){
   $('s-gps').textContent = '❌ GPS';
   $('s-gps').className = 'chip err';
+  invalidateGpsConverge();
   if(!_gpsLost){
     _gpsLost = true;
     telemetry.log('nav', { sub: 'gps_lost' });
@@ -138,6 +141,9 @@ export function applyGpsFix(next){
   S.fixPos = { lat: next.lat, lon: next.lon };
   S.fixAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
   feedGpsConverge(next);
+  if(next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge();
+  if($('hud').classList.contains('on') && isSnapLost() &&
+     lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge();
   updateGpsConvergeUI();
   if($('hud').classList.contains('on')) _onTick();
 

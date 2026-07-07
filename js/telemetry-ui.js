@@ -2,29 +2,45 @@
  * UI телеметрии: тумблер, кнопка «метка», список сессий, экспорт.
  */
 import telemetry from './telemetry.js';
+import { getLastMarkContext } from './hud.js';
 import { $ } from './util.js';
 
-let _lastMarkTap = 0;
-const MARK_DBL_MS = 400;
+let _tapCount = 0;
+let _tapTimer = null;
+const MARK_TAP_MS = 450;
 
 function bindMarkButton(){
   const btn = $('btn-telemetry-mark');
   if(!btn || btn.dataset.bound) return;
   btn.dataset.bound = '1';
   btn.addEventListener('click', () => {
-    const now = Date.now();
-    const dbl = now - _lastMarkTap < MARK_DBL_MS;
-    _lastMarkTap = now;
-    if(dbl){
-      telemetry.mark('critical');
-      btn.classList.add('critical-flash');
-      setTimeout(() => btn.classList.remove('critical-flash'), 400);
-    } else {
-      telemetry.mark();
-    }
-    try{ navigator.vibrate?.(dbl ? [30, 40, 30] : 25); }catch(e){}
-    btn.classList.add('flash');
-    setTimeout(() => btn.classList.remove('flash'), 200);
+    _tapCount++;
+    clearTimeout(_tapTimer);
+    _tapTimer = setTimeout(() => {
+      const n = _tapCount;
+      _tapCount = 0;
+      const ctx = getLastMarkContext();
+      if(n >= 3){
+        telemetry.mark({
+          tags: ['phantom_turn'],
+          note: 'phantom_turn',
+          ...(ctx || {})
+        });
+        btn.classList.add('critical-flash');
+        setTimeout(() => btn.classList.remove('critical-flash'), 400);
+        try{ navigator.vibrate?.([30, 40, 30, 40, 30]); }catch(e){}
+      } else if(n >= 2){
+        telemetry.mark('critical');
+        btn.classList.add('critical-flash');
+        setTimeout(() => btn.classList.remove('critical-flash'), 400);
+        try{ navigator.vibrate?.([30, 40, 30]); }catch(e){}
+      } else {
+        telemetry.mark(ctx ? { note: 'mark', ...ctx } : undefined);
+        try{ navigator.vibrate?.(25); }catch(e){}
+      }
+      btn.classList.add('flash');
+      setTimeout(() => btn.classList.remove('flash'), 200);
+    }, MARK_TAP_MS);
   });
 }
 

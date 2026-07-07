@@ -249,6 +249,32 @@ function logSnapFromResult(snap){
   log('snap', { s0, lat_off: latOff, jump, quality: S.snapQuality || 'GOOD' });
 }
 
+function pct(arr, p){
+  if(!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b);
+  const i = Math.min(s.length - 1, Math.floor((p / 100) * s.length));
+  return s[i];
+}
+
+function computeSessionAggregate(){
+  if(!_buffer.length) return null;
+  const snaps = _buffer.map(b => b.ev).filter(e => e.type === 'snap');
+  const latOffs = snaps.map(s => s.lat_off).filter(v => v != null && Number.isFinite(v));
+  const marks = _buffer.map(b => b.ev).filter(e => e.type === 'mark');
+  return {
+    snap_count: snaps.length,
+    lat_off_p50: r2(pct(latOffs, 50)),
+    lat_off_p95: r2(pct(latOffs, 95)),
+    snap_jumps: snaps.filter(s => s.jump).length,
+    snap_lost: snaps.filter(s => s.quality === 'LOST').length,
+    snap_degraded: snaps.filter(s => s.quality === 'DEGRADED').length,
+    mark_count: marks.length,
+    phantom_marks: marks.filter(m =>
+      (m.tags || []).includes('phantom_turn') || /phantom/i.test(m.note || '')
+    ).length
+  };
+}
+
 async function start(meta){
   if(_active) return _sessionId;
   if(!isEnabledPref()) return null;
@@ -281,6 +307,8 @@ async function start(meta){
 async function stop(){
   if(!_active) return;
   flushPerfAggregate();
+  const agg = computeSessionAggregate();
+  if(agg) log('meta', { sub: 'session_aggregate', ...agg });
   log('meta', { sub: 'stop' });
   await flushBuffer(true);
   const id = _sessionId;
