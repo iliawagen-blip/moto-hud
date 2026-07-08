@@ -27,7 +27,7 @@ import {
 
 } from './route-map.js';
 
-import { prefetchFuelForMap, searchNearestFuelStations, formatFuelDist, fuelStatusText } from './fuel.js';
+import { prefetchFuelForMap, searchNearestFuelStations, formatFuelDist, fuelStatusText, fuelStatusHint } from './fuel.js';
 import { refreshTtsBanner } from './tts-health.js';
 import {
   startCompassCalibration, requestHeadingPermission, isCalibrating
@@ -355,7 +355,7 @@ export async function doFuelSearch(){
     });
     box.style.display = 'block';
     box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    $('s-finish').textContent = '⛽ Выберите заправку (' + list.length + ')';
+    $('s-finish').textContent = '⛽ Выберите заправку (' + list.length + ')' + fuelStatusHint();
     $('s-finish').className = 'status';
   }catch(e){
     $('s-finish').textContent = '❌ Ошибка загрузки АЗС: ' + e.message;
