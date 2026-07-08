@@ -3547,10 +3547,7 @@
     if (!p) return null;
     return [p.lat - buf, p.lon - buf, p.lat + buf, p.lon + buf];
   }
-  async function loadFromOverpass() {
-    const bb = routeBBox();
-    if (!bb) return [];
-    const [minLat, minLon, maxLat, maxLon] = bb;
+  async function loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon) {
     const q = `[out:json][timeout:25];
     (node["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon});
      way["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon}););
@@ -3572,9 +3569,19 @@
         lon,
         brand: t.brand || t.name || t.operator || "\u0410\u0417\u0421",
         name: t.name || t.brand || "\u0410\u0417\u0421",
-        status: "unknown"
+        status: "unknown",
+        tags: t
       };
     }).filter(Boolean);
+  }
+  async function fetchFuelStationsForBBox(minLat, minLon, maxLat, maxLon) {
+    return loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon);
+  }
+  async function loadFromOverpass() {
+    const bb = routeBBox();
+    if (!bb) return [];
+    const [minLat, minLon, maxLat, maxLon] = bb;
+    return loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon);
   }
   function gdebenzCacheKey(lat, lon) {
     return Math.round(lat * 200) + ":" + Math.round(lon * 200);
@@ -7855,14 +7862,14 @@ out geom;`;
     function calc(isSunrise) {
       const t = isSunrise ? dayOfYear + (6 - lngHour) / 24 : dayOfYear + (18 - lngHour) / 24;
       const M = 0.9856 * t - 3.289;
-      let L5 = M + 1.916 * Math.sin(M * Math.PI / 180) + 0.02 * Math.sin(2 * M * Math.PI / 180) + 282.634;
-      L5 = (L5 % 360 + 360) % 360;
-      let RA = Math.atan(0.91764 * Math.tan(L5 * Math.PI / 180)) * 180 / Math.PI;
+      let L6 = M + 1.916 * Math.sin(M * Math.PI / 180) + 0.02 * Math.sin(2 * M * Math.PI / 180) + 282.634;
+      L6 = (L6 % 360 + 360) % 360;
+      let RA = Math.atan(0.91764 * Math.tan(L6 * Math.PI / 180)) * 180 / Math.PI;
       RA = (RA % 360 + 360) % 360;
-      const Lq = Math.floor(L5 / 90) * 90;
+      const Lq = Math.floor(L6 / 90) * 90;
       const Rq = Math.floor(RA / 90) * 90;
       RA = (RA + (Lq - Rq)) / 15;
-      const sinDec = 0.39782 * Math.sin(L5 * Math.PI / 180);
+      const sinDec = 0.39782 * Math.sin(L6 * Math.PI / 180);
       const cosDec = Math.cos(Math.asin(sinDec));
       const cosH = (Math.cos(zenith * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
       if (cosH > 1 || cosH < -1) {
@@ -21411,13 +21418,31 @@ ${trkpts}
           consumptionL100: { default: 5, highway: 4.8, city: 5.8, mountain: 6, offroad: 7.5 }
         },
         {
+          id: "bike_yamaha_xj6",
+          name: "Yamaha XJ6 Diversion",
+          tankLiters: 17,
+          reserveKm: 35,
+          fuelType: "95",
+          builtin: true,
+          consumptionL100: { default: 5, highway: 4.5, city: 5.8, mountain: 5.5, offroad: 6.5 }
+        },
+        {
           id: "bike_bmw_r1250gs",
-          name: "BMW R 1250 GS",
+          name: "BMW R 1250 GS Adventure",
+          tankLiters: 33,
+          reserveKm: 40,
+          fuelType: "95",
+          builtin: true,
+          consumptionL100: { default: 5.5, highway: 5.2, city: 6.3, mountain: 6.9, offroad: 8.4 }
+        },
+        {
+          id: "bike_bmw_r1200gs",
+          name: "BMW R 1200 GS",
           tankLiters: 20,
           reserveKm: 40,
           fuelType: "95",
           builtin: true,
-          consumptionL100: { default: 5.4, highway: 5.1, city: 6.2, mountain: 6.8, offroad: 8.2 }
+          consumptionL100: { default: 5.6, highway: 5.3, city: 6.4, mountain: 7, offroad: 8.5 }
         },
         {
           id: "bike_enduro_450",
@@ -21443,6 +21468,161 @@ ${trkpts}
   });
 
   // js/trip-fuel.js
+  function consumption2(profile, roadType) {
+    const c = profile?.consumptionL100;
+    if (!c) return 5.5;
+    const key = roadType && c[roadType] != null ? roadType : "default";
+    return c[key] ?? c.default ?? 5.5;
+  }
+  function reserveLiters(profile) {
+    return (profile.reserveKm || 0) * consumption2(profile) / 100;
+  }
+  function stationMatchesFuelType(station, fuelType) {
+    const t = station?.tags || {};
+    if (t["fuel:none"] === "yes") return false;
+    const ft = String(fuelType || "95").toLowerCase();
+    const map = {
+      "92": ["fuel:octane_92", "fuel:octane_91"],
+      "95": ["fuel:octane_95", "fuel:gasoline"],
+      "98": ["fuel:octane_98", "fuel:octane_100"],
+      "dt": ["fuel:diesel", "fuel:HGV_diesel"],
+      "diesel": ["fuel:diesel"]
+    };
+    const want = map[ft] || map["95"];
+    const hasFuelTag = Object.keys(t).some((k) => k.startsWith("fuel:"));
+    if (!hasFuelTag) return true;
+    return want.some((k) => t[k] === "yes");
+  }
+  function bboxFromPoints(points, bufDeg = 0.08) {
+    let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+    for (const p of points) {
+      if (p.lat < minLat) minLat = p.lat;
+      if (p.lat > maxLat) maxLat = p.lat;
+      if (p.lon < minLon) minLon = p.lon;
+      if (p.lon > maxLon) maxLon = p.lon;
+    }
+    return [minLat - bufDeg, minLon - bufDeg, maxLat + bufDeg, maxLon + bufDeg];
+  }
+  async function loadStationsForPoints(points) {
+    const bb = bboxFromPoints(points);
+    const key = bb.map((v) => v.toFixed(3)).join(",");
+    const hit = _bboxCache.get(key);
+    if (hit && Date.now() - hit.ts < OVERPASS_CACHE_MS) return hit.stations;
+    const stations = await fetchFuelStationsForBBox(bb[0], bb[1], bb[2], bb[3]);
+    _bboxCache.set(key, { ts: Date.now(), stations });
+    return stations;
+  }
+  function buildRoutePolyline(rtext) {
+    const pts = parseRtext(rtext);
+    if (pts.length < 2) return { verts: [], totalM: 0, totalKm: 0 };
+    const verts = [{ ...pts[0], s: 0 }];
+    let s2 = 0;
+    for (let i = 1; i < pts.length; i++) {
+      s2 += haversine(pts[i - 1], pts[i]);
+      verts.push({ ...pts[i], s: s2 });
+    }
+    return { verts, totalM: s2, totalKm: s2 / 1e3 };
+  }
+  function projectToPolyline(poly, point) {
+    const verts = poly.verts;
+    if (verts.length < 2) return { routeM: 0, lateralM: Infinity };
+    let bestS = 0;
+    let bestLat = Infinity;
+    for (let i = 0; i < verts.length - 1; i++) {
+      const a = verts[i];
+      const b = verts[i + 1];
+      const segLen = haversine(a, b) || 1;
+      const latM = distToSegment(point, a, b);
+      const r = Math.PI / 180;
+      const ax = a.lon * r * Math.cos(a.lat * r), ay = a.lat * r;
+      const bx = b.lon * r * Math.cos(b.lat * r), by = b.lat * r;
+      const px = point.lon * r * Math.cos(point.lat * r), py = point.lat * r;
+      const dx = bx - ax, dy = by - ay;
+      let t = ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy || 1);
+      t = Math.max(0, Math.min(1, t));
+      const sHere = a.s + t * segLen;
+      if (latM < bestLat) {
+        bestLat = latM;
+        bestS = sHere;
+      }
+    }
+    return { routeM: bestS, lateralM: bestLat, routeKm: bestS / 1e3 };
+  }
+  function sparseReachFactor(regionHint) {
+    if (!regionHint) return 1;
+    const r = String(regionHint).toLowerCase();
+    if (SPARSE_REGIONS.has(r)) return 0.72;
+    return 1;
+  }
+  async function planGreedyFuelStops(segment, profile, opts = {}) {
+    const p = profile || getActiveBikeProfile();
+    if (!p || !segment?.rtext) return null;
+    const road = opts.roadType || segment.roadMix || "default";
+    const poly = buildRoutePolyline(segment.rtext);
+    if (poly.totalM < 500) return { stops: [], warnings: [], method: "greedy-osm", computedAt: (/* @__PURE__ */ new Date()).toISOString() };
+    const allStations = await loadStationsForPoints(poly.verts);
+    const fuelType = p.fuelType || "95";
+    const stations = allStations.filter((st) => stationMatchesFuelType(st, fuelType));
+    const l100 = consumption2(p, road);
+    const consumePerM = l100 / 1e5;
+    const reserveL = reserveLiters(p);
+    const reachFactor = sparseReachFactor(opts.regionHint || opts.trip?.meta?.regionHint);
+    const maxRangeM = rangeKm(p, road) * 1e3 * reachFactor;
+    let posM = 0;
+    let fuelL = p.tankLiters;
+    const stops = [];
+    const warnings = [];
+    const corridorM = FUEL_CORRIDOR;
+    while (posM < poly.totalM - 200) {
+      const fuelBudgetM = Math.max(0, (fuelL - reserveL) / consumePerM);
+      const reachableM = posM + Math.min(fuelBudgetM, maxRangeM);
+      if (reachableM >= poly.totalM - 300) break;
+      const candidates = stations.map((st) => {
+        const proj = projectToPolyline(poly, st);
+        return { st, ...proj };
+      }).filter((x) => x.lateralM <= corridorM && x.routeM > posM + 400 && x.routeM <= reachableM).sort((a, b) => b.routeM - a.routeM);
+      if (!candidates.length) {
+        const fromKm = Math.round(posM / 1e3);
+        const toKm = Math.round(reachableM / 1e3);
+        warnings.push(`\u041D\u0435\u0442 \u0410\u0417\u0421 \u0410\u0418-${fuelType} \u043D\u0430 ~${fromKm}\u2013${toKm} \u043A\u043C`);
+        if (fuelL <= reserveL + 0.5) break;
+        posM = reachableM;
+        fuelL = reserveL;
+        continue;
+      }
+      const pick = candidates[0];
+      const legM = pick.routeM - posM;
+      fuelL -= legM * consumePerM;
+      stops.push({
+        osmId: pick.st.osmId,
+        lat: pick.st.lat,
+        lon: pick.st.lon,
+        brand: pick.st.brand,
+        name: pick.st.name,
+        routeKm: Math.round(pick.routeKm * 10) / 10,
+        fuelType
+      });
+      posM = pick.routeM;
+      fuelL = p.tankLiters;
+    }
+    const needKm = poly.totalKm;
+    const range = rangeKm(p, road);
+    if (needKm > range && !stops.length) {
+      warnings.push(`\u0421\u0435\u0433\u043C\u0435\u043D\u0442 ~${Math.round(needKm)} \u043A\u043C \u0434\u043B\u0438\u043D\u043D\u0435\u0435 \u0437\u0430\u043F\u0430\u0441\u0430 ~${Math.round(range)} \u043A\u043C \u2014 \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E`);
+    }
+    return {
+      stops,
+      warnings: [...new Set(warnings)],
+      method: "greedy-osm",
+      computedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      stationCount: stations.length
+    };
+  }
+  async function computeSegmentFuelPlan(segment, profile, opts) {
+    const plan = await planGreedyFuelStops(segment, profile, opts);
+    if (plan) segment.fuelPlan = plan;
+    return plan;
+  }
   function assessSegmentFuel(segment, profile, roadType) {
     const p = profile || getActiveBikeProfile();
     if (!p || !segment?.rtext) return null;
@@ -21458,6 +21638,8 @@ ${trkpts}
     let warning = null;
     if (exceeds) warning = `~${Math.round(km)} \u043A\u043C > \u0437\u0430\u043F\u0430\u0441 ~${Math.round(range)} \u043A\u043C \u2014 \u043D\u0443\u0436\u043D\u0430 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0430`;
     else if (tight) warning = `\u0411\u043B\u0438\u0437\u043A\u043E \u043A \u043F\u0440\u0435\u0434\u0435\u043B\u0443 \u0431\u0430\u043A\u0430 (~${Math.round(range)} \u043A\u043C)`;
+    const fp = segment.fuelPlan;
+    if (fp?.warnings?.length) warning = (warning ? warning + "; " : "") + fp.warnings[0];
     return {
       km: Math.round(km * 10) / 10,
       liters: Math.round(liters * 10) / 10,
@@ -21466,20 +21648,36 @@ ${trkpts}
       tight,
       level,
       warning,
-      fuelType: p.fuelType
+      fuelType: p.fuelType,
+      stopCount: fp?.stops?.length || 0
     };
   }
   function formatFuelHint(assessment) {
     if (!assessment) return "";
     let s2 = `\u26FD ~${assessment.liters} \u043B \xB7 \u0437\u0430\u043F\u0430\u0441 ${assessment.rangeKm} \u043A\u043C`;
+    if (assessment.stopCount) s2 += ` \xB7 ${assessment.stopCount} \u0437\u0430\u043F\u0440.`;
     if (assessment.warning) s2 += " \xB7 \u26A0 " + assessment.warning;
     return s2;
+  }
+  function formatFuelPlanHtml(fuelPlan) {
+    if (!fuelPlan) return "";
+    const lines = [];
+    if (fuelPlan.stops?.length) {
+      lines.push('<ul class="trip-fuel-stops">' + fuelPlan.stops.map(
+        (st) => `<li>${st.brand || st.name} \xB7 ~${st.routeKm} \u043A\u043C</li>`
+      ).join("") + "</ul>");
+    }
+    if (fuelPlan.warnings?.length) {
+      lines.push('<p class="trip-fuel-warn">\u26A0 ' + fuelPlan.warnings.join("; ") + "</p>");
+    }
+    return lines.join("");
   }
   function assessDayFuel(day, variantId, profile) {
     const v = day?.variants?.find((x) => x.id === variantId) || day?.variants?.[0];
     if (!v?.segments?.length) return null;
     let totalKm = 0;
     let totalLiters = 0;
+    let totalStops = 0;
     let worst = "ok";
     const warnings = [];
     for (const seg of v.segments) {
@@ -21487,6 +21685,7 @@ ${trkpts}
       if (!a) continue;
       totalKm += a.km;
       totalLiters += a.liters;
+      totalStops += a.stopCount || 0;
       if (a.level === "danger") worst = "danger";
       else if (a.level === "warn" && worst !== "danger") worst = "warn";
       if (a.warning) warnings.push(a.warning);
@@ -21497,14 +21696,37 @@ ${trkpts}
       totalKm: Math.round(totalKm),
       totalLiters: Math.round(totalLiters * 10) / 10,
       rangeKm: range,
+      stopCount: totalStops,
       level: totalKm > range ? "danger" : totalKm > range * 0.85 ? "warn" : worst,
       warnings: [...new Set(warnings)]
     };
   }
+  async function computeTripFuelPlans(trip, profile, onProgress) {
+    const p = profile || getActiveBikeProfile();
+    if (!p || !trip?.days?.length) return 0;
+    let n = 0;
+    for (const day of trip.days) {
+      for (const v of day.variants || []) {
+        for (const seg of v.segments || []) {
+          if (onProgress) onProgress(day.n, seg.label);
+          await computeSegmentFuelPlan(seg, p, { trip, regionHint: trip.meta?.regionHint });
+          n++;
+        }
+      }
+    }
+    return n;
+  }
+  var SPARSE_REGIONS, OVERPASS_CACHE_MS, _bboxCache;
   var init_trip_fuel = __esm({
     "js/trip-fuel.js"() {
       init_trip_model();
       init_bike_profile();
+      init_fuel();
+      init_geo();
+      init_state();
+      SPARSE_REGIONS = /* @__PURE__ */ new Set(["north", "caucasus", "siberia", "far_east", "altai", "karelia"]);
+      OVERPASS_CACHE_MS = 10 * 60 * 1e3;
+      _bboxCache = /* @__PURE__ */ new Map();
     }
   });
 
@@ -21569,6 +21791,7 @@ ${trkpts}
         seg.rtext = rtext;
         seg.plannedKm = audit.km;
         seg.type = audit.isLoop ? "radial" : points.length === 2 ? "transfer" : "route";
+        delete seg.fuelPlan;
         if (typeof _ctx2.onSaved === "function") {
           await _ctx2.onSaved(_ctx2.trip);
         }
@@ -21586,6 +21809,268 @@ ${trkpts}
       init_trip_fuel();
       init_bike_profile();
       _ctx2 = null;
+    }
+  });
+
+  // js/trip-segment-map.js
+  function destroyMap() {
+    if (_map3) {
+      _map3.remove();
+      _map3 = null;
+    }
+    _tileLayer3 = null;
+    _markers2 = [];
+    _line = null;
+  }
+  function applyTiles2() {
+    if (!_map3) return;
+    const layers = resolveMapLayers(getMapProviderId());
+    if (_tileLayer3) _map3.removeLayer(_tileLayer3);
+    _tileLayer3 = import_leaflet3.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map3);
+  }
+  function markerLabel(i, total) {
+    if (i === 0) return "\u0421\u0442\u0430\u0440\u0442";
+    if (i === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
+    return `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
+  }
+  function syncPolyline() {
+    const latlngs = _markers2.map((m) => m.getLatLng());
+    if (_line) _line.setLatLngs(latlngs);
+    else if (_map3 && latlngs.length) {
+      _line = import_leaflet3.default.polyline(latlngs, { color: "#4dabf7", weight: 4, opacity: 0.9 }).addTo(_map3);
+    }
+    const n = $2("trip-seg-map-count");
+    if (n) n.textContent = `${latlngs.length} \u0442\u043E\u0447\u0435\u043A`;
+  }
+  function addMarker(lat, lon, label, draggable = true) {
+    if (!_map3) return null;
+    const idx = _markers2.length;
+    const m = import_leaflet3.default.marker([lat, lon], { draggable });
+    m._wpLabel = label || markerLabel(idx, idx + 1);
+    m.bindTooltip(m._wpLabel, { permanent: true, direction: "top", className: "trip-map-lbl" });
+    m.on("drag", syncPolyline);
+    m.on("dragend", () => {
+      m._wpLabel = markerLabel(_markers2.indexOf(m), _markers2.length);
+      m.setTooltipContent(m._wpLabel);
+    });
+    m.addTo(_map3);
+    _markers2.push(m);
+    syncPolyline();
+    return m;
+  }
+  function pointsFromMarkers() {
+    return _markers2.map((m, i) => ({
+      lat: m.getLatLng().lat,
+      lon: m.getLatLng().lng,
+      label: m._wpLabel || markerLabel(i, _markers2.length)
+    }));
+  }
+  function fitBounds() {
+    if (!_map3 || !_markers2.length) return;
+    if (_markers2.length === 1) {
+      _map3.setView(_markers2[0].getLatLng(), 10);
+      return;
+    }
+    const g = import_leaflet3.default.featureGroup(_markers2);
+    _map3.fitBounds(g.getBounds().pad(0.15));
+  }
+  function initMap(segment) {
+    const box = $2("trip-seg-map");
+    if (!box) return;
+    destroyMap();
+    box.innerHTML = "";
+    _map3 = import_leaflet3.default.map(box, { zoomControl: true, attributionControl: false, preferCanvas: true });
+    applyTiles2();
+    const pts = parseRtext(segment.rtext);
+    if (!pts.length) {
+      _map3.setView([55.75, 37.62], 6);
+      _map3.on("click", onMapClick);
+      return;
+    }
+    pts.forEach((p, i) => addMarker(p.lat, p.lon, p.label || markerLabel(i, pts.length)));
+    fitBounds();
+    _map3.on("click", onMapClick);
+  }
+  function onMapClick(e) {
+    if (!_map3 || !_ctx3) return;
+    const n = _markers2.length;
+    addMarker(e.latlng.lat, e.latlng.lng, markerLabel(n, n + 1));
+  }
+  function setError2(msg) {
+    const el = $2("trip-seg-map-error");
+    if (!el) return;
+    el.textContent = msg || "";
+    el.classList.toggle("hidden", !msg);
+  }
+  function openSegmentMapEditor(ctx) {
+    _ctx3 = ctx;
+    const meta = $2("trip-seg-map-meta");
+    if (meta) meta.textContent = `\u0414\u0435\u043D\u044C ${ctx.dayN} \xB7 ${ctx.segment.label || "\u0441\u0435\u0433\u043C\u0435\u043D\u0442"}`;
+    setError2("");
+    $2("trip-segment-map-modal")?.classList.add("on");
+    requestAnimationFrame(() => {
+      initMap(ctx.segment);
+      _map3?.invalidateSize();
+    });
+  }
+  function closeSegmentMapEditor() {
+    $2("trip-segment-map-modal")?.classList.remove("on");
+    destroyMap();
+    _ctx3 = null;
+  }
+  function initSegmentMapEditor() {
+    const modal = $2("trip-segment-map-modal");
+    if (!modal || modal.dataset.bound) return;
+    modal.dataset.bound = "1";
+    $2("trip-seg-map-cancel")?.addEventListener("click", closeSegmentMapEditor);
+    $2("trip-seg-map-undo")?.addEventListener("click", () => {
+      const m = _markers2.pop();
+      if (m && _map3) _map3.removeLayer(m);
+      syncPolyline();
+    });
+    $2("trip-seg-map-save")?.addEventListener("click", async () => {
+      if (!_ctx3) return;
+      try {
+        const points = pointsFromMarkers();
+        if (points.length < 2) throw new Error("\u041D\u0443\u0436\u043D\u043E \u043C\u0438\u043D\u0438\u043C\u0443\u043C 2 \u0442\u043E\u0447\u043A\u0438");
+        const rtext = rtextFromPoints(points);
+        const audit = auditSegment(rtext);
+        const day = _ctx3.trip.days.find((d) => d.n === _ctx3.dayN);
+        const v = day?.variants?.find((x) => x.id === _ctx3.variantId) || day?.variants?.[0];
+        const seg = v?.segments?.[_ctx3.segIdx];
+        if (!seg) throw new Error("\u0421\u0435\u0433\u043C\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+        seg.rtext = rtext;
+        seg.plannedKm = audit.km;
+        seg.type = audit.isLoop ? "radial" : points.length === 2 ? "transfer" : "route";
+        delete seg.fuelPlan;
+        if (typeof _ctx3.onSaved === "function") await _ctx3.onSaved(_ctx3.trip);
+        closeSegmentMapEditor();
+      } catch (e) {
+        setError2(e.message || String(e));
+      }
+    });
+  }
+  var import_leaflet3, _ctx3, _map3, _tileLayer3, _markers2, _line;
+  var init_trip_segment_map = __esm({
+    "js/trip-segment-map.js"() {
+      import_leaflet3 = __toESM(require_leaflet_src());
+      init_util();
+      init_trip_model();
+      init_map_providers();
+      _ctx3 = null;
+      _map3 = null;
+      _tileLayer3 = null;
+      _markers2 = [];
+      _line = null;
+    }
+  });
+
+  // js/trip-import-conflict.js
+  function findTripConflict(existing, incoming) {
+    if (!existing?.id || !incoming?.id) return null;
+    if (existing.id !== incoming.id) return null;
+    const er = existing.meta?.revision ?? 0;
+    const ir = incoming.meta?.revision ?? 0;
+    const et = existing.updatedAt || 0;
+    const it = incoming.updatedAt || 0;
+    if (er === ir && Math.abs(et - it) < 1500) return null;
+    return { existing, incoming, localNewer: et >= it };
+  }
+  function segmentSignature(day, variantId) {
+    const v = getDayVariant(day, variantId);
+    return (v?.segments || []).map((s2) => s2.rtext).join("|");
+  }
+  function tripDiffLines(local, remote, variantId = "calm") {
+    const lines = [];
+    if (!local || !remote) return lines;
+    if (local.title !== remote.title) {
+      lines.push(`\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435: \xAB${local.title}\xBB \u2192 \xAB${remote.title}\xBB`);
+    }
+    if (local.startDate !== remote.startDate) {
+      lines.push(`\u0414\u0430\u0442\u0430 \u0441\u0442\u0430\u0440\u0442\u0430: ${local.startDate || "\u2014"} \u2192 ${remote.startDate || "\u2014"}`);
+    }
+    const ld = local.days?.length || 0;
+    const rd = remote.days?.length || 0;
+    if (ld !== rd) lines.push(`\u0427\u0438\u0441\u043B\u043E \u0434\u043D\u0435\u0439: ${ld} \u2192 ${rd}`);
+    lines.push(`Revision: ${local.meta?.revision ?? 0} \u2192 ${remote.meta?.revision ?? 0}`);
+    const max = Math.max(ld, rd);
+    for (let i = 0; i < max; i++) {
+      const a = local.days?.[i];
+      const b = remote.days?.[i];
+      if (!a && b) lines.push(`\u0414\u0435\u043D\u044C ${b.n}: \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0438\u043C\u043F\u043E\u0440\u0442\u0435`);
+      else if (a && !b) lines.push(`\u0414\u0435\u043D\u044C ${a.n}: \u0442\u043E\u043B\u044C\u043A\u043E \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E`);
+      else if (a && b) {
+        const va = getDayVariant(a, variantId);
+        const vb = getDayVariant(b, variantId);
+        if (va?.night !== vb?.night && (va?.night || vb?.night)) {
+          lines.push(`\u0414\u0435\u043D\u044C ${a.n}: \u043D\u043E\u0447\u0451\u0432\u043A\u0430 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0430`);
+        }
+        if (segmentSignature(a, variantId) !== segmentSignature(b, variantId)) {
+          lines.push(`\u0414\u0435\u043D\u044C ${a.n}: \u043C\u0430\u0440\u0448\u0440\u0443\u0442 (waypoints)`);
+        }
+      }
+    }
+    return lines;
+  }
+  function applyConflictChoice(choice, local, incoming) {
+    if (choice === "local") return { ...local };
+    if (choice === "imported") {
+      const t = JSON.parse(JSON.stringify(incoming));
+      t.updatedAt = Date.now();
+      return t;
+    }
+    if (choice === "copy") {
+      const t = JSON.parse(JSON.stringify(incoming));
+      t.id = newId();
+      t.title = (incoming.title || "\u041F\u043B\u0430\u043D") + " (\u043A\u043E\u043F\u0438\u044F)";
+      t.meta = { ...incoming.meta || {}, forkOf: incoming.id, revision: 1 };
+      t.updatedAt = Date.now();
+      return t;
+    }
+    return incoming;
+  }
+  function formatConflictSummary(conflict) {
+    const { existing, incoming, localNewer } = conflict;
+    const loc = new Date(existing.updatedAt || 0);
+    const inc = new Date(incoming.updatedAt || 0);
+    const locStr = loc.toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
+    const incStr = inc.toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
+    return localNewer ? `\u041D\u0430 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435 \u043D\u043E\u0432\u0435\u0435 (${locStr}) \xB7 \u0438\u043C\u043F\u043E\u0440\u0442 ${incStr}` : `\u0412 \u0444\u0430\u0439\u043B\u0435 \u043D\u043E\u0432\u0435\u0435 (${incStr}) \xB7 \u043D\u0430 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435 ${locStr}`;
+  }
+  function closeConflictUi(choice) {
+    const cb = _pending?.onChoose;
+    _pending = null;
+    document.getElementById("trip-conflict-modal")?.classList.remove("on");
+    if (cb) cb(choice ?? null);
+  }
+  function openTripConflictUi(conflict, onChoose) {
+    _pending = { conflict, onChoose };
+    const sum = document.getElementById("trip-conflict-summary");
+    const diff = document.getElementById("trip-conflict-diff");
+    const title = document.getElementById("trip-conflict-title");
+    if (title) title.textContent = "\xAB" + (conflict.incoming.title || "\u041F\u043B\u0430\u043D") + "\xBB \u0443\u0436\u0435 \u0435\u0441\u0442\u044C";
+    if (sum) sum.textContent = formatConflictSummary(conflict);
+    if (diff) {
+      const lines = tripDiffLines(conflict.existing, conflict.incoming);
+      diff.innerHTML = lines.length ? "<ul>" + lines.map((l) => "<li>" + l + "</li>").join("") + "</ul>" : '<p class="hint">\u041E\u0442\u043B\u0438\u0447\u0438\u044F \u043D\u0435 \u0434\u0435\u0442\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D\u044B \u2014 \u0440\u0430\u0437\u043B\u0438\u0447\u0430\u044E\u0442\u0441\u044F revision \u0438\u043B\u0438 \u0432\u0440\u0435\u043C\u044F.</p>';
+    }
+    document.getElementById("trip-conflict-modal")?.classList.add("on");
+  }
+  function initTripConflictModal() {
+    const modal = document.getElementById("trip-conflict-modal");
+    if (!modal || modal.dataset.bound) return;
+    modal.dataset.bound = "1";
+    document.getElementById("trip-conflict-local")?.addEventListener("click", () => closeConflictUi("local"));
+    document.getElementById("trip-conflict-imported")?.addEventListener("click", () => closeConflictUi("imported"));
+    document.getElementById("trip-conflict-copy")?.addEventListener("click", () => closeConflictUi("copy"));
+    document.getElementById("trip-conflict-cancel")?.addEventListener("click", () => closeConflictUi(null));
+  }
+  var _pending;
+  var init_trip_import_conflict = __esm({
+    "js/trip-import-conflict.js"() {
+      init_util();
+      init_trip_model();
+      _pending = null;
     }
   });
 
@@ -21737,7 +22222,7 @@ ${trkpts}
         <strong>\u0414\u0435\u043D\u044C ${day.n}${isToday ? " \xB7 \u0441\u0435\u0433\u043E\u0434\u043D\u044F" : ""}</strong>
         <span class="hint">${escapeHtml(dateLbl)}${day.badge ? " \xB7 " + escapeHtml(day.badge) : ""}</span>
       </div>
-      ${dayFuel ? `<p class="trip-day-fuel fuel-${dayFuel.level}">\u26FD ~${dayFuel.totalLiters} \u043B \xB7 ${dayFuel.totalKm} \u043A\u043C \u0437\u0430 \u0434\u0435\u043D\u044C</p>` : ""}
+      ${dayFuel ? `<p class="trip-day-fuel fuel-${dayFuel.level}">\u26FD ~${dayFuel.totalLiters} \u043B \xB7 ${dayFuel.totalKm} \u043A\u043C${dayFuel.stopCount ? " \xB7 " + dayFuel.stopCount + " \u0437\u0430\u043F\u0440." : ""}</p>` : ""}
       ${v?.schedule ? `<p class="trip-schedule">${escapeHtml(v.schedule)}</p>` : ""}
       ${v?.summary ? `<p class="trip-summary">${escapeHtml(v.summary)}</p>` : ""}
       ${v?.stats ? `<p class="trip-stats">${escapeHtml(v.stats)}</p>` : ""}
@@ -21755,12 +22240,17 @@ ${trkpts}
             <span class="trip-seg-label">${done ? "\u2713 " : ""}${escapeHtml(seg.label)}</span>
             <span class="trip-seg-audit">${escapeHtml(formatSegmentAudit(seg))}</span>
             ${fuel ? `<span class="trip-seg-fuel fuel-${fuel.level}">${escapeHtml(formatFuelHint(fuel))}</span>` : ""}
+            ${seg.fuelPlan ? `<div class="trip-fuel-plan">${formatFuelPlanHtml(seg.fuelPlan)}</div>` : ""}
             <div class="btnrow c3 trip-seg-actions">
               <button type="button" class="secondary trip-osrm" data-day="${day.n}" data-seg="${i}">\u{1F5FA} OSRM</button>
               <button type="button" class="secondary trip-yandex" data-day="${day.n}" data-seg="${i}">\u{1F9ED} \u042F\u043D\u0434\u0435\u043A\u0441</button>
               <button type="button" class="secondary trip-gpx" data-day="${day.n}" data-seg="${i}">GPX</button>
             </div>
-            <button type="button" class="secondary trip-edit-btn" data-day="${day.n}" data-seg="${i}">\u270E \u0422\u043E\u0447\u043A\u0438</button>
+            <div class="btnrow c3 trip-seg-edit-row">
+              <button type="button" class="secondary trip-edit-btn" data-day="${day.n}" data-seg="${i}">\u270E \u0422\u0435\u043A\u0441\u0442</button>
+              <button type="button" class="secondary trip-map-btn" data-day="${day.n}" data-seg="${i}">\u{1F4CD} \u041A\u0430\u0440\u0442\u0430</button>
+              ${bikeProf ? `<button type="button" class="secondary trip-fuel-btn" data-day="${day.n}" data-seg="${i}">\u26FD \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438</button>` : ""}
+            </div>
             <button type="button" class="trip-done-btn" data-day="${day.n}" data-seg="${i}">${done ? "\u21A9 \u0421\u043D\u044F\u0442\u044C \xAB\u0433\u043E\u0442\u043E\u0432\u043E\xBB" : "\u2713 \u041E\u0442\u043C\u0435\u0442\u0438\u0442\u044C \u0433\u043E\u0442\u043E\u0432\u043E"}</button>
           </div>`;
       }).join("")}
@@ -21787,6 +22277,12 @@ ${trkpts}
     wrap.querySelectorAll(".trip-edit-btn").forEach((btn) => {
       btn.addEventListener("click", () => onEditSegment(+btn.dataset.day, +btn.dataset.seg));
     });
+    wrap.querySelectorAll(".trip-map-btn").forEach((btn) => {
+      btn.addEventListener("click", () => onMapEditSegment(+btn.dataset.day, +btn.dataset.seg));
+    });
+    wrap.querySelectorAll(".trip-fuel-btn").forEach((btn) => {
+      btn.addEventListener("click", () => onPlanSegmentFuel(+btn.dataset.day, +btn.dataset.seg));
+    });
     updateTodayButton();
     if (todayN != null) {
       requestAnimationFrame(() => {
@@ -21798,14 +22294,31 @@ ${trkpts}
     const trips = await loadAllTrips();
     renderTripList(trips);
   }
+  async function ingestImportedTrip(incoming) {
+    const existing = await loadTrip(incoming.id);
+    const conflict = findTripConflict(existing, incoming);
+    if (conflict) {
+      const choice = await new Promise((resolve) => {
+        openTripConflictUi(conflict, resolve);
+      });
+      if (!choice) return null;
+      const resolved = applyConflictChoice(choice, existing, incoming);
+      attachBikeToTrip(resolved);
+      await persistTrip(resolved, { bump: choice === "imported" || choice === "copy" });
+      return resolved;
+    }
+    attachBikeToTrip(incoming);
+    await persistTrip(incoming, { bump: false });
+    return incoming;
+  }
   async function importTripFromFile(file) {
     const text = await file.text();
     const trip = parseTripJson(text);
-    attachBikeToTrip(trip);
-    await persistTrip(trip, { bump: false });
-    await openTrip(trip.id);
+    const saved = await ingestImportedTrip(trip);
+    if (!saved) return;
+    await openTrip(saved.id);
     $2("drawer-trip")?.setAttribute("open", "");
-    setStatus("\u2713 \u0418\u043C\u043F\u043E\u0440\u0442: \xAB" + trip.title + "\xBB");
+    setStatus("\u2713 \u0418\u043C\u043F\u043E\u0440\u0442: \xAB" + saved.title + "\xBB");
   }
   async function shareTripLink() {
     const trip = S.activeTrip;
@@ -21826,10 +22339,10 @@ ${trkpts}
       try {
         setStatus("\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043F\u043B\u0430\u043D\u0430 \u0438\u0437 \u0441\u0441\u044B\u043B\u043A\u0438\u2026");
         const trip = await decodeTripPack(pack);
-        attachBikeToTrip(trip);
-        await persistTrip(trip, { bump: false });
-        await openTrip(trip.id, { syncUrl: true });
-        setStatus("\u2713 \u041F\u043B\u0430\u043D \u0438\u0437 \u0441\u0441\u044B\u043B\u043A\u0438: \xAB" + trip.title + "\xBB");
+        const saved = await ingestImportedTrip(trip);
+        if (!saved) return;
+        await openTrip(saved.id, { syncUrl: true });
+        setStatus("\u2713 \u041F\u043B\u0430\u043D \u0438\u0437 \u0441\u0441\u044B\u043B\u043A\u0438: \xAB" + saved.title + "\xBB");
         return;
       } catch (e) {
         setStatus("\u274C \u0421\u0441\u044B\u043B\u043A\u0430 \u0441 \u043F\u043B\u0430\u043D\u043E\u043C: " + (e.message || e), true);
@@ -21875,6 +22388,78 @@ ${trkpts}
         setStatus("\u2713 \u0421\u0435\u0433\u043C\u0435\u043D\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D");
       }
     });
+  }
+  function onMapEditSegment(dayN, segIdx) {
+    const trip = S.activeTrip;
+    if (!trip) return;
+    const day = trip.days.find((d) => d.n === dayN);
+    const vid = variantForTrip(trip.id);
+    const v = getDayVariant(day, vid);
+    const seg = v?.segments?.[segIdx];
+    if (!seg) return;
+    openSegmentMapEditor({
+      trip,
+      dayN,
+      segIdx,
+      variantId: vid,
+      segment: seg,
+      onSaved: async (t) => {
+        await persistTrip(t, { bump: true });
+        renderActiveTrip();
+        setStatus("\u2713 \u0422\u043E\u0447\u043A\u0438 \u043D\u0430 \u043A\u0430\u0440\u0442\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u044B");
+      }
+    });
+  }
+  async function onPlanSegmentFuel(dayN, segIdx) {
+    if (_busy2) return;
+    const trip = S.activeTrip;
+    if (!trip) return;
+    const profile = getTripBikeProfile(trip);
+    if (!profile) {
+      setStatus("\u274C \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u043C\u043E\u0442\u043E", true);
+      return;
+    }
+    const day = trip.days.find((d) => d.n === dayN);
+    const v = getDayVariant(day, variantForTrip(trip.id));
+    const seg = v?.segments?.[segIdx];
+    if (!seg) return;
+    _busy2 = true;
+    setStatus("\u26FD \u0418\u0449\u0435\u043C \u0410\u0417\u0421 \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443\u2026");
+    try {
+      const plan = await computeSegmentFuelPlan(seg, profile, { trip });
+      await persistTrip(trip, { bump: true });
+      renderActiveTrip();
+      const n = plan?.stops?.length || 0;
+      const w = plan?.warnings?.length ? " \xB7 \u26A0 " + plan.warnings[0] : "";
+      setStatus(n ? `\u2713 ${n} \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A \u043D\u0430 \xAB${seg.label}\xBB${w}` : `\u2713 \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0435 \u043D\u0443\u0436\u043D\u044B${w}`);
+    } catch (e) {
+      setStatus("\u274C " + (e.message || e), true);
+    } finally {
+      _busy2 = false;
+    }
+  }
+  async function onPlanAllFuel() {
+    if (_busy2) return;
+    const trip = S.activeTrip;
+    const profile = getTripBikeProfile(trip);
+    if (!trip || !profile) {
+      setStatus("\u274C \u041D\u0443\u0436\u0435\u043D \u043F\u043B\u0430\u043D \u0438 \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u043C\u043E\u0442\u043E", true);
+      return;
+    }
+    _busy2 = true;
+    setStatus("\u26FD \u0420\u0430\u0441\u0447\u0451\u0442 \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A \u043F\u043E \u0432\u0441\u0435\u043C\u0443 \u043F\u043B\u0430\u043D\u0443\u2026");
+    try {
+      const n = await computeTripFuelPlans(trip, profile, (dayN, label) => {
+        setStatus(`\u26FD \u0414\u0435\u043D\u044C ${dayN}: ${label || "\u2026"}`);
+      });
+      await persistTrip(trip, { bump: true });
+      renderActiveTrip();
+      setStatus(`\u2713 \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 \u0440\u0430\u0441\u0441\u0447\u0438\u0442\u0430\u043D\u044B (${n} \u0441\u0435\u0433\u043C.)`);
+    } catch (e) {
+      setStatus("\u274C " + (e.message || e), true);
+    } finally {
+      _busy2 = false;
+    }
   }
   async function onApplySegment(dayN, segIdx, mode) {
     if (_busy2) return;
@@ -22028,6 +22613,8 @@ ${trkpts}
   }
   function initTripPlannerUi() {
     initSegmentEditor();
+    initSegmentMapEditor();
+    initTripConflictModal();
     renderBikePanel();
     $2("trip-bike-select")?.addEventListener("change", async (e) => {
       const id = e.target.value;
@@ -22057,6 +22644,7 @@ ${trkpts}
     $2("btn-trip-demo")?.addEventListener("click", loadDemo);
     $2("btn-trip-new")?.addEventListener("click", () => showNewTripModal(true));
     $2("btn-trip-today")?.addEventListener("click", () => applyToday().catch((e) => setStatus("\u274C " + (e.message || e), true)));
+    $2("btn-trip-fuel-all")?.addEventListener("click", () => onPlanAllFuel());
     $2("trip-new-cancel")?.addEventListener("click", () => showNewTripModal(false));
     $2("trip-new-save")?.addEventListener("click", () => createTripFromForm().catch((e) => setTripNewError(e.message || String(e))));
     $2("btn-trip-export")?.addEventListener("click", exportTripText);
@@ -22144,6 +22732,8 @@ ${trkpts}
       init_bike_profile();
       init_trip_fuel();
       init_trip_segment_editor();
+      init_trip_segment_map();
+      init_trip_import_conflict();
       _busy2 = false;
     }
   });

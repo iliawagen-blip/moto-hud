@@ -29,13 +29,31 @@ export const BUILTIN_BIKES = [
     consumptionL100: { default: 5.0, highway: 4.8, city: 5.8, mountain: 6.0, offroad: 7.5 }
   },
   {
+    id: 'bike_yamaha_xj6',
+    name: 'Yamaha XJ6 Diversion',
+    tankLiters: 17,
+    reserveKm: 35,
+    fuelType: '95',
+    builtin: true,
+    consumptionL100: { default: 5.0, highway: 4.5, city: 5.8, mountain: 5.5, offroad: 6.5 }
+  },
+  {
     id: 'bike_bmw_r1250gs',
-    name: 'BMW R 1250 GS',
+    name: 'BMW R 1250 GS Adventure',
+    tankLiters: 33,
+    reserveKm: 40,
+    fuelType: '95',
+    builtin: true,
+    consumptionL100: { default: 5.5, highway: 5.2, city: 6.3, mountain: 6.9, offroad: 8.4 }
+  },
+  {
+    id: 'bike_bmw_r1200gs',
+    name: 'BMW R 1200 GS',
     tankLiters: 20,
     reserveKm: 40,
     fuelType: '95',
     builtin: true,
-    consumptionL100: { default: 5.4, highway: 5.1, city: 6.2, mountain: 6.8, offroad: 8.2 }
+    consumptionL100: { default: 5.6, highway: 5.3, city: 6.4, mountain: 7.0, offroad: 8.5 }
   },
   {
     id: 'bike_enduro_450',

@@ -365,6 +365,7 @@
         <button type="button" class="secondary" id="btn-trip-json">📤 JSON</button>
         <button type="button" class="secondary" id="btn-trip-send">📲 Отправить</button>
         <button type="button" class="secondary" id="btn-trip-export">📄 Текст</button>
+        <button type="button" class="secondary" id="btn-trip-fuel-all">⛽ Все заправки</button>
       </div>
       <button type="button" class="secondary" id="btn-trip-clear" style="margin-top:8px;width:100%">✕ Сбросить выбор</button>
       <button type="button" class="secondary" id="btn-trip-delete" style="margin-top:8px;width:100%">🗑 Удалить план</button>
@@ -440,7 +441,7 @@
       <span class="help-section">
         <b>Планировщик поездки</b>
         Многодневные планы: «🗓 Планировщик» → демо или свой план (укажите <strong>дату старта</strong> для «▶ Сегодня»).
-        Выберите <strong>⛽ профиль мото</strong> — оценка литров и предупреждения по запасу хода. Правка маршрута: «✎ Точки» у сегмента.
+        Выберите <strong>⛽ профиль мото</strong> — оценка литров и «⛽ Заправки» по OSM. Правка: «✎ Текст» или «📍 Карта». При импорте — экран конфликта, если план уже есть.
         На телефоне: «▶ Сегодня» → OSRM → «▶ ПОЕХАЛИ». Перенос: «🔗 Ссылка» (trip_pack) или JSON.
         В HUD — бейдж дня. Сегменты можно отметить «готово» вручную.
       </span>
@@ -702,6 +703,41 @@
     <div class="btnrow c2" style="margin-top:12px">
       <button type="button" id="trip-seg-edit-cancel">Отмена</button>
       <button type="button" class="ok" id="trip-seg-edit-save">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- конфликт импорта плана -->
+<div class="modal" id="trip-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="trip-conflict-title">
+  <div class="modal-card trip-conflict-card">
+    <h3 id="trip-conflict-title">Конфликт планов</h3>
+    <p class="hint" id="trip-conflict-summary"></p>
+    <div class="trip-conflict-diff" id="trip-conflict-diff"></div>
+    <p class="hint" style="margin-top:8px">Выберите, какую версию сохранить. Автослияния нет.</p>
+    <div class="btnrow c2" style="margin-top:12px">
+      <button type="button" class="secondary" id="trip-conflict-local">📱 Оставить на устройстве</button>
+      <button type="button" class="ok" id="trip-conflict-imported">📥 Взять из файла</button>
+    </div>
+    <div class="btnrow c2" style="margin-top:8px">
+      <button type="button" class="secondary" id="trip-conflict-copy">📋 Сохранить как копию</button>
+      <button type="button" id="trip-conflict-cancel">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- редактор сегмента на карте -->
+<div class="modal" id="trip-segment-map-modal" role="dialog" aria-modal="true" aria-labelledby="trip-seg-map-title">
+  <div class="modal-card trip-seg-map-card">
+    <h3 id="trip-seg-map-title">Точки на карте</h3>
+    <p class="hint" id="trip-seg-map-meta"></p>
+    <p class="hint">Тап — добавить точку · перетащите маркер · ↩ — удалить последнюю</p>
+    <div id="trip-seg-map" class="trip-seg-map"></div>
+    <p class="hint" id="trip-seg-map-count"></p>
+    <p class="status err hidden" id="trip-seg-map-error" role="alert"></p>
+    <div class="btnrow c3" style="margin-top:12px">
+      <button type="button" id="trip-seg-map-undo">↩ Удалить точку</button>
+      <button type="button" id="trip-seg-map-cancel">Отмена</button>
+      <button type="button" class="ok" id="trip-seg-map-save">Сохранить</button>
     </div>
   </div>
 </div>

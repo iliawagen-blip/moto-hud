@@ -76,6 +76,7 @@ export function initSegmentEditor(){
       seg.rtext = rtext;
       seg.plannedKm = audit.km;
       seg.type = audit.isLoop ? 'radial' : (points.length === 2 ? 'transfer' : 'route');
+      delete seg.fuelPlan;
       if(typeof _ctx.onSaved === 'function'){
         await _ctx.onSaved(_ctx.trip);
       }
