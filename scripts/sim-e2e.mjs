@@ -121,6 +121,10 @@ async function runDesktop(page){
   await acceptLegalInFrame(page);
   log(true, 'iframe: __SIM__ инициализирован');
 
+  await page.waitForFunction(() => {
+    try{ return !!document.getElementById('frame')?.contentWindow?.__motoHUD; }catch(e){ return false; }
+  }, { timeout: 45000 });
+
   let api = await getFrameApi(page);
   log(!!api.hasHud, 'iframe: __motoHUD доступен', JSON.stringify(api));
 
