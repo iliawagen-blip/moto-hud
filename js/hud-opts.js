@@ -2,7 +2,7 @@
  * Опции HUD: расстояние / время / ETA до финиша — загрузка и сохранение.
  */
 import { S, HUD_OPTS_KEY, DEFAULT_FUEL_PLANNER_COUNT, MIN_FUEL_PLANNER_COUNT, MAX_FUEL_PLANNER_COUNT } from './state.js';
-import { $ } from './util.js';
+import { normalizeChromeMode } from './hud-chrome.js';
 
 export function loadHudOptsFromStorage(){
   try{
@@ -26,6 +26,16 @@ export function loadHudOptsFromStorage(){
       const el = $('opt-fuel-count');
       if(el) el.value = String(S.fuelPlannerCount);
     }
+    if(o.hudStatusMode){
+      S.hudStatusMode = normalizeChromeMode(o.hudStatusMode);
+      const el = $('opt-hud-status-mode');
+      if(el) el.value = S.hudStatusMode;
+    }
+    if(o.hudFinishMode){
+      S.hudFinishMode = normalizeChromeMode(o.hudFinishMode);
+      const el = $('opt-hud-finish-mode');
+      if(el) el.value = S.hudFinishMode;
+    }
   }catch(e){}
 }
 
@@ -40,6 +50,8 @@ export function saveHudOptsToStorage(){
       showFinishDist: !!S.showFinishDist,
       showFinishTime: !!S.showFinishTime,
       showFinishEta: !!S.showFinishEta,
+      hudStatusMode: normalizeChromeMode(S.hudStatusMode),
+      hudFinishMode: normalizeChromeMode(S.hudFinishMode),
       fuelPlannerCount: clampFuelPlannerCount(S.fuelPlannerCount)
     }));
   }catch(e){}
@@ -49,7 +61,10 @@ export function saveHudOptsToStorage(){
 export function applyFinishInfoVisibility(){
   const panel = $('finish-info');
   if(!panel) return;
-  const any = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
+  const fields = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
+  const hud = $('hud');
+  const chromeOn = !hud?.classList.contains('on') || hud.classList.contains('chrome-finish-on');
+  const any = fields && chromeOn;
   panel.classList.toggle('hidden', !any);
   $('fi-dist-line')?.classList.toggle('hidden', !S.showFinishDist);
   $('fi-time-line')?.classList.toggle('hidden', !S.showFinishTime);

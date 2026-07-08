@@ -24,6 +24,7 @@ import { initViewMode } from './view-mode.js';
 import { initYandexExportUi } from './yandex-export.js';
 import { initTrackRecorderUi } from './track-recorder.js';
 import { initTripPlannerUi } from './trip-ui.js';
+import { initHudChrome } from './hud-chrome.js';
 
 applyThemeCss();
 initLegalConsent();
@@ -34,6 +35,7 @@ initViewMode();
 initYandexExportUi();
 initTrackRecorderUi();
 initTripPlannerUi();
+initHudChrome();
 initThemeManager();
 initVintageVfd();
 initTelemetry().then(() => initTelemetryUI());

@@ -173,28 +173,47 @@ body.legal-blocked #hud{display:none!important}
 .legal-blocked h2{color:var(--accent);font-size:20px;margin-bottom:12px}
 
 /* ---------- HUD (grid, крупно и читаемо) ---------- */
-#hud{position:fixed;inset:0;display:none;background:var(--bg);overflow:hidden;
-  font-family:var(--font-label);color:var(--fg)}
+#hud{
+  --hud-statusbar-h:48px;
+  --hud-status-font:24px;
+  --hud-finish-font:clamp(14px,4.2vw,22px);
+  --hud-btns-col:88px;
+  position:fixed;inset:0;display:none;background:var(--bg);overflow:hidden;
+  font-family:var(--font-label);color:var(--fg)
+}
 #hud.on{display:grid}
 
-.statusbar{grid-area:st;display:flex;justify-content:space-between;align-items:center;
-  padding:2px 12px;font-size:12px;color:var(--fg-dim);letter-spacing:1px;
+.statusbar{
+  grid-area:st;display:none;justify-content:space-between;align-items:center;
+  padding:2px 12px;font-size:var(--hud-status-font);color:var(--fg-dim);letter-spacing:1px;
   padding-top:calc(env(safe-area-inset-top) + 2px);
-  background:var(--bg);border-bottom:1px solid var(--line)}
-.statusbar .dot{width:9px;height:9px;border-radius:50%;background:var(--sem-warn);
-  display:inline-block;margin-right:5px;vertical-align:middle}
+  min-height:var(--hud-statusbar-h);
+  background:var(--bg);border-bottom:1px solid var(--line)
+}
+#hud.chrome-status-on .statusbar{display:flex}
+.statusbar .dot{width:18px;height:18px;border-radius:50%;background:var(--sem-warn);
+  display:inline-block;margin-right:8px;vertical-align:middle}
 .statusbar .dot.ok{background:var(--sem-ok)}
 .statusbar .dot.err{background:var(--sem-warn)}
-.statusbar .status-pair{display:inline-flex;align-items:center;white-space:nowrap}
+.statusbar .status-pair{display:inline-flex;align-items:center;white-space:nowrap;font-size:var(--hud-status-font)}
+.statusbar #mid-info,.statusbar #clock{font-size:var(--hud-status-font);font-family:var(--font-label)}
 .statusbar .status-pair.hidden{display:none}
 .hidden{display:none!important}
 
-/* компас-полоса N E S W — опционально (fixed-оверлей под статусбаром) */
-.compass{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 26px);
+/* компас — лента (fixed) или роза в блоке стрелки (chopper) */
+.compass-slot{
+  position:fixed;left:0;right:0;top:env(safe-area-inset-top);
   height:36px;z-index:3;display:none;background:color-mix(in srgb, var(--bg) 55%, transparent);overflow:hidden;
-  border-bottom:1px solid var(--line)}
-#hud.show-compass .compass{display:block}
-.compass svg{width:100%;height:100%;display:block}
+  border-bottom:1px solid var(--line)
+}
+#hud.chrome-status-on .compass-slot{top:calc(env(safe-area-inset-top) + var(--hud-statusbar-h))}
+#hud.show-compass .compass-slot{display:block}
+.compass-slot svg{width:100%;height:100%;display:block}
+.block-arrow .no-heading{
+  position:absolute;top:2px;left:50%;transform:translateX(-50%);
+  font-size:11px;color:var(--sem-warn);display:none;z-index:2;white-space:nowrap
+}
+.block-arrow .no-heading.on{display:block}
 
 /* блоки HUD */
 .block{position:relative;overflow:hidden;background:var(--bg);display:flex;
@@ -202,44 +221,52 @@ body.legal-blocked #hud{display:none!important}
 .block-arrow{grid-area:ar;min-height:0;position:relative}
 .block-speed{
   grid-area:sp;overflow:hidden;padding:0 0 calc(env(safe-area-inset-bottom) + 2px);z-index:1;min-height:0;
-  display:grid;grid-template-columns:44px 1fr;grid-template-rows:1fr auto;
+  display:grid;grid-template-columns:1fr;grid-template-rows:1fr auto;
+  grid-template-areas:"stack" "info"
+}
+#hud.chrome-btns-on .block-speed{
+  grid-template-columns:var(--hud-btns-col) 1fr;
   grid-template-areas:"btns stack" "info info"
 }
 .speed-btns{
-  grid-area:btns;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:4px;border-right:1px solid var(--line);padding:4px 2px;min-height:0
+  grid-area:btns;display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;border-right:1px solid var(--line);padding:6px 4px;min-height:0
 }
+#hud.chrome-btns-on .speed-btns{display:flex}
 .speed-btns .corner-btn{
   position:relative;bottom:auto;left:auto;right:auto;
   background:transparent;border:none;border-radius:0;box-shadow:none;
-  min-width:40px;min-height:34px;padding:4px 2px;touch-action:manipulation;
+  min-width:80px;min-height:68px;padding:6px 4px;touch-action:manipulation;
   -webkit-tap-highlight-color:transparent
 }
-.speed-btns .cb-icon{font-size:18px}
-.speed-btns .cb-lbl{font-size:7px;letter-spacing:.35px}
+.speed-btns .cb-icon{font-size:36px}
+.speed-btns .cb-lbl{font-size:14px;letter-spacing:.5px}
 .speed-stack{
   grid-area:stack;display:flex;flex-direction:column;align-items:center;justify-content:center;
   min-height:0;position:relative;padding:2px 6px
 }
 .finish-info{
   grid-area:info;width:100%;flex-shrink:0;text-align:center;
-  padding:5px 6px calc(env(safe-area-inset-bottom) + 4px);
+  padding:6px 8px calc(env(safe-area-inset-bottom) + 4px);
   border-top:1px solid var(--line);position:relative;z-index:1;
-  display:flex;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:0
+  display:none;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:0
 }
-.finish-info.hidden{display:none}
+#hud.chrome-finish-on .finish-info{display:flex}
+.finish-info.hidden{display:none!important}
 .fi-line{font-weight:var(--num-weight);font-style:var(--num-style);line-height:1.2;color:var(--fg);
-  font-family:var(--font-num);font-variant-numeric:tabular-nums;font-feature-settings:var(--font-feature-num);
+  font-family:var(--font-label);font-variant-numeric:tabular-nums;font-feature-settings:var(--font-feature-num);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0;flex:0 1 auto;min-width:0;
-  font-size:clamp(11px,3vw,15px)}
+  font-size:var(--hud-finish-font)}
 .fi-line.hidden{display:none}
 .fi-line:not(.hidden) ~ .fi-line:not(.hidden)::before{
-  content:'·';margin:0 0.3em;color:var(--fg-dim);font-weight:700;font-family:var(--font-label)
+  content:'·';margin:0 0.35em;color:var(--fg-dim);font-weight:700;font-family:var(--font-label);
+  font-size:var(--hud-finish-font)
 }
-.fi-k{display:inline-block;color:var(--fg-label);font-family:var(--font-label);font-weight:700;letter-spacing:.2px;
-  text-transform:var(--label-transform);margin-right:.22em;vertical-align:baseline;
-  font-size:clamp(8px,2.2vw,11px)}
-.fi-v{color:var(--fg);font-weight:var(--num-weight);font-size:clamp(18px,6vw,28px);letter-spacing:-0.02em}
+.fi-k{display:inline;color:var(--fg-label);font-family:var(--font-label);font-weight:700;letter-spacing:.2px;
+  text-transform:var(--label-transform);margin-right:.25em;vertical-align:baseline;
+  font-size:var(--hud-finish-font)}
+.fi-v{color:var(--fg);font-weight:var(--num-weight);font-family:var(--font-num);
+  font-size:var(--hud-finish-font);letter-spacing:-0.01em}
 .block-path{grid-area:pa;align-items:stretch;justify-content:stretch;
   border-top:1px solid var(--line);overflow:hidden;padding:0}
 .block-path.hidden{display:none}
@@ -302,13 +329,17 @@ body.legal-blocked #hud{display:none!important}
 /* ---------- Компоновка: только grid-template (блоки ar/pa/sp — см. .cursor/rules/hud-grid-blocks.mdc) ---------- */
 @media (orientation:portrait){
   #hud.on{grid-template-areas:"st" "ar" "pa" "sp";grid-template-columns:1fr;
-    grid-template-rows:24px minmax(0,1fr) minmax(0,30vh) minmax(0,1fr)}
+    grid-template-rows:0 minmax(0,1fr) minmax(0,30vh) minmax(0,1fr)}
+  #hud.on.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) minmax(0,1fr) minmax(0,30vh) minmax(0,1fr)}
   #hud.on.no-path{grid-template-areas:"st" "ar" "sp";grid-template-columns:1fr;
-    grid-template-rows:24px minmax(0,1.2fr) minmax(0,1fr)}
+    grid-template-rows:0 minmax(0,1.2fr) minmax(0,1fr)}
+  #hud.on.no-path.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) minmax(0,1.2fr) minmax(0,1fr)}
 }
 @media (orientation:landscape){
-  #hud.on{grid-template-areas:"st st st" "ar pa sp";grid-template-columns:0.82fr 1.42fr 0.76fr;grid-template-rows:24px 1fr}
-  #hud.on.no-path{grid-template-areas:"st st" "ar sp";grid-template-columns:1.05fr 0.95fr;grid-template-rows:24px 1fr}
+  #hud.on{grid-template-areas:"st st st" "ar pa sp";grid-template-columns:0.82fr 1.42fr 0.76fr;grid-template-rows:0 1fr}
+  #hud.on.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) 1fr}
+  #hud.on.no-path{grid-template-areas:"st st" "ar sp";grid-template-columns:1.05fr 0.95fr;grid-template-rows:0 1fr}
+  #hud.on.no-path.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) 1fr}
 }
 
 /* HUD ↔ карта (dbltap): карта ⅔, скорость ⅓ */
@@ -316,15 +347,17 @@ body.legal-blocked #hud{display:none!important}
 .nav-map-pane .leaflet-container{background:var(--map-bg);font-family:inherit}
 #hud.on.view-map .block-arrow,
 #hud.on.view-map .block-path,
-#hud.on.view-map .compass{display:none!important}
+#hud.on.view-map .compass-slot{display:none!important}
 #hud.on.view-map .nav-map-pane{display:block}
 @media (orientation:portrait){
   #hud.on.view-map{grid-template-areas:"st" "mp" "sp";grid-template-columns:1fr;
-    grid-template-rows:24px minmax(0,2fr) minmax(0,1fr)}
+    grid-template-rows:0 minmax(0,2fr) minmax(0,1fr)}
+  #hud.on.view-map.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) minmax(0,2fr) minmax(0,1fr)}
   #hud.on.view-map.no-path{grid-template-rows:24px minmax(0,2fr) minmax(0,1fr)}
 }
 @media (orientation:landscape){
-  #hud.on.view-map{grid-template-areas:"st st" "mp sp";grid-template-columns:2fr 1fr;grid-template-rows:24px 1fr}
+  #hud.on.view-map{grid-template-areas:"st st" "mp sp";grid-template-columns:2fr 1fr;grid-template-rows:0 1fr}
+  #hud.on.view-map.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) 1fr}
 }
 
 #camAlert{

@@ -163,6 +163,23 @@
       <div class="toggle" style="margin-top:6px">↪ Подписи (угол, м) <input type="checkbox" id="opt-chevron-labels" checked></div>
       <div class="toggle" style="margin-top:6px">↪ Макс. шевронов <input type="number" id="opt-chevron-max" value="3" min="1" max="3" step="1"></div>
       <div class="toggle" style="margin-top:12px;font-size:14px;color:var(--dim)">До финиша в HUD</div>
+      <div class="toggle" style="margin-top:6px">
+        📡 Строка GPS/CAM/T+
+        <select id="opt-hud-status-mode" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px">
+          <option value="tap" selected>по тапу (15 с)</option>
+          <option value="always">всегда</option>
+          <option value="off">откл.</option>
+        </select>
+      </div>
+      <div class="toggle" style="margin-top:6px">
+        📊 Нижняя строка (осталось/ETA)
+        <select id="opt-hud-finish-mode" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px">
+          <option value="tap" selected>по тапу (15 с)</option>
+          <option value="always">всегда</option>
+          <option value="off">откл.</option>
+        </select>
+      </div>
+      <div class="hint" style="margin-top:4px;font-size:12px">Кнопки СТОП/ЗАПР./ЭКРАН/НАСТР. — по одному тапу на HUD (15 с). Двойной тап — карта.</div>
       <div class="toggle" style="margin-top:6px">📍 Расстояние <input type="checkbox" id="opt-finish-dist" checked></div>
       <div class="toggle" style="margin-top:6px">⏱ Оставшееся время <input type="checkbox" id="opt-finish-time" checked></div>
       <div class="toggle" style="margin-top:6px">🕐 ETA (прибытие) <input type="checkbox" id="opt-finish-eta" checked></div>
@@ -410,12 +427,10 @@
 
   <div id="nav-map-pane" class="nav-map-pane" aria-hidden="true"></div>
 
-  <!-- компас N E S W (опционально) -->
-  <div class="compass"><svg id="compass-svg" viewBox="0 0 400 36" preserveAspectRatio="xMidYMid meet"></svg></div>
-  <div class="no-heading" id="heading-warn">⚠ Помехи компаса — курс по GPS</div>
-
   <!-- манёвр: улица + крупная стрелка + расстояние -->
   <div class="block block-arrow">
+    <div class="compass compass-slot"><svg id="compass-svg" viewBox="0 0 400 36" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="no-heading" id="heading-warn">⚠ Помехи компаса — курс по GPS</div>
     <div class="street" id="street">—</div>
     <div class="arrow-svg" id="arrow-box"></div>
     <div class="rb-exit-label hidden" id="rb-exit-label" aria-hidden="true"></div>

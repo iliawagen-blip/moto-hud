@@ -237,6 +237,10 @@
         showFinishDist: true,
         showFinishEta: true,
         showFinishTime: true,
+        /** always | off | tap — строка GPS/CAM/T+/часы */
+        hudStatusMode: "tap",
+        /** always | off | tap — нижняя строка осталось/ETA */
+        hudFinishMode: "tap",
         /** Сколько ближайших АЗС показывать в планировщике (1–10) */
         fuelPlannerCount: DEFAULT_FUEL_PLANNER_COUNT,
         // Топливный ассистент
@@ -414,10 +418,10 @@
     }
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
   }
-  var $;
+  var $2;
   var init_util = __esm({
     "js/util.js"() {
-      $ = (id) => document.getElementById(id);
+      $2 = (id) => document.getElementById(id);
     }
   });
 
@@ -3217,7 +3221,7 @@
     };
   }
   function easeSpeed() {
-    const el = $("v-speed");
+    const el = $2("v-speed");
     if (!el || !S.gps) return;
     const raw = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
     const target = Math.min(raw, GPS_SPEED_MAX_MPS * 3.6);
@@ -3259,7 +3263,7 @@
   }
   function visualLoop() {
     S.rafId = requestAnimationFrame(visualLoop);
-    if (!$("hud").classList.contains("on")) return;
+    if (!$2("hud").classList.contains("on")) return;
     telemetry_default.tickPerfFrame();
     updateRenderPos();
     easeSpeed();
@@ -3275,23 +3279,23 @@
     }
   }
   function updateGpsConvergeUI() {
-    const el = $("gps-converge");
+    const el = $2("gps-converge");
     if (el) {
-      el.classList.toggle("on", $("hud").classList.contains("on") && !S.gpsConverged);
+      el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
     }
-    $("s-gps").textContent = S.gpsConverged ? "\u2705 GPS \xB1" + Math.round(S.gps?.acc || 0) + "\u043C" : "\u23F3 GPS \u0441\u0445\u043E\u0434\u0438\u0442\u0441\u044F\u2026";
-    $("s-gps").className = S.gpsConverged ? "chip ok" : "chip";
+    $2("s-gps").textContent = S.gpsConverged ? "\u2705 GPS \xB1" + Math.round(S.gps?.acc || 0) + "\u043C" : "\u23F3 GPS \u0441\u0445\u043E\u0434\u0438\u0442\u0441\u044F\u2026";
+    $2("s-gps").className = S.gpsConverged ? "chip ok" : "chip";
     checkStartReady();
   }
   function checkStartReady() {
     const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
-    $("btn-start").disabled = !(S.gps && S.finish && hasRoute);
-    const buildBtn = $("btn-build-route");
+    $2("btn-start").disabled = !(S.gps && S.finish && hasRoute);
+    const buildBtn = $2("btn-build-route");
     if (buildBtn) buildBtn.disabled = !(S.gps && S.finish);
   }
   function onGpsError() {
-    $("s-gps").textContent = "\u274C GPS";
-    $("s-gps").className = "chip err";
+    $2("s-gps").textContent = "\u274C GPS";
+    $2("s-gps").className = "chip err";
     invalidateGpsConverge();
     if (!_gpsLost) {
       _gpsLost = true;
@@ -3332,9 +3336,9 @@
     S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
     feedGpsConverge(next);
     if (next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge();
-    if ($("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge();
+    if ($2("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge();
     updateGpsConvergeUI();
-    if ($("hud").classList.contains("on")) _onTick();
+    if ($2("hud").classList.contains("on")) _onTick();
     const rcv = Date.now();
     if (_gpsLost) {
       _gpsLost = false;
@@ -3350,7 +3354,7 @@
       ts: next.ts,
       rcv
     });
-    if ($("hud").classList.contains("on") && S.route?.geometry) {
+    if ($2("hud").classList.contains("on") && S.route?.geometry) {
       const snap = getNavSnap(S.smoothedHeading);
       telemetry_default.logSnapFromResult(snap);
     }
@@ -3363,13 +3367,13 @@
   }
   function startWebGps() {
     if (!navigator.geolocation) {
-      $("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
-      $("s-gps").className = "chip err";
+      $2("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
+      $2("s-gps").className = "chip err";
       return;
     }
     stopWebGps();
-    $("s-gps").textContent = "\u23F3 GPS\u2026";
-    $("s-gps").className = "chip";
+    $2("s-gps").textContent = "\u23F3 GPS\u2026";
+    $2("s-gps").className = "chip";
     S.watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const c = pos.coords;
@@ -3391,8 +3395,8 @@
     _navMode = false;
     startHeadingSensors();
     if (isNative()) {
-      $("s-gps").textContent = "\u23F3 GPS\u2026";
-      $("s-gps").className = "chip";
+      $2("s-gps").textContent = "\u23F3 GPS\u2026";
+      $2("s-gps").className = "chip";
       stopWebGps();
       startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
       return;
@@ -3440,7 +3444,7 @@
     const st = S.camLoadStatus || "idle";
     const n = S.cameras?.length || 0;
     const enabled = !!S.cams;
-    const chip = $("s-cams");
+    const chip = $2("s-cams");
     if (chip) {
       if (!enabled) {
         chip.textContent = "\u{1F4F7} \u0432\u044B\u043A\u043B";
@@ -3464,9 +3468,9 @@
         chip.title = "\u041A\u0430\u043C\u0435\u0440\u044B \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443";
       }
     }
-    const wrap = $("cam-status-wrap");
-    const dot = $("cam-dot");
-    const txt = $("cam-txt");
+    const wrap = $2("cam-status-wrap");
+    const dot = $2("cam-dot");
+    const txt = $2("cam-txt");
     if (!wrap || !dot || !txt) return;
     if (!enabled) {
       wrap.classList.add("hidden");
@@ -5847,10 +5851,10 @@
     return out;
   }
   function renderPathway() {
-    const block = $("block-path");
-    const svg = $("path-svg");
+    const block = $2("block-path");
+    const svg = $2("path-svg");
     if (!block || !svg) return;
-    const hud = $("hud");
+    const hud = $2("hud");
     const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
     if (!S.showPath || kmh < 25 || isSnapLost() || S.compassMode || S.gpsConverged === false) {
       block.classList.add("hidden");
@@ -6119,7 +6123,7 @@
     return renderManeuverArrow(turn);
   }
   function renderCompass() {
-    const el = $("compass-svg");
+    const el = $2("compass-svg");
     if (!el) return;
     const tok = getThemeTokens();
     const hdg = effectiveHeading();
@@ -6142,18 +6146,20 @@
     el.innerHTML = html;
   }
   function renderCompassRose(el, tok, hdg) {
-    const W = 400, H = 120, cx = W / 2, cy = H / 2, r = 44;
-    let html = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + tok.dim + '" stroke-width="1.5"/>';
+    const chopper = document.documentElement.classList.contains("theme-chopper");
+    const W = 400, H = chopper ? 140 : 120, cx = W / 2, cy = H / 2, r = chopper ? 54 : 44;
+    const fs = chopper ? 30 : 22;
+    let html = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + tok.dim + '" stroke-width="' + (chopper ? 2 : 1.5) + '"/>';
     if (hdg != null && !isNaN(hdg)) {
       [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
         const a2 = (d[1] - hdg) * Math.PI / 180;
         const x = cx + Math.sin(a2) * r;
         const y = cy - Math.cos(a2) * r;
         const near = Math.abs((d[1] - hdg + 540) % 360 - 180) < 18;
-        html += '<text x="' + x.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="22" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
+        html += '<text x="' + x.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="' + fs + '" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
       });
       const a = -hdg * Math.PI / 180;
-      html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.sin(a) * (r - 8)).toFixed(1) + '" y2="' + (cy - Math.cos(a) * (r - 8)).toFixed(1) + '" stroke="' + tok.accent + '" stroke-width="3"/>';
+      html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.sin(a) * (r - 10)).toFixed(1) + '" y2="' + (cy - Math.cos(a) * (r - 10)).toFixed(1) + '" stroke="' + tok.accent + '" stroke-width="' + (chopper ? 4 : 3) + '"/>';
     }
     el.setAttribute("viewBox", "0 0 " + W + " " + H);
     el.innerHTML = html;
@@ -6192,8 +6198,8 @@
   }
   function syncVintageVfdDomClasses() {
     const vintage = document.documentElement.classList.contains("theme-vintage");
-    const speedVal = $("v-speed");
-    const speedGhost = $("speed-ghost");
+    const speedVal = $2("v-speed");
+    const speedGhost = $2("speed-ghost");
     const mdistInner = document.querySelector(".mdist-inner");
     if (speedVal) speedVal.classList.toggle("vfd-emissive-cyan", vintage);
     if (speedGhost && vintage) speedGhost.textContent = "888";
@@ -6309,12 +6315,12 @@
     return pts;
   }
   function hideImportModal() {
-    $("yandexImportModal")?.classList.remove("on");
+    $2("yandexImportModal")?.classList.remove("on");
     _pendingWaypoints = null;
     _pendingUrl = "";
   }
   function hideBanner() {
-    const banner = $("yandex-banner");
+    const banner = $2("yandex-banner");
     banner?.classList.remove("on");
     banner?.classList.add("hidden");
   }
@@ -6324,8 +6330,8 @@
     if (!wps?.length) return;
     hideImportModal();
     hideBanner();
-    const status = $("s-finish");
-    const btn = $("btn-build-route");
+    const status = $2("s-finish");
+    const btn = $2("btn-build-route");
     if (btn) {
       btn.disabled = true;
       btn.textContent = "\u23F3 \u0418\u043C\u043F\u043E\u0440\u0442\u2026";
@@ -6350,7 +6356,7 @@
         status.textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442 \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB";
         status.className = "status ok";
       }
-      $("finish-input").value = urlForInput || `${wps.length} \u0442\u043E\u0447\u0435\u043A \u042F\u043D\u0434\u0435\u043A\u0441`;
+      $2("finish-input").value = urlForInput || `${wps.length} \u0442\u043E\u0447\u0435\u043A \u042F\u043D\u0434\u0435\u043A\u0441`;
     } catch (e) {
       if (status) {
         status.textContent = "\u274C " + (e.message || e);
@@ -6366,8 +6372,8 @@
   function offerYandexImport(waypoints, sourceUrl = "") {
     _pendingWaypoints = waypoints;
     _pendingUrl = sourceUrl || "";
-    const modal = $("yandexImportModal");
-    const info = $("yandex-import-info");
+    const modal = $2("yandexImportModal");
+    const info = $2("yandex-import-info");
     if (info) {
       info.textContent = `\u0422\u043E\u0447\u0435\u043A: ${waypoints.length}. \u0414\u043B\u044F \u0442\u043E\u0447\u043D\u043E\u0433\u043E \u043F\u043E\u0432\u0442\u043E\u0440\u0435\u043D\u0438\u044F \u0433\u0435\u043E\u043C\u0435\u0442\u0440\u0438\u0438 \u042F\u043D\u0434\u0435\u043A\u0441\u0430 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0439\u0442\u0435 \u043F\u0440\u043E\u043C\u0435\u0436\u0443\u0442\u043E\u0447\u043D\u044B\u0435 \u0442\u043E\u0447\u043A\u0438 \u043A\u0430\u0436\u0434\u044B\u0435 3\u20135 \u043A\u043C \u2014 \u0438\u043D\u0430\u0447\u0435 OSRM \u043C\u043E\u0436\u0435\u0442 \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u0435 \u0434\u043E\u0440\u043E\u0433\u0438.`;
     }
@@ -6381,14 +6387,14 @@
     return wps;
   }
   function showYandexBanner(message, onApply) {
-    const banner = $("yandex-banner");
-    const msg = $("yandex-banner-msg");
+    const banner = $2("yandex-banner");
+    const msg = $2("yandex-banner-msg");
     if (!banner) return;
     if (msg) msg.textContent = message || "\u041D\u0430\u0439\u0434\u0435\u043D\u0430 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442";
     banner.classList.remove("hidden");
     banner.classList.add("on");
-    const applyBtn = $("yandex-banner-apply");
-    const dismissBtn = $("yandex-banner-dismiss");
+    const applyBtn = $2("yandex-banner-apply");
+    const dismissBtn = $2("yandex-banner-dismiss");
     const onOk = () => {
       hideBanner();
       onApply?.();
@@ -6396,17 +6402,17 @@
     const onNo = () => hideBanner();
     applyBtn?.replaceWith(applyBtn.cloneNode(true));
     dismissBtn?.replaceWith(dismissBtn.cloneNode(true));
-    $("yandex-banner-apply")?.addEventListener("click", onOk, { once: true });
-    $("yandex-banner-dismiss")?.addEventListener("click", onNo, { once: true });
+    $2("yandex-banner-apply")?.addEventListener("click", onOk, { once: true });
+    $2("yandex-banner-dismiss")?.addEventListener("click", onNo, { once: true });
   }
   function initYandexImportUi() {
-    $("yandex-import-direct")?.addEventListener("click", () => {
+    $2("yandex-import-direct")?.addEventListener("click", () => {
       void finishImport("direct");
     });
-    $("yandex-import-routed")?.addEventListener("click", () => {
+    $2("yandex-import-routed")?.addEventListener("click", () => {
       void finishImport("routed");
     });
-    $("yandex-import-cancel")?.addEventListener("click", hideImportModal);
+    $2("yandex-import-cancel")?.addEventListener("click", hideImportModal);
   }
   var DB_NAME2, DB_VER2, _pendingWaypoints, _pendingUrl;
   var init_yandex_import = __esm({
@@ -6421,6 +6427,85 @@
       DB_VER2 = 1;
       _pendingWaypoints = null;
       _pendingUrl = "";
+    }
+  });
+
+  // js/hud-chrome.js
+  function normalizeChromeMode(v) {
+    return v === "always" || v === "off" ? v : "tap";
+  }
+  function hudOn() {
+    return $2("hud")?.classList.contains("on");
+  }
+  function chromeShown(mode) {
+    const m = normalizeChromeMode(mode);
+    if (m === "off") return false;
+    if (m === "always") return true;
+    return $2("hud")?.classList.contains("chrome-reveal");
+  }
+  function isChromeExcluded(el) {
+    if (!el || !(el instanceof Element)) return true;
+    return !!el.closest(
+      ".corner-btn, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #nav-map-pane"
+    );
+  }
+  function revealHudChrome() {
+    const hud = $2("hud");
+    if (!hud?.classList.contains("on")) return;
+    hud.classList.add("chrome-reveal");
+    applyHudChrome();
+    clearTimeout(_revealTimer);
+    _revealTimer = setTimeout(() => {
+      hud.classList.remove("chrome-reveal");
+      applyHudChrome();
+    }, HUD_CHROME_TAP_MS);
+  }
+  function onHudTap() {
+    revealHudChrome();
+  }
+  function clearHudChromeReveal() {
+    clearTimeout(_revealTimer);
+    _revealTimer = null;
+    $2("hud")?.classList.remove("chrome-reveal");
+    applyHudChrome();
+  }
+  function applyHudChrome() {
+    const hud = $2("hud");
+    if (!hud) return;
+    const reveal = hud.classList.contains("chrome-reveal");
+    const statusOn = chromeShown(S.hudStatusMode);
+    const finishFields = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
+    const finishOn = finishFields && chromeShown(S.hudFinishMode);
+    hud.classList.toggle("chrome-btns-on", reveal);
+    hud.classList.toggle("chrome-status-on", statusOn);
+    hud.classList.toggle("chrome-finish-on", finishOn);
+    const panel = $2("finish-info");
+    if (panel) {
+      panel.classList.toggle("hidden", !finishOn);
+      $2("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
+      $2("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
+      $2("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
+    }
+  }
+  function initHudChrome() {
+    if (_bound) return;
+    const hud = $2("hud");
+    if (!hud) return;
+    hud.addEventListener("click", (e) => {
+      if (!hudOn() || isChromeExcluded(e.target)) return;
+      onHudTap();
+    });
+    _bound = true;
+    applyHudChrome();
+  }
+  var HUD_CHROME_TAP_MS, _revealTimer, _bound;
+  var init_hud_chrome = __esm({
+    "js/hud-chrome.js"() {
+      init_state();
+      init_util();
+      HUD_CHROME_TAP_MS = 15e3;
+      _revealTimer = null;
+      _bound = false;
     }
   });
 
@@ -6447,6 +6532,16 @@
         const el = $("opt-fuel-count");
         if (el) el.value = String(S.fuelPlannerCount);
       }
+      if (o.hudStatusMode) {
+        S.hudStatusMode = normalizeChromeMode(o.hudStatusMode);
+        const el = $("opt-hud-status-mode");
+        if (el) el.value = S.hudStatusMode;
+      }
+      if (o.hudFinishMode) {
+        S.hudFinishMode = normalizeChromeMode(o.hudFinishMode);
+        const el = $("opt-hud-finish-mode");
+        if (el) el.value = S.hudFinishMode;
+      }
     } catch (e) {
     }
   }
@@ -6462,24 +6557,17 @@
         showFinishDist: !!S.showFinishDist,
         showFinishTime: !!S.showFinishTime,
         showFinishEta: !!S.showFinishEta,
+        hudStatusMode: normalizeChromeMode(S.hudStatusMode),
+        hudFinishMode: normalizeChromeMode(S.hudFinishMode),
         fuelPlannerCount: clampFuelPlannerCount(S.fuelPlannerCount)
       }));
     } catch (e) {
     }
   }
-  function applyFinishInfoVisibility() {
-    const panel = $("finish-info");
-    if (!panel) return;
-    const any = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
-    panel.classList.toggle("hidden", !any);
-    $("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
-    $("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
-    $("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
-  }
   var init_hud_opts = __esm({
     "js/hud-opts.js"() {
       init_state();
-      init_util();
+      init_hud_chrome();
     }
   });
 
@@ -6491,12 +6579,12 @@
       const o = JSON.parse(raw);
       const setCheck = (id, v) => {
         if (typeof v !== "boolean") return;
-        const el = $(id);
+        const el = $2(id);
         if (el) el.checked = v;
       };
       const setVal = (id, v) => {
         if (v == null) return;
-        const el = $(id);
+        const el = $2(id);
         if (el) el.value = String(v);
       };
       setCheck("opt-voice", o.voice);
@@ -16216,7 +16304,7 @@
     _tileLayer.addTo(_map);
   }
   function ensureMap() {
-    const box = $("route-map");
+    const box = $2("route-map");
     if (!box) return null;
     if (!_map) {
       box.innerHTML = "";
@@ -16230,7 +16318,7 @@
     return _map;
   }
   function initMapProviderSelect(onChange) {
-    const sel = $("opt-map");
+    const sel = $2("opt-map");
     if (!sel) return;
     sel.innerHTML = Object.values(MAP_PROVIDERS).map(
       (p) => '<option value="' + p.id + '">' + p.name + "</option>"
@@ -16251,7 +16339,7 @@
     });
   }
   function renderRouteMap(alternatives, selectedIdx, start2, finish) {
-    const section = $("route-section");
+    const section = $2("route-section");
     if (!section) return;
     if (!alternatives || !alternatives.length) {
       section.classList.add("hidden");
@@ -16344,7 +16432,7 @@
     setTimeout(() => map.invalidateSize(), 120);
   }
   function renderRouteAlts(alternatives, selectedIdx, onPick) {
-    const box = $("route-alts");
+    const box = $2("route-alts");
     if (!box) return;
     if (!alternatives || !alternatives.length) {
       box.innerHTML = "";
@@ -16368,7 +16456,7 @@
     _onSelect = fn;
   }
   function updateRouteInfo(route) {
-    const el = $("route-info");
+    const el = $2("route-info");
     if (!el || !route) {
       if (el) el.textContent = "";
       return;
@@ -16379,13 +16467,13 @@
     el.className = "route-info ok";
   }
   function clearRouteMap() {
-    $("route-section")?.classList.add("hidden");
+    $2("route-section")?.classList.add("hidden");
     clearLayers();
     _lastRender = null;
-    if ($("route-alts")) $("route-alts").innerHTML = "";
-    if ($("route-info")) {
-      $("route-info").textContent = "";
-      $("route-info").className = "route-info";
+    if ($2("route-alts")) $2("route-alts").innerHTML = "";
+    if ($2("route-info")) {
+      $2("route-info").textContent = "";
+      $2("route-info").className = "route-info";
     }
   }
   function invalidateRouteMapSize() {
@@ -16475,7 +16563,7 @@
     }
   }
   function renderBanner(health) {
-    const el = $("tts-banner");
+    const el = $2("tts-banner");
     if (!el) return;
     if (!S.voice || health.ok && health.offlineVoice !== false) {
       el.classList.add("hidden");
@@ -16493,7 +16581,7 @@
       html += ' <button type="button" class="linkish" id="btn-tts-install">\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0433\u043E\u043B\u043E\u0441\u0430</button>';
     }
     el.innerHTML = html;
-    $("btn-tts-install")?.addEventListener("click", () => {
+    $2("btn-tts-install")?.addEventListener("click", () => {
       openTtsInstall().then(() => setTimeout(refreshTtsBanner, 2e3));
     });
   }
@@ -16547,8 +16635,8 @@
     }
   }
   function setGoBarVisible(visible) {
-    $("go-bar")?.classList.toggle("hidden", !visible);
-    $("setup")?.classList.toggle("has-go-bar", !!visible);
+    $2("go-bar")?.classList.toggle("hidden", !visible);
+    $2("setup")?.classList.toggle("has-go-bar", !!visible);
   }
   function refreshRouteUi() {
     if (!S.route) return;
@@ -16557,7 +16645,7 @@
     updateRouteInfo(S.route);
     syncSimPath();
     setGoBarVisible(true);
-    $("route-export-row")?.classList.toggle("hidden", !S.route?.coords?.length);
+    $2("route-export-row")?.classList.toggle("hidden", !S.route?.coords?.length);
     loadCameras();
     checkStartReady();
     scheduleGeometryBuild(S.routeAlternatives, () => {
@@ -16570,9 +16658,9 @@
     S.selectedRouteIdx = 0;
     clearRouteMap();
     setGoBarVisible(false);
-    $("route-export-row")?.classList.add("hidden");
+    $2("route-export-row")?.classList.add("hidden");
     checkStartReady();
-    const b = $("btn-build-route");
+    const b = $2("btn-build-route");
     if (b) b.disabled = !(S.gps && S.finish);
   }
   function pickRoute(idx) {
@@ -16587,16 +16675,16 @@
   }
   async function doBuildRoute() {
     if (!S.gps || !S.finish) {
-      $("s-finish").textContent = "\u274C \u041D\u0443\u0436\u043D\u044B GPS \u0438 \u0444\u0438\u043D\u0438\u0448";
-      $("s-finish").className = "status err";
+      $2("s-finish").textContent = "\u274C \u041D\u0443\u0436\u043D\u044B GPS \u0438 \u0444\u0438\u043D\u0438\u0448";
+      $2("s-finish").className = "status err";
       return;
     }
-    const btn = $("btn-build-route");
+    const btn = $2("btn-build-route");
     const prev = btn.textContent;
     btn.disabled = true;
     btn.textContent = "\u23F3 \u0421\u0442\u0440\u043E\u0438\u043C\u2026";
-    $("route-info").textContent = "\u23F3 \u0417\u0430\u043F\u0440\u043E\u0441 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u043E\u0432\u2026";
-    $("route-info").className = "route-info";
+    $2("route-info").textContent = "\u23F3 \u0417\u0430\u043F\u0440\u043E\u0441 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u043E\u0432\u2026";
+    $2("route-info").className = "route-info";
     try {
       S.routeAlternatives = await fetchRouteAlternatives();
       S.selectedRouteIdx = 0;
@@ -16608,8 +16696,8 @@
       setGoBarVisible(true);
       loadCameras();
       telemetry_default.log("nav", { sub: "route_built", variants: S.routeAlternatives.length });
-      $("s-finish").textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D \u2014 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB \u0432\u043D\u0438\u0437\u0443";
-      $("s-finish").className = "status ok";
+      $2("s-finish").textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D \u2014 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB \u0432\u043D\u0438\u0437\u0443";
+      $2("s-finish").className = "status ok";
       scheduleGeometryBuild(S.routeAlternatives, () => {
         renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
       });
@@ -16617,10 +16705,10 @@
         renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
       });
     } catch (e) {
-      $("route-info").textContent = "\u274C " + e.message;
-      $("route-info").className = "route-info";
-      $("s-finish").textContent = "\u274C " + e.message;
-      $("s-finish").className = "status err";
+      $2("route-info").textContent = "\u274C " + e.message;
+      $2("route-info").className = "route-info";
+      $2("s-finish").textContent = "\u274C " + e.message;
+      $2("s-finish").className = "status err";
       clearRouteMap();
     } finally {
       btn.textContent = prev;
@@ -16629,39 +16717,39 @@
     }
   }
   async function doAddressSearch() {
-    const q = $("finish-input").value.trim();
+    const q = $2("finish-input").value.trim();
     if (!q) {
-      $("s-finish").textContent = "\u274C \u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441";
-      $("s-finish").className = "status err";
+      $2("s-finish").textContent = "\u274C \u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441";
+      $2("s-finish").className = "status err";
       return;
     }
     if (parseInput(q)) {
       applyCoordsOrLink();
       return;
     }
-    $("s-finish").textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0430\u0434\u0440\u0435\u0441\u2026";
-    $("s-finish").className = "status";
+    $2("s-finish").textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0430\u0434\u0440\u0435\u0441\u2026";
+    $2("s-finish").className = "status";
     S.finish = null;
     invalidateRoute();
     if (window.__motoHUD) window.__motoHUD._searchBusy = true;
     try {
       const res = await searchAddress(q);
       if (!res.length) {
-        $("s-finish").textContent = "\u274C \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E";
-        $("s-finish").className = "status err";
-        $("search-results").style.display = "none";
+        $2("s-finish").textContent = "\u274C \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E";
+        $2("s-finish").className = "status err";
+        $2("search-results").style.display = "none";
         return;
       }
-      const box = $("search-results");
+      const box = $2("search-results");
       box.innerHTML = "";
       res.forEach((r) => {
         const d = document.createElement("div");
         d.textContent = r.display_name;
         d.addEventListener("click", () => {
           S.finish = { lat: parseFloat(r.lat), lon: parseFloat(r.lon), label: r.display_name.split(",")[0] };
-          $("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + r.display_name;
-          $("s-finish").className = "status ok";
-          $("finish-input").value = r.display_name;
+          $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + r.display_name;
+          $2("s-finish").className = "status ok";
+          $2("finish-input").value = r.display_name;
           box.style.display = "none";
           invalidateRoute();
         });
@@ -16669,11 +16757,11 @@
       });
       box.style.display = "block";
       box.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      $("s-finish").textContent = "\u{1F50E} \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430";
-      $("s-finish").className = "status";
+      $2("s-finish").textContent = "\u{1F50E} \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430";
+      $2("s-finish").className = "status";
     } catch (e) {
-      $("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430: " + e.message;
-      $("s-finish").className = "status err";
+      $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430: " + e.message;
+      $2("s-finish").className = "status err";
     } finally {
       if (window.__motoHUD) window.__motoHUD._searchBusy = false;
     }
@@ -16682,10 +16770,10 @@
     const brand = st.brand || st.name || "\u0410\u0417\u0421";
     S.finish = { lat: st.lat, lon: st.lon, label: "\u26FD " + brand };
     const inputVal = st.name && st.name !== st.brand ? brand + " \u2014 " + st.name : brand;
-    $("finish-input").value = inputVal;
-    $("finish-input").dataset.userEdited = "1";
-    $("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + inputVal + " \xB7 " + formatFuelDist(st.distGps);
-    $("s-finish").className = "status ok";
+    $2("finish-input").value = inputVal;
+    $2("finish-input").dataset.userEdited = "1";
+    $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + inputVal + " \xB7 " + formatFuelDist(st.distGps);
+    $2("s-finish").className = "status ok";
     invalidateRoute();
     checkStartReady();
   }
@@ -16697,27 +16785,27 @@
   }
   async function doFuelSearch() {
     if (!S.gps) {
-      $("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 GPS (\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u{1F4CD} GPS)";
-      $("s-finish").className = "status err";
+      $2("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 GPS (\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u{1F4CD} GPS)";
+      $2("s-finish").className = "status err";
       return;
     }
-    const btn = $("btn-fuel-search");
+    const btn = $2("btn-fuel-search");
     const prev = btn?.textContent;
     if (btn) {
       btn.disabled = true;
       btn.textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0410\u0417\u0421\u2026";
     }
-    $("s-finish").textContent = "\u23F3 \u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A\u2026";
-    $("s-finish").className = "status";
+    $2("s-finish").textContent = "\u23F3 \u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A\u2026";
+    $2("s-finish").className = "status";
     try {
       syncOptionsFromDom();
       const limit = clampFuelPlannerCount(S.fuelPlannerCount);
       const list = await searchNearestFuelStations(limit);
-      const box = $("search-results");
+      const box = $2("search-results");
       box.innerHTML = "";
       if (!list.length) {
-        $("s-finish").textContent = "\u274C \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438";
-        $("s-finish").className = "status err";
+        $2("s-finish").textContent = "\u274C \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438";
+        $2("s-finish").className = "status err";
         box.style.display = "none";
         return;
       }
@@ -16733,11 +16821,11 @@
       });
       box.style.display = "block";
       box.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      $("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")";
-      $("s-finish").className = "status";
+      $2("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")";
+      $2("s-finish").className = "status";
     } catch (e) {
-      $("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0410\u0417\u0421: " + e.message;
-      $("s-finish").className = "status err";
+      $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0410\u0417\u0421: " + e.message;
+      $2("s-finish").className = "status err";
     } finally {
       if (btn) {
         btn.disabled = false;
@@ -16747,24 +16835,24 @@
   }
   function setFinishQuiet(lat, lon, label = "\u0422\u043E\u0447\u043A\u0430") {
     S.finish = { lat, lon, label };
-    $("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + lat.toFixed(5) + ", " + lon.toFixed(5);
-    $("s-finish").className = "status ok";
+    $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + lat.toFixed(5) + ", " + lon.toFixed(5);
+    $2("s-finish").className = "status ok";
     checkStartReady();
   }
   async function applyCoordsOrLink(opts = {}) {
     const hideSearch = opts.hideSearch !== false;
-    const raw = $("finish-input").value.trim();
+    const raw = $2("finish-input").value.trim();
     if (await tryYandexRouteImport(raw)) return;
     const p = parseInput(raw);
     if (!p) {
-      $("s-finish").textContent = "\u274C \u041D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043B\u0438. \u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B, \u0441\u0441\u044B\u043B\u043A\u0430 \u0438\u043B\u0438 \xAB\u041D\u0430\u0439\u0442\u0438 \u0430\u0434\u0440\u0435\u0441\xBB";
-      $("s-finish").className = "status err";
+      $2("s-finish").textContent = "\u274C \u041D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043B\u0438. \u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B, \u0441\u0441\u044B\u043B\u043A\u0430 \u0438\u043B\u0438 \xAB\u041D\u0430\u0439\u0442\u0438 \u0430\u0434\u0440\u0435\u0441\xBB";
+      $2("s-finish").className = "status err";
       return;
     }
     S.finish = p;
-    $("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + p.lat.toFixed(5) + ", " + p.lon.toFixed(5);
-    $("s-finish").className = "status ok";
-    if (hideSearch) $("search-results").style.display = "none";
+    $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + p.lat.toFixed(5) + ", " + p.lon.toFixed(5);
+    $2("s-finish").className = "status ok";
+    if (hideSearch) $2("search-results").style.display = "none";
     invalidateRoute();
   }
   function isFullscreen() {
@@ -16792,56 +16880,56 @@
       await importYandexFromText(raw);
       return true;
     } catch (e) {
-      $("s-finish").textContent = "\u274C " + (e.message || e);
-      $("s-finish").className = "status err";
+      $2("s-finish").textContent = "\u274C " + (e.message || e);
+      $2("s-finish").className = "status err";
       return true;
     }
   }
   function bindSetupUI() {
     setRouteMapSelectHandler(pickRoute);
     initMapProviderSelect();
-    $("s-gps").addEventListener("click", startGps);
-    $("btn-search").addEventListener("click", doAddressSearch);
-    $("btn-fuel-search")?.addEventListener("click", doFuelSearch);
-    $("btn-parse").addEventListener("click", applyCoordsOrLink);
-    $("btn-build-route").addEventListener("click", doBuildRoute);
-    $("finish-input").addEventListener("input", () => {
-      $("finish-input").dataset.userEdited = "1";
+    $2("s-gps").addEventListener("click", startGps);
+    $2("btn-search").addEventListener("click", doAddressSearch);
+    $2("btn-fuel-search")?.addEventListener("click", doFuelSearch);
+    $2("btn-parse").addEventListener("click", applyCoordsOrLink);
+    $2("btn-build-route").addEventListener("click", doBuildRoute);
+    $2("finish-input").addEventListener("input", () => {
+      $2("finish-input").dataset.userEdited = "1";
     });
-    $("finish-input").addEventListener("focus", () => {
+    $2("finish-input").addEventListener("focus", () => {
       if (window.__motoHUD) window.__motoHUD._finishFocused = true;
     });
-    $("finish-input").addEventListener("blur", () => {
+    $2("finish-input").addEventListener("blur", () => {
       if (window.__motoHUD) window.__motoHUD._finishFocused = false;
     });
-    $("finish-input").addEventListener("keydown", (e) => {
+    $2("finish-input").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         if (looksLikeCoordsOrLink(e.target.value)) applyCoordsOrLink();
         else doAddressSearch();
       }
     });
-    $("btn-paste").addEventListener("click", async () => {
+    $2("btn-paste").addEventListener("click", async () => {
       try {
         const t = await navigator.clipboard.readText();
         if (t) {
-          $("finish-input").value = t;
+          $2("finish-input").value = t;
           if (await tryYandexRouteImport(t)) return;
           if (looksLikeCoordsOrLink(t)) await applyCoordsOrLink();
           else doAddressSearch();
         }
       } catch (e) {
-        $("s-finish").textContent = "\u274C \u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u0431\u0443\u0444\u0435\u0440\u0443";
-        $("s-finish").className = "status err";
+        $2("s-finish").textContent = "\u274C \u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u0431\u0443\u0444\u0435\u0440\u0443";
+        $2("s-finish").className = "status err";
       }
     });
-    $("opt-voice").addEventListener("change", (e) => {
+    $2("opt-voice").addEventListener("change", (e) => {
       S.voice = e.target.checked;
       refreshTtsBanner();
       saveAppOptsToStorage();
     });
-    $("btn-compass-cal")?.addEventListener("click", async () => {
-      const btn = $("btn-compass-cal");
+    $2("btn-compass-cal")?.addEventListener("click", async () => {
+      const btn = $2("btn-compass-cal");
       const ok = await requestHeadingPermission();
       if (!ok) {
         alert("\u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u043A\u043E\u043C\u043F\u0430\u0441\u0443. \u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u0435 \u0434\u0430\u0442\u0447\u0438\u043A\u0438 \u043E\u0440\u0438\u0435\u043D\u0442\u0430\u0446\u0438\u0438 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430/\u0441\u0438\u0441\u0442\u0435\u043C\u044B.");
@@ -16860,78 +16948,88 @@
         if (!isCalibrating()) speak("\u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430");
       }, 15e3);
     });
-    $("opt-path").addEventListener("change", (e) => {
+    $2("opt-path").addEventListener("change", (e) => {
       S.showPath = e.target.checked;
       if (!S.showPath) {
-        $("block-path").classList.add("hidden");
-        $("hud").classList.add("no-path");
+        $2("block-path").classList.add("hidden");
+        $2("hud").classList.add("no-path");
       } else {
-        $("block-path").classList.remove("hidden");
-        $("hud").classList.remove("no-path");
+        $2("block-path").classList.remove("hidden");
+        $2("hud").classList.remove("no-path");
       }
       saveAppOptsToStorage();
     });
-    $("opt-crossings")?.addEventListener("change", (e) => {
+    $2("opt-crossings")?.addEventListener("change", (e) => {
       S.showCrossingContext = e.target.checked;
       saveAppOptsToStorage();
     });
     function syncChevronInputs() {
       const on = S.showPathChevrons !== false;
-      const labels = $("opt-chevron-labels");
-      const maxEl = $("opt-chevron-max");
+      const labels = $2("opt-chevron-labels");
+      const maxEl = $2("opt-chevron-max");
       if (labels) labels.disabled = !on;
       if (maxEl) maxEl.disabled = !on;
     }
-    $("opt-path-chevrons")?.addEventListener("change", (e) => {
+    $2("opt-path-chevrons")?.addEventListener("change", (e) => {
       S.showPathChevrons = e.target.checked;
       syncChevronInputs();
       saveAppOptsToStorage();
     });
-    $("opt-chevron-labels")?.addEventListener("change", (e) => {
+    $2("opt-chevron-labels")?.addEventListener("change", (e) => {
       S.pathChevronLabels = e.target.checked;
       saveAppOptsToStorage();
     });
-    $("opt-chevron-max")?.addEventListener("change", (e) => {
+    $2("opt-chevron-max")?.addEventListener("change", (e) => {
       S.pathChevronMax = Math.max(1, Math.min(3, parseInt(e.target.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
       e.target.value = String(S.pathChevronMax);
       saveAppOptsToStorage();
     });
     const bindFinishOpt = (id) => {
-      $(id)?.addEventListener("change", () => {
+      $2(id)?.addEventListener("change", () => {
         syncOptionsFromDom();
         saveHudOptsToStorage();
-        applyFinishInfoVisibility();
+        applyHudChrome();
       });
     };
     bindFinishOpt("opt-finish-dist");
     bindFinishOpt("opt-finish-time");
     bindFinishOpt("opt-finish-eta");
-    $("opt-fuel-count")?.addEventListener("change", (e) => {
+    const bindChromeMode = (id, key) => {
+      $2(id)?.addEventListener("change", (e) => {
+        S[key] = normalizeChromeMode(e.target.value);
+        e.target.value = S[key];
+        saveHudOptsToStorage();
+        applyHudChrome();
+      });
+    };
+    bindChromeMode("opt-hud-status-mode", "hudStatusMode");
+    bindChromeMode("opt-hud-finish-mode", "hudFinishMode");
+    $2("opt-fuel-count")?.addEventListener("change", (e) => {
       S.fuelPlannerCount = clampFuelPlannerCount(e.target.value);
       e.target.value = String(S.fuelPlannerCount);
       saveHudOptsToStorage();
     });
     function syncElevInputs() {
       const on = S.showElevProfile;
-      const exag = $("opt-elev-exag");
-      const ph = $("opt-elev-profile-h");
-      const plen = $("opt-elev-profile-len");
+      const exag = $2("opt-elev-exag");
+      const ph = $2("opt-elev-profile-h");
+      const plen = $2("opt-elev-profile-len");
       if (exag) exag.disabled = !on;
       if (ph) ph.disabled = !on;
       if (plen) plen.disabled = !on;
     }
-    $("opt-elev-profile").addEventListener("change", (e) => {
+    $2("opt-elev-profile").addEventListener("change", (e) => {
       S.showElevProfile = e.target.checked;
       syncElevInputs();
       saveElevOptsToStorage();
       if (S.showElevProfile && S.route?.geometry) loadRouteElevation();
     });
-    $("opt-elev-exag").addEventListener("change", (e) => {
+    $2("opt-elev-exag").addEventListener("change", (e) => {
       S.elevExag = Math.max(0.5, Math.min(5, parseFloat(e.target.value) || DEFAULT_ELEV_EXAG));
       e.target.value = String(S.elevExag);
       saveElevOptsToStorage();
     });
-    $("opt-elev-profile-h").addEventListener("change", (e) => {
+    $2("opt-elev-profile-h").addEventListener("change", (e) => {
       S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
         MAX_ELEV_PROFILE_H,
         parseInt(e.target.value, 10) || DEFAULT_ELEV_PROFILE_H
@@ -16939,7 +17037,7 @@
       e.target.value = String(S.elevProfileH);
       saveElevOptsToStorage();
     });
-    $("opt-elev-profile-len").addEventListener("change", (e) => {
+    $2("opt-elev-profile-len").addEventListener("change", (e) => {
       S.elevProfileLenKm = Math.max(MIN_ELEV_PROFILE_LEN_KM, Math.min(
         MAX_ELEV_PROFILE_LEN_KM,
         parseInt(e.target.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
@@ -16950,30 +17048,30 @@
     });
     function syncCurveInputs() {
       const on = S.curveWarn;
-      const sel = $("opt-curve-strict");
+      const sel = $2("opt-curve-strict");
       if (sel) sel.disabled = !on;
     }
     function recomputeCurveIfReady() {
       const geom = S.route?.geometry;
       if (geom) computeCurveSpeed(geom, S.route);
     }
-    $("opt-curve-warn").addEventListener("change", (e) => {
+    $2("opt-curve-warn").addEventListener("change", (e) => {
       S.curveWarn = e.target.checked;
       syncCurveInputs();
       saveCurveOptsToStorage();
     });
-    $("opt-curve-strict").addEventListener("change", (e) => {
+    $2("opt-curve-strict").addEventListener("change", (e) => {
       const v = e.target.value;
       if (v === "relaxed" || v === "normal" || v === "strict") S.curveStrict = v;
       saveCurveOptsToStorage();
       recomputeCurveIfReady();
     });
-    $("opt-heading").addEventListener("change", (e) => {
+    $2("opt-heading").addEventListener("change", (e) => {
       S.showCompass = e.target.checked;
-      $("hud").classList.toggle("show-compass", S.showCompass);
+      $2("hud").classList.toggle("show-compass", S.showCompass);
       saveAppOptsToStorage();
     });
-    $("opt-cams").addEventListener("change", (e) => {
+    $2("opt-cams").addEventListener("change", (e) => {
       S.cams = e.target.checked;
       if (!S.cams) {
         S.camLoadStatus = "off";
@@ -16983,32 +17081,32 @@
       if (S.cams && S.route) loadCameras();
       saveAppOptsToStorage();
     });
-    $("opt-back-only").addEventListener("change", (e) => {
+    $2("opt-back-only").addEventListener("change", (e) => {
       S.backOnly = e.target.checked;
       saveAppOptsToStorage();
     });
-    $("opt-tol").addEventListener("change", (e) => {
+    $2("opt-tol").addEventListener("change", (e) => {
       S.tolerance = Math.max(10, Math.min(90, parseInt(e.target.value, 10) || 45));
       saveAppOptsToStorage();
     });
-    $("opt-nodir").addEventListener("change", (e) => {
+    $2("opt-nodir").addEventListener("change", (e) => {
       S.noDirPolicy = e.target.value;
       saveAppOptsToStorage();
     });
-    $("opt-limit").addEventListener("change", (e) => {
+    $2("opt-limit").addEventListener("change", (e) => {
       S.limit = parseInt(e.target.value, 10) || 0;
       saveAppOptsToStorage();
     });
-    $("opt-cam-speed-tol")?.addEventListener("change", (e) => {
+    $2("opt-cam-speed-tol")?.addEventListener("change", (e) => {
       S.camSpeedTol = Math.max(0, Math.min(50, parseInt(e.target.value, 10) || DEFAULT_CAM_SPEED_TOL));
       e.target.value = String(S.camSpeedTol);
       saveAppOptsToStorage();
     });
-    $("btn-start").addEventListener("click", startHud);
+    $2("btn-start").addEventListener("click", startHud);
     let stopArmed = false;
     let stopArmTimer = null;
     let stopLastTap = 0;
-    $("btn-stop").addEventListener("click", (e) => {
+    $2("btn-stop").addEventListener("click", (e) => {
       e.preventDefault();
       const now = Date.now();
       if (now - stopLastTap < 350) return;
@@ -17016,30 +17114,30 @@
       if (stopArmed) {
         stopArmed = false;
         clearTimeout(stopArmTimer);
-        $("btn-stop")?.classList.remove("armed");
+        $2("btn-stop")?.classList.remove("armed");
         if (confirm("\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044C \u043F\u043E\u0435\u0437\u0434\u043A\u0443?")) stopHud();
         return;
       }
       stopArmed = true;
-      $("btn-stop")?.classList.add("armed");
+      $2("btn-stop")?.classList.add("armed");
       stopArmTimer = setTimeout(() => {
         stopArmed = false;
-        $("btn-stop")?.classList.remove("armed");
+        $2("btn-stop")?.classList.remove("armed");
       }, 1400);
     });
-    $("btn-fuel").addEventListener("click", () => {
+    $2("btn-fuel").addEventListener("click", () => {
       cycleFuelAssist();
     });
-    $("btn-gear").addEventListener("click", () => {
-      $("setup").style.display = "block";
-      $("setup").style.zIndex = "40";
+    $2("btn-gear").addEventListener("click", () => {
+      $2("setup").style.display = "block";
+      $2("setup").style.zIndex = "40";
     });
-    $("qf-close").addEventListener("click", () => $("quickFinish").classList.remove("on"));
-    $("btn-fs").addEventListener("click", toggleFullscreen);
+    $2("qf-close").addEventListener("click", () => $2("quickFinish").classList.remove("on"));
+    $2("btn-fs").addEventListener("click", toggleFullscreen);
     window.addEventListener("orientationchange", () => {
       invalidateRouteMapSize();
       setTimeout(() => {
-        if ($("hud").classList.contains("on")) onTick();
+        if ($2("hud").classList.contains("on")) onTick();
       }, 250);
     });
     document.querySelectorAll(".setup-details").forEach((det) => {
@@ -17049,69 +17147,73 @@
     });
   }
   function syncOptionsFromDom() {
-    S.voice = $("opt-voice").checked;
-    S.showPath = $("opt-path").checked;
-    S.showCrossingContext = $("opt-crossings")?.checked ?? true;
-    S.showPathChevrons = $("opt-path-chevrons")?.checked ?? true;
-    S.pathChevronLabels = $("opt-chevron-labels")?.checked ?? true;
+    S.voice = $2("opt-voice").checked;
+    S.showPath = $2("opt-path").checked;
+    S.showCrossingContext = $2("opt-crossings")?.checked ?? true;
+    S.showPathChevrons = $2("opt-path-chevrons")?.checked ?? true;
+    S.pathChevronLabels = $2("opt-chevron-labels")?.checked ?? true;
     S.pathChevronMax = Math.max(1, Math.min(
       3,
-      parseInt($("opt-chevron-max")?.value, 10) || DEFAULT_PATH_CHEVRON_MAX
+      parseInt($2("opt-chevron-max")?.value, 10) || DEFAULT_PATH_CHEVRON_MAX
     ));
-    if ($("opt-chevron-max")) $("opt-chevron-max").value = String(S.pathChevronMax);
-    if ($("opt-chevron-labels")) $("opt-chevron-labels").disabled = !S.showPathChevrons;
-    if ($("opt-chevron-max")) $("opt-chevron-max").disabled = !S.showPathChevrons;
-    S.showFinishDist = $("opt-finish-dist")?.checked ?? true;
-    S.showFinishTime = $("opt-finish-time")?.checked ?? true;
-    S.showFinishEta = $("opt-finish-eta")?.checked ?? true;
-    applyFinishInfoVisibility();
-    S.fuelPlannerCount = clampFuelPlannerCount($("opt-fuel-count")?.value);
-    if ($("opt-fuel-count")) $("opt-fuel-count").value = String(S.fuelPlannerCount);
-    S.showElevProfile = $("opt-elev-profile").checked;
-    S.elevExag = Math.max(0.5, Math.min(5, parseFloat($("opt-elev-exag").value) || DEFAULT_ELEV_EXAG));
+    if ($2("opt-chevron-max")) $2("opt-chevron-max").value = String(S.pathChevronMax);
+    if ($2("opt-chevron-labels")) $2("opt-chevron-labels").disabled = !S.showPathChevrons;
+    if ($2("opt-chevron-max")) $2("opt-chevron-max").disabled = !S.showPathChevrons;
+    S.showFinishDist = $2("opt-finish-dist")?.checked ?? true;
+    S.showFinishTime = $2("opt-finish-time")?.checked ?? true;
+    S.showFinishEta = $2("opt-finish-eta")?.checked ?? true;
+    S.hudStatusMode = normalizeChromeMode($2("opt-hud-status-mode")?.value || S.hudStatusMode);
+    S.hudFinishMode = normalizeChromeMode($2("opt-hud-finish-mode")?.value || S.hudFinishMode);
+    if ($2("opt-hud-status-mode")) $2("opt-hud-status-mode").value = S.hudStatusMode;
+    if ($2("opt-hud-finish-mode")) $2("opt-hud-finish-mode").value = S.hudFinishMode;
+    applyHudChrome();
+    S.fuelPlannerCount = clampFuelPlannerCount($2("opt-fuel-count")?.value);
+    if ($2("opt-fuel-count")) $2("opt-fuel-count").value = String(S.fuelPlannerCount);
+    S.showElevProfile = $2("opt-elev-profile").checked;
+    S.elevExag = Math.max(0.5, Math.min(5, parseFloat($2("opt-elev-exag").value) || DEFAULT_ELEV_EXAG));
     S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
       MAX_ELEV_PROFILE_H,
-      parseInt($("opt-elev-profile-h")?.value, 10) || DEFAULT_ELEV_PROFILE_H
+      parseInt($2("opt-elev-profile-h")?.value, 10) || DEFAULT_ELEV_PROFILE_H
     ));
     S.elevProfileLenKm = Math.max(MIN_ELEV_PROFILE_LEN_KM, Math.min(
       MAX_ELEV_PROFILE_LEN_KM,
-      parseInt($("opt-elev-profile-len")?.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
+      parseInt($2("opt-elev-profile-len")?.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
     ));
-    if ($("opt-elev-exag")) $("opt-elev-exag").value = String(S.elevExag);
-    if ($("opt-elev-profile-h")) $("opt-elev-profile-h").value = String(S.elevProfileH);
-    if ($("opt-elev-profile-len")) $("opt-elev-profile-len").value = String(S.elevProfileLenKm);
-    if ($("opt-elev-exag")) $("opt-elev-exag").disabled = !S.showElevProfile;
-    if ($("opt-elev-profile-h")) $("opt-elev-profile-h").disabled = !S.showElevProfile;
-    if ($("opt-elev-profile-len")) $("opt-elev-profile-len").disabled = !S.showElevProfile;
-    S.curveWarn = $("opt-curve-warn")?.checked ?? true;
-    const strictEl = $("opt-curve-strict");
+    if ($2("opt-elev-exag")) $2("opt-elev-exag").value = String(S.elevExag);
+    if ($2("opt-elev-profile-h")) $2("opt-elev-profile-h").value = String(S.elevProfileH);
+    if ($2("opt-elev-profile-len")) $2("opt-elev-profile-len").value = String(S.elevProfileLenKm);
+    if ($2("opt-elev-exag")) $2("opt-elev-exag").disabled = !S.showElevProfile;
+    if ($2("opt-elev-profile-h")) $2("opt-elev-profile-h").disabled = !S.showElevProfile;
+    if ($2("opt-elev-profile-len")) $2("opt-elev-profile-len").disabled = !S.showElevProfile;
+    S.curveWarn = $2("opt-curve-warn")?.checked ?? true;
+    const strictEl = $2("opt-curve-strict");
     if (strictEl) {
       S.curveStrict = strictEl.value || "normal";
       strictEl.disabled = !S.curveWarn;
     }
-    S.showCompass = $("opt-heading").checked;
-    S.cams = $("opt-cams").checked;
-    S.backOnly = $("opt-back-only").checked;
-    S.tolerance = parseInt($("opt-tol").value, 10) || 45;
-    S.noDirPolicy = $("opt-nodir").value;
-    S.limit = parseInt($("opt-limit").value, 10) || 60;
+    S.showCompass = $2("opt-heading").checked;
+    S.cams = $2("opt-cams").checked;
+    S.backOnly = $2("opt-back-only").checked;
+    S.tolerance = parseInt($2("opt-tol").value, 10) || 45;
+    S.noDirPolicy = $2("opt-nodir").value;
+    S.limit = parseInt($2("opt-limit").value, 10) || 60;
     S.camSpeedTol = Math.max(0, Math.min(
       50,
-      parseInt($("opt-cam-speed-tol")?.value, 10) || DEFAULT_CAM_SPEED_TOL
+      parseInt($2("opt-cam-speed-tol")?.value, 10) || DEFAULT_CAM_SPEED_TOL
     ));
-    if ($("opt-cam-speed-tol")) $("opt-cam-speed-tol").value = String(S.camSpeedTol);
-    $("hud")?.classList.toggle("show-compass", S.showCompass);
+    if ($2("opt-cam-speed-tol")) $2("opt-cam-speed-tol").value = String(S.camSpeedTol);
+    $2("hud")?.classList.toggle("show-compass", S.showCompass);
     if (!S.showPath) {
-      $("block-path").classList.add("hidden");
-      $("hud").classList.add("no-path");
+      $2("block-path").classList.add("hidden");
+      $2("hud").classList.add("no-path");
     } else {
-      $("block-path")?.classList.remove("hidden");
-      $("hud")?.classList.remove("no-path");
+      $2("block-path")?.classList.remove("hidden");
+      $2("hud")?.classList.remove("no-path");
     }
   }
   function initNativeHints() {
     if (!isAndroidNative()) return;
-    const help = $("drawer-help")?.querySelector(".hint, .drawer-body");
+    const help = $2("drawer-help")?.querySelector(".hint, .drawer-body");
     if (!help) return;
     help.innerHTML += '<span class="help-section"><b>Android-\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435</b> \u041F\u0440\u0438 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u0438 \u2014 \u0443\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435 \xAB\u041D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u0430\xBB (foreground-service GPS). \u0412 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043E\u043F\u0442\u0438\u043C\u0438\u0437\u0430\u0446\u0438\u044E \u0431\u0430\u0442\u0430\u0440\u0435\u0438 \u0434\u043B\u044F \xAB\u041C\u043E\u0442\u043E \u0418\u041B\u0421\xBB, \u0438\u043D\u0430\u0447\u0435 GPS \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u0432\u0430\u043B\u0438\u0432\u0430\u0442\u044C\u0441\u044F \u043D\u0430 Samsung/Xiaomi/Huawei. \u0427\u0435\u043A-\u043B\u0438\u0441\u0442: <code>docs/oem-gps-matrix.md</code>.</span>';
   }
@@ -17129,6 +17231,7 @@
       init_elevation();
       init_curve_speed();
       init_hud_opts();
+      init_hud_chrome();
       init_app_opts();
       init_platform();
       init_route_map();
@@ -17196,7 +17299,7 @@
     renderFavsEdit();
   }
   function renderFavs() {
-    const box = $("favs-list");
+    const box = $2("favs-list");
     if (!box) return;
     const list = loadFavs();
     if (!list.length) {
@@ -17211,7 +17314,7 @@
     });
   }
   function renderFavsEdit() {
-    const box = $("favs-edit-list");
+    const box = $2("favs-edit-list");
     if (!box) return;
     const list = loadFavs();
     if (!list.length) {
@@ -17250,10 +17353,10 @@
     const fav = loadFavs().find((f2) => f2.id === id);
     if (!fav) return;
     S.finish = { lat: fav.lat, lon: fav.lon, label: fav.name };
-    $("s-finish").textContent = "\u2705 " + (fav.emoji || "\u2B50") + " " + fav.name + " (" + fav.lat.toFixed(5) + ", " + fav.lon.toFixed(5) + ")";
-    $("s-finish").className = "status ok";
-    $("finish-input").value = fav.lat + ", " + fav.lon;
-    $("search-results").style.display = "none";
+    $2("s-finish").textContent = "\u2705 " + (fav.emoji || "\u2B50") + " " + fav.name + " (" + fav.lat.toFixed(5) + ", " + fav.lon.toFixed(5) + ")";
+    $2("s-finish").className = "status ok";
+    $2("finish-input").value = fav.lat + ", " + fav.lon;
+    $2("search-results").style.display = "none";
     invalidateRoute();
     checkStartReady();
   }
@@ -17263,7 +17366,7 @@
       return;
     }
     favModalState = { point, emoji: "\u2B50" };
-    const row = $("emoji-row");
+    const row = $2("emoji-row");
     row.innerHTML = FAV_EMOJIS.map(
       (e) => '<button type="button" data-e="' + e + '"' + (e === "\u2B50" ? ' class="sel"' : "") + ">" + e + "</button>"
     ).join("");
@@ -17274,15 +17377,15 @@
         b.classList.add("sel");
       });
     });
-    $("fav-name-input").value = defaultName || "";
-    $("favModal").classList.add("on");
-    setTimeout(() => $("fav-name-input").focus(), 100);
+    $2("fav-name-input").value = defaultName || "";
+    $2("favModal").classList.add("on");
+    setTimeout(() => $2("fav-name-input").focus(), 100);
   }
   function closeFavModal() {
-    $("favModal").classList.remove("on");
+    $2("favModal").classList.remove("on");
   }
   function openQuickFinish() {
-    const box = $("qf-list");
+    const box = $2("qf-list");
     const list = loadFavs();
     if (!list.length) {
       box.innerHTML = '<div class="qf-empty">NO SAVED PLACES<br>\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u043C\u0435\u0441\u0442\u0430 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445</div>';
@@ -17299,32 +17402,32 @@
         });
       });
     }
-    $("quickFinish").classList.add("on");
+    $2("quickFinish").classList.add("on");
   }
   function initFavorites() {
     refreshFavLists();
-    $("fav-modal-cancel")?.addEventListener("click", closeFavModal);
-    $("fav-modal-ok")?.addEventListener("click", () => {
-      const name = $("fav-name-input").value.trim() || "\u041C\u0435\u0441\u0442\u043E";
+    $2("fav-modal-cancel")?.addEventListener("click", closeFavModal);
+    $2("fav-modal-ok")?.addEventListener("click", () => {
+      const name = $2("fav-name-input").value.trim() || "\u041C\u0435\u0441\u0442\u043E";
       addFav(name, favModalState.point, favModalState.emoji);
       closeFavModal();
     });
-    $("btn-fav-save-finish")?.addEventListener("click", () => {
+    $2("btn-fav-save-finish")?.addEventListener("click", () => {
       if (!S.finish) {
-        $("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0434\u0430\u0439\u0442\u0435 \u0444\u0438\u043D\u0438\u0448, \u043F\u043E\u0442\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435";
-        $("s-finish").className = "status err";
+        $2("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0434\u0430\u0439\u0442\u0435 \u0444\u0438\u043D\u0438\u0448, \u043F\u043E\u0442\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435";
+        $2("s-finish").className = "status err";
         return;
       }
       const defaultName = S.finish.label && !/^Финиш|^Координаты/.test(S.finish.label) ? S.finish.label.split(",")[0] : "";
       openFavModal(defaultName, { lat: S.finish.lat, lon: S.finish.lon });
     });
-    $("btn-fav-save-gps")?.addEventListener("click", () => {
+    $2("btn-fav-save-gps")?.addEventListener("click", () => {
       if (S.gps) {
         openFavModal("", { lat: S.gps.lat, lon: S.gps.lon });
         return;
       }
-      $("s-gps").textContent = "\u23F3 GPS\u2026";
-      $("s-gps").className = "chip";
+      $2("s-gps").textContent = "\u23F3 GPS\u2026";
+      $2("s-gps").className = "chip";
       const check = setInterval(() => {
         if (S.gps) {
           clearInterval(check);
@@ -17334,7 +17437,7 @@
       setTimeout(() => clearInterval(check), 2e4);
       startGps();
     });
-    $("btn-fav-export")?.addEventListener("click", () => {
+    $2("btn-fav-export")?.addEventListener("click", () => {
       const list = loadFavs();
       if (!list.length) {
         alert("\u041D\u0435\u0442 \u043C\u0435\u0441\u0442 \u0434\u043B\u044F \u044D\u043A\u0441\u043F\u043E\u0440\u0442\u0430");
@@ -17350,8 +17453,8 @@
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1e3);
     });
-    $("btn-fav-import")?.addEventListener("click", () => $("fav-file")?.click());
-    $("fav-file")?.addEventListener("change", (e) => {
+    $2("btn-fav-import")?.addEventListener("click", () => $2("fav-file")?.click());
+    $2("fav-file")?.addEventListener("change", (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
@@ -17384,11 +17487,11 @@
       reader.readAsText(file);
       e.target.value = "";
     });
-    const mid = $("mid-info");
+    const mid = $2("mid-info");
     if (mid) {
       let pressTimer = null;
       mid.addEventListener("pointerdown", () => {
-        if (!$("hud").classList.contains("on")) return;
+        if (!$2("hud").classList.contains("on")) return;
         pressTimer = setTimeout(openQuickFinish, 600);
       });
       ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => {
@@ -17649,24 +17752,24 @@
     applyThemeCss();
     syncThemeControls(tid, modePref);
     updateModeButtonLabel(modePref, mode);
-    if ($2("hud")?.classList.contains("on")) renderVisualFrame();
+    if ($3("hud")?.classList.contains("on")) renderVisualFrame();
     syncVintageVfdDomClasses();
   }
-  function $2(id) {
+  function $3(id) {
     return document.getElementById(id);
   }
   function syncThemeControls(theme, modePref) {
-    const sel = $2("opt-theme");
+    const sel = $3("opt-theme");
     if (sel) sel.value = theme;
-    const mDay = $2("opt-mode-day");
-    const mNight = $2("opt-mode-night");
-    const mAuto = $2("opt-mode-auto");
+    const mDay = $3("opt-mode-day");
+    const mNight = $3("opt-mode-night");
+    const mAuto = $3("opt-mode-auto");
     if (mDay) mDay.checked = modePref === "day";
     if (mNight) mNight.checked = modePref === "night";
     if (mAuto) mAuto.checked = modePref === "auto";
   }
   function updateModeButtonLabel(modePref, resolved) {
-    const btn = $2("btn-mode");
+    const btn = $3("btn-mode");
     if (!btn) return;
     const lbl = btn.querySelector(".cb-lbl");
     if (!lbl) return;
@@ -17692,7 +17795,7 @@
       invalidateThemeTokens();
       applyThemeCss();
       updateModeButtonLabel("auto", mode);
-      if ($2("hud")?.classList.contains("on")) renderVisualFrame();
+      if ($3("hud")?.classList.contains("on")) renderVisualFrame();
     } else {
       updateModeButtonLabel("auto", mode);
     }
@@ -17700,11 +17803,11 @@
   function initThemeManager() {
     const cur = loadThemePrefs();
     applyTheme(cur.theme, cur.modePref, false);
-    $2("opt-theme")?.addEventListener("change", (e) => {
+    $3("opt-theme")?.addEventListener("change", (e) => {
       applyTheme(e.target.value, loadThemePrefs().modePref);
     });
     ["opt-mode-day", "opt-mode-night", "opt-mode-auto"].forEach((id) => {
-      $2(id)?.addEventListener("change", (e) => {
+      $3(id)?.addEventListener("change", (e) => {
         if (!e.target.checked) return;
         const mode = id.replace("opt-mode-", "");
         if (mode !== "auto") resetModeHysteresis();
@@ -17729,20 +17832,20 @@
 
   // js/offroute.js
   function clearOffRouteWarn() {
-    const el = $("offRouteWarn");
+    const el = $2("offRouteWarn");
     if (!el) return;
     el.classList.remove("on");
     el.textContent = OFF_ROUTE_WARN_OK;
   }
   function showRerouteOk() {
-    const el = $("offRouteWarn");
+    const el = $2("offRouteWarn");
     if (!el) return;
     el.textContent = OFF_ROUTE_WARN_OK;
     el.classList.add("on");
     setTimeout(() => clearOffRouteWarn(), 2e3);
   }
   function showOfflineWarn() {
-    const el = $("offRouteWarn");
+    const el = $2("offRouteWarn");
     if (!el) return;
     el.textContent = OFF_ROUTE_WARN_FAIL;
     el.classList.add("on");
@@ -17969,7 +18072,7 @@
     _tileLayer2.addTo(_map2);
   }
   function ensureMap2() {
-    const box = $("nav-map-pane");
+    const box = $2("nav-map-pane");
     if (!box) return null;
     if (!_map2) {
       box.innerHTML = "";
@@ -18061,7 +18164,7 @@
       _finishMarker = null;
       _maneuverMarker = null;
     }
-    const box = $("nav-map-pane");
+    const box = $2("nav-map-pane");
     if (box) box.innerHTML = "";
   }
   function tickNavMap() {
@@ -18095,7 +18198,7 @@
     return !!el.closest(".corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal");
   }
   function applyViewLayout(mode) {
-    const hud = $("hud");
+    const hud = $2("hud");
     if (!hud) return;
     hud.classList.remove("view-map", "view-map-overview", "view-map-zoom");
     if (mode === "hud") {
@@ -18129,30 +18232,32 @@
       return;
     }
     _lastTap = { t: now, x: t.clientX, y: t.clientY };
+    onHudTap();
   }
   function initViewMode() {
-    if (_bound) return;
-    const hud = $("hud");
+    if (_bound2) return;
+    const hud = $2("hud");
     if (!hud) return;
     hud.addEventListener("touchend", onTouchEnd, { passive: false });
-    _bound = true;
+    _bound2 = true;
     S.viewMode = "hud";
   }
   function resetViewMode() {
     setViewMode("hud");
     destroyNavMap();
   }
-  var DBL_TAP_MS, DBL_TAP_MAX_PX, VIEW_ORDER, _lastTap, _bound;
+  var DBL_TAP_MS, DBL_TAP_MAX_PX, VIEW_ORDER, _lastTap, _bound2;
   var init_view_mode = __esm({
     "js/view-mode.js"() {
       init_state();
       init_util();
+      init_hud_chrome();
       init_nav_map();
       DBL_TAP_MS = 400;
       DBL_TAP_MAX_PX = 40;
       VIEW_ORDER = ["hud", "map_overview", "map_zoom"];
       _lastTap = { t: 0, x: 0, y: 0 };
-      _bound = false;
+      _bound2 = false;
     }
   });
 
@@ -18450,7 +18555,7 @@
     a.remove();
   }
   function initYandexExportUi() {
-    $("btn-yandex-navi")?.addEventListener("click", () => {
+    $2("btn-yandex-navi")?.addEventListener("click", () => {
       try {
         openYandexNavigator(S.route, S.gps);
       } catch (e) {
@@ -18715,7 +18820,7 @@ ${trkpts}
 
   // js/trip-ui.js
   function setTripNewError(msg) {
-    const el = $("trip-new-error");
+    const el = $2("trip-new-error");
     if (!el) return;
     el.textContent = msg || "";
     el.classList.toggle("hidden", !msg);
@@ -18724,13 +18829,13 @@ ${trkpts}
     return _variantMode[tripId] || "calm";
   }
   function setStatus(msg, err) {
-    const el = $("trip-status");
+    const el = $2("trip-status");
     if (!el) return;
     el.textContent = msg || "";
     el.className = "status" + (err ? " err" : msg ? " ok" : "");
   }
   function renderTripList(trips) {
-    const el = $("trip-list");
+    const el = $2("trip-list");
     if (!el) return;
     if (!trips.length) {
       el.innerHTML = '<p class="hint">\u041D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0445 \u043F\u043B\u0430\u043D\u043E\u0432. \u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0434\u0435\u043C\u043E \u0438\u043B\u0438 \u0441\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u043D\u043E\u0432\u044B\u0439.</p>';
@@ -18747,18 +18852,18 @@ ${trkpts}
     });
   }
   function renderActiveTrip() {
-    const wrap = $("trip-days");
+    const wrap = $2("trip-days");
     const trip = S.activeTrip;
     if (!wrap) return;
     if (!trip) {
       wrap.innerHTML = '<p class="hint">\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u043B\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u043F\u043B\u0430\u043D \u043F\u043E\u0435\u0437\u0434\u043A\u0438.</p>';
-      $("trip-export-row")?.classList.add("hidden");
+      $2("trip-export-row")?.classList.add("hidden");
       return;
     }
-    $("trip-export-row")?.classList.remove("hidden");
+    $2("trip-export-row")?.classList.remove("hidden");
     const vid = variantForTrip(trip.id);
     const hasIntense = trip.days.some((d) => d.variants.some((v) => v.id === "intense"));
-    $("trip-variant-bar")?.classList.toggle("hidden", !hasIntense);
+    $2("trip-variant-bar")?.classList.toggle("hidden", !hasIntense);
     wrap.innerHTML = trip.days.map((day) => {
       const v = getDayVariant(day, vid);
       const segs = v?.segments || [];
@@ -18807,7 +18912,7 @@ ${trkpts}
     trip.updatedAt = Date.now();
     await saveTrip(trip);
     await openTrip(trip.id);
-    $("drawer-trip")?.setAttribute("open", "");
+    $2("drawer-trip")?.setAttribute("open", "");
     setStatus("\u2713 \u0418\u043C\u043F\u043E\u0440\u0442: \xAB" + trip.title + "\xBB");
   }
   async function shareTripLink() {
@@ -18824,7 +18929,7 @@ ${trkpts}
   }
   async function handleTripDeepLink() {
     const { localId, pack, openPlanner } = readTripDeepLink();
-    if (openPlanner) $("drawer-trip")?.setAttribute("open", "");
+    if (openPlanner) $2("drawer-trip")?.setAttribute("open", "");
     if (pack) {
       try {
         setStatus("\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043F\u043B\u0430\u043D\u0430 \u0438\u0437 \u0441\u0441\u044B\u043B\u043A\u0438\u2026");
@@ -18841,7 +18946,7 @@ ${trkpts}
     if (localId) {
       const ok = await openTrip(localId, { syncUrl: true });
       if (ok) {
-        $("drawer-trip")?.setAttribute("open", "");
+        $2("drawer-trip")?.setAttribute("open", "");
         setStatus("");
       } else if (openPlanner) {
         setStatus("\u041F\u043B\u0430\u043D \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435 \u2014 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u0443\u0439\u0442\u0435 JSON \u0438\u043B\u0438 \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0443 \u0441 \u0443\u043F\u0430\u043A\u043E\u0432\u0430\u043D\u043D\u044B\u043C \u043F\u043B\u0430\u043D\u043E\u043C", true);
@@ -18921,10 +19026,10 @@ ${trkpts}
     }
   }
   function showNewTripModal(on) {
-    $("tripNewModal")?.classList.toggle("on", !!on);
+    $2("tripNewModal")?.classList.toggle("on", !!on);
     if (on) {
       setTripNewError("");
-      const startEl = $("trip-new-start");
+      const startEl = $2("trip-new-start");
       if (startEl && !startEl.value.trim() && Number.isFinite(S.gps?.lat) && Number.isFinite(S.gps?.lon)) {
         startEl.value = `${S.gps.lat.toFixed(6)}, ${S.gps.lon.toFixed(6)}`;
       }
@@ -18932,10 +19037,10 @@ ${trkpts}
   }
   async function createTripFromForm() {
     setTripNewError("");
-    const title = $("trip-new-title")?.value?.trim() || "\u041D\u043E\u0432\u0430\u044F \u043F\u043E\u0435\u0437\u0434\u043A\u0430";
-    const startRaw = $("trip-new-start")?.value?.trim();
-    const finishRaw = $("trip-new-finish")?.value?.trim();
-    const nightsRaw = $("trip-new-nights")?.value?.trim();
+    const title = $2("trip-new-title")?.value?.trim() || "\u041D\u043E\u0432\u0430\u044F \u043F\u043E\u0435\u0437\u0434\u043A\u0430";
+    const startRaw = $2("trip-new-start")?.value?.trim();
+    const finishRaw = $2("trip-new-finish")?.value?.trim();
+    const nightsRaw = $2("trip-new-nights")?.value?.trim();
     if (!startRaw || !finishRaw) {
       setTripNewError("\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0441\u0442\u0430\u0440\u0442 \u0438 \u0444\u0438\u043D\u0438\u0448");
       return;
@@ -18969,7 +19074,7 @@ ${trkpts}
     await saveTrip(trip);
     S.activeTrip = trip;
     showNewTripModal(false);
-    $("drawer-trip")?.setAttribute("open", "");
+    $2("drawer-trip")?.setAttribute("open", "");
     renderActiveTrip();
     await refreshTripList();
     replaceTripLocalUrl(trip.id, true);
@@ -18987,19 +19092,19 @@ ${trkpts}
     URL.revokeObjectURL(a.href);
   }
   function initTripPlannerUi() {
-    $("btn-trip-demo")?.addEventListener("click", loadDemo);
-    $("btn-trip-new")?.addEventListener("click", () => showNewTripModal(true));
-    $("trip-new-cancel")?.addEventListener("click", () => showNewTripModal(false));
-    $("trip-new-save")?.addEventListener("click", () => createTripFromForm().catch((e) => setTripNewError(e.message || String(e))));
-    $("btn-trip-export")?.addEventListener("click", exportTripText);
-    $("btn-trip-json")?.addEventListener("click", () => {
+    $2("btn-trip-demo")?.addEventListener("click", loadDemo);
+    $2("btn-trip-new")?.addEventListener("click", () => showNewTripModal(true));
+    $2("trip-new-cancel")?.addEventListener("click", () => showNewTripModal(false));
+    $2("trip-new-save")?.addEventListener("click", () => createTripFromForm().catch((e) => setTripNewError(e.message || String(e))));
+    $2("btn-trip-export")?.addEventListener("click", exportTripText);
+    $2("btn-trip-json")?.addEventListener("click", () => {
       const trip = S.activeTrip;
       if (!trip) return;
       downloadTripJson(trip);
       setStatus("\u2713 JSON \u0441\u043A\u0430\u0447\u0430\u043D \u2014 \u043E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 \u0432 Telegram / iCloud / Drive");
     });
-    $("btn-trip-share")?.addEventListener("click", () => shareTripLink().catch((e) => setStatus("\u274C " + e.message, true)));
-    $("btn-trip-send")?.addEventListener("click", () => {
+    $2("btn-trip-share")?.addEventListener("click", () => shareTripLink().catch((e) => setStatus("\u274C " + e.message, true)));
+    $2("btn-trip-send")?.addEventListener("click", () => {
       const trip = S.activeTrip;
       if (!trip) return;
       shareTripFile(trip).then((mode) => {
@@ -19008,21 +19113,21 @@ ${trkpts}
         else setStatus("\u2713 \u0422\u0435\u043A\u0441\u0442 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u2014 \u043B\u0443\u0447\u0448\u0435 JSON-\u0444\u0430\u0439\u043B");
       }).catch((e) => setStatus("\u274C " + e.message, true));
     });
-    $("btn-trip-import")?.addEventListener("click", () => $("trip-file")?.click());
-    $("trip-file")?.addEventListener("change", (e) => {
+    $2("btn-trip-import")?.addEventListener("click", () => $2("trip-file")?.click());
+    $2("trip-file")?.addEventListener("change", (e) => {
       const file = e.target.files?.[0];
       e.target.value = "";
       if (!file) return;
       importTripFromFile(file).catch((err) => setStatus("\u274C " + (err.message || err), true));
     });
-    $("btn-trip-clear")?.addEventListener("click", () => {
+    $2("btn-trip-clear")?.addEventListener("click", () => {
       S.activeTrip = null;
       clearTripContext();
       renderActiveTrip();
       replaceTripLocalUrl(null, false);
       setStatus("");
     });
-    $("btn-trip-delete")?.addEventListener("click", async () => {
+    $2("btn-trip-delete")?.addEventListener("click", async () => {
       const trip = S.activeTrip;
       if (!trip || !confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043F\u043B\u0430\u043D \xAB" + trip.title + "\xBB?")) return;
       await deleteTrip(trip.id);
@@ -19056,9 +19161,9 @@ ${trkpts}
     return s2;
   }
   function syncTripHudBadge() {
-    const el = $("trip-hud-badge");
+    const el = $2("trip-hud-badge");
     if (!el) return;
-    const on = $("hud")?.classList.contains("on");
+    const on = $2("hud")?.classList.contains("on");
     const label = getTripHudLabel();
     el.textContent = label;
     el.classList.toggle("hidden", !on || !label);
@@ -19144,15 +19249,15 @@ ${trkpts}
     });
   }
   function updateTrackGpxButton() {
-    $("btn-track-gpx")?.classList.toggle("hidden", !hasLastTrack());
+    $2("btn-track-gpx")?.classList.toggle("hidden", !hasLastTrack());
   }
   function initTrackRecorderUi() {
-    const opt = $("opt-track-record");
+    const opt = $2("opt-track-record");
     if (opt) {
       opt.checked = isTrackRecordEnabled();
       opt.addEventListener("change", (e) => setTrackRecordEnabled(e.target.checked));
     }
-    $("btn-track-gpx")?.addEventListener("click", () => {
+    $2("btn-track-gpx")?.addEventListener("click", () => {
       if (!downloadLastTrackGpx()) alert("\u041D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u0442\u0440\u0435\u043A\u0430");
     });
     updateTrackGpxButton();
@@ -19226,10 +19331,10 @@ ${trkpts}
       if (heading != null && angleDiff(bearing(S.gps, c), heading) > 90) return;
       if (!closest || d < closest.dist) closest = { cam: c, dist: d, id: i };
     });
-    const alertEl = $("camAlert");
+    const alertEl = $2("camAlert");
     if (closest) {
-      $("cam-dist").textContent = Math.round(closest.dist) + " M";
-      $("cam-sub").textContent = closest.cam.speed ? "LIMIT " + closest.cam.speed + " KM/H" : closest.cam.dir != null ? "BRG " + String(Math.round(closest.cam.dir)).padStart(3, "0") : "DIR UNKNOWN";
+      $2("cam-dist").textContent = Math.round(closest.dist) + " M";
+      $2("cam-sub").textContent = closest.cam.speed ? "LIMIT " + closest.cam.speed + " KM/H" : closest.cam.dir != null ? "BRG " + String(Math.round(closest.cam.dir)).padStart(3, "0") : "DIR UNKNOWN";
       alertEl.classList.add("on");
       if (!S.camWarned.has(closest.id) && now - S.lastVoiceTs > 3e3) {
         S.camWarned.add(closest.id);
@@ -19253,7 +19358,7 @@ ${trkpts}
     return null;
   }
   function updateFinishInfo(remaining, kmh, now) {
-    const panel = $("finish-info");
+    const panel = $2("finish-info");
     if (!panel) return;
     const any = S.showFinishDist || S.showFinishTime || S.showFinishEta;
     if (!any || !S.route) {
@@ -19262,27 +19367,27 @@ ${trkpts}
     }
     panel.classList.remove("hidden");
     if (S.showFinishDist) {
-      $("fi-dist-line")?.classList.remove("hidden");
-      const el = $("fi-dist-val");
+      $2("fi-dist-line")?.classList.remove("hidden");
+      const el = $2("fi-dist-val");
       if (el) {
         el.textContent = remaining < 1e3 ? Math.round(remaining) + " \u043C" : (remaining / 1e3).toFixed(1) + " \u043A\u043C";
       }
-    } else $("fi-dist-line")?.classList.add("hidden");
+    } else $2("fi-dist-line")?.classList.add("hidden");
     const remainSec = estimateRemainSec(remaining, kmh);
     if (S.showFinishTime && remainSec != null) {
-      $("fi-time-line")?.classList.remove("hidden");
-      const el = $("fi-time-val");
+      $2("fi-time-line")?.classList.remove("hidden");
+      const el = $2("fi-time-val");
       if (el) el.textContent = fmtRemainDur(remainSec);
-    } else $("fi-time-line")?.classList.add("hidden");
+    } else $2("fi-time-line")?.classList.add("hidden");
     if (S.showFinishEta && remainSec != null) {
-      $("fi-eta-line")?.classList.remove("hidden");
-      const el = $("fi-eta-val");
+      $2("fi-eta-line")?.classList.remove("hidden");
+      const el = $2("fi-eta-val");
       if (el) el.textContent = fmtClock(new Date(now.getTime() + remainSec * 1e3));
-    } else $("fi-eta-line")?.classList.add("hidden");
+    } else $2("fi-eta-line")?.classList.add("hidden");
   }
   function onTick() {
     if (!S.gps) return;
-    if ($("hud").classList.contains("on")) {
+    if ($2("hud").classList.contains("on")) {
       tickTrackRecorder({
         lat: S.gps.lat,
         lon: S.gps.lon,
@@ -19292,41 +19397,41 @@ ${trkpts}
       });
     }
     const now = /* @__PURE__ */ new Date();
-    $("clock").textContent = fmtClock(now);
-    const dot = $("gps-dot");
+    $2("clock").textContent = fmtClock(now);
+    const dot = $2("gps-dot");
     if (dot) {
       dot.classList.toggle("ok", !!S.gps);
     }
-    $("gps-txt").textContent = "GPS \xB1" + Math.round(S.gps.acc || 0) + "\u043C";
+    $2("gps-txt").textContent = "GPS \xB1" + Math.round(S.gps.acc || 0) + "\u043C";
     const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
     const hh = getHeadingHealth();
-    const hw = $("heading-warn");
+    const hw = $2("heading-warn");
     if (hw) {
       hw.classList.toggle("on", !!hh.interference && kmh < 25);
       hw.textContent = hh.calibrating ? "\u{1F9ED} \u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043C\u043F\u0430\u0441\u0430 \u2014 \u0432\u043E\u0441\u044C\u043C\u0451\u0440\u043A\u0430 15 \u0441" : "\u26A0 \u041F\u043E\u043C\u0435\u0445\u0438 \u043A\u043E\u043C\u043F\u0430\u0441\u0430 \u2014 \u043A\u0443\u0440\u0441 \u043F\u043E GPS";
     }
     if (!S.route) {
-      $("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
+      $2("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
       updateFinishInfo(0, kmh, now);
       return;
     }
     const gpsOk = S.gpsConverged !== false;
     const snap = gpsOk ? getNavSnap(S.smoothedHeading) : null;
     const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
-    if ($("hud").classList.contains("on") && !gpsOk) {
-      $("street").textContent = "GPS \u0421\u0425\u041E\u0414\u0418\u0422\u0421\u042F";
-      $("v-mdist").textContent = "\u2014";
-      $("arrow-box").innerHTML = buildTurnArrowSVG(0);
+    if ($2("hud").classList.contains("on") && !gpsOk) {
+      $2("street").textContent = "GPS \u0421\u0425\u041E\u0414\u0418\u0422\u0421\u042F";
+      $2("v-mdist").textContent = "\u2014";
+      $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
       updateFinishInfo(getRemainingDistance(), kmh, now);
     }
     if (isSnapLost()) {
-      $("street").textContent = "GPS \u041F\u041E\u0422\u0415\u0420\u042F\u041D";
-      $("v-mdist").textContent = "\u2014";
-      $("v-mdist-u").textContent = "";
-      $("arrow-box").innerHTML = buildTurnArrowSVG(0);
-      $("rb-exit-label")?.classList.add("hidden");
+      $2("street").textContent = "GPS \u041F\u041E\u0422\u0415\u0420\u042F\u041D";
+      $2("v-mdist").textContent = "\u2014";
+      $2("v-mdist-u").textContent = "";
+      $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
+      $2("rb-exit-label")?.classList.add("hidden");
       updateFinishInfo(getRemainingDistance(), kmh, now);
-      $("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
+      $2("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
       return;
     }
     const remaining = getRemainingDistance();
@@ -19336,18 +19441,18 @@ ${trkpts}
       const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
       let turn = 0;
       if (hdg != null && !isNaN(hdg)) turn = (brg - hdg + 540) % 360 - 180;
-      $("arrow-box").innerHTML = buildTurnArrowSVG(turn);
+      $2("arrow-box").innerHTML = buildTurnArrowSVG(turn);
       const dFin = haversine(S.gps, S.finish);
       if (dFin < 1e3) {
-        $("v-mdist").textContent = Math.max(0, Math.round(dFin / 10) * 10);
-        $("v-mdist-u").textContent = "\u043C";
+        $2("v-mdist").textContent = Math.max(0, Math.round(dFin / 10) * 10);
+        $2("v-mdist-u").textContent = "\u043C";
       } else {
-        $("v-mdist").textContent = (dFin / 1e3).toFixed(1);
-        $("v-mdist-u").textContent = "\u043A\u043C";
+        $2("v-mdist").textContent = (dFin / 1e3).toFixed(1);
+        $2("v-mdist-u").textContent = "\u043A\u043C";
       }
-      $("street").textContent = "\u041A \u0424\u0418\u041D\u0418\u0428\u0423";
-      $("rb-exit-label")?.classList.add("hidden");
-      const mid = $("mid-info");
+      $2("street").textContent = "\u041A \u0424\u0418\u041D\u0418\u0428\u0423";
+      $2("rb-exit-label")?.classList.add("hidden");
+      const mid = $2("mid-info");
       const tStr = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
       mid.textContent = tStr + " \xB7 \u041A\u041E\u041C\u041F\u0410\u0421";
       updateFinishInfo(remaining, kmh, now);
@@ -19370,25 +19475,25 @@ ${trkpts}
       const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
       let turn = 0;
       if (hdg != null && !isNaN(hdg)) turn = (brg - hdg + 540) % 360 - 180;
-      $("arrow-box").innerHTML = buildTurnArrowSVG(turn);
+      $2("arrow-box").innerHTML = buildTurnArrowSVG(turn);
       const dSnap = haversine(S.gps, { lat: snap.lat, lon: snap.lon });
       if (dSnap < 1e3) {
-        $("v-mdist").textContent = Math.max(0, Math.round(dSnap / 10) * 10);
-        $("v-mdist-u").textContent = "\u043C";
+        $2("v-mdist").textContent = Math.max(0, Math.round(dSnap / 10) * 10);
+        $2("v-mdist-u").textContent = "\u043C";
       } else {
-        $("v-mdist").textContent = (dSnap / 1e3).toFixed(1);
-        $("v-mdist-u").textContent = "\u043A\u043C";
+        $2("v-mdist").textContent = (dSnap / 1e3).toFixed(1);
+        $2("v-mdist-u").textContent = "\u043A\u043C";
       }
-      $("street").textContent = "\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422";
-      $("rb-exit-label")?.classList.add("hidden");
+      $2("street").textContent = "\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422";
+      $2("rb-exit-label")?.classList.add("hidden");
     } else {
       let nm = isSnapDegraded() ? getCachedManeuver() : null;
       if (!nm) nm = findNextManeuver();
       if (nm) {
         cacheLastManeuver(nm);
         logManeuverContext(nm, snap, true, null);
-        $("arrow-box").innerHTML = buildArrowSVG(nm.step);
-        const rbEl = $("rb-exit-label");
+        $2("arrow-box").innerHTML = buildArrowSVG(nm.step);
+        const rbEl = $2("rb-exit-label");
         if (rbEl) {
           const geom = S.route.geometry;
           const rb = isCrossingContextEnabled() && geom && snap ? getActiveRoundabout(geom, snap.s, spdMps) : null;
@@ -19402,13 +19507,13 @@ ${trkpts}
           }
         }
         if (nm.dist < 1e3) {
-          $("v-mdist").textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
-          $("v-mdist-u").textContent = "\u043C";
+          $2("v-mdist").textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
+          $2("v-mdist-u").textContent = "\u043C";
         } else {
-          $("v-mdist").textContent = (nm.dist / 1e3).toFixed(1);
-          $("v-mdist-u").textContent = "\u043A\u043C";
+          $2("v-mdist").textContent = (nm.dist / 1e3).toFixed(1);
+          $2("v-mdist-u").textContent = "\u043A\u043C";
         }
-        $("street").textContent = (nm.step.name || "").toUpperCase() || "\u2014";
+        $2("street").textContent = (nm.step.name || "").toUpperCase() || "\u2014";
         const stIdx = S.route.steps.indexOf(nm.step);
         const kFar = "st_" + stIdx + "_far";
         const kNear = "st_" + stIdx + "_near";
@@ -19435,9 +19540,9 @@ ${trkpts}
     updateFinishInfo(remaining, kmh, now);
     const midLine = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
     if (S.routeQuality === RouteQuality.LOW && !S.compassMode) {
-      $("mid-info").textContent = midLine + " \xB7 \u041D\u0418\u0417\u041A. OSM";
+      $2("mid-info").textContent = midLine + " \xB7 \u041D\u0418\u0417\u041A. OSM";
     } else {
-      $("mid-info").textContent = midLine;
+      $2("mid-info").textContent = midLine;
     }
     if (remaining < 30 && !S.camWarned.has("arrived")) {
       S.camWarned.add("arrived");
@@ -19466,7 +19571,8 @@ ${trkpts}
     return n != null && Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
   }
   async function startHud() {
-    applyFinishInfoVisibility();
+    clearHudChromeReveal();
+    applyHudChrome();
     if (!S.route) {
       alert("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
       return;
@@ -19486,10 +19592,10 @@ ${trkpts}
     resetSnapQuality();
     resetCurveRibbonState();
     ensureRouteGeometry(S.route);
-    $("setup").style.display = "none";
-    $("setup").style.zIndex = "30";
-    $("hud").classList.add("on");
-    $("hud").classList.toggle("show-compass", !!S.showCompass);
+    $2("setup").style.display = "none";
+    $2("setup").style.zIndex = "30";
+    $2("hud").classList.add("on");
+    $2("hud").classList.toggle("show-compass", !!S.showCompass);
     resetVintageVfd();
     syncVintageVfdDomClasses();
     updateCamStatusUI();
@@ -19524,12 +19630,13 @@ ${trkpts}
     S.fuelMode = 0;
     S.fuelSel = null;
     S.fuelOrigFinish = null;
-    $("fuelPanel")?.classList.remove("on");
-    $("btn-fuel")?.classList.remove("active");
-    $("hud").classList.remove("on");
-    $("setup").style.display = "block";
+    $2("fuelPanel")?.classList.remove("on");
+    $2("btn-fuel")?.classList.remove("active");
+    $2("hud").classList.remove("on");
+    clearHudChromeReveal();
+    $2("setup").style.display = "block";
     renderFavs();
-    const goBar = $("go-bar");
+    const goBar = $2("go-bar");
     if (goBar) goBar.classList.toggle("hidden", !(S.route && S.route.coords?.length));
     releaseWakeLock();
     clearVoiceQueue();
@@ -19547,23 +19654,23 @@ ${trkpts}
     return { v: (m / 1e3).toFixed(1), u: "\u043A\u043C" };
   }
   function setFuelPanel({ title, dist, sub, hint, color, searching }) {
-    const panel = $("fuelPanel");
+    const panel = $2("fuelPanel");
     if (!panel) return;
     panel.style.setProperty("--fuel-c", color || "#66ccff");
     panel.classList.toggle("searching", !!searching);
-    if (title != null) $("fp-title").textContent = title;
+    if (title != null) $2("fp-title").textContent = title;
     if (dist !== void 0) {
       const d = fmtDistPair(dist);
-      $("fp-dist").textContent = d.v;
-      $("fp-u").textContent = d.u;
+      $2("fp-dist").textContent = d.v;
+      $2("fp-u").textContent = d.u;
     }
-    if (sub != null) $("fp-sub").textContent = sub;
-    if (hint != null) $("fp-hint").textContent = hint;
+    if (sub != null) $2("fp-sub").textContent = sub;
+    if (hint != null) $2("fp-hint").textContent = hint;
     panel.classList.add("on");
     _fuelPanelShownAt = Date.now();
   }
   function updateFuelButton() {
-    const b = $("btn-fuel");
+    const b = $2("btn-fuel");
     if (b) b.classList.toggle("active", S.fuelMode > 0);
   }
   async function rerouteToFuel() {
@@ -19577,7 +19684,7 @@ ${trkpts}
     }
   }
   function refreshFuelPanel() {
-    const panel = $("fuelPanel");
+    const panel = $2("fuelPanel");
     if (panel && panel.classList.contains("on") && _fuelPanelShownAt && Date.now() - _fuelPanelShownAt > FUEL_PANEL_MS) {
       panel.classList.remove("on");
     }
@@ -19585,13 +19692,13 @@ ${trkpts}
     const sel = S.fuelSel;
     const dist = S.fuelMode === 2 ? getRemainingDistance() : sel.distAhead != null && isFinite(sel.distAhead) ? sel.distAhead : sel.distGps;
     const d = fmtDistPair(dist);
-    $("fp-dist").textContent = d.v;
-    $("fp-u").textContent = d.u;
+    $2("fp-dist").textContent = d.v;
+    $2("fp-u").textContent = d.u;
   }
   async function cycleFuelAssist() {
     if (_fuelBusy) return;
     _fuelBusy = true;
-    const b = $("btn-fuel");
+    const b = $2("btn-fuel");
     try {
       if (S.fuelMode === 0 && S.fuelStatus !== "ready") {
         setFuelPanel({ title: "\u26FD \u041F\u041E\u0418\u0421\u041A \u0417\u0410\u041F\u0420\u0410\u0412\u041E\u041A\u2026", dist: null, sub: "\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0430\u043D\u043D\u044B\u0445", hint: "", color: "#66ccff", searching: true });
@@ -19659,7 +19766,7 @@ ${trkpts}
     S.fuelMode = 0;
     S.fuelSel = null;
     S.fuelOrigFinish = null;
-    $("fuelPanel")?.classList.remove("on");
+    $2("fuelPanel")?.classList.remove("on");
     if (reroute && orig) {
       S.finish = orig;
       speak("\u041E\u0442\u043C\u0435\u043D\u0430. \u0412\u043E\u0437\u0432\u0440\u0430\u0442 \u043A \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443");
@@ -19671,8 +19778,8 @@ ${trkpts}
     const fav = loadFavs2().find((f2) => f2.id === id);
     if (!fav) return;
     S.finish = { lat: fav.lat, lon: fav.lon, label: fav.name };
-    $("quickFinish").classList.remove("on");
-    $("mid-info").textContent = "\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u2026";
+    $2("quickFinish").classList.remove("on");
+    $2("mid-info").textContent = "\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u2026";
     speak("\u041D\u043E\u0432\u044B\u0439 \u0444\u0438\u043D\u0438\u0448 " + fav.name + ". \u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430");
     try {
       await buildAndLoad();
@@ -19680,7 +19787,7 @@ ${trkpts}
       onTick();
     } catch (e) {
       console.warn("\u0421\u043C\u0435\u043D\u0430 \u0444\u0438\u043D\u0438\u0448\u0430 \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C:", e);
-      $("mid-info").textContent = "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430";
+      $2("mid-info").textContent = "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430";
     }
   }
   var _lastMarkCtx, _fuelBusy, _fuelPanelShownAt, FUEL_PANEL_MS;
@@ -19710,6 +19817,7 @@ ${trkpts}
       init_heading();
       init_theme_manager();
       init_hud_opts();
+      init_hud_chrome();
       init_offroute();
       init_telemetry();
       init_view_mode();
@@ -19816,7 +19924,7 @@ ${trkpts}
   var _tapTimer = null;
   var MARK_TAP_MS = 450;
   function bindMarkButton() {
-    const btn = $("btn-telemetry-mark");
+    const btn = $2("btn-telemetry-mark");
     if (!btn || btn.dataset.bound) return;
     btn.dataset.bound = "1";
     btn.addEventListener("click", () => {
@@ -19874,8 +19982,8 @@ ${trkpts}
     return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
   }
   async function refreshSessionsList() {
-    const list = $("telemetry-sessions");
-    const stats = $("telemetry-stats");
+    const list = $2("telemetry-sessions");
+    const stats = $2("telemetry-stats");
     if (!list) return;
     try {
       const sessions = await telemetry_default.listSessions();
@@ -19896,7 +20004,7 @@ ${trkpts}
     }
   }
   function bindSessionsList() {
-    const list = $("telemetry-sessions");
+    const list = $2("telemetry-sessions");
     if (!list || list.dataset.bound) return;
     list.dataset.bound = "1";
     list.addEventListener("click", async (e) => {
@@ -19915,7 +20023,7 @@ ${trkpts}
         await refreshSessionsList();
       }
     });
-    $("btn-telemetry-export-all")?.addEventListener("click", async () => {
+    $2("btn-telemetry-export-all")?.addEventListener("click", async () => {
       const sessions = await telemetry_default.listSessions();
       for (const s2 of sessions) {
         try {
@@ -19930,7 +20038,7 @@ ${trkpts}
   function initTelemetryUI() {
     bindMarkButton();
     bindSessionsList();
-    const toggle = $("opt-telemetry");
+    const toggle = $2("opt-telemetry");
     if (toggle) {
       toggle.checked = telemetry_default.isEnabled();
       toggle.addEventListener("change", async () => {
@@ -20111,6 +20219,7 @@ ${trkpts}
   init_yandex_export();
   init_track_recorder();
   init_trip_ui();
+  init_hud_chrome();
   applyThemeCss();
   initLegalConsent();
   initYandexImportUi();
@@ -20120,6 +20229,7 @@ ${trkpts}
   initYandexExportUi();
   initTrackRecorderUi();
   initTripPlannerUi();
+  initHudChrome();
   initThemeManager();
   initVintageVfd();
   initTelemetry().then(() => initTelemetryUI());

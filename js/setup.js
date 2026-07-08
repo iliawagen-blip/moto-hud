@@ -15,6 +15,7 @@ import { updateCamStatusUI } from './cam-status.js';
 import { loadRouteElevation, saveElevOptsToStorage } from './elevation.js';
 import { computeCurveSpeed, saveCurveOptsToStorage } from './curve-speed.js';
 import { saveHudOptsToStorage, applyFinishInfoVisibility, clampFuelPlannerCount } from './hud-opts.js';
+import { applyHudChrome, normalizeChromeMode } from './hud-chrome.js';
 import { saveAppOptsToStorage } from './app-opts.js';
 
 import { isAndroidNative } from './platform.js';
@@ -613,12 +614,23 @@ export function bindSetupUI(){
     $(id)?.addEventListener('change', () => {
       syncOptionsFromDom();
       saveHudOptsToStorage();
-      applyFinishInfoVisibility();
+      applyHudChrome();
     });
   };
   bindFinishOpt('opt-finish-dist');
   bindFinishOpt('opt-finish-time');
   bindFinishOpt('opt-finish-eta');
+
+  const bindChromeMode = (id, key) => {
+    $(id)?.addEventListener('change', e => {
+      S[key] = normalizeChromeMode(e.target.value);
+      e.target.value = S[key];
+      saveHudOptsToStorage();
+      applyHudChrome();
+    });
+  };
+  bindChromeMode('opt-hud-status-mode', 'hudStatusMode');
+  bindChromeMode('opt-hud-finish-mode', 'hudFinishMode');
 
   $('opt-fuel-count')?.addEventListener('change', e => {
     S.fuelPlannerCount = clampFuelPlannerCount(e.target.value);
@@ -834,7 +846,11 @@ export function syncOptionsFromDom(){
   S.showFinishDist = $('opt-finish-dist')?.checked ?? true;
   S.showFinishTime = $('opt-finish-time')?.checked ?? true;
   S.showFinishEta = $('opt-finish-eta')?.checked ?? true;
-  applyFinishInfoVisibility();
+  S.hudStatusMode = normalizeChromeMode($('opt-hud-status-mode')?.value || S.hudStatusMode);
+  S.hudFinishMode = normalizeChromeMode($('opt-hud-finish-mode')?.value || S.hudFinishMode);
+  if($('opt-hud-status-mode')) $('opt-hud-status-mode').value = S.hudStatusMode;
+  if($('opt-hud-finish-mode')) $('opt-hud-finish-mode').value = S.hudFinishMode;
+  applyHudChrome();
 
   S.fuelPlannerCount = clampFuelPlannerCount($('opt-fuel-count')?.value);
   if($('opt-fuel-count')) $('opt-fuel-count').value = String(S.fuelPlannerCount);

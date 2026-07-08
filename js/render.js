@@ -803,8 +803,10 @@ export function renderCompass(){
 }
 
 function renderCompassRose(el, tok, hdg){
-  const W = 400, H = 120, cx = W / 2, cy = H / 2, r = 44;
-  let html = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + tok.dim + '" stroke-width="1.5"/>';
+  const chopper = document.documentElement.classList.contains('theme-chopper');
+  const W = 400, H = chopper ? 140 : 120, cx = W / 2, cy = H / 2, r = chopper ? 54 : 44;
+  const fs = chopper ? 30 : 22;
+  let html = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + tok.dim + '" stroke-width="' + (chopper ? 2 : 1.5) + '"/>';
   if(hdg != null && !isNaN(hdg)){
     [['N',0],['E',90],['S',180],['W',270]].forEach(d => {
       const a = (d[1] - hdg) * Math.PI / 180;
@@ -812,12 +814,12 @@ function renderCompassRose(el, tok, hdg){
       const y = cy - Math.cos(a) * r;
       const near = Math.abs(((d[1] - hdg + 540) % 360) - 180) < 18;
       html += '<text x="' + x.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" ' +
-        'font-family="' + tok.fontLabel + ',sans-serif" font-size="22" font-weight="900" ' +
+        'font-family="' + tok.fontLabel + ',sans-serif" font-size="' + fs + '" font-weight="900" ' +
         'fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + '</text>';
     });
     const a = -hdg * Math.PI / 180;
-    html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.sin(a) * (r - 8)).toFixed(1) +
-      '" y2="' + (cy - Math.cos(a) * (r - 8)).toFixed(1) + '" stroke="' + tok.accent + '" stroke-width="3"/>';
+    html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.sin(a) * (r - 10)).toFixed(1) +
+      '" y2="' + (cy - Math.cos(a) * (r - 10)).toFixed(1) + '" stroke="' + tok.accent + '" stroke-width="' + (chopper ? 4 : 3) + '"/>';
   }
   el.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
   el.innerHTML = html;

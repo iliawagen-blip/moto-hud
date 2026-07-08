@@ -32,8 +32,23 @@ html.theme-chopper .mdist{
 }
 html.theme-chopper .street,
 html.theme-chopper .speed-unit,
-html.theme-chopper .fi-k{
+html.theme-chopper .fi-k,
+html.theme-chopper .fi-v,
+html.theme-chopper .fi-line{
   letter-spacing:.04em
+}
+
+/* Чоппер: роза компаса внутри блока стрелки (не fixed-лента) */
+html.theme-chopper .compass-slot{
+  position:relative;top:auto;left:auto;right:auto;z-index:1;
+  width:100%;flex-shrink:0;
+  height:clamp(72px,min(22vw,20vh),120px);
+  margin:0;padding:4px 8px 2px;
+  background:color-mix(in srgb, var(--bg) 70%, transparent);
+  border-bottom:1px solid var(--line)
+}
+html.theme-chopper .block-arrow #arrow-box{
+  max-height:clamp(72px,min(24vw,20vh),180px)
 }
 
 html.theme-hitech #setup input,
