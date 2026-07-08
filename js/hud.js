@@ -1,5 +1,5 @@
 import { S } from './state.js';
-import { $, fmtClock, fmtTime, fmtRemainDur } from './util.js';
+import { $, fmtClock, fmtTime, fmtRemainDur, formatStreetLabel } from './util.js';
 import { haversine, bearing, angleDiff } from './geo.js';
 import { curPos } from './gps.js';
 import {
@@ -9,6 +9,7 @@ import {
 import { speak, maneuverText, isTurnStep, isCameraBehind } from './voice.js';
 import { buildArrowSVG, buildTurnArrowSVG } from './render.js';
 import { syncVintageVfdDomClasses, resetVintageVfd } from './vintage-vfd.js';
+import { closeHudSettingsSheet } from './hud-settings-sheet.js';
 import { startVisualLoop, stopVisualLoop, startNavigationGps, stopNavigationGps } from './gps.js';
 import {
   ensureFuelStations, bestAlongRoute, nearestOverall,
@@ -307,7 +308,7 @@ export function onTick(){
         $('v-mdist').textContent = (nm.dist / 1000).toFixed(1);
         $('v-mdist-u').textContent = 'км';
       }
-      $('street').textContent = (nm.step.name || '').toUpperCase() || '—';
+      $('street').textContent = formatStreetLabel(nm.step.name);
       const stIdx = S.route.steps.indexOf(nm.step);
       const kFar = 'st_' + stIdx + '_far';
       const kNear = 'st_' + stIdx + '_near';
@@ -392,6 +393,7 @@ export async function startHud(){
   $('setup').style.zIndex = '30';
   $('hud').classList.add('on');
   $('hud').classList.toggle('show-compass', !!S.showCompass);
+  closeHudSettingsSheet();
   resetVintageVfd();
   syncVintageVfdDomClasses();
   updateCamStatusUI();

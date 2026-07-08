@@ -671,68 +671,54 @@ function renderChopperArrow(turnDeg){
     '</svg>';
 }
 
-/** VFD-сегмент: «планка» перпендикулярно траектории */
-function vfdSegmentBar(cx, cy, tdx, tdy, halfLen, thick, col){
-  const len = Math.hypot(tdx, tdy) || 1;
-  const nx = -tdy / len, ny = tdx / len;
-  const x1 = (cx - nx * halfLen).toFixed(1);
-  const y1 = (cy - ny * halfLen).toFixed(1);
-  const x2 = (cx + nx * halfLen).toFixed(1);
-  const y2 = (cy + ny * halfLen).toFixed(1);
-  return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
-    '" stroke="' + col + '" stroke-width="' + thick + '" stroke-linecap="butt"/>';
+function vfdQuant(v, step = 2){
+  return Math.round(v / step) * step;
 }
 
-/** Точки вдоль ломаной с касательным направлением */
-function sampleStem(stem, step){
-  const out = [];
-  for(let i = 0; i < stem.length - 1; i++){
-    const a = stem[i], b = stem[i + 1];
-    const dx = b[0] - a[0], dy = b[1] - a[1];
-    const seg = Math.hypot(dx, dy);
-    if(seg < 0.01) continue;
-    const n = Math.max(1, Math.ceil(seg / step));
-    for(let s = 0; s < n; s++){
-      if(i > 0 && s === 0) continue;
-      const t = s / n;
-      out.push({ x: a[0] + dx * t, y: a[1] + dy * t, dx, dy });
+function offsetRibbonPoints(centerPts, halfW){
+  const left = [], right = [];
+  for(let i = 0; i < centerPts.length; i++){
+    const p = centerPts[i];
+    let dx, dy;
+    if(i < centerPts.length - 1){
+      dx = centerPts[i + 1][0] - p[0];
+      dy = centerPts[i + 1][1] - p[1];
+    } else {
+      dx = p[0] - centerPts[i - 1][0];
+      dy = p[1] - centerPts[i - 1][1];
     }
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    left.push([vfdQuant(p[0] + nx * halfW), vfdQuant(p[1] + ny * halfW)]);
+    right.push([vfdQuant(p[0] - nx * halfW), vfdQuant(p[1] - ny * halfW)]);
   }
-  const last = stem[stem.length - 1];
-  const prev = out.length ? out[out.length - 1] : { dx: 0, dy: -1 };
-  out.push({ x: last[0], y: last[1], dx: prev.dx, dy: prev.dy });
-  return out;
+  return { left, right };
 }
 
-/** Винтаж: сегментированная VFD-стрелка (планки как на референсе) */
+/** Винтаж: цельная VFD-стрелка без разрывов между сегментами */
 function renderVintageArrow(turnDeg){
   const tok = getThemeTokens();
   const col = tok.accent;
-  const barHalf = 13;
-  const barThick = 6.5;
-  const barGap = 8;
+  const halfW = 6.5;
+  const H = 120;
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
   const hl = 22, hw = 17;
-
-  const { pts, dir, tip } = computeArrowCenterline(turnDeg, 120);
   const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
+  const wingA = [vfdQuant(back[0] + perp[0] * hw), vfdQuant(back[1] + perp[1] * hw)];
+  const wingB = [vfdQuant(back[0] - perp[0] * hw), vfdQuant(back[1] - perp[1] * hw)];
+  const tipQ = [vfdQuant(tip[0]), vfdQuant(tip[1])];
+
   const stem = pts.slice(0, pts.length - 1).concat([back]);
-  const samples = sampleStem(stem, barGap);
-  const parts = samples.map(p => vfdSegmentBar(p.x, p.y, p.dx, p.dy, barHalf, barThick, col));
+  const { left, right } = offsetRibbonPoints(stem, halfW);
+  const poly = left.concat([wingA, tipQ, wingB]).concat(right.slice().reverse());
+  const polyPts = poly.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
 
-  const headN = 7;
-  for(let i = 0; i < headN; i++){
-    const t = i / (headN - 1);
-    const along = hl * (0.06 + t * 0.94);
-    const cx = tip[0] - dir[0] * along;
-    const cy = tip[1] - dir[1] * along;
-    const half = hw * (0.08 + t * 0.92);
-    parts.push(vfdSegmentBar(cx, cy, dir[0], dir[1], half, barThick, col));
-  }
-
-  const all = [...stem, tip, back];
-  const { vb } = arrowViewBox(all, barHalf + barThick + 2);
+  const all = [...stem, tipQ, wingA, wingB];
+  const { vb } = arrowViewBox(all, halfW + 4);
   return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" filter="url(#vfd-glow-cyan)">' +
-    parts.join('') + '</svg>';
+    '<polygon points="' + polyPts + '" fill="' + col + '" stroke="none"/>' +
+    '</svg>';
 }
 
 function renderManeuverArrow(turnDeg){

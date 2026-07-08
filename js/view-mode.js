@@ -1,5 +1,5 @@
 /**
- * HUD ↔ карта: двойной тап, три режима (16).
+ * HUD ↔ карта: двойной тап / двойной клик, три режима (16).
  * @module view-mode
  */
 import { S } from './state.js';
@@ -12,11 +12,25 @@ const DBL_TAP_MAX_PX = 40;
 const VIEW_ORDER = ['hud', 'map_overview', 'map_zoom'];
 
 let _lastTap = { t: 0, x: 0, y: 0 };
+let _lastTouchEnd = 0;
 let _bound = false;
 
 function isExcludedTarget(el){
   if(!el || !(el instanceof Element)) return true;
-  return !!el.closest('.corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal');
+  return !!el.closest(
+    '.corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #hud-settings-sheet, .hud-settings-sheet'
+  );
+}
+
+/** На десктопе клик по скорости/дистанции не должен открывать хром HUD. */
+function isChromeTapTarget(el){
+  if(!el || !(el instanceof Element)) return false;
+  if(isExcludedTarget(el)) return false;
+  if(window.matchMedia('(pointer: fine)').matches &&
+     el.closest('.speed-stack, .mdist, .block-path, .block-arrow')){
+    return false;
+  }
+  return true;
 }
 
 function applyViewLayout(mode){
@@ -43,21 +57,34 @@ export function cycleViewMode(){
   setViewMode(VIEW_ORDER[(i + 1) % VIEW_ORDER.length]);
 }
 
-function onTouchEnd(e){
-  if(!document.getElementById('hud')?.classList.contains('on')) return;
-  const t = e.changedTouches?.[0];
-  if(!t || isExcludedTarget(t.target)) return;
+function registerTap(clientX, clientY, target, preventDefault){
+  if(!document.getElementById('hud')?.classList.contains('on')) return false;
+  if(isExcludedTarget(target)) return false;
   const now = Date.now();
   const dt = now - _lastTap.t;
-  const dist = Math.hypot(t.clientX - _lastTap.x, t.clientY - _lastTap.y);
+  const dist = Math.hypot(clientX - _lastTap.x, clientY - _lastTap.y);
   if(dt < DBL_TAP_MS && dist < DBL_TAP_MAX_PX){
     cycleViewMode();
     _lastTap.t = 0;
-    e.preventDefault();
-    return;
+    if(preventDefault) preventDefault();
+    return true;
   }
-  _lastTap = { t: now, x: t.clientX, y: t.clientY };
-  onHudTap();
+  _lastTap = { t: now, x: clientX, y: clientY };
+  if(isChromeTapTarget(target)) onHudTap();
+  return false;
+}
+
+function onTouchEnd(e){
+  const t = e.changedTouches?.[0];
+  if(!t) return;
+  _lastTouchEnd = Date.now();
+  if(registerTap(t.clientX, t.clientY, t.target, () => e.preventDefault())) return;
+}
+
+function onClick(e){
+  if(e.button !== 0) return;
+  if(Date.now() - _lastTouchEnd < 500) return;
+  registerTap(e.clientX, e.clientY, e.target, null);
 }
 
 export function initViewMode(){
@@ -65,6 +92,7 @@ export function initViewMode(){
   const hud = $('hud');
   if(!hud) return;
   hud.addEventListener('touchend', onTouchEnd, { passive: false });
+  hud.addEventListener('click', onClick);
   _bound = true;
   S.viewMode = 'hud';
 }

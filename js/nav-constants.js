@@ -33,6 +33,8 @@ export const SNAP_MIN_DOT = 0.71;
 export const SNAP_WINDOW_BASE_M = 10;
 export const SNAP_WINDOW_ACC_MULT = 3;
 export const SNAP_WINDOW_DT_CAP_S = 2.0;
+/** Ниже этой скорости snap не двигается вперёд по дуге (шум GPS). */
+export const SNAP_STATIONARY_SPD_MPS = 0.6;
 export const SNAP_JUMP_PENALTY = 3.0;
 export const SNAP_ANGLE_PENALTY = 2;
 export const SNAP_COLD_START_SKIP_FIXES = 3;

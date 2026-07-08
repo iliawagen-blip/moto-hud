@@ -29,14 +29,14 @@ export function fuelStatusText(status){
   return { yes: 'есть', queue: 'очередь', low: 'мало', no: 'нет топлива' }[status] || 'наличие ?';
 }
 
-/** Подсказка, если ГдеБЕНЗ не ответил (веб/CORS/сеть). */
+/** Подсказка, если сервис статуса АЗС не ответил (веб/CORS/сеть). */
 export function fuelStatusHint(){
   if(S.fuelStatus !== 'ready') return '';
   if(S.fuelSource === 'gdebenz' || S.fuelSource === 'gdebenz+crowd') return '';
   if(S.fuelStations.some(st => st.statusSource === 'crowd' && st.status !== 'unknown')) return '';
   const proxy = getFuelProxyBase();
-  if(proxy) return ' · ГдеБЕНЗ недоступен (проверьте URL прокси)';
-  return ' · ГдеБЕНЗ недоступен · отметьте в HUD';
+  if(proxy) return ' · статус АЗС недоступен (проверьте URL прокси)';
+  return ' · статус АЗС недоступен · отметьте в HUD';
 }
 
 export { crowdStatusSuffix };
@@ -158,7 +158,7 @@ async function fetchGdebenzNearby(lat, lon, radiusKm){
       }
     }
   }catch(e){
-    console.warn('ГдеБЕНЗ недоступен:', e);
+    console.warn('Сервис статуса АЗС недоступен:', e);
   }
 
   if(data?.stations) writeGdebenzCache(lat, lon, data);

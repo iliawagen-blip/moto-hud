@@ -69,6 +69,10 @@ await esbuild.build({
   logLevel: 'info'
 });
 
+const leafletSrc = path.join(ROOT, 'node_modules', 'leaflet', 'dist', 'leaflet.js');
+const leafletDst = path.join(ROOT, 'js', 'leaflet.js');
+if(fs.existsSync(leafletSrc)) cp(leafletSrc, leafletDst);
+
 // Версия SW, manifest, cache-bust в index.html
 for(const rel of ['sw.js', 'manifest.json', 'index.html']){
   stampBuildId(path.join(ROOT, rel));
@@ -84,7 +88,8 @@ STATIC_FILES.forEach(f => {
 STATIC_DIRS.forEach(d => {
   if(d === 'js'){
     cpDir(path.join(ROOT, 'js'), path.join(WWW, 'js'), n =>
-      n === 'sim.js' || n === 'app.js' || n === 'app-iife.js' || n === 'app.js.map' || n === 'sim-replay.js');
+      n === 'sim.js' || n === 'app.js' || n === 'app-iife.js' || n === 'app.js.map' ||
+      n === 'sim-replay.js' || n === 'sim-map.js' || n === 'leaflet.js');
   } else {
     cpDir(path.join(ROOT, d), path.join(WWW, d));
   }

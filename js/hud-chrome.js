@@ -15,22 +15,11 @@ export function normalizeChromeMode(v){
   return v === 'always' || v === 'off' ? v : 'tap';
 }
 
-function hudOn(){
-  return $('hud')?.classList.contains('on');
-}
-
 function chromeShown(mode){
   const m = normalizeChromeMode(mode);
   if(m === 'off') return false;
   if(m === 'always') return true;
   return $('hud')?.classList.contains('chrome-reveal');
-}
-
-function isChromeExcluded(el){
-  if(!el || !(el instanceof Element)) return true;
-  return !!el.closest(
-    '.corner-btn, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #nav-map-pane'
-  );
 }
 
 /** Показать кнопки/строки на 15 с (или продлить таймер). */
@@ -81,12 +70,6 @@ export function applyHudChrome(){
 
 export function initHudChrome(){
   if(_bound) return;
-  const hud = $('hud');
-  if(!hud) return;
-  hud.addEventListener('click', e => {
-    if(!hudOn() || isChromeExcluded(e.target)) return;
-    onHudTap();
-  });
   _bound = true;
   applyHudChrome();
 }

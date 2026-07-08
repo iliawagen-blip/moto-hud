@@ -226,7 +226,7 @@ html.theme-vintage {
   --accent: #66FFE0;
   --accent-on: #050505;
   --line: rgba(102, 255, 224, 0.2);
-  --font-num: "VT323", "Press Start 2P", monospace;
+  --font-num: "DSEG7 Classic", monospace;
   --font-label: "VT323", "Press Start 2P", monospace;
   --num-weight: 400;
   --label-transform: uppercase;
@@ -245,6 +245,7 @@ html.theme-vintage {
   --compass-style: tape;
   --panel: var(--bg);
   --panel2: #0a0a0a;
+  --border: var(--line);
   --turn-primary: #66FFE0;
   --turn-secondary: rgba(102, 255, 224, 0.5);
 }

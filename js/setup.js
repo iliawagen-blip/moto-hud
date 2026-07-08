@@ -276,7 +276,7 @@ export async function doAddressSearch(){
     });
 
     box.style.display = 'block';
-    box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    try{ box.scrollIntoView({ block: 'nearest', behavior: 'smooth', inline: 'nearest' }); }catch(e){}
 
     $('s-finish').textContent = '🔎 Выберите вариант из списка';
 
@@ -358,7 +358,7 @@ export async function doFuelSearch(){
       box.appendChild(row);
     });
     box.style.display = 'block';
-    box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    try{ box.scrollIntoView({ block: 'nearest', behavior: 'smooth', inline: 'nearest' }); }catch(e){}
     $('s-finish').textContent = '⛽ Выберите заправку (' + list.length + ')' + fuelStatusHint();
     $('s-finish').className = 'status';
   }catch(e){
