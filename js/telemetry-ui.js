@@ -134,7 +134,7 @@ export function initTelemetryUI(){
     });
   }
 
-  document.getElementById('drawer-telemetry')?.addEventListener('toggle', e => {
+  document.getElementById('opts-telemetry-section')?.addEventListener('toggle', e => {
     if(e.target.open) refreshSessionsList();
   });
 

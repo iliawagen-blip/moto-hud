@@ -1,7 +1,7 @@
 import { S } from './state.js';
 import { bearing, haversine } from './geo.js';
 import { $ } from './util.js';
-import { isNative } from './platform.js';
+import { isNative, isSim } from './platform.js';
 import {
   startSetupGps, stopSetupGps, startNavGps, stopNavGps, stopAllNativeGps
 } from './native-gps.js';
@@ -116,10 +116,18 @@ function updateGpsConvergeUI(){
   if(el){
     el.classList.toggle('on', $('hud').classList.contains('on') && !S.gpsConverged);
   }
-  $('s-gps').textContent = S.gpsConverged
-    ? '✅ GPS ±' + Math.round(S.gps?.acc || 0) + 'м'
-    : '⏳ GPS сходится…';
-  $('s-gps').className = S.gpsConverged ? 'chip ok' : 'chip';
+  if(S.gpsConverged){
+    const tag = isSim() ? ' сим' : '';
+    $('s-gps').textContent = '✅ GPS' + tag + ' ±' + Math.round(S.gps?.acc || 0) + 'м';
+    $('s-gps').className = 'chip ok';
+  } else if(S.gps){
+    const acc = S.gps.acc != null ? Math.round(S.gps.acc) + 'м' : '…';
+    $('s-gps').textContent = '⏳ GPS ±' + acc;
+    $('s-gps').className = 'chip';
+  } else {
+    $('s-gps').textContent = '⏳ GPS…';
+    $('s-gps').className = 'chip';
+  }
   checkStartReady();
 }
 

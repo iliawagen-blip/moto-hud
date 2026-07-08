@@ -70,7 +70,6 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     sim.idx = 0;
     sim.frac = 0;
     sim.loop = !!loop;
-    sim.running = true;
     emit();
   }
 
@@ -92,13 +91,6 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
     return (Math.atan2(y, x) * d + 360) % 360;
   }
-  function distLL(a, b){
-    const R = 6371000, r = Math.PI / 180;
-    const dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
-    const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
-  }
-
   function distLL(a, b){
     const R = 6371000, r = Math.PI / 180;
     const dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
@@ -165,7 +157,7 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
   }
 
   const sim = {
-    idx: 0, frac: 0, maxCruise: 50 / 3.6, running: true, loop: true,
+    idx: 0, frac: 0, maxCruise: 50 / 3.6, running: false, loop: true,
     useGpxSpeed: false, speedScale: 1,
     cb: null, err: null, timer: null
   };
@@ -314,18 +306,20 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     setRoutePath(coords){ setPathFromCoords(coords, false, null, false); },
     loadGpxReplay,
     loadGpxUrl,
-    play(){ sim.running = sim.idx < PATH.length - 1 || sim.loop; },
-    pause(){ sim.running = false; },
-    reset(){ sim.idx = 0; sim.frac = 0; sim.running = true; emit(); },
+    play(){ sim.running = sim.idx < PATH.length - 1 || sim.loop; emit(); },
+    pause(){ sim.running = false; emit(); },
+    reset(){ sim.idx = 0; sim.frac = 0; sim.running = false; emit(); },
     isRunning(){ return sim.running; },
     injectFix,
+    /** Вызывается из startHud — движение только после «ПОЕХАЛИ». */
+    onNavigationStart(){ sim.running = sim.idx < PATH.length - 1 || sim.loop; emit(); },
+    onNavigationStop(){ sim.running = false; emit(); },
     boot(){
       const inp = document.getElementById('finish-input');
       const hud = window.__motoHUD;
       const skipDemo = !inp || inp.dataset.userEdited === '1' || inp === document.activeElement
         || hud?._searchBusy || hud?._finishFocused;
 
-      let autoDemo = false;
       if(inp && !inp.value.trim() && !skipDemo){
         inp.value = DEMO_FINISH[0].toFixed(5) + ', ' + DEMO_FINISH[1].toFixed(5);
         if(hud?.setFinishQuiet){
@@ -333,11 +327,10 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
         } else if(hud?.applyCoordsOrLink){
           hud.applyCoordsOrLink({ hideSearch: false });
         }
-        autoDemo = true;
       }
 
       const gpxParam = params.get('gpx');
-      const wantAutoHud = autoDemo || params.get('autohud') === '1';
+      const wantAutoHud = params.get('autohud') === '1';
       const bootRoute = async () => {
         try{
           if(gpxParam){

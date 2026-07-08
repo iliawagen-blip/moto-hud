@@ -3,6 +3,10 @@
  */
 import { $ } from './util.js';
 import { logSettingsEvent } from './settings-telemetry.js';
+import { initSettingsPresets } from './settings-presets.js';
+import {
+  downloadSettingsJson, applySettingsBundle, clearAllSettings
+} from './settings-export.js';
 
 const SECTIONS_KEY = 'moto-hud-opts-sections';
 const DEV_KEY = 'moto-hud-dev-mode';
@@ -104,10 +108,43 @@ function bindOptChangeLogging(){
   });
 }
 
-export function initSettingsUi(){
+export function initSettingsUi(reloadAllOpts, persistFromDom){
   applySectionState();
   bindSectionPersistence();
   bindDevModeEasterEgg();
   updateDevSectionVisible();
   bindOptChangeLogging();
+  bindSettingsDataActions(reloadAllOpts);
+  initSettingsPresets(() => {
+    if(typeof persistFromDom === 'function') persistFromDom();
+  });
+}
+
+function bindSettingsDataActions(reloadAllOpts){
+  $('btn-settings-export')?.addEventListener('click', () => {
+    downloadSettingsJson();
+    logSettingsEvent('settings_export', {});
+  });
+  $('btn-settings-import')?.addEventListener('click', () => $('settings-import-file')?.click());
+  $('settings-import-file')?.addEventListener('change', async e => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if(!file) return;
+    try{
+      const text = await file.text();
+      applySettingsBundle(JSON.parse(text));
+      if(typeof reloadAllOpts === 'function') reloadAllOpts();
+      logSettingsEvent('settings_import', {});
+      alert('Настройки импортированы');
+    }catch(err){
+      alert('Ошибка импорта: ' + (err.message || err));
+    }
+  });
+  $('btn-settings-reset')?.addEventListener('click', () => {
+    if(!confirm('Сбросить все настройки к заводским?')) return;
+    clearAllSettings();
+    if(typeof reloadAllOpts === 'function') reloadAllOpts();
+    logSettingsEvent('settings_reset', {});
+    alert('Настройки сброшены. При необходимости перезагрузите страницу.');
+  });
 }

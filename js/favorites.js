@@ -63,9 +63,20 @@ function favNameHtml(f){
     escapeHtml(f.name) + '</span>';
 }
 
+const FAV_QUICK_MAX = 5;
+
 function refreshFavLists(){
   renderFavs();
   renderFavsEdit();
+}
+
+export function openFavsManageModal(){
+  renderFavsEdit();
+  $('favsManageModal')?.classList.add('on');
+}
+
+export function closeFavsManageModal(){
+  $('favsManageModal')?.classList.remove('on');
 }
 
 /** Быстрый выбор финиша — без удаления */
@@ -74,16 +85,21 @@ export function renderFavs(){
   if(!box) return;
   const list = loadFavs();
   if(!list.length){
-    box.innerHTML = '<div class="favs-empty">Пусто. Добавьте места в «⭐ Избранное — редактирование» ниже.</div>';
+    box.innerHTML = '<div class="favs-empty">Пусто. Нажмите «Управление» чтобы добавить места.</div>';
     return;
   }
-  box.innerHTML = list.map(f =>
+  const shown = list.slice(0, FAV_QUICK_MAX);
+  let html = shown.map(f =>
     '<div class="fav-item">' +
       '<button type="button" class="fav-apply" data-id="' + f.id + '">' +
         favNameHtml(f) +
       '</button>' +
     '</div>'
   ).join('');
+  if(list.length > FAV_QUICK_MAX){
+    html += '<div class="favs-more hint">ещё ' + (list.length - FAV_QUICK_MAX) + ' в управлении</div>';
+  }
+  box.innerHTML = html;
   box.querySelectorAll('.fav-apply').forEach(b => {
     b.addEventListener('click', () => applyFav(b.getAttribute('data-id')));
   });
@@ -193,6 +209,10 @@ function openQuickFinish(){
 
 export function initFavorites(){
   refreshFavLists();
+
+  $('btn-favs-manage')?.addEventListener('click', () => openFavsManageModal());
+  $('favs-manage-close')?.addEventListener('click', () => closeFavsManageModal());
+  $('favs-manage-backdrop')?.addEventListener('click', () => closeFavsManageModal());
 
   $('fav-modal-cancel')?.addEventListener('click', closeFavModal);
   $('fav-modal-ok')?.addEventListener('click', () => {

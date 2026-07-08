@@ -398,6 +398,7 @@ export async function startHud(){
   loadCameras(); // фоном, не блокирует старт
   acquireWakeLock();
   try{ await startNavigationGps(); }catch(e){ console.warn('FGS GPS:', e); }
+  if(window.__SIM__?.onNavigationStart) window.__SIM__.onNavigationStart();
   if(!window.__SIM__){
     try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){}
   }
@@ -408,6 +409,7 @@ export async function startHud(){
 }
 
 export function stopHud(){
+  if(window.__SIM__?.onNavigationStop) window.__SIM__.onNavigationStop();
   telemetry.stop().catch(() => {});
   telemetry.updateMarkButtonVisibility();
   const trackPts = stopTrackRecorder();

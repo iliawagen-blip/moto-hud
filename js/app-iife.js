@@ -3160,13 +3160,18 @@
     return true;
   }
   function feedGpsConverge(fix) {
-    if (!fix || fix.acc == null) return S.gpsConverged;
+    if (!fix) return S.gpsConverged;
+    if (isSim()) {
+      S.gpsConverged = true;
+      return true;
+    }
+    const acc = fix.acc != null && Number.isFinite(fix.acc) ? fix.acc : 50;
     if (!isNetworkFix(fix)) _gpsFixCount++;
     S.gpsFixCount = _gpsFixCount;
     _buf.push({
       lat: fix.lat,
       lon: fix.lon,
-      acc: fix.acc,
+      acc,
       speed: fix.speed,
       ts: fix.ts,
       provider: fix.provider
@@ -3187,6 +3192,7 @@
     "js/gps-converge.js"() {
       init_state();
       init_geo();
+      init_platform();
       init_nav_constants();
       _buf = [];
       _gpsFixCount = 0;
@@ -3283,8 +3289,18 @@
     if (el) {
       el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
     }
-    $2("s-gps").textContent = S.gpsConverged ? "\u2705 GPS \xB1" + Math.round(S.gps?.acc || 0) + "\u043C" : "\u23F3 GPS \u0441\u0445\u043E\u0434\u0438\u0442\u0441\u044F\u2026";
-    $2("s-gps").className = S.gpsConverged ? "chip ok" : "chip";
+    if (S.gpsConverged) {
+      const tag = isSim() ? " \u0441\u0438\u043C" : "";
+      $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + Math.round(S.gps?.acc || 0) + "\u043C";
+      $2("s-gps").className = "chip ok";
+    } else if (S.gps) {
+      const acc = S.gps.acc != null ? Math.round(S.gps.acc) + "\u043C" : "\u2026";
+      $2("s-gps").textContent = "\u23F3 GPS \xB1" + acc;
+      $2("s-gps").className = "chip";
+    } else {
+      $2("s-gps").textContent = "\u23F3 GPS\u2026";
+      $2("s-gps").className = "chip";
+    }
     checkStartReady();
   }
   function checkStartReady() {
@@ -16754,6 +16770,363 @@
     }
   });
 
+  // js/settings-presets.js
+  function setOptDom(id, value) {
+    const el = $2(id);
+    if (!el) return;
+    if (el.type === "checkbox") el.checked = !!value;
+    else el.value = String(value);
+  }
+  function applyPresetToDom(presetId) {
+    const p = PRESETS2[presetId];
+    if (!p) return false;
+    for (const [id, val] of Object.entries(p.values)) setOptDom(id, val);
+    return true;
+  }
+  function getPresetLabel(presetId) {
+    return PRESETS2[presetId]?.label || presetId;
+  }
+  function initSettingsPresets(onApplied) {
+    document.querySelectorAll("[data-preset]").forEach((btn) => {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = "1";
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-preset");
+        const p = PRESETS2[id];
+        if (!p) return;
+        if (!confirm("\u0417\u0430\u043C\u0435\u043D\u0438\u0442\u044C \u0442\u0435\u043A\u0443\u0449\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043F\u0440\u0435\u0441\u0435\u0442\u043E\u043C \xAB" + p.label + "\xBB?")) return;
+        applyPresetToDom(id);
+        try {
+          localStorage.setItem("moto-hud-preset-applied", id);
+        } catch (e) {
+        }
+        logSettingsEvent("preset_apply", { preset: id });
+        if (typeof onApplied === "function") onApplied(id);
+      });
+    });
+  }
+  var PRESETS2;
+  var init_settings_presets = __esm({
+    "js/settings-presets.js"() {
+      init_util();
+      init_settings_telemetry();
+      PRESETS2 = {
+        city: {
+          label: "\u0413\u043E\u0440\u043E\u0434",
+          values: {
+            "opt-voice": true,
+            "opt-cams": true,
+            "opt-back-only": true,
+            "opt-path": false,
+            "opt-crossings": true,
+            "opt-elev-profile": false,
+            "opt-curve-warn": true,
+            "opt-curve-strict": "strict",
+            "opt-limit": 60,
+            "opt-cam-speed-tol": 10,
+            "opt-hud-status-mode": "tap",
+            "opt-hud-finish-mode": "tap"
+          }
+        },
+        highway: {
+          label: "\u0422\u0440\u0430\u0441\u0441\u0430",
+          values: {
+            "opt-voice": true,
+            "opt-cams": true,
+            "opt-back-only": true,
+            "opt-path": true,
+            "opt-crossings": true,
+            "opt-elev-profile": false,
+            "opt-curve-warn": true,
+            "opt-curve-strict": "normal",
+            "opt-limit": 90,
+            "opt-cam-speed-tol": 15,
+            "opt-hud-status-mode": "tap",
+            "opt-hud-finish-mode": "always"
+          }
+        },
+        tour: {
+          label: "\u0422\u0443\u0440",
+          values: {
+            "opt-voice": true,
+            "opt-cams": true,
+            "opt-back-only": false,
+            "opt-path": true,
+            "opt-crossings": true,
+            "opt-elev-profile": true,
+            "opt-curve-warn": true,
+            "opt-curve-strict": "relaxed",
+            "opt-limit": 90,
+            "opt-cam-speed-tol": 20,
+            "opt-hud-status-mode": "tap",
+            "opt-hud-finish-mode": "tap"
+          }
+        }
+      };
+    }
+  });
+
+  // js/sun-mode.js
+  function sunTimes(lat, lon, date = /* @__PURE__ */ new Date()) {
+    const zenith = 90.833;
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
+    const lngHour = lon / 15;
+    function calc(isSunrise) {
+      const t = isSunrise ? dayOfYear + (6 - lngHour) / 24 : dayOfYear + (18 - lngHour) / 24;
+      const M = 0.9856 * t - 3.289;
+      let L5 = M + 1.916 * Math.sin(M * Math.PI / 180) + 0.02 * Math.sin(2 * M * Math.PI / 180) + 282.634;
+      L5 = (L5 % 360 + 360) % 360;
+      let RA = Math.atan(0.91764 * Math.tan(L5 * Math.PI / 180)) * 180 / Math.PI;
+      RA = (RA % 360 + 360) % 360;
+      const Lq = Math.floor(L5 / 90) * 90;
+      const Rq = Math.floor(RA / 90) * 90;
+      RA = (RA + (Lq - Rq)) / 15;
+      const sinDec = 0.39782 * Math.sin(L5 * Math.PI / 180);
+      const cosDec = Math.cos(Math.asin(sinDec));
+      const cosH = (Math.cos(zenith * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
+      if (cosH > 1 || cosH < -1) {
+        return isSunrise ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0) : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 18, 0, 0);
+      }
+      let H = Math.acos(cosH) * 180 / Math.PI / 15;
+      if (!isSunrise) H = 24 - H;
+      const T = H + RA - 0.06571 * t - 6.622;
+      let ut = T - lngHour;
+      ut = (ut % 24 + 24) % 24;
+      const h = Math.floor(ut);
+      const m = Math.floor((ut - h) * 60);
+      const s2 = Math.floor(((ut - h) * 60 - m) * 60);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, s2);
+    }
+    return { sunrise: calc(true), sunset: calc(false) };
+  }
+  function resolveDisplayMode(pref, pos, now = /* @__PURE__ */ new Date()) {
+    if (pref === "day") return "day";
+    if (pref === "night") return "night";
+    const lat = pos?.lat;
+    const lon = pos?.lon;
+    if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
+      const { sunrise, sunset } = sunTimes(lat, lon, now);
+      const dawn = sunrise.getTime() + HYST_MS;
+      const dusk = sunset.getTime() - HYST_MS;
+      const ts = now.getTime();
+      let target = ts >= dawn && ts < dusk ? "day" : "night";
+      if (target !== _lastResolved && ts - _lastSwitchTs < HYST_MS) {
+        return _lastResolved;
+      }
+      if (target !== _lastResolved) {
+        _lastResolved = target;
+        _lastSwitchTs = ts;
+      }
+      return target;
+    }
+    const h = now.getHours() + now.getMinutes() / 60;
+    return h >= 7 && h < 21 ? "day" : "night";
+  }
+  function resetModeHysteresis() {
+    _lastResolved = "night";
+    _lastSwitchTs = 0;
+  }
+  var HYST_MS, _lastResolved, _lastSwitchTs;
+  var init_sun_mode = __esm({
+    "js/sun-mode.js"() {
+      HYST_MS = 20 * 60 * 1e3;
+      _lastResolved = "night";
+      _lastSwitchTs = 0;
+    }
+  });
+
+  // js/theme-manager.js
+  function loadThemePrefs() {
+    try {
+      const raw = localStorage.getItem(THEME_STORAGE_KEY);
+      if (!raw) return { theme: "avionics", modePref: "night" };
+      const o = JSON.parse(raw);
+      return {
+        theme: THEME_IDS.includes(o.theme) ? o.theme : "avionics",
+        modePref: MODE_PREFS.includes(o.modePref) ? o.modePref : "night"
+      };
+    } catch (e) {
+      return { theme: "avionics", modePref: "night" };
+    }
+  }
+  function saveThemePrefs(prefs) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(prefs));
+    } catch (e) {
+    }
+  }
+  function applyTheme(theme, modePref, save = true) {
+    const html = document.documentElement;
+    THEME_IDS.forEach((id) => html.classList.remove("theme-" + id));
+    const tid = THEME_IDS.includes(theme) ? theme : "avionics";
+    html.classList.add("theme-" + tid);
+    const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
+    const mode = resolveDisplayMode(modePref, pos);
+    html.setAttribute("data-mode", mode);
+    if (save) saveThemePrefs({ theme: tid, modePref });
+    applyThemeCss();
+    syncThemeControls(tid, modePref);
+    updateModeButtonLabel(modePref, mode);
+    if ($3("hud")?.classList.contains("on")) renderVisualFrame();
+    syncVintageVfdDomClasses();
+  }
+  function $3(id) {
+    return document.getElementById(id);
+  }
+  function syncThemeControls(theme, modePref) {
+    const sel = $3("opt-theme");
+    if (sel) sel.value = theme;
+    const mDay = $3("opt-mode-day");
+    const mNight = $3("opt-mode-night");
+    const mAuto = $3("opt-mode-auto");
+    if (mDay) mDay.checked = modePref === "day";
+    if (mNight) mNight.checked = modePref === "night";
+    if (mAuto) mAuto.checked = modePref === "auto";
+  }
+  function updateModeButtonLabel(modePref, resolved) {
+    const btn = $3("btn-mode");
+    if (!btn) return;
+    const lbl = btn.querySelector(".cb-lbl");
+    if (!lbl) return;
+    if (modePref === "auto") {
+      lbl.textContent = resolved === "day" ? "\u0410\u0412\u0422\u041E\u2600" : "\u0410\u0412\u0422\u041E\u{1F319}";
+    } else if (modePref === "day") {
+      lbl.textContent = "\u0414\u0415\u041D\u042C";
+    } else {
+      lbl.textContent = "\u041D\u041E\u0427\u042C";
+    }
+  }
+  function tickAutoMode() {
+    const cur = loadThemePrefs();
+    if (cur.modePref !== "auto") return;
+    const now = Date.now();
+    if (now - _lastAutoCheck < 3e4) return;
+    _lastAutoCheck = now;
+    const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
+    const mode = resolveDisplayMode("auto", pos);
+    const html = document.documentElement;
+    if (html.getAttribute("data-mode") !== mode) {
+      html.setAttribute("data-mode", mode);
+      invalidateThemeTokens();
+      applyThemeCss();
+      updateModeButtonLabel("auto", mode);
+      if ($3("hud")?.classList.contains("on")) renderVisualFrame();
+    } else {
+      updateModeButtonLabel("auto", mode);
+    }
+  }
+  function themeLabel(id) {
+    return LABELS[id] || id;
+  }
+  function initThemeManager() {
+    const cur = loadThemePrefs();
+    applyTheme(cur.theme, cur.modePref, false);
+    $3("opt-theme")?.addEventListener("change", (e) => {
+      applyTheme(e.target.value, loadThemePrefs().modePref);
+    });
+    ["opt-mode-day", "opt-mode-night", "opt-mode-auto"].forEach((id) => {
+      $3(id)?.addEventListener("change", (e) => {
+        if (!e.target.checked) return;
+        const mode = id.replace("opt-mode-", "");
+        if (mode !== "auto") resetModeHysteresis();
+        applyTheme(loadThemePrefs().theme, mode);
+      });
+    });
+  }
+  var THEME_STORAGE_KEY, THEME_IDS, MODE_PREFS, LABELS, _lastAutoCheck;
+  var init_theme_manager = __esm({
+    "js/theme-manager.js"() {
+      init_state();
+      init_theme();
+      init_sun_mode();
+      init_render();
+      init_vintage_vfd();
+      THEME_STORAGE_KEY = "moto-hud-theme";
+      THEME_IDS = ["avionics", "hitech", "space", "sport", "chopper", "vintage"];
+      MODE_PREFS = ["day", "night", "auto"];
+      LABELS = {
+        avionics: "\u0410\u0432\u0438\u043E\u043D\u0438\u043A\u0430",
+        hitech: "\u0425\u0430\u0439\u0442\u0435\u043A",
+        space: "\u041A\u043E\u0441\u043C\u043E\u0441",
+        sport: "\u0421\u043F\u043E\u0440\u0442",
+        chopper: "\u0427\u043E\u043F\u043F\u0435\u0440",
+        vintage: "\u0412\u0438\u043D\u0442\u0430\u0436"
+      };
+      _lastAutoCheck = 0;
+    }
+  });
+
+  // js/settings-export.js
+  function collectSettingsBundle() {
+    const read = (key) => {
+      try {
+        return JSON.parse(localStorage.getItem(key) || "null");
+      } catch (e) {
+        return null;
+      }
+    };
+    return {
+      kind: SETTINGS_BUNDLE_KIND,
+      version: SETTINGS_BUNDLE_VERSION,
+      exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      appOpts: read(APP_OPTS_KEY),
+      hudOpts: read(HUD_OPTS_KEY),
+      elevOpts: read(ELEV_OPTS_KEY),
+      curveOpts: read(CURVE_OPTS_KEY),
+      theme: read(THEME_STORAGE_KEY),
+      fuelProxy: localStorage.getItem(FUEL_PROXY_LS_KEY) || ""
+    };
+  }
+  function applySettingsBundle(data) {
+    if (!data || data.kind !== SETTINGS_BUNDLE_KIND) throw new Error("\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u0430\u0439\u043B \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A");
+    const write = (key, val) => {
+      if (val == null) return;
+      localStorage.setItem(key, JSON.stringify(val));
+    };
+    write(APP_OPTS_KEY, data.appOpts);
+    write(HUD_OPTS_KEY, data.hudOpts);
+    write(ELEV_OPTS_KEY, data.elevOpts);
+    write(CURVE_OPTS_KEY, data.curveOpts);
+    write(THEME_STORAGE_KEY, data.theme);
+    if (data.fuelProxy != null && data.fuelProxy !== "") {
+      localStorage.setItem(FUEL_PROXY_LS_KEY, String(data.fuelProxy));
+    } else {
+      localStorage.removeItem(FUEL_PROXY_LS_KEY);
+    }
+  }
+  function clearAllSettings() {
+    [APP_OPTS_KEY, HUD_OPTS_KEY, ELEV_OPTS_KEY, CURVE_OPTS_KEY, THEME_STORAGE_KEY, FUEL_PROXY_LS_KEY].forEach((k) => {
+      try {
+        localStorage.removeItem(k);
+      } catch (e) {
+      }
+    });
+  }
+  function downloadSettingsJson() {
+    const blob = new Blob(
+      [JSON.stringify(collectSettingsBundle(), null, 2)],
+      { type: "application/json;charset=utf-8" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "moto-hud-settings.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  var SETTINGS_BUNDLE_KIND, SETTINGS_BUNDLE_VERSION;
+  var init_settings_export = __esm({
+    "js/settings-export.js"() {
+      init_state();
+      init_theme_manager();
+      init_fuel_config();
+      SETTINGS_BUNDLE_KIND = "moto-hud-settings";
+      SETTINGS_BUNDLE_VERSION = 1;
+    }
+  });
+
   // js/settings-ui.js
   function openSettingsPanel() {
     const setup = $2("setup");
@@ -16850,22 +17223,184 @@
       });
     });
   }
-  function initSettingsUi() {
+  function initSettingsUi(reloadAllOpts, persistFromDom2) {
     applySectionState();
     bindSectionPersistence();
     bindDevModeEasterEgg();
     updateDevSectionVisible();
     bindOptChangeLogging();
+    bindSettingsDataActions(reloadAllOpts);
+    initSettingsPresets(() => {
+      if (typeof persistFromDom2 === "function") persistFromDom2();
+    });
+  }
+  function bindSettingsDataActions(reloadAllOpts) {
+    $2("btn-settings-export")?.addEventListener("click", () => {
+      downloadSettingsJson();
+      logSettingsEvent("settings_export", {});
+    });
+    $2("btn-settings-import")?.addEventListener("click", () => $2("settings-import-file")?.click());
+    $2("settings-import-file")?.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      try {
+        const text = await file.text();
+        applySettingsBundle(JSON.parse(text));
+        if (typeof reloadAllOpts === "function") reloadAllOpts();
+        logSettingsEvent("settings_import", {});
+        alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u044B");
+      } catch (err) {
+        alert("\u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043C\u043F\u043E\u0440\u0442\u0430: " + (err.message || err));
+      }
+    });
+    $2("btn-settings-reset")?.addEventListener("click", () => {
+      if (!confirm("\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u0441\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A \u0437\u0430\u0432\u043E\u0434\u0441\u043A\u0438\u043C?")) return;
+      clearAllSettings();
+      if (typeof reloadAllOpts === "function") reloadAllOpts();
+      logSettingsEvent("settings_reset", {});
+      alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B. \u041F\u0440\u0438 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E\u0441\u0442\u0438 \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443.");
+    });
   }
   var SECTIONS_KEY, DEV_KEY, DEV_TAP_TARGET, DEV_TAPS_NEEDED;
   var init_settings_ui = __esm({
     "js/settings-ui.js"() {
       init_util();
       init_settings_telemetry();
+      init_settings_presets();
+      init_settings_export();
       SECTIONS_KEY = "moto-hud-opts-sections";
       DEV_KEY = "moto-hud-dev-mode";
       DEV_TAP_TARGET = "help-app-version";
       DEV_TAPS_NEEDED = 7;
+    }
+  });
+
+  // js/hud-settings-sheet.js
+  function isStationary() {
+    return (S.dispSpeed || 0) <= STATIONARY_KMH;
+  }
+  function showHudToast(msg) {
+    let el = $2("hud-settings-toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "hud-settings-toast";
+      el.className = "hud-settings-toast";
+      $2("hud")?.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add("on");
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => el.classList.remove("on"), 2800);
+  }
+  function closeSheet() {
+    $2("hud-settings-sheet")?.classList.remove("on");
+  }
+  function syncSheetFromDom() {
+    const voice = $2("hud-opt-voice");
+    const cams = $2("hud-opt-cams");
+    if (voice) voice.checked = !!$2("opt-voice")?.checked;
+    if (cams) cams.checked = !!$2("opt-cams")?.checked;
+    const cur = loadThemePrefs();
+    document.querySelectorAll(".hud-theme-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.theme === cur.theme);
+    });
+  }
+  function persistFromDom(syncOptionsFromDom2) {
+    if (typeof syncOptionsFromDom2 === "function") syncOptionsFromDom2();
+    saveAppOptsToStorage();
+    saveHudOptsToStorage();
+    saveElevOptsToStorage();
+    saveCurveOptsToStorage();
+    applyHudChrome();
+  }
+  function openSheet() {
+    const sheet = $2("hud-settings-sheet");
+    if (!sheet) return;
+    syncSheetFromDom();
+    sheet.classList.add("on");
+    logSettingsEvent("hud_sheet_open", {});
+  }
+  function handleHudGearClick(syncOptionsFromDom2) {
+    if (!isStationary()) {
+      showHudToast("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u2014 \u043D\u0430 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0435");
+      logSettingsEvent("hud_sheet_blocked", { speed: Math.round(S.dispSpeed || 0) });
+      return;
+    }
+    openSheet();
+    $2("hud-settings-sheet")._sync = syncOptionsFromDom2;
+  }
+  function bindHudThemeRow() {
+    const row = $2("hud-theme-row");
+    if (!row || row.dataset.bound) return;
+    row.dataset.bound = "1";
+    const cur = loadThemePrefs();
+    row.innerHTML = THEME_IDS.map(
+      (id) => '<button type="button" class="secondary hud-theme-btn' + (id === cur.theme ? " active" : "") + '" data-theme="' + id + '">' + themeLabel(id) + "</button>"
+    ).join("");
+    row.querySelectorAll(".hud-theme-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const theme = btn.getAttribute("data-theme");
+        if (!THEME_IDS.includes(theme)) return;
+        applyTheme(theme, loadThemePrefs().modePref);
+        row.querySelectorAll(".hud-theme-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        logSettingsEvent("hud_sheet_change", { optId: "opt-theme", value: theme });
+      });
+    });
+  }
+  function initHudSettingsSheet(syncOptionsFromDom2) {
+    const sheet = $2("hud-settings-sheet");
+    if (!sheet || sheet.dataset.bound) return;
+    sheet.dataset.bound = "1";
+    bindHudThemeRow();
+    $2("hud-settings-backdrop")?.addEventListener("click", closeSheet);
+    $2("hud-settings-close")?.addEventListener("click", closeSheet);
+    $2("hud-opt-voice")?.addEventListener("change", (e) => {
+      const main = $2("opt-voice");
+      if (main) main.checked = e.target.checked;
+      S.voice = e.target.checked;
+      saveAppOptsToStorage();
+      logSettingsEvent("hud_sheet_change", { optId: "opt-voice", value: S.voice });
+    });
+    $2("hud-opt-cams")?.addEventListener("change", (e) => {
+      const main = $2("opt-cams");
+      if (main) main.checked = e.target.checked;
+      S.cams = e.target.checked;
+      saveAppOptsToStorage();
+      logSettingsEvent("hud_sheet_change", { optId: "opt-cams", value: S.cams });
+    });
+    sheet.querySelectorAll(".hud-preset-btn[data-preset]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-preset");
+        if (!confirm("\u041F\u0440\u0435\u0441\u0435\u0442 \xAB" + getPresetLabel(id) + "\xBB?")) return;
+        applyPresetToDom(id);
+        persistFromDom(syncOptionsFromDom2);
+        syncSheetFromDom();
+        logSettingsEvent("hud_sheet_preset", { preset: id });
+      });
+    });
+    $2("hud-settings-full")?.addEventListener("click", () => {
+      closeSheet();
+      openSettingsPanel();
+    });
+  }
+  var STATIONARY_KMH, _toastTimer;
+  var init_hud_settings_sheet = __esm({
+    "js/hud-settings-sheet.js"() {
+      init_state();
+      init_util();
+      init_settings_ui();
+      init_settings_presets();
+      init_app_opts();
+      init_hud_opts();
+      init_elevation();
+      init_curve_speed();
+      init_hud_chrome();
+      init_settings_telemetry();
+      init_theme_manager();
+      STATIONARY_KMH = 15;
+      _toastTimer = null;
     }
   });
 
@@ -17504,7 +18039,8 @@
       cycleFuelAssist();
     });
     $2("btn-gear").addEventListener("click", () => {
-      openSettingsPanel();
+      if ($2("hud")?.classList.contains("on")) handleHudGearClick(syncOptionsFromDom);
+      else openSettingsPanel();
     });
     $2("qf-close").addEventListener("click", () => $2("quickFinish").classList.remove("on"));
     $2("btn-fs").addEventListener("click", toggleFullscreen);
@@ -17614,6 +18150,7 @@
       init_fuel();
       init_fuel_config();
       init_settings_ui();
+      init_hud_settings_sheet();
       init_tts_health();
       init_heading();
       init_voice();
@@ -17676,17 +18213,29 @@
     renderFavs();
     renderFavsEdit();
   }
+  function openFavsManageModal() {
+    renderFavsEdit();
+    $2("favsManageModal")?.classList.add("on");
+  }
+  function closeFavsManageModal() {
+    $2("favsManageModal")?.classList.remove("on");
+  }
   function renderFavs() {
     const box = $2("favs-list");
     if (!box) return;
     const list = loadFavs();
     if (!list.length) {
-      box.innerHTML = '<div class="favs-empty">\u041F\u0443\u0441\u0442\u043E. \u0414\u043E\u0431\u0430\u0432\u044C\u0442\u0435 \u043C\u0435\u0441\u0442\u0430 \u0432 \xAB\u2B50 \u0418\u0437\u0431\u0440\u0430\u043D\u043D\u043E\u0435 \u2014 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\xBB \u043D\u0438\u0436\u0435.</div>';
+      box.innerHTML = '<div class="favs-empty">\u041F\u0443\u0441\u0442\u043E. \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435\xBB \u0447\u0442\u043E\u0431\u044B \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043C\u0435\u0441\u0442\u0430.</div>';
       return;
     }
-    box.innerHTML = list.map(
+    const shown = list.slice(0, FAV_QUICK_MAX);
+    let html = shown.map(
       (f2) => '<div class="fav-item"><button type="button" class="fav-apply" data-id="' + f2.id + '">' + favNameHtml(f2) + "</button></div>"
     ).join("");
+    if (list.length > FAV_QUICK_MAX) {
+      html += '<div class="favs-more hint">\u0435\u0449\u0451 ' + (list.length - FAV_QUICK_MAX) + " \u0432 \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0438</div>";
+    }
+    box.innerHTML = html;
     box.querySelectorAll(".fav-apply").forEach((b) => {
       b.addEventListener("click", () => applyFav(b.getAttribute("data-id")));
     });
@@ -17784,6 +18333,9 @@
   }
   function initFavorites() {
     refreshFavLists();
+    $2("btn-favs-manage")?.addEventListener("click", () => openFavsManageModal());
+    $2("favs-manage-close")?.addEventListener("click", () => closeFavsManageModal());
+    $2("favs-manage-backdrop")?.addEventListener("click", () => closeFavsManageModal());
     $2("fav-modal-cancel")?.addEventListener("click", closeFavModal);
     $2("fav-modal-ok")?.addEventListener("click", () => {
       const name = $2("fav-name-input").value.trim() || "\u041C\u0435\u0441\u0442\u043E";
@@ -17882,7 +18434,7 @@
       });
     }
   }
-  var FAV_EMOJIS, LEGACY_FAV_KEYS, favModalState;
+  var FAV_EMOJIS, LEGACY_FAV_KEYS, FAV_QUICK_MAX, favModalState;
   var init_favorites = __esm({
     "js/favorites.js"() {
       init_state();
@@ -17893,6 +18445,7 @@
       init_hud();
       FAV_EMOJIS = ["\u{1F3E0}", "\u{1F3E2}", "\u26FD", "\u{1F354}", "\u{1F3CD}", "\u{1F3D4}", "\u{1F3D6}", "\u{1F6E0}", "\u{1F17F}", "\u2B50", "\u2764", "\u{1F4CD}"];
       LEGACY_FAV_KEYS = ["moto-hud-favs", "moto-hud-places", "mh-favs"];
+      FAV_QUICK_MAX = 5;
       favModalState = { point: null, emoji: "\u2B50" };
     }
   });
@@ -18024,187 +18577,6 @@
       init_platform();
       init_telemetry();
       _nativeAwake = false;
-    }
-  });
-
-  // js/sun-mode.js
-  function sunTimes(lat, lon, date = /* @__PURE__ */ new Date()) {
-    const zenith = 90.833;
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
-    const lngHour = lon / 15;
-    function calc(isSunrise) {
-      const t = isSunrise ? dayOfYear + (6 - lngHour) / 24 : dayOfYear + (18 - lngHour) / 24;
-      const M = 0.9856 * t - 3.289;
-      let L5 = M + 1.916 * Math.sin(M * Math.PI / 180) + 0.02 * Math.sin(2 * M * Math.PI / 180) + 282.634;
-      L5 = (L5 % 360 + 360) % 360;
-      let RA = Math.atan(0.91764 * Math.tan(L5 * Math.PI / 180)) * 180 / Math.PI;
-      RA = (RA % 360 + 360) % 360;
-      const Lq = Math.floor(L5 / 90) * 90;
-      const Rq = Math.floor(RA / 90) * 90;
-      RA = (RA + (Lq - Rq)) / 15;
-      const sinDec = 0.39782 * Math.sin(L5 * Math.PI / 180);
-      const cosDec = Math.cos(Math.asin(sinDec));
-      const cosH = (Math.cos(zenith * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
-      if (cosH > 1 || cosH < -1) {
-        return isSunrise ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0) : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 18, 0, 0);
-      }
-      let H = Math.acos(cosH) * 180 / Math.PI / 15;
-      if (!isSunrise) H = 24 - H;
-      const T = H + RA - 0.06571 * t - 6.622;
-      let ut = T - lngHour;
-      ut = (ut % 24 + 24) % 24;
-      const h = Math.floor(ut);
-      const m = Math.floor((ut - h) * 60);
-      const s2 = Math.floor(((ut - h) * 60 - m) * 60);
-      return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, s2);
-    }
-    return { sunrise: calc(true), sunset: calc(false) };
-  }
-  function resolveDisplayMode(pref, pos, now = /* @__PURE__ */ new Date()) {
-    if (pref === "day") return "day";
-    if (pref === "night") return "night";
-    const lat = pos?.lat;
-    const lon = pos?.lon;
-    if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
-      const { sunrise, sunset } = sunTimes(lat, lon, now);
-      const dawn = sunrise.getTime() + HYST_MS;
-      const dusk = sunset.getTime() - HYST_MS;
-      const ts = now.getTime();
-      let target = ts >= dawn && ts < dusk ? "day" : "night";
-      if (target !== _lastResolved && ts - _lastSwitchTs < HYST_MS) {
-        return _lastResolved;
-      }
-      if (target !== _lastResolved) {
-        _lastResolved = target;
-        _lastSwitchTs = ts;
-      }
-      return target;
-    }
-    const h = now.getHours() + now.getMinutes() / 60;
-    return h >= 7 && h < 21 ? "day" : "night";
-  }
-  function resetModeHysteresis() {
-    _lastResolved = "night";
-    _lastSwitchTs = 0;
-  }
-  var HYST_MS, _lastResolved, _lastSwitchTs;
-  var init_sun_mode = __esm({
-    "js/sun-mode.js"() {
-      HYST_MS = 20 * 60 * 1e3;
-      _lastResolved = "night";
-      _lastSwitchTs = 0;
-    }
-  });
-
-  // js/theme-manager.js
-  function loadThemePrefs() {
-    try {
-      const raw = localStorage.getItem(THEME_STORAGE_KEY);
-      if (!raw) return { theme: "avionics", modePref: "night" };
-      const o = JSON.parse(raw);
-      return {
-        theme: THEME_IDS.includes(o.theme) ? o.theme : "avionics",
-        modePref: MODE_PREFS.includes(o.modePref) ? o.modePref : "night"
-      };
-    } catch (e) {
-      return { theme: "avionics", modePref: "night" };
-    }
-  }
-  function saveThemePrefs(prefs) {
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(prefs));
-    } catch (e) {
-    }
-  }
-  function applyTheme(theme, modePref, save = true) {
-    const html = document.documentElement;
-    THEME_IDS.forEach((id) => html.classList.remove("theme-" + id));
-    const tid = THEME_IDS.includes(theme) ? theme : "avionics";
-    html.classList.add("theme-" + tid);
-    const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
-    const mode = resolveDisplayMode(modePref, pos);
-    html.setAttribute("data-mode", mode);
-    if (save) saveThemePrefs({ theme: tid, modePref });
-    applyThemeCss();
-    syncThemeControls(tid, modePref);
-    updateModeButtonLabel(modePref, mode);
-    if ($3("hud")?.classList.contains("on")) renderVisualFrame();
-    syncVintageVfdDomClasses();
-  }
-  function $3(id) {
-    return document.getElementById(id);
-  }
-  function syncThemeControls(theme, modePref) {
-    const sel = $3("opt-theme");
-    if (sel) sel.value = theme;
-    const mDay = $3("opt-mode-day");
-    const mNight = $3("opt-mode-night");
-    const mAuto = $3("opt-mode-auto");
-    if (mDay) mDay.checked = modePref === "day";
-    if (mNight) mNight.checked = modePref === "night";
-    if (mAuto) mAuto.checked = modePref === "auto";
-  }
-  function updateModeButtonLabel(modePref, resolved) {
-    const btn = $3("btn-mode");
-    if (!btn) return;
-    const lbl = btn.querySelector(".cb-lbl");
-    if (!lbl) return;
-    if (modePref === "auto") {
-      lbl.textContent = resolved === "day" ? "\u0410\u0412\u0422\u041E\u2600" : "\u0410\u0412\u0422\u041E\u{1F319}";
-    } else if (modePref === "day") {
-      lbl.textContent = "\u0414\u0415\u041D\u042C";
-    } else {
-      lbl.textContent = "\u041D\u041E\u0427\u042C";
-    }
-  }
-  function tickAutoMode() {
-    const cur = loadThemePrefs();
-    if (cur.modePref !== "auto") return;
-    const now = Date.now();
-    if (now - _lastAutoCheck < 3e4) return;
-    _lastAutoCheck = now;
-    const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
-    const mode = resolveDisplayMode("auto", pos);
-    const html = document.documentElement;
-    if (html.getAttribute("data-mode") !== mode) {
-      html.setAttribute("data-mode", mode);
-      invalidateThemeTokens();
-      applyThemeCss();
-      updateModeButtonLabel("auto", mode);
-      if ($3("hud")?.classList.contains("on")) renderVisualFrame();
-    } else {
-      updateModeButtonLabel("auto", mode);
-    }
-  }
-  function initThemeManager() {
-    const cur = loadThemePrefs();
-    applyTheme(cur.theme, cur.modePref, false);
-    $3("opt-theme")?.addEventListener("change", (e) => {
-      applyTheme(e.target.value, loadThemePrefs().modePref);
-    });
-    ["opt-mode-day", "opt-mode-night", "opt-mode-auto"].forEach((id) => {
-      $3(id)?.addEventListener("change", (e) => {
-        if (!e.target.checked) return;
-        const mode = id.replace("opt-mode-", "");
-        if (mode !== "auto") resetModeHysteresis();
-        applyTheme(loadThemePrefs().theme, mode);
-      });
-    });
-  }
-  var THEME_STORAGE_KEY, THEME_IDS, MODE_PREFS, _lastAutoCheck;
-  var init_theme_manager = __esm({
-    "js/theme-manager.js"() {
-      init_state();
-      init_theme();
-      init_sun_mode();
-      init_render();
-      init_vintage_vfd();
-      THEME_STORAGE_KEY = "moto-hud-theme";
-      THEME_IDS = ["avionics", "hitech", "space", "sport", "chopper", "vintage"];
-      MODE_PREFS = ["day", "night", "auto"];
-      _lastAutoCheck = 0;
     }
   });
 
@@ -19984,6 +20356,7 @@ ${trkpts}
     } catch (e) {
       console.warn("FGS GPS:", e);
     }
+    if (window.__SIM__?.onNavigationStart) window.__SIM__.onNavigationStart();
     if (!window.__SIM__) {
       try {
         document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
@@ -19996,6 +20369,7 @@ ${trkpts}
     startVisualLoop();
   }
   function stopHud() {
+    if (window.__SIM__?.onNavigationStop) window.__SIM__.onNavigationStop();
     telemetry_default.stop().catch(() => {
     });
     telemetry_default.updateMarkButtonVisibility();
@@ -20474,7 +20848,7 @@ ${trkpts}
         await refreshSessionsList();
       });
     }
-    document.getElementById("drawer-telemetry")?.addEventListener("toggle", (e) => {
+    document.getElementById("opts-telemetry-section")?.addEventListener("toggle", (e) => {
       if (e.target.open) refreshSessionsList();
     });
     refreshSessionsList();
@@ -20648,6 +21022,7 @@ ${trkpts}
   init_trip_ui();
   init_hud_chrome();
   init_settings_ui();
+  init_hud_settings_sheet();
   applyThemeCss();
   initLegalConsent();
   initYandexImportUi();
@@ -20658,7 +21033,26 @@ ${trkpts}
   initTrackRecorderUi();
   initTripPlannerUi();
   initHudChrome();
-  initSettingsUi();
+  function persistSettingsFromDom() {
+    syncOptionsFromDom();
+    saveAppOptsToStorage();
+    saveHudOptsToStorage();
+    saveElevOptsToStorage();
+    saveCurveOptsToStorage();
+    updateCamStatusUI();
+  }
+  function reloadAllSettingsFromStorage() {
+    const prefs = loadThemePrefs();
+    applyTheme(prefs.theme, prefs.modePref, false);
+    loadElevOptsFromStorage();
+    loadCurveOptsFromStorage();
+    loadHudOptsFromStorage();
+    loadAppOptsFromStorage();
+    syncOptionsFromDom();
+    updateCamStatusUI();
+  }
+  initSettingsUi(reloadAllSettingsFromStorage, persistSettingsFromDom);
+  initHudSettingsSheet(syncOptionsFromDom);
   initFuelReportUi();
   initThemeManager();
   initVintageVfd();

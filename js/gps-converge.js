@@ -4,6 +4,7 @@
  */
 import { S } from './state.js';
 import { haversine } from './geo.js';
+import { isSim } from './platform.js';
 import {
   GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M,
   GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M
@@ -56,12 +57,17 @@ function checkBuffer(minFixes, accLimit){
  * @param {object} fix — lat, lon, acc, speed, ts, provider?
  */
 export function feedGpsConverge(fix){
-  if(!fix || fix.acc == null) return S.gpsConverged;
+  if(!fix) return S.gpsConverged;
+  if(isSim()){
+    S.gpsConverged = true;
+    return true;
+  }
+  const acc = fix.acc != null && Number.isFinite(fix.acc) ? fix.acc : 50;
   if(!isNetworkFix(fix)) _gpsFixCount++;
   S.gpsFixCount = _gpsFixCount;
 
   _buf.push({
-    lat: fix.lat, lon: fix.lon, acc: fix.acc,
+    lat: fix.lat, lon: fix.lon, acc,
     speed: fix.speed, ts: fix.ts, provider: fix.provider
   });
   while(_buf.length > 8) _buf.shift();
