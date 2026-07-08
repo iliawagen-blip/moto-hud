@@ -28,8 +28,13 @@ import {
   listBikeProfiles, getActiveBikeId, setActiveBikeId, getActiveBikeProfile,
   getBikeProfile, saveCustomBikeProfile, profileSnapshot, formatBikeRangeLine
 } from './bike-profile.js';
-import { assessSegmentFuel, assessDayFuel, formatFuelHint } from './trip-fuel.js';
+import { assessSegmentFuel, assessDayFuel, formatFuelHint, computeSegmentFuelPlan, computeTripFuelPlans, formatFuelPlanHtml } from './trip-fuel.js';
 import { initSegmentEditor, openSegmentEditor } from './trip-segment-editor.js';
+import { initSegmentMapEditor, openSegmentMapEditor } from './trip-segment-map.js';
+import {
+  findTripConflict, applyConflictChoice,
+  initTripConflictModal, openTripConflictUi
+} from './trip-import-conflict.js';
 
 let _busy = false;
 
@@ -196,7 +201,7 @@ function renderActiveTrip(){
         <strong>День ${day.n}${isToday ? ' · сегодня' : ''}</strong>
         <span class="hint">${escapeHtml(dateLbl)}${day.badge ? ' · ' + escapeHtml(day.badge) : ''}</span>
       </div>
-      ${dayFuel ? `<p class="trip-day-fuel fuel-${dayFuel.level}">⛽ ~${dayFuel.totalLiters} л · ${dayFuel.totalKm} км за день</p>` : ''}
+      ${dayFuel ? `<p class="trip-day-fuel fuel-${dayFuel.level}">⛽ ~${dayFuel.totalLiters} л · ${dayFuel.totalKm} км${dayFuel.stopCount ? ' · ' + dayFuel.stopCount + ' запр.' : ''}</p>` : ''}
       ${v?.schedule ? `<p class="trip-schedule">${escapeHtml(v.schedule)}</p>` : ''}
       ${v?.summary ? `<p class="trip-summary">${escapeHtml(v.summary)}</p>` : ''}
       ${v?.stats ? `<p class="trip-stats">${escapeHtml(v.stats)}</p>` : ''}
@@ -214,12 +219,17 @@ function renderActiveTrip(){
             <span class="trip-seg-label">${done ? '✓ ' : ''}${escapeHtml(seg.label)}</span>
             <span class="trip-seg-audit">${escapeHtml(formatSegmentAudit(seg))}</span>
             ${fuel ? `<span class="trip-seg-fuel fuel-${fuel.level}">${escapeHtml(formatFuelHint(fuel))}</span>` : ''}
+            ${seg.fuelPlan ? `<div class="trip-fuel-plan">${formatFuelPlanHtml(seg.fuelPlan)}</div>` : ''}
             <div class="btnrow c3 trip-seg-actions">
               <button type="button" class="secondary trip-osrm" data-day="${day.n}" data-seg="${i}">🗺 OSRM</button>
               <button type="button" class="secondary trip-yandex" data-day="${day.n}" data-seg="${i}">🧭 Яндекс</button>
               <button type="button" class="secondary trip-gpx" data-day="${day.n}" data-seg="${i}">GPX</button>
             </div>
-            <button type="button" class="secondary trip-edit-btn" data-day="${day.n}" data-seg="${i}">✎ Точки</button>
+            <div class="btnrow c3 trip-seg-edit-row">
+              <button type="button" class="secondary trip-edit-btn" data-day="${day.n}" data-seg="${i}">✎ Текст</button>
+              <button type="button" class="secondary trip-map-btn" data-day="${day.n}" data-seg="${i}">📍 Карта</button>
+              ${bikeProf ? `<button type="button" class="secondary trip-fuel-btn" data-day="${day.n}" data-seg="${i}">⛽ Заправки</button>` : ''}
+            </div>
             <button type="button" class="trip-done-btn" data-day="${day.n}" data-seg="${i}">${done ? '↩ Снять «готово»' : '✓ Отметить готово'}</button>
           </div>`;
         }).join('')}
@@ -247,6 +257,12 @@ function renderActiveTrip(){
   wrap.querySelectorAll('.trip-edit-btn').forEach(btn => {
     btn.addEventListener('click', () => onEditSegment(+btn.dataset.day, +btn.dataset.seg));
   });
+  wrap.querySelectorAll('.trip-map-btn').forEach(btn => {
+    btn.addEventListener('click', () => onMapEditSegment(+btn.dataset.day, +btn.dataset.seg));
+  });
+  wrap.querySelectorAll('.trip-fuel-btn').forEach(btn => {
+    btn.addEventListener('click', () => onPlanSegmentFuel(+btn.dataset.day, +btn.dataset.seg));
+  });
 
   updateTodayButton();
   if(todayN != null){
@@ -261,14 +277,32 @@ async function refreshTripList(){
   renderTripList(trips);
 }
 
+async function ingestImportedTrip(incoming){
+  const existing = await loadTrip(incoming.id);
+  const conflict = findTripConflict(existing, incoming);
+  if(conflict){
+    const choice = await new Promise(resolve => {
+      openTripConflictUi(conflict, resolve);
+    });
+    if(!choice) return null;
+    const resolved = applyConflictChoice(choice, existing, incoming);
+    attachBikeToTrip(resolved);
+    await persistTrip(resolved, { bump: choice === 'imported' || choice === 'copy' });
+    return resolved;
+  }
+  attachBikeToTrip(incoming);
+  await persistTrip(incoming, { bump: false });
+  return incoming;
+}
+
 async function importTripFromFile(file){
   const text = await file.text();
   const trip = parseTripJson(text);
-  attachBikeToTrip(trip);
-  await persistTrip(trip, { bump: false });
-  await openTrip(trip.id);
+  const saved = await ingestImportedTrip(trip);
+  if(!saved) return;
+  await openTrip(saved.id);
   $('drawer-trip')?.setAttribute('open', '');
-  setStatus('✓ Импорт: «' + trip.title + '»');
+  setStatus('✓ Импорт: «' + saved.title + '»');
 }
 
 async function shareTripLink(){
@@ -292,10 +326,10 @@ async function handleTripDeepLink(){
     try{
       setStatus('Загрузка плана из ссылки…');
       const trip = await decodeTripPack(pack);
-      attachBikeToTrip(trip);
-      await persistTrip(trip, { bump: false });
-      await openTrip(trip.id, { syncUrl: true });
-      setStatus('✓ План из ссылки: «' + trip.title + '»');
+      const saved = await ingestImportedTrip(trip);
+      if(!saved) return;
+      await openTrip(saved.id, { syncUrl: true });
+      setStatus('✓ План из ссылки: «' + saved.title + '»');
       return;
     }catch(e){
       setStatus('❌ Ссылка с планом: ' + (e.message || e), true);
@@ -344,6 +378,81 @@ function onEditSegment(dayN, segIdx){
       setStatus('✓ Сегмент сохранён');
     }
   });
+}
+
+function onMapEditSegment(dayN, segIdx){
+  const trip = S.activeTrip;
+  if(!trip) return;
+  const day = trip.days.find(d => d.n === dayN);
+  const vid = variantForTrip(trip.id);
+  const v = getDayVariant(day, vid);
+  const seg = v?.segments?.[segIdx];
+  if(!seg) return;
+  openSegmentMapEditor({
+    trip,
+    dayN,
+    segIdx,
+    variantId: vid,
+    segment: seg,
+    onSaved: async t => {
+      await persistTrip(t, { bump: true });
+      renderActiveTrip();
+      setStatus('✓ Точки на карте сохранены');
+    }
+  });
+}
+
+async function onPlanSegmentFuel(dayN, segIdx){
+  if(_busy) return;
+  const trip = S.activeTrip;
+  if(!trip) return;
+  const profile = getTripBikeProfile(trip);
+  if(!profile){
+    setStatus('❌ Выберите профиль мото', true);
+    return;
+  }
+  const day = trip.days.find(d => d.n === dayN);
+  const v = getDayVariant(day, variantForTrip(trip.id));
+  const seg = v?.segments?.[segIdx];
+  if(!seg) return;
+  _busy = true;
+  setStatus('⛽ Ищем АЗС по маршруту…');
+  try{
+    const plan = await computeSegmentFuelPlan(seg, profile, { trip });
+    await persistTrip(trip, { bump: true });
+    renderActiveTrip();
+    const n = plan?.stops?.length || 0;
+    const w = plan?.warnings?.length ? ' · ⚠ ' + plan.warnings[0] : '';
+    setStatus(n ? `✓ ${n} заправок на «${seg.label}»${w}` : `✓ Заправки не нужны${w}`);
+  }catch(e){
+    setStatus('❌ ' + (e.message || e), true);
+  }finally{
+    _busy = false;
+  }
+}
+
+async function onPlanAllFuel(){
+  if(_busy) return;
+  const trip = S.activeTrip;
+  const profile = getTripBikeProfile(trip);
+  if(!trip || !profile){
+    setStatus('❌ Нужен план и профиль мото', true);
+    return;
+  }
+  _busy = true;
+  setStatus('⛽ Расчёт заправок по всему плану…');
+  try{
+    const n = await computeTripFuelPlans(trip, profile, (dayN, label) => {
+      setStatus(`⛽ День ${dayN}: ${label || '…'}`);
+    });
+    await persistTrip(trip, { bump: true });
+    renderActiveTrip();
+    setStatus(`✓ Заправки рассчитаны (${n} сегм.)`);
+  }catch(e){
+    setStatus('❌ ' + (e.message || e), true);
+  }finally{
+    _busy = false;
+  }
 }
 
 async function onApplySegment(dayN, segIdx, mode){
@@ -502,6 +611,8 @@ function exportTripText(){
 
 export function initTripPlannerUi(){
   initSegmentEditor();
+  initSegmentMapEditor();
+  initTripConflictModal();
   renderBikePanel();
 
   $('trip-bike-select')?.addEventListener('change', async e => {
@@ -533,6 +644,7 @@ export function initTripPlannerUi(){
   $('btn-trip-demo')?.addEventListener('click', loadDemo);
   $('btn-trip-new')?.addEventListener('click', () => showNewTripModal(true));
   $('btn-trip-today')?.addEventListener('click', () => applyToday().catch(e => setStatus('❌ ' + (e.message || e), true)));
+  $('btn-trip-fuel-all')?.addEventListener('click', () => onPlanAllFuel());
   $('trip-new-cancel')?.addEventListener('click', () => showNewTripModal(false));
   $('trip-new-save')?.addEventListener('click', () => createTripFromForm().catch(e => setTripNewError(e.message || String(e))));
   $('btn-trip-export')?.addEventListener('click', exportTripText);

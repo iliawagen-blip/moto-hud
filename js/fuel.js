@@ -59,11 +59,8 @@ function routeBBox(bufDeg){
   return [p.lat - buf, p.lon - buf, p.lat + buf, p.lon + buf];
 }
 
-/** АЗС из OpenStreetMap (Overpass): координаты + бренд. Наличия здесь нет. */
-async function loadFromOverpass(){
-  const bb = routeBBox();
-  if(!bb) return [];
-  const [minLat, minLon, maxLat, maxLon] = bb;
+/** АЗС из OpenStreetMap (Overpass): координаты + бренд + теги топлива. */
+async function loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon){
   const q = `[out:json][timeout:25];
     (node["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon});
      way["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon}););
@@ -82,9 +79,23 @@ async function loadFromOverpass(){
       lat, lon,
       brand: t.brand || t.name || t.operator || 'АЗС',
       name: t.name || t.brand || 'АЗС',
-      status: 'unknown'
+      status: 'unknown',
+      tags: t
     };
   }).filter(Boolean);
+}
+
+/** АЗС в bbox (для планировщика поездок, без S.route). */
+export async function fetchFuelStationsForBBox(minLat, minLon, maxLat, maxLon){
+  return loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon);
+}
+
+/** АЗС из OpenStreetMap (Overpass): координаты + бренд. Наличия здесь нет. */
+async function loadFromOverpass(){
+  const bb = routeBBox();
+  if(!bb) return [];
+  const [minLat, minLon, maxLat, maxLon] = bb;
+  return loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon);
 }
 
 /** Кэш ответа ГдеБЕНЗ (бережно к API, 5 мин). */
