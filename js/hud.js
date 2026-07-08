@@ -28,6 +28,7 @@ import { clearVoiceQueue } from './voice.js';
 import { getHeadingHealth } from './heading.js';
 import { tickAutoMode } from './theme-manager.js';
 import { applyFinishInfoVisibility } from './hud-opts.js';
+import { clearHudChromeReveal, applyHudChrome } from './hud-chrome.js';
 import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide } from './offroute.js';
 import telemetry from './telemetry.js';
 import { tickNavMap, resetViewMode } from './view-mode.js';
@@ -363,7 +364,8 @@ function checkCurveSpeedWarn(kmh){
 function r2(n){ return n != null && Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 
 export async function startHud(){
-  applyFinishInfoVisibility();
+  clearHudChromeReveal();
+  applyHudChrome();
   if(!S.route){
     alert('Сначала постройте маршрут');
     return;
@@ -416,6 +418,7 @@ export function stopHud(){
   $('fuelPanel')?.classList.remove('on');
   $('btn-fuel')?.classList.remove('active');
   $('hud').classList.remove('on');
+  clearHudChromeReveal();
   $('setup').style.display = 'block';
   renderFavs();
   const goBar = $('go-bar');

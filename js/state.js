@@ -66,6 +66,10 @@ export const S = {
   showFinishDist: true,
   showFinishEta: true,
   showFinishTime: true,
+  /** always | off | tap — строка GPS/CAM/T+/часы */
+  hudStatusMode: 'tap',
+  /** always | off | tap — нижняя строка осталось/ETA */
+  hudFinishMode: 'tap',
 
   /** Сколько ближайших АЗС показывать в планировщике (1–10) */
   fuelPlannerCount: DEFAULT_FUEL_PLANNER_COUNT,

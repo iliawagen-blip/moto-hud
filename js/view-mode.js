@@ -4,6 +4,7 @@
  */
 import { S } from './state.js';
 import { $ } from './util.js';
+import { onHudTap } from './hud-chrome.js';
 import { syncNavMap, pauseNavMap, tickNavMap, destroyNavMap } from './nav-map.js';
 
 const DBL_TAP_MS = 400;
@@ -56,6 +57,7 @@ function onTouchEnd(e){
     return;
   }
   _lastTap = { t: now, x: t.clientX, y: t.clientY };
+  onHudTap();
 }
 
 export function initViewMode(){
