@@ -1,0 +1,6 @@
+name = "moto-hud-gdebenz-proxy"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# После deploy: скопируйте URL в moto-hud → ⚙ Опции → URL прокси топлива
+# npx wrangler deploy

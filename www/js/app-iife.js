@@ -4346,6 +4346,148 @@
     }
   });
 
+  // js/fuel-config.js
+  function getFuelProxyBase() {
+    try {
+      const q = new URLSearchParams(location.search).get("fuel_proxy");
+      if (q === "0" || q === "off") return "";
+      if (q && /^https?:\/\//i.test(q)) return q.replace(/\/$/, "");
+    } catch (e) {
+    }
+    try {
+      const stored = localStorage.getItem(FUEL_PROXY_LS_KEY);
+      if (stored === "0" || stored === "") return "";
+      if (stored && /^https?:\/\//i.test(stored)) return stored.replace(/\/$/, "");
+    } catch (e) {
+    }
+    if (typeof location !== "undefined" && location.protocol.startsWith("http")) {
+      return location.origin + "/api/fuel";
+    }
+    return "";
+  }
+  function setFuelProxyBase(url) {
+    const v = (url || "").trim().replace(/\/$/, "");
+    if (!v) localStorage.removeItem(FUEL_PROXY_LS_KEY);
+    else localStorage.setItem(FUEL_PROXY_LS_KEY, v);
+  }
+  function fuelProxyNearbyUrl(base, lat, lon, radiusKm) {
+    const root = (base || "").replace(/\/$/, "");
+    const path = root.endsWith("/nearby") ? root : root + "/nearby";
+    const u2 = new URL(path, root.startsWith("http") ? void 0 : location.origin);
+    u2.searchParams.set("lat", String(lat));
+    u2.searchParams.set("lon", String(lon));
+    u2.searchParams.set("radius_km", String(radiusKm));
+    return u2.href;
+  }
+  var FUEL_PROXY_LS_KEY;
+  var init_fuel_config = __esm({
+    "js/fuel-config.js"() {
+      FUEL_PROXY_LS_KEY = "moto-hud-fuel-proxy-url";
+    }
+  });
+
+  // js/fuel-crowd.js
+  function loadCrowdReports() {
+    try {
+      const raw = localStorage.getItem(FUEL_CROWD_KEY);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      const now = Date.now();
+      return arr.filter((r) => r && r.ts && now - r.ts < CROWD_TTL_MS && FUEL_STATUSES.includes(r.status));
+    } catch (e) {
+      return [];
+    }
+  }
+  function writeCrowdReports(list) {
+    const trimmed = list.sort((a, b) => b.ts - a.ts).slice(0, CROWD_MAX);
+    localStorage.setItem(FUEL_CROWD_KEY, JSON.stringify(trimmed));
+    return trimmed;
+  }
+  function saveCrowdReport(status, hint) {
+    if (!FUEL_STATUSES.includes(status)) return null;
+    const p = hint || curPos();
+    if (!p?.lat || !p?.lon) return null;
+    const rec = {
+      lat: p.lat,
+      lon: p.lon,
+      osmId: hint?.osmId || null,
+      brand: hint?.brand || "",
+      status,
+      ts: Date.now()
+    };
+    const list = loadCrowdReports().filter((r) => {
+      if (rec.osmId && r.osmId === rec.osmId) return false;
+      return haversine(r, rec) > 25;
+    });
+    list.unshift(rec);
+    writeCrowdReports(list);
+    return rec;
+  }
+  function pickCrowdForStation(st, reports) {
+    let best = null;
+    let bestD = CROWD_MATCH_M;
+    for (const r of reports) {
+      if (r.osmId && st.osmId && r.osmId === st.osmId) {
+        return r;
+      }
+      const d = haversine(st, r);
+      if (d < bestD) {
+        bestD = d;
+        best = r;
+      }
+    }
+    return best;
+  }
+  function applyCrowdReports(stations) {
+    const reports = loadCrowdReports();
+    if (!reports.length || !stations?.length) return 0;
+    let n = 0;
+    for (const st of stations) {
+      const r = pickCrowdForStation(st, reports);
+      if (!r) continue;
+      const gdeTs = st.lastAt ? Date.parse(String(st.lastAt).replace(" ", "T")) : 0;
+      const crowdFresh = Date.now() - r.ts < CROWD_OVERRIDE_MS;
+      const gdeStale = !gdeTs || Date.now() - gdeTs > CROWD_OVERRIDE_MS;
+      if (st.statusSource !== "crowd" && st.status !== "unknown" && !crowdFresh && !gdeStale) continue;
+      st.status = r.status;
+      st.statusSource = "crowd";
+      st.crowdAt = r.ts;
+      if (r.brand && !st.brand) st.brand = r.brand;
+      n++;
+    }
+    return n;
+  }
+  function nearestStationForReport(stations, pos) {
+    if (!stations?.length || !pos) return null;
+    let best = null;
+    let bestD = 200;
+    for (const st of stations) {
+      const d = haversine(pos, st);
+      if (d < bestD) {
+        bestD = d;
+        best = st;
+      }
+    }
+    return bestD <= 200 ? best : null;
+  }
+  function crowdStatusSuffix(st) {
+    return st?.statusSource === "crowd" ? " \xB7 \u0432\u0430\u0448 \u043E\u0442\u0447\u0451\u0442" : "";
+  }
+  var FUEL_CROWD_KEY, FUEL_STATUSES, CROWD_MAX, CROWD_TTL_MS, CROWD_MATCH_M, CROWD_OVERRIDE_MS;
+  var init_fuel_crowd = __esm({
+    "js/fuel-crowd.js"() {
+      init_geo();
+      init_gps();
+      FUEL_CROWD_KEY = "moto-hud-fuel-crowd-v1";
+      FUEL_STATUSES = ["yes", "queue", "low", "no"];
+      CROWD_MAX = 400;
+      CROWD_TTL_MS = 7 * 24 * 3600 * 1e3;
+      CROWD_MATCH_M = 85;
+      CROWD_OVERRIDE_MS = 6 * 3600 * 1e3;
+    }
+  });
+
   // js/fuel.js
   function fuelRouteKey() {
     const r = S.route;
@@ -4367,9 +4509,12 @@
     return { yes: "\u0435\u0441\u0442\u044C", queue: "\u043E\u0447\u0435\u0440\u0435\u0434\u044C", low: "\u043C\u0430\u043B\u043E", no: "\u043D\u0435\u0442 \u0442\u043E\u043F\u043B\u0438\u0432\u0430" }[status] || "\u043D\u0430\u043B\u0438\u0447\u0438\u0435 ?";
   }
   function fuelStatusHint() {
-    if (S.fuelSource === "gdebenz") return "";
     if (S.fuelStatus !== "ready") return "";
-    return " \xB7 \u0434\u0430\u043D\u043D\u044B\u0435 \u0413\u0434\u0435\u0411\u0415\u041D\u0417 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B";
+    if (S.fuelSource === "gdebenz" || S.fuelSource === "gdebenz+crowd") return "";
+    if (S.fuelStations.some((st) => st.statusSource === "crowd" && st.status !== "unknown")) return "";
+    const proxy = getFuelProxyBase();
+    if (proxy) return " \xB7 \u0413\u0434\u0435\u0411\u0415\u041D\u0417 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D (\u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 URL \u043F\u0440\u043E\u043A\u0441\u0438)";
+    return " \xB7 \u0413\u0434\u0435\u0411\u0415\u041D\u0417 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \xB7 \u043E\u0442\u043C\u0435\u0442\u044C\u0442\u0435 \u0432 HUD";
   }
   function routeBBox(bufDeg) {
     const buf = bufDeg || 0.05;
@@ -4458,11 +4603,16 @@
         const r = await fetch(apiUrl);
         if (r.ok) data = await r.json();
       } else {
-        const tries = [
+        const tries = [];
+        const proxyBase = getFuelProxyBase();
+        if (proxyBase) {
+          tries.push(() => fetch(fuelProxyNearbyUrl(proxyBase, lat, lon, radiusKm)));
+        }
+        tries.push(
           () => fetch(apiUrl),
           () => fetch("https://corsproxy.io/?" + encodeURIComponent(apiUrl)),
           () => fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(apiUrl))
-        ];
+        );
         for (const run of tries) {
           try {
             const r = await run();
@@ -4503,6 +4653,7 @@
       }
       if (g?.status) {
         st.status = g.status;
+        st.statusSource = "gdebenz";
         if (g.brand) st.brand = g.brand;
         st.confirmations = g.confirmations;
         st.lastAt = g.last_at;
@@ -4517,7 +4668,7 @@
     const data = await fetchGdebenzNearby(p.lat, p.lon, 40);
     if (!data) return;
     const n = applyGdebenzData(stations, data);
-    if (n > 0) S.fuelSource = "gdebenz";
+    if (n > 0) S.fuelSource = S.fuelSource === "crowd" ? "gdebenz+crowd" : "gdebenz";
   }
   async function ensureFuelStations(force) {
     if (S.fuelStatus === "loading") return;
@@ -4527,6 +4678,9 @@
     try {
       const stations = await loadFromOverpass();
       await enrichFromGdebenz(stations);
+      const crowdN = applyCrowdReports(stations);
+      if (crowdN > 0 && S.fuelSource === "osm") S.fuelSource = "crowd";
+      else if (crowdN > 0 && S.fuelSource === "gdebenz") S.fuelSource = "gdebenz+crowd";
       S.fuelStations = stations;
       S.fuelStatus = "ready";
     } catch (e) {
@@ -4626,6 +4780,8 @@
       init_route();
       init_route_geometry();
       init_platform();
+      init_fuel_config();
+      init_fuel_crowd();
       _fuelRouteKey = null;
       GDEBENZ_CACHE_MS = 5 * 60 * 1e3;
       _gdebenzCache = { key: "", ts: 0, data: null };
@@ -16854,6 +17010,7 @@
     const parts = ['<span class="fuel-st ' + (st.status || "unknown") + '">' + escapeHtml(fuelStatusText(st.status)) + "</span>"];
     if (st.confirmations) parts.push("\u043E\u0442\u0447\u0451\u0442\u043E\u0432: " + st.confirmations);
     if (st.lastAt) parts.push("\u0434\u0430\u043D\u043D\u044B\u0435: " + escapeHtml(String(st.lastAt).split(" ")[0]));
+    if (st.statusSource === "crowd") parts.push("\u0432\u0430\u0448 \u043E\u0442\u0447\u0451\u0442");
     return parts.join(" \xB7 ");
   }
   async function doFuelSearch() {
@@ -17082,6 +17239,12 @@
       e.target.value = String(S.fuelPlannerCount);
       saveHudOptsToStorage();
     });
+    $2("opt-fuel-proxy")?.addEventListener("change", (e) => {
+      setFuelProxyBase(e.target.value.trim());
+    });
+    $2("opt-fuel-proxy")?.addEventListener("blur", (e) => {
+      setFuelProxyBase(e.target.value.trim());
+    });
     function syncElevInputs() {
       const on = S.showElevProfile;
       const exag = $2("opt-elev-exag");
@@ -17242,6 +17405,8 @@
     applyHudChrome();
     S.fuelPlannerCount = clampFuelPlannerCount($2("opt-fuel-count")?.value);
     if ($2("opt-fuel-count")) $2("opt-fuel-count").value = String(S.fuelPlannerCount);
+    const proxyEl = $2("opt-fuel-proxy");
+    if (proxyEl) proxyEl.value = getFuelProxyBase();
     S.showElevProfile = $2("opt-elev-profile").checked;
     S.elevExag = Math.max(0.5, Math.min(5, parseFloat($2("opt-elev-exag").value) || DEFAULT_ELEV_EXAG));
     S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
@@ -17309,6 +17474,7 @@
       init_platform();
       init_route_map();
       init_fuel();
+      init_fuel_config();
       init_tts_health();
       init_heading();
       init_voice();
@@ -19726,7 +19892,7 @@ ${trkpts}
     if (m < 1e3) return { v: String(Math.round(m / 10) * 10), u: "\u043C" };
     return { v: (m / 1e3).toFixed(1), u: "\u043A\u043C" };
   }
-  function setFuelPanel({ title, dist, sub, hint, color, searching }) {
+  function setFuelPanel({ title, dist, sub, hint, color, searching, showReport }) {
     const panel = $2("fuelPanel");
     if (!panel) return;
     panel.style.setProperty("--fuel-c", color || "#66ccff");
@@ -19739,8 +19905,56 @@ ${trkpts}
     }
     if (sub != null) $2("fp-sub").textContent = sub;
     if (hint != null) $2("fp-hint").textContent = hint;
+    const reportRow = $2("fuel-report-row");
+    if (reportRow) {
+      const on = showReport !== void 0 ? showReport : !searching && S.fuelMode > 0;
+      reportRow.classList.toggle("hidden", !on);
+    }
     panel.classList.add("on");
     _fuelPanelShownAt = Date.now();
+  }
+  function fuelSubLine(sel) {
+    if (!sel) return "";
+    return sel.brand + " \xB7 " + fuelStatusText(sel.status) + crowdStatusSuffix(sel);
+  }
+  async function submitFuelCrowdReport(status) {
+    const pos = curPos() || S.gps;
+    if (!pos) {
+      speak("\u041D\u0435\u0442 GPS \u0434\u043B\u044F \u043E\u0442\u043C\u0435\u0442\u043A\u0438");
+      return;
+    }
+    recomputeFuelGeometry();
+    const hint = nearestStationForReport(S.fuelStations, pos) || S.fuelSel;
+    saveCrowdReport(status, hint ? {
+      lat: hint.lat,
+      lon: hint.lon,
+      osmId: hint.osmId,
+      brand: hint.brand
+    } : { lat: pos.lat, lon: pos.lon });
+    applyCrowdReports(S.fuelStations);
+    if (S.fuelSel) applyCrowdReports([S.fuelSel]);
+    const sel = S.fuelSel || nearestStationForReport(S.fuelStations, pos);
+    if (sel) {
+      setFuelPanel({
+        title: $2("fp-title")?.textContent,
+        sub: fuelSubLine(sel),
+        color: fuelColor(sel.status),
+        showReport: true
+      });
+    }
+    speak("\u041E\u0442\u043C\u0435\u0442\u043A\u0430: " + fuelStatusText(status));
+  }
+  function initFuelReportUi() {
+    const row = $2("fuel-report-row");
+    if (!row || row.dataset.bound) return;
+    row.dataset.bound = "1";
+    row.querySelectorAll("[data-fuel-st]").forEach((btn) => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const st = btn.getAttribute("data-fuel-st");
+        if (st) submitFuelCrowdReport(st);
+      });
+    });
   }
   function updateFuelButton() {
     const b = $2("btn-fuel");
@@ -19800,7 +20014,7 @@ ${trkpts}
         setFuelPanel({
           title: onRoute ? "\u26FD \u041F\u041E \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0423" : "\u26FD \u0420\u042F\u0414\u041E\u041C (\u043D\u0435\u0442 \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443)",
           dist,
-          sub: sel.brand + " \xB7 " + fuelStatusText(sel.status),
+          sub: fuelSubLine(sel),
           hint: "\u26FD \u0435\u0449\u0451 \u0440\u0430\u0437 \u2014 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0430\u044F \u0441 \u0437\u0430\u0435\u0437\u0434\u043E\u043C",
           color: fuelColor(sel.status)
         });
@@ -19818,7 +20032,7 @@ ${trkpts}
         setFuelPanel({
           title: "\u26FD \u0411\u041B\u0418\u0416\u0410\u0419\u0428\u0410\u042F \u2014 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u2026",
           dist: sel.distGps,
-          sub: sel.brand + " \xB7 " + fuelStatusText(sel.status),
+          sub: fuelSubLine(sel),
           hint: "\u26FD \u0435\u0449\u0451 \u0440\u0430\u0437 \u2014 \u043E\u0442\u043C\u0435\u043D\u0430, \u0432\u0435\u0440\u043D\u0443\u0442\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442",
           color: fuelColor(sel.status)
         });
@@ -19876,6 +20090,7 @@ ${trkpts}
       init_vintage_vfd();
       init_gps();
       init_fuel();
+      init_fuel_crowd();
       init_cam_status();
       init_route_geometry();
       init_snap_quality();
@@ -20303,6 +20518,7 @@ ${trkpts}
   initTrackRecorderUi();
   initTripPlannerUi();
   initHudChrome();
+  initFuelReportUi();
   initThemeManager();
   initVintageVfd();
   initTelemetry().then(() => initTelemetryUI());

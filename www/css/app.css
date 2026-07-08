@@ -402,6 +402,20 @@ body.legal-blocked #hud{display:none!important}
 #fuelPanel .fp-sub{font-size:min(4.5vw,20px);color:var(--fuel-c,#66ccff);letter-spacing:1px;opacity:.95}
 #fuelPanel .fp-hint{font-size:min(3.4vw,14px);color:var(--dim);letter-spacing:1px;margin-top:8px;font-weight:700}
 #fuelPanel.searching{--fuel-c:#66ccff;animation:blink .8s infinite alternate}
+#fuelPanel .fp-report{margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.12)}
+#fuelPanel .fp-report.hidden{display:none}
+#fuelPanel .fp-report-lbl{font-size:min(3.2vw,13px);color:var(--dim);letter-spacing:1px;margin-bottom:8px;font-weight:700}
+#fuelPanel .fp-report-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+#fuelPanel .fp-report-btn{
+  min-height:44px;padding:8px 14px;border-radius:8px;border:2px solid var(--dim);
+  background:rgba(0,0,0,.35);color:#fff;font-family:inherit;font-size:min(3.8vw,15px);
+  font-weight:900;letter-spacing:.5px;cursor:pointer;touch-action:manipulation
+}
+#fuelPanel .fp-report-btn.st-yes{border-color:#34c759;color:#34c759}
+#fuelPanel .fp-report-btn.st-queue{border-color:#ffcc00;color:#ffcc00}
+#fuelPanel .fp-report-btn.st-low{border-color:#ff9500;color:#ff9500}
+#fuelPanel .fp-report-btn.st-no{border-color:#ff3b30;color:#ff3b30}
+#fuelPanel .fp-report-btn:active{transform:scale(.96);opacity:.85}
 
 .setup-banner{
   margin:0 12px 10px;padding:10px 14px;border-radius:10px;

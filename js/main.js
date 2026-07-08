@@ -1,6 +1,6 @@
 import { S } from './state.js';
 import { initGps, startGps } from './gps.js';
-import { onTick, startHud } from './hud.js';
+import { onTick, startHud, initFuelReportUi } from './hud.js';
 import { renderVisualFrame } from './render.js';
 import { bindSetupUI, syncOptionsFromDom, applyCoordsOrLink, setFinishQuiet, initNativeHints, doBuildRoute, doAddressSearch } from './setup.js';
 import { initFavorites } from './favorites.js';
@@ -36,6 +36,7 @@ initYandexExportUi();
 initTrackRecorderUi();
 initTripPlannerUi();
 initHudChrome();
+initFuelReportUi();
 initThemeManager();
 initVintageVfd();
 initTelemetry().then(() => initTelemetryUI());

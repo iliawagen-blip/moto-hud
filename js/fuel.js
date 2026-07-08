@@ -4,6 +4,8 @@ import { curPos } from './gps.js';
 import { findNearestOnRoute } from './route.js';
 import { projectPointToRoute } from './route-geometry.js';
 import { isNative } from './platform.js';
+import { getFuelProxyBase, fuelProxyNearbyUrl } from './fuel-config.js';
+import { applyCrowdReports, crowdStatusSuffix } from './fuel-crowd.js';
 
 let _fuelRouteKey = null;
 
@@ -29,10 +31,15 @@ export function fuelStatusText(status){
 
 /** Подсказка, если ГдеБЕНЗ не ответил (веб/CORS/сеть). */
 export function fuelStatusHint(){
-  if(S.fuelSource === 'gdebenz') return '';
   if(S.fuelStatus !== 'ready') return '';
-  return ' · данные ГдеБЕНЗ недоступны';
+  if(S.fuelSource === 'gdebenz' || S.fuelSource === 'gdebenz+crowd') return '';
+  if(S.fuelStations.some(st => st.statusSource === 'crowd' && st.status !== 'unknown')) return '';
+  const proxy = getFuelProxyBase();
+  if(proxy) return ' · ГдеБЕНЗ недоступен (проверьте URL прокси)';
+  return ' · ГдеБЕНЗ недоступен · отметьте в HUD';
 }
+
+export { crowdStatusSuffix };
 
 /** Ограничивающий прямоугольник маршрута (или окрестность позиции) с буфером */
 function routeBBox(bufDeg){
@@ -130,11 +137,16 @@ async function fetchGdebenzNearby(lat, lon, radiusKm){
       const r = await fetch(apiUrl);
       if(r.ok) data = await r.json();
     }else{
-      const tries = [
+      const tries = [];
+      const proxyBase = getFuelProxyBase();
+      if(proxyBase){
+        tries.push(() => fetch(fuelProxyNearbyUrl(proxyBase, lat, lon, radiusKm)));
+      }
+      tries.push(
         () => fetch(apiUrl),
         () => fetch('https://corsproxy.io/?' + encodeURIComponent(apiUrl)),
         () => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(apiUrl))
-      ];
+      );
       for(const run of tries){
         try{
           const r = await run();
@@ -172,6 +184,7 @@ function applyGdebenzData(stations, data){
     }
     if(g?.status){
       st.status = g.status;
+      st.statusSource = 'gdebenz';
       if(g.brand) st.brand = g.brand;
       st.confirmations = g.confirmations;
       st.lastAt = g.last_at;
@@ -188,7 +201,7 @@ async function enrichFromGdebenz(stations){
   const data = await fetchGdebenzNearby(p.lat, p.lon, 40);
   if(!data) return;
   const n = applyGdebenzData(stations, data);
-  if(n > 0) S.fuelSource = 'gdebenz';
+  if(n > 0) S.fuelSource = S.fuelSource === 'crowd' ? 'gdebenz+crowd' : 'gdebenz';
 }
 
 /** Загрузка АЗС (ленивая, по первому обращению к ассистенту) */
@@ -200,6 +213,9 @@ export async function ensureFuelStations(force){
   try{
     const stations = await loadFromOverpass();
     await enrichFromGdebenz(stations);
+    const crowdN = applyCrowdReports(stations);
+    if(crowdN > 0 && S.fuelSource === 'osm') S.fuelSource = 'crowd';
+    else if(crowdN > 0 && S.fuelSource === 'gdebenz') S.fuelSource = 'gdebenz+crowd';
     S.fuelStations = stations;
     S.fuelStatus = 'ready';
   }catch(e){

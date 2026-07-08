@@ -12,8 +12,11 @@ import { syncVintageVfdDomClasses, resetVintageVfd } from './vintage-vfd.js';
 import { startVisualLoop, stopVisualLoop, startNavigationGps, stopNavigationGps } from './gps.js';
 import {
   ensureFuelStations, bestAlongRoute, nearestOverall,
-  fuelColor, fuelStatusText
+  fuelColor, fuelStatusText, crowdStatusSuffix, recomputeFuelGeometry
 } from './fuel.js';
+import {
+  saveCrowdReport, nearestStationForReport, applyCrowdReports
+} from './fuel-crowd.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { resetRouteSnap, getNavSnap } from './route-geometry.js';
 import { isSnapLost, isSnapDegraded, getCachedManeuver, cacheLastManeuver, resetSnapQuality } from './snap-quality.js';
@@ -445,7 +448,7 @@ function fmtDistPair(m){
   return { v: (m / 1000).toFixed(1), u: 'км' };
 }
 
-function setFuelPanel({ title, dist, sub, hint, color, searching }){
+function setFuelPanel({ title, dist, sub, hint, color, searching, showReport }){
   const panel = $('fuelPanel');
   if(!panel) return;
   panel.style.setProperty('--fuel-c', color || '#66ccff');
@@ -458,8 +461,59 @@ function setFuelPanel({ title, dist, sub, hint, color, searching }){
   }
   if(sub != null) $('fp-sub').textContent = sub;
   if(hint != null) $('fp-hint').textContent = hint;
+  const reportRow = $('fuel-report-row');
+  if(reportRow){
+    const on = showReport !== undefined ? showReport : (!searching && S.fuelMode > 0);
+    reportRow.classList.toggle('hidden', !on);
+  }
   panel.classList.add('on');
   _fuelPanelShownAt = Date.now();
+}
+
+function fuelSubLine(sel){
+  if(!sel) return '';
+  return sel.brand + ' · ' + fuelStatusText(sel.status) + crowdStatusSuffix(sel);
+}
+
+async function submitFuelCrowdReport(status){
+  const pos = curPos() || S.gps;
+  if(!pos){
+    speak('Нет GPS для отметки');
+    return;
+  }
+  recomputeFuelGeometry();
+  const hint = nearestStationForReport(S.fuelStations, pos) || S.fuelSel;
+  saveCrowdReport(status, hint ? {
+    lat: hint.lat,
+    lon: hint.lon,
+    osmId: hint.osmId,
+    brand: hint.brand
+  } : { lat: pos.lat, lon: pos.lon });
+  applyCrowdReports(S.fuelStations);
+  if(S.fuelSel) applyCrowdReports([S.fuelSel]);
+  const sel = S.fuelSel || nearestStationForReport(S.fuelStations, pos);
+  if(sel){
+    setFuelPanel({
+      title: $('fp-title')?.textContent,
+      sub: fuelSubLine(sel),
+      color: fuelColor(sel.status),
+      showReport: true
+    });
+  }
+  speak('Отметка: ' + fuelStatusText(status));
+}
+
+export function initFuelReportUi(){
+  const row = $('fuel-report-row');
+  if(!row || row.dataset.bound) return;
+  row.dataset.bound = '1';
+  row.querySelectorAll('[data-fuel-st]').forEach(btn => {
+    btn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const st = btn.getAttribute('data-fuel-st');
+      if(st) submitFuelCrowdReport(st);
+    });
+  });
 }
 
 function updateFuelButton(){
@@ -521,7 +575,7 @@ export async function cycleFuelAssist(){
       setFuelPanel({
         title: onRoute ? '⛽ ПО МАРШРУТУ' : '⛽ РЯДОМ (нет по маршруту)',
         dist,
-        sub: sel.brand + ' · ' + fuelStatusText(sel.status),
+        sub: fuelSubLine(sel),
         hint: '⛽ ещё раз — ближайшая с заездом',
         color: fuelColor(sel.status)
       });
@@ -539,7 +593,7 @@ export async function cycleFuelAssist(){
       setFuelPanel({
         title: '⛽ БЛИЖАЙШАЯ — МАРШРУТ…',
         dist: sel.distGps,
-        sub: sel.brand + ' · ' + fuelStatusText(sel.status),
+        sub: fuelSubLine(sel),
         hint: '⛽ ещё раз — отмена, вернуть маршрут',
         color: fuelColor(sel.status)
       });
