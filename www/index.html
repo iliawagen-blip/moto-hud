@@ -329,11 +329,28 @@
   <details class="setup-details" id="drawer-trip">
     <summary>🗓 Планировщик поездки</summary>
     <div class="drawer-body">
-      <p class="hint" style="margin-bottom:8px">Один URL на всех устройствах: спланируйте на ПК → <strong>🔗 Ссылка</strong> или <strong>📤 JSON</strong> → откройте на телефоне. Тот же UI, удобнее на большом экране.</p>
+      <p class="hint" style="margin-bottom:8px">Один URL на всех устройствах: спланируйте на ПК → <strong>🔗 Ссылка</strong> (trip_pack) или <strong>📤 JSON</strong> → на телефоне <strong>▶ Сегодня</strong> → ПОЕХАЛИ.</p>
+      <div class="trip-bike-panel" id="trip-bike-panel">
+        <label class="trip-bike-label">⛽ Профиль мото
+          <select id="trip-bike-select" class="trip-bike-select"></select>
+        </label>
+        <p class="hint trip-bike-range" id="trip-bike-range"></p>
+        <div class="trip-bike-custom hidden" id="trip-bike-custom">
+          <div class="trip-bike-fields">
+            <label>Бак, л<input type="number" id="trip-bike-tank" min="1" max="40" step="0.5"></label>
+            <label>л/100<input type="number" id="trip-bike-consumption" min="2" max="20" step="0.1"></label>
+            <label>Резерв, км<input type="number" id="trip-bike-reserve" min="0" max="150" step="5"></label>
+          </div>
+        </div>
+      </div>
       <div class="btnrow c2" style="margin-bottom:8px">
         <button type="button" class="secondary" id="btn-trip-demo">📥 Кавказ 2026</button>
         <button type="button" class="secondary" id="btn-trip-new">➕ Новый план</button>
         <button type="button" class="secondary" id="btn-trip-import">📥 JSON</button>
+      </div>
+      <div class="trip-today-row hidden" id="trip-today-row">
+        <button type="button" class="ok trip-today-btn" id="btn-trip-today">▶ Сегодня</button>
+        <span class="hint trip-today-hint" id="trip-today-hint"></span>
       </div>
       <input type="file" id="trip-file" accept=".json,application/json" hidden>
       <div id="trip-list"></div>
@@ -422,8 +439,10 @@
       </span>
       <span class="help-section">
         <b>Планировщик поездки</b>
-        Многодневные планы: «🗓 Планировщик» → демо или свой план → день/сегмент → «🔗 Ссылка» или «📤 JSON» на телефон.
-        В HUD — бейдж дня плана. Один URL открывается на ПК и телефоне.
+        Многодневные планы: «🗓 Планировщик» → демо или свой план (укажите <strong>дату старта</strong> для «▶ Сегодня»).
+        Выберите <strong>⛽ профиль мото</strong> — оценка литров и предупреждения по запасу хода. Правка маршрута: «✎ Точки» у сегмента.
+        На телефоне: «▶ Сегодня» → OSRM → «▶ ПОЕХАЛИ». Перенос: «🔗 Ссылка» (trip_pack) или JSON.
+        В HUD — бейдж дня. Сегменты можно отметить «готово» вручную.
       </span>
       <span class="help-section">
         <b>Избранное и настройки</b>
@@ -646,6 +665,7 @@
     <h3>Новый план поездки</h3>
     <div class="sub">Старт → ночёвки (по одной на строку) → финиш. Координаты: <code>55.59, 37.53 Название</code></div>
     <label class="toggle" style="margin-top:10px;display:block">Название<input type="text" id="trip-new-title" placeholder="Москва → Кавказ" style="width:100%;margin-top:4px"></label>
+    <label class="toggle" style="margin-top:8px;display:block">Дата старта поездки<input type="date" id="trip-new-start-date" style="width:100%;margin-top:4px;font:inherit"></label>
     <label class="toggle" style="margin-top:8px;display:block">Старт<input type="text" id="trip-new-start" placeholder="55.591477, 37.538641 Дом" style="width:100%;margin-top:4px"></label>
     <label class="toggle" style="margin-top:8px;display:block">Ночёвки (необяз.)<textarea id="trip-new-nights" rows="4" placeholder="52.612211, 38.527587 Елец&#10;51.720490, 39.142984 Воронеж" style="width:100%;margin-top:4px;font:inherit"></textarea></label>
     <label class="toggle" style="margin-top:8px;display:block">Финиш<input type="text" id="trip-new-finish" placeholder="55.591477, 37.538641 Дом" style="width:100%;margin-top:4px"></label>
@@ -653,6 +673,35 @@
     <div class="btnrow c2" style="margin-top:12px">
       <button type="button" id="trip-new-cancel">Отмена</button>
       <button type="button" class="ok" id="trip-new-save">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- редактор сегмента плана -->
+<div class="modal" id="trip-segment-modal" role="dialog" aria-modal="true" aria-labelledby="trip-seg-edit-title">
+  <div class="modal-card trip-seg-edit-card">
+    <h3 id="trip-seg-edit-title">Редактор сегмента</h3>
+    <p class="hint" id="trip-seg-edit-meta"></p>
+    <label class="toggle" style="display:block;margin-top:8px">Название
+      <input type="text" id="trip-seg-edit-label" style="width:100%;margin-top:4px">
+    </label>
+    <label class="toggle" style="display:block;margin-top:8px">Точки маршрута (по строке)
+      <textarea id="trip-seg-edit-points" rows="6" placeholder="55.59, 37.53 Старт&#10;52.61, 38.52 Елец&#10;55.59, 37.53 Финиш" style="width:100%;margin-top:4px;font:inherit"></textarea>
+    </label>
+    <label class="toggle" style="display:block;margin-top:8px">Тип дороги (для оценки расхода)
+      <select id="trip-seg-edit-road" style="width:100%;margin-top:4px;font:inherit">
+        <option value="default">Смешанный</option>
+        <option value="highway">Трасса</option>
+        <option value="city">Город</option>
+        <option value="mountain">Горы</option>
+        <option value="offroad">Грунт</option>
+      </select>
+    </label>
+    <p class="trip-seg-edit-fuel hint" id="trip-seg-edit-fuel"></p>
+    <p class="status err hidden" id="trip-seg-edit-error" role="alert"></p>
+    <div class="btnrow c2" style="margin-top:12px">
+      <button type="button" id="trip-seg-edit-cancel">Отмена</button>
+      <button type="button" class="ok" id="trip-seg-edit-save">Сохранить</button>
     </div>
   </div>
 </div>
