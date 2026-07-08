@@ -23,7 +23,15 @@ export function fuelColor(status){
 }
 
 export function fuelStatusText(status){
+  if(status === 'unknown' || status == null) return 'наличие ?';
   return { yes: 'есть', queue: 'очередь', low: 'мало', no: 'нет топлива' }[status] || 'наличие ?';
+}
+
+/** Подсказка, если ГдеБЕНЗ не ответил (веб/CORS/сеть). */
+export function fuelStatusHint(){
+  if(S.fuelSource === 'gdebenz') return '';
+  if(S.fuelStatus !== 'ready') return '';
+  return ' · данные ГдеБЕНЗ недоступны';
 }
 
 /** Ограничивающий прямоугольник маршрута (или окрестность позиции) с буфером */
@@ -72,44 +80,115 @@ async function loadFromOverpass(){
   }).filter(Boolean);
 }
 
-/** Обогащение наличием из ГдеБЕНЗ. CORS отсутствует → только в нативном приложении
-    (Capacitor обходит CORS). В вебе тихо пропускаем — символы будут нейтральные. */
-async function enrichFromGdebenz(stations){
-  const sim = !!window.__SIM__;
-  if(!isNative() && !sim) return;
-  const p = curPos() || S.gps;
-  if(!p) return;
-  let data;
+/** Кэш ответа ГдеБЕНЗ (бережно к API, 5 мин). */
+const GDEBENZ_CACHE_MS = 5 * 60 * 1000;
+let _gdebenzCache = { key: '', ts: 0, data: null };
+
+function gdebenzCacheKey(lat, lon){
+  return Math.round(lat * 200) + ':' + Math.round(lon * 200);
+}
+
+function readGdebenzCache(lat, lon){
+  const key = gdebenzCacheKey(lat, lon);
+  if(_gdebenzCache.key === key && Date.now() - _gdebenzCache.ts < GDEBENZ_CACHE_MS){
+    return _gdebenzCache.data;
+  }
   try{
-    if(sim){
-      // в эмуляторе сеть подменена — ходим обычным fetch к мок-ответу
-      const r = await fetch('https://gdebenz.ru/api/nearby?lat=' + p.lat + '&lon=' + p.lon + '&radius_km=40');
-      data = await r.json();
-    } else {
+    const raw = sessionStorage.getItem('moto-hud-gdebenz-' + key);
+    if(!raw) return null;
+    const o = JSON.parse(raw);
+    if(o && Date.now() - o.ts < GDEBENZ_CACHE_MS) return o.data;
+  }catch(e){}
+  return null;
+}
+
+function writeGdebenzCache(lat, lon, data){
+  const key = gdebenzCacheKey(lat, lon);
+  _gdebenzCache = { key, ts: Date.now(), data };
+  try{
+    sessionStorage.setItem('moto-hud-gdebenz-' + key, JSON.stringify({ ts: Date.now(), data }));
+  }catch(e){}
+}
+
+/** Загрузка nearby из ГдеБЕНЗ: native / sim / web (direct → CORS-proxy). */
+async function fetchGdebenzNearby(lat, lon, radiusKm){
+  const cached = readGdebenzCache(lat, lon);
+  if(cached) return cached;
+
+  const apiUrl = 'https://gdebenz.ru/api/nearby?lat=' + lat + '&lon=' + lon + '&radius_km=' + radiusKm;
+  let data = null;
+
+  try{
+    if(isNative()){
       const { CapacitorHttp } = await import('@capacitor/core');
       const resp = await CapacitorHttp.get({
         url: 'https://gdebenz.ru/api/nearby',
-        params: { lat: String(p.lat), lon: String(p.lon), radius_km: '40' }
+        params: { lat: String(lat), lon: String(lon), radius_km: String(radiusKm) }
       });
       data = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
+    }else if(window.__SIM__){
+      const r = await fetch(apiUrl);
+      if(r.ok) data = await r.json();
+    }else{
+      const tries = [
+        () => fetch(apiUrl),
+        () => fetch('https://corsproxy.io/?' + encodeURIComponent(apiUrl)),
+        () => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(apiUrl))
+      ];
+      for(const run of tries){
+        try{
+          const r = await run();
+          if(!r.ok) continue;
+          const text = await r.text();
+          data = JSON.parse(text);
+          if(data?.stations) break;
+        }catch(e){ /* следующий способ */ }
+      }
     }
   }catch(e){
     console.warn('ГдеБЕНЗ недоступен:', e);
-    return;
   }
-  if(!data || !Array.isArray(data.stations)) return;
+
+  if(data?.stations) writeGdebenzCache(lat, lon, data);
+  return data;
+}
+
+/** Сопоставить станции OSM с ответом ГдеБЕНЗ (osm_id, иначе ближайшая <100 м). */
+function applyGdebenzData(stations, data){
+  if(!data?.stations?.length) return 0;
   const byId = new Map();
-  data.stations.forEach(s => { if(s.osm_id) byId.set(String(s.osm_id), s); });
+  data.stations.forEach(s => { if(s.osm_id != null) byId.set(String(s.osm_id), s); });
+  let matched = 0;
   stations.forEach(st => {
-    const g = byId.get(st.osmId);
-    if(g && g.status){
+    let g = byId.get(st.osmId);
+    if(!g){
+      let best = null, bestD = 100;
+      for(const s of data.stations){
+        if(s.lat == null || s.lon == null) continue;
+        const d = haversine(st, s);
+        if(d < bestD){ bestD = d; best = s; }
+      }
+      if(best) g = best;
+    }
+    if(g?.status){
       st.status = g.status;
       if(g.brand) st.brand = g.brand;
       st.confirmations = g.confirmations;
       st.lastAt = g.last_at;
+      matched++;
     }
   });
-  S.fuelSource = 'gdebenz';
+  return matched;
+}
+
+/** Обогащение наличием из ГдеБЕНЗ (OSM id + гео-фолбэк). */
+async function enrichFromGdebenz(stations){
+  const p = curPos() || S.gps;
+  if(!p) return;
+  const data = await fetchGdebenzNearby(p.lat, p.lon, 40);
+  if(!data) return;
+  const n = applyGdebenzData(stations, data);
+  if(n > 0) S.fuelSource = 'gdebenz';
 }
 
 /** Загрузка АЗС (ленивая, по первому обращению к ассистенту) */

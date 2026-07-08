@@ -4363,7 +4363,13 @@
     return FUEL_COLORS[status] || FUEL_COLORS.unknown;
   }
   function fuelStatusText(status) {
+    if (status === "unknown" || status == null) return "\u043D\u0430\u043B\u0438\u0447\u0438\u0435 ?";
     return { yes: "\u0435\u0441\u0442\u044C", queue: "\u043E\u0447\u0435\u0440\u0435\u0434\u044C", low: "\u043C\u0430\u043B\u043E", no: "\u043D\u0435\u0442 \u0442\u043E\u043F\u043B\u0438\u0432\u0430" }[status] || "\u043D\u0430\u043B\u0438\u0447\u0438\u0435 ?";
+  }
+  function fuelStatusHint() {
+    if (S.fuelSource === "gdebenz") return "";
+    if (S.fuelStatus !== "ready") return "";
+    return " \xB7 \u0434\u0430\u043D\u043D\u044B\u0435 \u0413\u0434\u0435\u0411\u0415\u041D\u0417 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B";
   }
   function routeBBox(bufDeg) {
     const buf = bufDeg || 0.05;
@@ -4410,43 +4416,108 @@
       };
     }).filter(Boolean);
   }
-  async function enrichFromGdebenz(stations) {
-    const sim = !!window.__SIM__;
-    if (!isNative() && !sim) return;
-    const p = curPos() || S.gps;
-    if (!p) return;
-    let data;
+  function gdebenzCacheKey(lat, lon) {
+    return Math.round(lat * 200) + ":" + Math.round(lon * 200);
+  }
+  function readGdebenzCache(lat, lon) {
+    const key = gdebenzCacheKey(lat, lon);
+    if (_gdebenzCache.key === key && Date.now() - _gdebenzCache.ts < GDEBENZ_CACHE_MS) {
+      return _gdebenzCache.data;
+    }
     try {
-      if (sim) {
-        const r = await fetch("https://gdebenz.ru/api/nearby?lat=" + p.lat + "&lon=" + p.lon + "&radius_km=40");
-        data = await r.json();
-      } else {
+      const raw = sessionStorage.getItem("moto-hud-gdebenz-" + key);
+      if (!raw) return null;
+      const o = JSON.parse(raw);
+      if (o && Date.now() - o.ts < GDEBENZ_CACHE_MS) return o.data;
+    } catch (e) {
+    }
+    return null;
+  }
+  function writeGdebenzCache(lat, lon, data) {
+    const key = gdebenzCacheKey(lat, lon);
+    _gdebenzCache = { key, ts: Date.now(), data };
+    try {
+      sessionStorage.setItem("moto-hud-gdebenz-" + key, JSON.stringify({ ts: Date.now(), data }));
+    } catch (e) {
+    }
+  }
+  async function fetchGdebenzNearby(lat, lon, radiusKm) {
+    const cached = readGdebenzCache(lat, lon);
+    if (cached) return cached;
+    const apiUrl = "https://gdebenz.ru/api/nearby?lat=" + lat + "&lon=" + lon + "&radius_km=" + radiusKm;
+    let data = null;
+    try {
+      if (isNative()) {
         const { CapacitorHttp: CapacitorHttp2 } = await Promise.resolve().then(() => (init_dist(), dist_exports));
         const resp = await CapacitorHttp2.get({
           url: "https://gdebenz.ru/api/nearby",
-          params: { lat: String(p.lat), lon: String(p.lon), radius_km: "40" }
+          params: { lat: String(lat), lon: String(lon), radius_km: String(radiusKm) }
         });
         data = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
+      } else if (window.__SIM__) {
+        const r = await fetch(apiUrl);
+        if (r.ok) data = await r.json();
+      } else {
+        const tries = [
+          () => fetch(apiUrl),
+          () => fetch("https://corsproxy.io/?" + encodeURIComponent(apiUrl)),
+          () => fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(apiUrl))
+        ];
+        for (const run of tries) {
+          try {
+            const r = await run();
+            if (!r.ok) continue;
+            const text = await r.text();
+            data = JSON.parse(text);
+            if (data?.stations) break;
+          } catch (e) {
+          }
+        }
       }
     } catch (e) {
       console.warn("\u0413\u0434\u0435\u0411\u0415\u041D\u0417 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e);
-      return;
     }
-    if (!data || !Array.isArray(data.stations)) return;
+    if (data?.stations) writeGdebenzCache(lat, lon, data);
+    return data;
+  }
+  function applyGdebenzData(stations, data) {
+    if (!data?.stations?.length) return 0;
     const byId = /* @__PURE__ */ new Map();
     data.stations.forEach((s2) => {
-      if (s2.osm_id) byId.set(String(s2.osm_id), s2);
+      if (s2.osm_id != null) byId.set(String(s2.osm_id), s2);
     });
+    let matched = 0;
     stations.forEach((st) => {
-      const g = byId.get(st.osmId);
-      if (g && g.status) {
+      let g = byId.get(st.osmId);
+      if (!g) {
+        let best = null, bestD = 100;
+        for (const s2 of data.stations) {
+          if (s2.lat == null || s2.lon == null) continue;
+          const d = haversine(st, s2);
+          if (d < bestD) {
+            bestD = d;
+            best = s2;
+          }
+        }
+        if (best) g = best;
+      }
+      if (g?.status) {
         st.status = g.status;
         if (g.brand) st.brand = g.brand;
         st.confirmations = g.confirmations;
         st.lastAt = g.last_at;
+        matched++;
       }
     });
-    S.fuelSource = "gdebenz";
+    return matched;
+  }
+  async function enrichFromGdebenz(stations) {
+    const p = curPos() || S.gps;
+    if (!p) return;
+    const data = await fetchGdebenzNearby(p.lat, p.lon, 40);
+    if (!data) return;
+    const n = applyGdebenzData(stations, data);
+    if (n > 0) S.fuelSource = "gdebenz";
   }
   async function ensureFuelStations(force) {
     if (S.fuelStatus === "loading") return;
@@ -4546,7 +4617,7 @@
     recomputeFuelGeometry();
     return S.fuelStations.filter((s2) => s2.aheadOnRoute && s2.distAhead <= (maxDist || 3e3)).sort((a, b) => a.distAhead - b.distAhead).slice(0, 4);
   }
-  var _fuelRouteKey;
+  var _fuelRouteKey, GDEBENZ_CACHE_MS, _gdebenzCache;
   var init_fuel = __esm({
     "js/fuel.js"() {
       init_state();
@@ -4556,6 +4627,8 @@
       init_route_geometry();
       init_platform();
       _fuelRouteKey = null;
+      GDEBENZ_CACHE_MS = 5 * 60 * 1e3;
+      _gdebenzCache = { key: "", ts: 0, data: null };
     }
   });
 
@@ -16821,7 +16894,7 @@
       });
       box.style.display = "block";
       box.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      $2("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")";
+      $2("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")" + fuelStatusHint();
       $2("s-finish").className = "status";
     } catch (e) {
       $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0410\u0417\u0421: " + e.message;
