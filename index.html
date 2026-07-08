@@ -133,97 +133,134 @@
 
   <div id="tts-banner" class="setup-banner hidden" role="status"></div>
 
-  <!-- ОПЦИИ — нативный details (работает без JS) -->
+  <!-- НАСТРОЙКИ — один details, секции с заголовками / один уровень opts-fold -->
   <details class="setup-details" id="drawer-opts">
-    <summary>⚙ Опции</summary>
-    <div class="drawer-body">
-      <div class="toggle">🔊 Голос <input type="checkbox" id="opt-voice" checked></div>
-      <div class="toggle" style="margin-top:12px;font-size:14px;color:var(--fg-dim)">Оформление HUD</div>
-      <div class="toggle" style="margin-top:6px">
-        🎨 Тема
-        <select id="opt-theme" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px">
-          <option value="avionics">Авионика</option>
-          <option value="hitech">Хайтек</option>
-          <option value="space">Космос</option>
-          <option value="sport">Спорт</option>
-          <option value="chopper">Чоппер</option>
-          <option value="vintage">Винтаж</option>
-        </select>
+    <summary>⚙ Настройки</summary>
+    <div class="drawer-body opts-panel">
+      <h3 class="opts-heading">Основное</h3>
+      <div class="opts-block" data-section="core">
+        <div class="toggle opt-row">🔊 Голос <input type="checkbox" id="opt-voice" checked></div>
+        <div class="toggle opt-row">
+          🎨 Тема
+          <select id="opt-theme" class="opt-select">
+            <option value="avionics">Авионика</option>
+            <option value="hitech">Хайтек</option>
+            <option value="space">Космос</option>
+            <option value="sport">Спорт</option>
+            <option value="chopper">Чоппер</option>
+            <option value="vintage">Винтаж</option>
+          </select>
+        </div>
+        <div class="toggle opt-row opt-row--mode">
+          <span>🌓 Режим</span>
+          <span class="opt-mode-group">
+            <label class="opt-mode-lbl"><input type="radio" name="opt-mode" id="opt-mode-day" value="day"> День</label>
+            <label class="opt-mode-lbl"><input type="radio" name="opt-mode" id="opt-mode-night" value="night" checked> Ночь</label>
+            <label class="opt-mode-lbl"><input type="radio" name="opt-mode" id="opt-mode-auto" value="auto"> Авто</label>
+          </span>
+        </div>
+        <div class="toggle opt-row">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
+        <div class="toggle opt-row">🛣 Прогноз-дорожка <input type="checkbox" id="opt-path" checked></div>
+        <div class="toggle opt-row">🚧 Лимит скорости (км/ч) <input type="number" id="opt-limit" value="60" min="0" max="200"></div>
       </div>
-      <div class="toggle" style="margin-top:6px;flex-wrap:wrap;gap:8px">
-        <span>🌓 Режим</span>
-        <label style="display:inline-flex;align-items:center;gap:4px;font-size:14px"><input type="radio" name="opt-mode" id="opt-mode-day" value="day"> День</label>
-        <label style="display:inline-flex;align-items:center;gap:4px;font-size:14px"><input type="radio" name="opt-mode" id="opt-mode-night" value="night" checked> Ночь</label>
-        <label style="display:inline-flex;align-items:center;gap:4px;font-size:14px"><input type="radio" name="opt-mode" id="opt-mode-auto" value="auto"> Авто</label>
-      </div>
-      <div class="toggle" style="margin-top:6px">🛣 Прогноз-дорожка <input type="checkbox" id="opt-path" checked></div>
-      <div class="toggle" style="margin-top:6px">🔀 Контекст перекрёстков <input type="checkbox" id="opt-crossings" checked></div>
-      <div class="toggle" style="margin-top:8px;font-size:14px;color:var(--fg-dim)">Шевроны на дорожке</div>
-      <div class="toggle" style="margin-top:6px">↪ Показать шевроны <input type="checkbox" id="opt-path-chevrons" checked></div>
-      <div class="toggle" style="margin-top:6px">↪ Подписи (угол, м) <input type="checkbox" id="opt-chevron-labels" checked></div>
-      <div class="toggle" style="margin-top:6px">↪ Макс. шевронов <input type="number" id="opt-chevron-max" value="3" min="1" max="3" step="1"></div>
-      <div class="toggle" style="margin-top:12px;font-size:14px;color:var(--dim)">До финиша в HUD</div>
-      <div class="toggle" style="margin-top:6px">
-        📡 Строка GPS/CAM/T+
-        <select id="opt-hud-status-mode" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px">
-          <option value="tap" selected>по тапу (15 с)</option>
-          <option value="always">всегда</option>
-          <option value="off">откл.</option>
-        </select>
-      </div>
-      <div class="toggle" style="margin-top:6px">
-        📊 Нижняя строка (осталось/ETA)
-        <select id="opt-hud-finish-mode" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px">
-          <option value="tap" selected>по тапу (15 с)</option>
-          <option value="always">всегда</option>
-          <option value="off">откл.</option>
-        </select>
-      </div>
-      <div class="hint" style="margin-top:4px;font-size:12px">Кнопки СТОП/ЗАПР./ЭКРАН/НАСТР. — по одному тапу на HUD (15 с). Двойной тап — карта.</div>
-      <div class="toggle" style="margin-top:6px">📍 Расстояние <input type="checkbox" id="opt-finish-dist" checked></div>
-      <div class="toggle" style="margin-top:6px">⏱ Оставшееся время <input type="checkbox" id="opt-finish-time" checked></div>
-      <div class="toggle" style="margin-top:6px">🕐 ETA (прибытие) <input type="checkbox" id="opt-finish-eta" checked></div>
-      <div class="toggle" style="margin-top:8px">⛰ Профиль высот <input type="checkbox" id="opt-elev-profile" checked></div>
-      <div class="toggle" style="margin-top:8px">⛰ Высота полоски (px) <input type="number" id="opt-elev-profile-h" value="72" min="36" max="160" step="4"></div>
-      <div class="toggle" style="margin-top:8px">⛰ Дальность профиля (км) <input type="number" id="opt-elev-profile-len" value="3" min="1" max="5" step="1"></div>
-      <div class="toggle" style="margin-top:8px">⛰ Усиление рельефа (×) <input type="number" id="opt-elev-exag" value="1.8" min="0.5" max="5" step="0.1"></div>
-      <div class="toggle" style="margin-top:8px">🏍 Предупреждение скорости в поворотах <input type="checkbox" id="opt-curve-warn" checked></div>
-      <div class="toggle" style="margin-top:8px">
-        🏍 Строгость поворотов
-        <select id="opt-curve-strict" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px">
-          <option value="relaxed">мягче</option>
-          <option value="normal" selected>норма</option>
-          <option value="strict">строже</option>
-        </select>
-      </div>
-      <div class="toggle" style="margin-top:8px">🧭 Компас N/E/S/W <input type="checkbox" id="opt-heading"></div>
-      <div style="margin-top:8px">
-        <button type="button" id="btn-compass-cal" class="secondary" style="width:100%">🧭 Калибровка компаса</button>
-        <div class="hint" style="margin-top:6px;font-size:13px">На стоянке: медленная «восьмёрка» телефоном 15 с — снижает помехи от рамы/электрики.</div>
-      </div>
-      <div class="toggle" style="margin-top:8px">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
-      <div class="toggle" style="margin-top:8px">⛽ Заправок в списке <input type="number" id="opt-fuel-count" value="5" min="1" max="10" step="1"></div>
-      <div class="toggle" style="margin-top:8px;flex-wrap:wrap;gap:8px">
-        ⛽ URL прокси ГдеБЕНЗ
-        <input type="url" id="opt-fuel-proxy" placeholder="https://….workers.dev" style="flex:1;min-width:180px;min-height:auto;padding:8px;font-size:14px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px">
-      </div>
-      <div class="hint" style="margin-top:4px;font-size:12px">Cloudflare Worker из <code>workers/gdebenz-proxy</code>. Пусто — попытка <code>/api/fuel</code> на этом домене, затем публичные CORS-прокси.</div>
-      <div class="toggle" style="margin-top:8px">🎯 Только камеры в спину <input type="checkbox" id="opt-back-only" checked></div>
-      <div class="toggle" style="margin-top:8px">⚙ Допуск направления (°) <input type="number" id="opt-tol" value="45" min="10" max="90"></div>
-      <div class="toggle" style="margin-top:8px">
-        ❓ Камеры без direction
-        <select id="opt-nodir" style="min-height:auto;padding:8px;font-size:15px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px">
-          <option value="skip">пропускать</option>
-          <option value="warn">предупреждать</option>
-        </select>
-      </div>
-      <div class="toggle" style="margin-top:8px">🚧 Лимит скорости (км/ч) <input type="number" id="opt-limit" value="60" min="0" max="200"></div>
-      <div class="toggle" style="margin-top:8px">📷 Допуск превышения камеры (км/ч) <input type="number" id="opt-cam-speed-tol" value="15" min="0" max="50" step="1"></div>
-      <div class="toggle" style="margin-top:12px;font-size:14px;color:var(--fg-dim)">Тестовая телеметрия</div>
-      <div class="toggle" style="margin-top:6px">📊 Запись сессии (JSONL) <input type="checkbox" id="opt-telemetry"></div>
-      <div class="hint" style="margin-top:4px;font-size:12px">Локально в IndexedDB. Экспорт в разделе ниже. URL: <code>?telemetry=1</code></div>
-      <div class="toggle" style="margin-top:8px">📍 Запись трека (GPX, 1 Гц) <input type="checkbox" id="opt-track-record"></div>
-      <div class="hint" style="margin-top:4px;font-size:12px">Во время HUD. Скачать GPX — в разделе «Сессии телеметрии». URL: <code>?track=1</code></div>
+
+      <details class="opts-fold" data-section="hud">
+        <summary class="opts-fold-summary">Экран в пути</summary>
+        <div class="opts-fold-body">
+          <div class="toggle opt-row">
+            📡 Строка GPS/CAM/T+
+            <select id="opt-hud-status-mode" class="opt-select">
+              <option value="tap" selected>по тапу (15 с)</option>
+              <option value="always">всегда</option>
+              <option value="off">откл.</option>
+            </select>
+          </div>
+          <div class="toggle opt-row">
+            📊 Нижняя строка (осталось/ETA)
+            <select id="opt-hud-finish-mode" class="opt-select">
+              <option value="tap" selected>по тапу (15 с)</option>
+              <option value="always">всегда</option>
+              <option value="off">откл.</option>
+            </select>
+          </div>
+          <p class="opt-hint">Кнопки HUD — по тапу 15 с. Двойной тап по экрану — карта.</p>
+          <div class="opt-finish-group">
+            <div class="toggle opt-row">📍 Расстояние <input type="checkbox" id="opt-finish-dist" checked></div>
+            <div class="toggle opt-row">⏱ Оставшееся время <input type="checkbox" id="opt-finish-time" checked></div>
+            <div class="toggle opt-row">🕐 ETA (прибытие) <input type="checkbox" id="opt-finish-eta" checked></div>
+          </div>
+          <div class="toggle opt-row">🔀 Контекст перекрёстков <input type="checkbox" id="opt-crossings" checked></div>
+          <div class="toggle opt-row">🧭 Компас N/E/S/W <input type="checkbox" id="opt-heading"></div>
+          <button type="button" id="btn-compass-cal" class="secondary opt-full-btn">🧭 Калибровка компаса</button>
+          <p class="opt-hint">На стоянке: «восьмёрка» телефоном 15 с.</p>
+          <div class="toggle opt-row">⛰ Профиль высот <input type="checkbox" id="opt-elev-profile" checked></div>
+          <div class="opt-elev-advanced">
+            <div class="toggle opt-row">⛰ Высота полоски (px) <input type="number" id="opt-elev-profile-h" value="72" min="36" max="160" step="4"></div>
+            <div class="toggle opt-row">⛰ Дальность (км) <input type="number" id="opt-elev-profile-len" value="3" min="1" max="5" step="1"></div>
+            <div class="toggle opt-row">⛰ Усиление рельефа (×) <input type="number" id="opt-elev-exag" value="1.8" min="0.5" max="5" step="0.1"></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="opts-fold" data-section="cams">
+        <summary class="opts-fold-summary">Камеры и предупреждения</summary>
+        <div class="opts-fold-body">
+          <div class="toggle opt-row">🎯 Только камеры в спину <input type="checkbox" id="opt-back-only" checked></div>
+          <div class="toggle opt-row">🏍 Предупреждение в поворотах <input type="checkbox" id="opt-curve-warn" checked></div>
+          <div class="toggle opt-row">
+            🏍 Строгость поворотов
+            <select id="opt-curve-strict" class="opt-select">
+              <option value="relaxed">мягче</option>
+              <option value="normal" selected>норма</option>
+              <option value="strict">строже</option>
+            </select>
+          </div>
+          <div class="toggle opt-row">📷 Допуск превышения (км/ч) <input type="number" id="opt-cam-speed-tol" value="15" min="0" max="50" step="1"></div>
+          <details class="opts-fold opts-fold--inner" data-section="cams-adv">
+            <summary class="opts-fold-summary opts-fold-summary--sub">Расширенные</summary>
+            <div class="opts-fold-body">
+              <div class="toggle opt-row">⚙ Допуск направления (°) <input type="number" id="opt-tol" value="45" min="10" max="90"></div>
+              <div class="toggle opt-row">
+                ❓ Камеры без direction
+                <select id="opt-nodir" class="opt-select">
+                  <option value="skip">пропускать</option>
+                  <option value="warn">предупреждать</option>
+                </select>
+              </div>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <details class="opts-fold" data-section="fuel">
+        <summary class="opts-fold-summary">Мотоциклы и топливо</summary>
+        <div class="opts-fold-body">
+          <div class="toggle opt-row">⛽ Заправок в списке <input type="number" id="opt-fuel-count" value="5" min="1" max="10" step="1"></div>
+          <div class="toggle opt-row opt-row--wrap">
+            <span>⛽ URL прокси ГдеБЕНЗ</span>
+            <input type="url" id="opt-fuel-proxy" class="opt-input-url" placeholder="https://….workers.dev">
+          </div>
+          <p class="opt-hint"><a href="#help-fuel-proxy">Как настроить прокси</a> · <code>workers/gdebenz-proxy</code></p>
+        </div>
+      </details>
+
+      <details class="opts-fold" data-section="fine">
+        <summary class="opts-fold-summary">Тонкая настройка HUD</summary>
+        <div class="opts-fold-body">
+          <div class="toggle opt-row">↪ Шевроны на дорожке <input type="checkbox" id="opt-path-chevrons" checked></div>
+          <div class="toggle opt-row">↪ Подписи (угол, м) <input type="checkbox" id="opt-chevron-labels" checked></div>
+          <div class="toggle opt-row">↪ Макс. шевронов <input type="number" id="opt-chevron-max" value="3" min="1" max="3" step="1"></div>
+        </div>
+      </details>
+
+      <details class="opts-fold opts-fold--dev hidden" id="opts-dev-section" data-section="dev">
+        <summary class="opts-fold-summary">Разработчик</summary>
+        <div class="opts-fold-body">
+          <div class="toggle opt-row">📊 Запись сессии (JSONL) <input type="checkbox" id="opt-telemetry"></div>
+          <p class="opt-hint">Экспорт — в «Сессии телеметрии». URL: <code>?telemetry=1</code></p>
+          <div class="toggle opt-row">📍 Запись трека (GPX) <input type="checkbox" id="opt-track-record"></div>
+        </div>
+      </details>
     </div>
   </details>
 
@@ -310,7 +347,15 @@
       </span>
       <span class="help-section">
         <b>Избранное и опции</b>
-        «⭐ Избранное — редактирование» — сохранение, импорт/экспорт мест. В «⚙ Опции»: голос, тема HUD, камеры «в спину», калибровка компаса (восьмёрка на стоянке), телеметрия (opt-in, 📊 сессии).
+        «⭐ Избранное — редактирование» — сохранение, импорт/экспорт мест. В «⚙ Настройки»: голос, тема, камеры, калибровка компаса, телеметрия (opt-in, 📊 сессии).
+      </span>
+      <span class="help-section" id="help-fuel-proxy">
+        <b>Топливо и прокси ГдеБЕНЗ</b>
+        В «Мотоциклы и топливо»: URL Cloudflare Worker (<code>workers/gdebenz-proxy</code>). Пусто — попытка <code>/api/fuel</code> на домене, затем публичные CORS-прокси.
+      </span>
+      <span class="help-section">
+        <b>Режим разработчика</b>
+        <span id="help-app-version">7 тапов по этой строке</span> — секция «Разработчик» в настройках (телеметрия JSONL).
       </span>
       <span class="help-section">
         <b>HUD ↔ карта</b>

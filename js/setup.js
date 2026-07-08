@@ -29,6 +29,7 @@ import {
 
 import { prefetchFuelForMap, searchNearestFuelStations, formatFuelDist, fuelStatusText, fuelStatusHint } from './fuel.js';
 import { getFuelProxyBase, setFuelProxyBase } from './fuel-config.js';
+import { openSettingsPanel } from './settings-ui.js';
 import { refreshTtsBanner } from './tts-health.js';
 import {
   startCompassCalibration, requestHeadingPermission, isCalibrating
@@ -796,13 +797,7 @@ export function bindSetupUI(){
 
 
 
-  $('btn-gear').addEventListener('click', () => {
-
-    $('setup').style.display = 'block';
-
-    $('setup').style.zIndex = '40';
-
-  });
+  $('btn-gear').addEventListener('click', () => { openSettingsPanel(); });
 
   $('qf-close').addEventListener('click', () => $('quickFinish').classList.remove('on'));
 

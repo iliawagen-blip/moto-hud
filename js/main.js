@@ -25,6 +25,7 @@ import { initYandexExportUi } from './yandex-export.js';
 import { initTrackRecorderUi } from './track-recorder.js';
 import { initTripPlannerUi } from './trip-ui.js';
 import { initHudChrome } from './hud-chrome.js';
+import { initSettingsUi } from './settings-ui.js';
 
 applyThemeCss();
 initLegalConsent();
@@ -36,6 +37,7 @@ initYandexExportUi();
 initTrackRecorderUi();
 initTripPlannerUi();
 initHudChrome();
+initSettingsUi();
 initFuelReportUi();
 initThemeManager();
 initVintageVfd();

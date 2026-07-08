@@ -16729,6 +16729,145 @@ var init_route_map = __esm({
   }
 });
 
+// js/settings-telemetry.js
+function logSettingsEvent(type, data) {
+  const rec = { ts: Date.now(), type, ...data || {} };
+  try {
+    const arr = JSON.parse(localStorage.getItem(RING_KEY) || "[]");
+    arr.push(rec);
+    if (arr.length > RING_MAX) arr.splice(0, arr.length - RING_MAX);
+    localStorage.setItem(RING_KEY, JSON.stringify(arr));
+  } catch (e) {
+  }
+  try {
+    if (telemetry_default.isActive?.()) telemetry_default.log("settings", { subtype: type, ...data });
+  } catch (e) {
+  }
+}
+var RING_KEY, RING_MAX;
+var init_settings_telemetry = __esm({
+  "js/settings-telemetry.js"() {
+    init_telemetry();
+    RING_KEY = "moto-hud-settings-events";
+    RING_MAX = 200;
+  }
+});
+
+// js/settings-ui.js
+function openSettingsPanel() {
+  const setup = $2("setup");
+  const drawer = $2("drawer-opts");
+  if (!setup || !drawer) return;
+  setup.style.display = "block";
+  setup.style.zIndex = "40";
+  drawer.open = true;
+  requestAnimationFrame(() => {
+    drawer.scrollIntoView({ behavior: "smooth", block: "start" });
+    const core = drawer.querySelector('[data-section="core"]');
+    if (core) core.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  logSettingsEvent("panel_open", { from: $2("hud")?.classList.contains("on") ? "hud" : "setup" });
+}
+function readSectionState() {
+  try {
+    const raw = localStorage.getItem(SECTIONS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+function saveSectionOpen(id, open) {
+  const o = readSectionState();
+  o[id] = !!open;
+  try {
+    localStorage.setItem(SECTIONS_KEY, JSON.stringify(o));
+  } catch (e) {
+  }
+}
+function applySectionState() {
+  const state = readSectionState();
+  document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
+    const id = det.getAttribute("data-section");
+    if (id && state[id] != null) det.open = !!state[id];
+  });
+}
+function bindSectionPersistence() {
+  document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
+    det.addEventListener("toggle", () => {
+      const id = det.getAttribute("data-section");
+      if (!id) return;
+      saveSectionOpen(id, det.open);
+      if (det.open) logSettingsEvent("section_open", { section: id });
+    });
+  });
+  const main = $2("drawer-opts");
+  main?.addEventListener("toggle", () => {
+    if (main.open) logSettingsEvent("drawer_open", {});
+  });
+}
+function updateDevSectionVisible() {
+  let on = false;
+  try {
+    on = localStorage.getItem(DEV_KEY) === "1";
+  } catch (e) {
+  }
+  if (new URLSearchParams(location.search).get("dev") === "1") on = true;
+  document.documentElement.classList.toggle("dev-mode", on);
+  const dev = $2("opts-dev-section");
+  if (dev) dev.classList.toggle("hidden", !on);
+}
+function bindDevModeEasterEgg() {
+  let taps = 0;
+  let lastTap = 0;
+  const el = $2(DEV_TAP_TARGET);
+  if (!el) return;
+  el.addEventListener("click", () => {
+    const now = Date.now();
+    if (now - lastTap > 2500) taps = 0;
+    lastTap = now;
+    taps++;
+    if (taps >= DEV_TAPS_NEEDED) {
+      taps = 0;
+      try {
+        localStorage.setItem(DEV_KEY, "1");
+      } catch (e) {
+      }
+      updateDevSectionVisible();
+      logSettingsEvent("dev_mode_on", {});
+    }
+  });
+}
+function bindOptChangeLogging() {
+  const root = $2("drawer-opts");
+  if (!root) return;
+  root.querySelectorAll("input, select").forEach((el) => {
+    if (!el.id || !el.id.startsWith("opt-")) return;
+    const ev = el.type === "checkbox" || el.type === "radio" ? "change" : "change";
+    el.addEventListener(ev, () => {
+      const val = el.type === "checkbox" ? el.checked : el.value;
+      logSettingsEvent("opt_change", { optId: el.id, value: val });
+    });
+  });
+}
+function initSettingsUi() {
+  applySectionState();
+  bindSectionPersistence();
+  bindDevModeEasterEgg();
+  updateDevSectionVisible();
+  bindOptChangeLogging();
+}
+var SECTIONS_KEY, DEV_KEY, DEV_TAP_TARGET, DEV_TAPS_NEEDED;
+var init_settings_ui = __esm({
+  "js/settings-ui.js"() {
+    init_util();
+    init_settings_telemetry();
+    SECTIONS_KEY = "moto-hud-opts-sections";
+    DEV_KEY = "moto-hud-dev-mode";
+    DEV_TAP_TARGET = "help-app-version";
+    DEV_TAPS_NEEDED = 7;
+  }
+});
+
 // js/tts-health.js
 async function auditTtsHealth() {
   if (!S.voice) {
@@ -17364,8 +17503,7 @@ function bindSetupUI() {
     cycleFuelAssist();
   });
   $2("btn-gear").addEventListener("click", () => {
-    $2("setup").style.display = "block";
-    $2("setup").style.zIndex = "40";
+    openSettingsPanel();
   });
   $2("qf-close").addEventListener("click", () => $2("quickFinish").classList.remove("on"));
   $2("btn-fs").addEventListener("click", toggleFullscreen);
@@ -17474,6 +17612,7 @@ var init_setup = __esm({
     init_route_map();
     init_fuel();
     init_fuel_config();
+    init_settings_ui();
     init_tts_health();
     init_heading();
     init_voice();
@@ -20507,6 +20646,7 @@ init_yandex_export();
 init_track_recorder();
 init_trip_ui();
 init_hud_chrome();
+init_settings_ui();
 applyThemeCss();
 initLegalConsent();
 initYandexImportUi();
@@ -20517,6 +20657,7 @@ initYandexExportUi();
 initTrackRecorderUi();
 initTripPlannerUi();
 initHudChrome();
+initSettingsUi();
 initFuelReportUi();
 initThemeManager();
 initVintageVfd();
