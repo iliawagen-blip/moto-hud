@@ -30,6 +30,7 @@ import {
 import { prefetchFuelForMap, searchNearestFuelStations, formatFuelDist, fuelStatusText, fuelStatusHint } from './fuel.js';
 import { getFuelProxyBase, setFuelProxyBase } from './fuel-config.js';
 import { openSettingsPanel } from './settings-ui.js';
+import { handleHudGearClick } from './hud-settings-sheet.js';
 import { refreshTtsBanner } from './tts-health.js';
 import {
   startCompassCalibration, requestHeadingPermission, isCalibrating
@@ -797,7 +798,10 @@ export function bindSetupUI(){
 
 
 
-  $('btn-gear').addEventListener('click', () => { openSettingsPanel(); });
+  $('btn-gear').addEventListener('click', () => {
+    if($('hud')?.classList.contains('on')) handleHudGearClick(syncOptionsFromDom);
+    else openSettingsPanel();
+  });
 
   $('qf-close').addEventListener('click', () => $('quickFinish').classList.remove('on'));
 

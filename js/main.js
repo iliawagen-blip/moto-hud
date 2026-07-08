@@ -5,12 +5,12 @@ import { renderVisualFrame } from './render.js';
 import { bindSetupUI, syncOptionsFromDom, applyCoordsOrLink, setFinishQuiet, initNativeHints, doBuildRoute, doAddressSearch } from './setup.js';
 import { initFavorites } from './favorites.js';
 import { updateCamStatusUI } from './cam-status.js';
-import { loadElevOptsFromStorage } from './elevation.js';
-import { loadCurveOptsFromStorage } from './curve-speed.js';
-import { loadHudOptsFromStorage } from './hud-opts.js';
-import { loadAppOptsFromStorage } from './app-opts.js';
+import { loadElevOptsFromStorage, saveElevOptsToStorage } from './elevation.js';
+import { loadCurveOptsFromStorage, saveCurveOptsToStorage } from './curve-speed.js';
+import { loadHudOptsFromStorage, saveHudOptsToStorage } from './hud-opts.js';
+import { loadAppOptsFromStorage, saveAppOptsToStorage } from './app-opts.js';
 import { applyThemeCss } from './theme.js';
-import { initThemeManager, applyTheme } from './theme-manager.js';
+import { initThemeManager, applyTheme, loadThemePrefs } from './theme-manager.js';
 import { initTtsHealth } from './tts-health.js';
 import { initTelemetry } from './telemetry.js';
 import { initTelemetryUI } from './telemetry-ui.js';
@@ -26,6 +26,7 @@ import { initTrackRecorderUi } from './track-recorder.js';
 import { initTripPlannerUi } from './trip-ui.js';
 import { initHudChrome } from './hud-chrome.js';
 import { initSettingsUi } from './settings-ui.js';
+import { initHudSettingsSheet } from './hud-settings-sheet.js';
 
 applyThemeCss();
 initLegalConsent();
@@ -37,7 +38,29 @@ initYandexExportUi();
 initTrackRecorderUi();
 initTripPlannerUi();
 initHudChrome();
-initSettingsUi();
+
+function persistSettingsFromDom(){
+  syncOptionsFromDom();
+  saveAppOptsToStorage();
+  saveHudOptsToStorage();
+  saveElevOptsToStorage();
+  saveCurveOptsToStorage();
+  updateCamStatusUI();
+}
+
+function reloadAllSettingsFromStorage(){
+  const prefs = loadThemePrefs();
+  applyTheme(prefs.theme, prefs.modePref, false);
+  loadElevOptsFromStorage();
+  loadCurveOptsFromStorage();
+  loadHudOptsFromStorage();
+  loadAppOptsFromStorage();
+  syncOptionsFromDom();
+  updateCamStatusUI();
+}
+
+initSettingsUi(reloadAllSettingsFromStorage, persistSettingsFromDom);
+initHudSettingsSheet(syncOptionsFromDom);
 initFuelReportUi();
 initThemeManager();
 initVintageVfd();
