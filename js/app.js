@@ -226,7 +226,17 @@ var init_state = __esm({
       backOnly: true,
       tolerance: 45,
       noDirPolicy: "skip",
-      limit: 60,
+      /** Fallback-лимит из настроек (opt-limit), км/ч */
+      userDefaultLimit: 60,
+      /** Актуальный лимит на текущем сегменте маршрута */
+      currentLimit: null,
+      currentLimitSource: "default",
+      /** Динамический лимит по OSM (opt-speed-limit-dynamic) */
+      speedLimitDynamic: true,
+      /** hide | user-default — при отсутствии данных OSM */
+      speedLimitFallback: "user-default",
+      /** SVG-схема кругового (opt-roundabout-schema) */
+      roundaboutSchema: true,
       /** Допуск над лимитом камеры перед тревогой, км/ч */
       camSpeedTol: DEFAULT_CAM_SPEED_TOL,
       lastVoiceTs: 0,
@@ -1387,7 +1397,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1460,6 +1470,17 @@ var init_nav_constants = __esm({
     GPS_SPEED_STATIONARY_DIST_M = 12;
     GPS_SPEED_MEAS_MIN_DIST_M = 1.5;
     GPS_SPEED_DEVICE_MEAS_RATIO = 2.5;
+    SPEED_LIMIT_LOOKAHEAD_M = 300;
+    SPEED_LIMIT_GRACE_MS = 3e3;
+    SPEED_LIMIT_OVERSPEED_KMH = 3;
+    SPEED_LIMIT_VOICE_MIN_M = 150;
+    SPEED_LIMIT_VOICE_MAX_M = 250;
+    SPEED_LIMIT_URBAN_PLACE_RADIUS_M = 500;
+    ROUNDABOUT_LATERAL_MULTIPLIER = 2;
+    ROUNDABOUT_HEADING_GATE_DEG = 90;
+    ROUNDABOUT_TICK_MS = 250;
+    ROUNDABOUT_MIN_RADIUS_M = 15;
+    ROUNDABOUT_MAX_RADIUS_M = 200;
   }
 });
 
@@ -1864,7 +1885,7 @@ async function start(meta) {
   return _sessionId;
 }
 async function stop() {
-  if (!_active) return;
+  if (!_active) return null;
   flushPerfAggregate();
   const agg = computeSessionAggregate();
   if (agg) log("meta", { sub: "session_aggregate", ...agg });
@@ -1886,6 +1907,7 @@ async function stop() {
   document.documentElement.classList.remove("telemetry-on");
   stopTimers();
   updateMarkButtonVisibility();
+  return id;
 }
 function mark(noteOrObj) {
   if (!_active) return;
@@ -1924,7 +1946,11 @@ async function listSessions() {
     dirty: !!s2.dirty,
     eventCount: s2.eventCount || 0,
     markCount: s2.markCount || 0,
-    durationMs: (s2.endedAt || Date.now()) - (s2.startedAt || 0)
+    durationMs: (s2.endedAt || Date.now()) - (s2.startedAt || 0),
+    shareAttempts: s2.shareAttempts || 0,
+    sharePendingConfirm: !!s2.sharePendingConfirm,
+    lastShareAt: s2.lastShareAt || null,
+    lastShareMethod: s2.lastShareMethod || null
   }));
 }
 async function getSessionEvents(sessionId) {
@@ -1948,7 +1974,22 @@ function formatExportFilename(startedAt) {
   const p = (n) => String(n).padStart(2, "0");
   return "telemetry_" + d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "_" + p(d.getHours()) + "-" + p(d.getMinutes()) + ".jsonl";
 }
-async function exportSession(sessionId) {
+function getBuildId() {
+  try {
+    const raw = typeof window !== "undefined" ? window.__BUILD_ID__ : "";
+    return raw && raw !== "__BUILD_ID__" ? raw : "dev";
+  } catch (e) {
+    return "dev";
+  }
+}
+function roughRegionLabel(lat, lon) {
+  if (lat == null || lon == null) return null;
+  if (lat >= 54.5 && lat <= 56.5 && lon >= 36.5 && lon <= 38.5) return "\u041C\u043E\u0441\u043A\u0432\u0430 \u0438 \u043E\u0431\u043B\u0430\u0441\u0442\u044C";
+  if (lat >= 59.5 && lat <= 60.5 && lon >= 29.5 && lon <= 31.5) return "\u0421\u0430\u043D\u043A\u0442-\u041F\u0435\u0442\u0435\u0440\u0431\u0443\u0440\u0433 \u0438 \u043E\u0431\u043B\u0430\u0441\u0442\u044C";
+  if (lat >= 43 && lat <= 47 && lon >= 38 && lon <= 41) return "\u042E\u0433 \u0420\u043E\u0441\u0441\u0438\u0438 (\u041A\u0440\u0430\u0441\u043D\u043E\u0434\u0430\u0440\u0441\u043A\u0438\u0439 \u043A\u0440\u0430\u0439)";
+  return lat.toFixed(1) + "\xB0N, " + lon.toFixed(1) + "\xB0E";
+}
+async function buildSessionExport(sessionId) {
   const sess = await getSession(sessionId);
   if (!sess) throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
   const events = await getSessionEvents(sessionId);
@@ -1960,16 +2001,72 @@ async function exportSession(sessionId) {
     dirty: !!sess.dirty,
     userAgent: sess.userAgent,
     appVersion: sess.appVersion,
+    buildId: getBuildId(),
     eventCount: events.length,
     markCount: sess.markCount || 0
   };
   const lines = [JSON.stringify(head), ...events.map((e) => JSON.stringify(e))];
-  const blob = new Blob([lines.join("\n") + "\n"], { type: "application/x-ndjson" });
+  const body = lines.join("\n") + "\n";
+  const filename = formatExportFilename(sess.startedAt);
+  const blob = new Blob([body], { type: "application/x-ndjson" });
+  return { sess, events, head, body, filename, blob };
+}
+async function getSessionShareSummary(sessionId) {
+  const { sess, events } = await buildSessionExport(sessionId);
+  const fixes = events.filter((e) => e.type === "fix");
+  const marks = events.filter((e) => e.type === "mark");
+  const firstFix = fixes[0];
+  const durationMs = (sess.endedAt || Date.now()) - (sess.startedAt || 0);
+  const sizeKb = Math.max(1, Math.round(
+    events.reduce((n, e) => n + JSON.stringify(e).length, 64) / 1024
+  ));
+  return {
+    sessionId: sess.id,
+    startedAt: sess.startedAt,
+    endedAt: sess.endedAt,
+    durationMs,
+    durationMin: Math.round(durationMs / 6e4),
+    eventCount: events.length,
+    fixCount: fixes.length,
+    markCount: marks.length,
+    sizeKb,
+    region: roughRegionLabel(firstFix?.lat, firstFix?.lon),
+    buildId: getBuildId(),
+    appVersion: sess.appVersion || APP_VERSION,
+    userAgent: sess.userAgent || (typeof navigator !== "undefined" ? navigator.userAgent : ""),
+    dirty: !!sess.dirty,
+    shareAttempts: sess.shareAttempts || 0,
+    sharePendingConfirm: !!sess.sharePendingConfirm,
+    lastShareAt: sess.lastShareAt || null,
+    lastShareMethod: sess.lastShareMethod || null
+  };
+}
+async function recordSessionShare(sessionId, method, opts = {}) {
+  const sess = await getSession(sessionId);
+  if (!sess) return;
+  sess.shareAttempts = (sess.shareAttempts || 0) + 1;
+  sess.lastShareMethod = method;
+  sess.lastShareAt = Date.now();
+  sess.sharePendingConfirm = opts.pendingConfirm !== false;
+  if (opts.clearPending) sess.sharePendingConfirm = false;
+  await putSession(sess);
+}
+async function exportSession(sessionId) {
+  const { blob, filename } = await buildSessionExport(sessionId);
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = formatExportFilename(sess.startedAt);
+  a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5e3);
+}
+async function countUnsharedSessions() {
+  const all = await listSessionsRaw();
+  return all.filter((s2) => s2.endedAt && !s2.sharePendingConfirm && (s2.shareAttempts || 0) === 0).length;
+}
+async function listPendingShareConfirm() {
+  const all = await listSessionsRaw();
+  const t0 = Date.now() - 3 * 864e5;
+  return all.filter((s2) => s2.sharePendingConfirm && (s2.lastShareAt || 0) > t0);
 }
 async function deleteSession(sessionId) {
   if (_active && _sessionId === sessionId) await stop();
@@ -2053,6 +2150,11 @@ var init_telemetry = __esm({
       log,
       mark,
       export: exportSession,
+      buildSessionExport,
+      getSessionShareSummary,
+      recordSessionShare,
+      countUnsharedSessions,
+      listPendingShareConfirm,
       listSessions,
       deleteSession,
       storageStats,
@@ -2062,6 +2164,7 @@ var init_telemetry = __esm({
       tickPerfFrame,
       logSnapFromResult,
       updateMarkButtonVisibility,
+      getBuildId,
       /** @param {object} fix */
       logFix(fix) {
         if (!_active) return;
@@ -2280,8 +2383,10 @@ function updateSnapQuality(snap, gps, geom, opts) {
   const now = Date.now();
   if (opts?.jump) _jumpUntil = now + SNAP_QUALITY_JUMP_DEGRADED_MS;
   const mult = curvatureMult(geom, snap.s, opts?.curvMult);
+  const latMult = opts?.roundabout?.onRoundabout ? ROUNDABOUT_LATERAL_MULTIPLIER : 1;
   const score = rawScore(snap, gps);
-  const instant = now < _jumpUntil ? SnapQuality.DEGRADED : classifyInstant(score, snap.lateral, mult);
+  const lateral = snap.lateral / latMult;
+  const instant = now < _jumpUntil ? SnapQuality.DEGRADED : classifyInstant(score, lateral, mult);
   pushHist(instant);
   const prev = S.snapQuality || SnapQuality.GOOD;
   let next = prev;
@@ -2289,11 +2394,11 @@ function updateSnapQuality(snap, gps, geom, opts) {
     if (instant === SnapQuality.LOST && histAgrees(SnapQuality.LOST)) next = SnapQuality.LOST;
     else if (instant !== SnapQuality.GOOD && histAgrees(SnapQuality.DEGRADED)) next = SnapQuality.DEGRADED;
   } else if (prev === SnapQuality.DEGRADED) {
-    const exitQ = classifyExit(score, snap.lateral, mult);
+    const exitQ = classifyExit(score, lateral, mult);
     if (instant === SnapQuality.LOST && histAgrees(SnapQuality.LOST)) next = SnapQuality.LOST;
     else if (exitQ === SnapQuality.GOOD && histAgrees(SnapQuality.GOOD)) next = SnapQuality.GOOD;
   } else {
-    const exitQ = classifyExit(score, snap.lateral, mult);
+    const exitQ = classifyExit(score, lateral, mult);
     if (exitQ !== SnapQuality.LOST && histAgrees(SnapQuality.DEGRADED)) next = SnapQuality.DEGRADED;
     if (exitQ === SnapQuality.GOOD && histAgrees(SnapQuality.GOOD)) next = SnapQuality.GOOD;
   }
@@ -2345,1124 +2450,6 @@ var init_snap_quality = __esm({
     _lastNm = null;
     _forceReeval = false;
     _lostSince = 0;
-  }
-});
-
-// js/route-geometry.js
-function resetRouteSnap(opts) {
-  _snap = null;
-  _camHeadingRad = null;
-  _camPitchRad = null;
-  _snapMemoTs = null;
-  _disp.inited = false;
-  _dispLastTs = 0;
-  _camLastTs = 0;
-  _camPitchLastTs = 0;
-  _prevFixTs = 0;
-  _prevFixPos = null;
-  _fixesSinceReset = 0;
-  resetSnapQuality();
-  if (opts?.seedS != null && S.route?.geometry) {
-    const geom = S.route.geometry;
-    const p = interpolateAtS(geom, opts.seedS);
-    _snap = {
-      s: opts.seedS,
-      segIdx: findSegAtS(geom, opts.seedS),
-      lat: p.lat,
-      lon: p.lon,
-      lateral: opts.lateral ?? 0,
-      tangent: avgTangentDeg(geom, opts.seedS, 20),
-      confidence: 0.7
-    };
-    _disp.s = opts.seedS;
-    _disp.inited = true;
-  }
-}
-function destPoint2(from, brgDeg, distM) {
-  const r = Math.PI / 180;
-  const br = brgDeg * r;
-  const d = distM / 6371e3;
-  const lat1 = from.lat * r;
-  const lon1 = from.lon * r;
-  const lat2 = Math.asin(
-    Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(br)
-  );
-  const lon2 = lon1 + Math.atan2(
-    Math.sin(br) * Math.sin(d) * Math.cos(lat1),
-    Math.cos(d) - Math.sin(lat1) * Math.sin(lat2)
-  );
-  return { lat: lat2 / r, lon: lon2 / r };
-}
-function turnAngleDeg(A, B, C) {
-  const bIn = bearing(A, B);
-  const bOut = bearing(B, C);
-  return (bOut - bIn + 540) % 360 - 180;
-}
-function bezierCorner(A, B, C) {
-  const turn = turnAngleDeg(A, B, C);
-  if (Math.abs(turn) < ARC_ANGLE_THRESH) return null;
-  const dAB = haversine(A, B);
-  const dBC = haversine(B, C);
-  const lead = Math.min(15, dAB * 0.35, dBC * 0.35);
-  if (lead < 1.5) return null;
-  const bIn = bearing(A, B);
-  const bOut = bearing(B, C);
-  const E = destPoint2(B, bIn + 180, lead);
-  const X = destPoint2(B, bOut, lead);
-  const n = Math.max(4, Math.ceil(Math.abs(turn) / 3));
-  const pts = [];
-  for (let k = 0; k <= n; k++) {
-    const t = k / n;
-    const u2 = 1 - t;
-    pts.push({
-      lat: u2 * u2 * E.lat + 2 * u2 * t * B.lat + t * t * X.lat,
-      lon: u2 * u2 * E.lon + 2 * u2 * t * B.lon + t * t * X.lon
-    });
-  }
-  return pts;
-}
-function pushUnique(lat, lon, la, lo) {
-  const n = lat.length;
-  if (n) {
-    const d = haversine({ lat: lat[n - 1], lon: lon[n - 1] }, { lat: la, lon: lo });
-    if (d < 0.4) return;
-  }
-  lat.push(la);
-  lon.push(lo);
-}
-function interpolateSeg(lat, lon, a, b, stepM) {
-  const d = haversine(a, b);
-  const n = Math.max(1, Math.ceil(d / stepM));
-  for (let k = 1; k <= n; k++) {
-    const t = k / n;
-    pushUnique(
-      lat,
-      lon,
-      a.lat + t * (b.lat - a.lat),
-      a.lon + t * (b.lon - a.lon)
-    );
-  }
-}
-function densifyCoords(coords, stepM) {
-  const lat = [];
-  const lon = [];
-  if (!coords || coords.length < 2) return { lat, lon };
-  const first = { lat: coords[0][0], lon: coords[0][1] };
-  pushUnique(lat, lon, first.lat, first.lon);
-  for (let i = 0; i < coords.length - 1; i++) {
-    const B = { lat: coords[i][0], lon: coords[i][1] };
-    const C = { lat: coords[i + 1][0], lon: coords[i + 1][1] };
-    const A = i > 0 ? { lat: coords[i - 1][0], lon: coords[i - 1][1] } : null;
-    let segStart = B;
-    if (A) {
-      const arc = bezierCorner(A, B, C);
-      if (arc && arc.length > 1) {
-        if (lat.length) {
-          const last = { lat: lat[lat.length - 1], lon: lon[lon.length - 1] };
-          if (haversine(last, arc[0]) < 2) lat.pop(), lon.pop();
-        }
-        arc.forEach((p) => pushUnique(lat, lon, p.lat, p.lon));
-        segStart = { lat: lat[lat.length - 1], lon: lon[lon.length - 1] };
-      }
-    }
-    interpolateSeg(lat, lon, segStart, C, stepM);
-  }
-  return { lat, lon };
-}
-function buildArcLength(lat, lon) {
-  const n = lat.length;
-  const s2 = new Float64Array(n);
-  for (let i = 1; i < n; i++) {
-    s2[i] = s2[i - 1] + haversine(
-      { lat: lat[i - 1], lon: lon[i - 1] },
-      { lat: lat[i], lon: lon[i] }
-    );
-  }
-  return s2;
-}
-function findSForManeuver(sparseCoords, geom, targetLat, targetLon) {
-  return findSForLatLon(geom, targetLat, targetLon);
-}
-function findSForLatLon(geom, lat, lon) {
-  if (!geom || geom.n < 2) return 0;
-  const gps = { lat, lon };
-  let bestS = 0;
-  let bestD = Infinity;
-  for (let i = 0; i < geom.n - 1; i++) {
-    const proj = projectOnSegment(
-      gps,
-      geom.lat[i],
-      geom.lon[i],
-      geom.lat[i + 1],
-      geom.lon[i + 1]
-    );
-    const segLen = geom.s[i + 1] - geom.s[i];
-    const s2 = geom.s[i] + proj.t * segLen;
-    if (proj.lateral < bestD) {
-      bestD = proj.lateral;
-      bestS = s2;
-    }
-  }
-  return bestS;
-}
-function buildManeuvers(steps, sparseCoords, geom) {
-  if (!steps || !sparseCoords) return [];
-  const full = { lat: geom.lat, lon: geom.lon, s: geom.s, n: geom.n };
-  return steps.filter((st) => st.type !== "depart" && st.type !== "arrive").map((st) => {
-    const s2 = findSForManeuver(sparseCoords, geom, st.lat, st.lon);
-    return {
-      s: s2,
-      lat: st.lat,
-      lon: st.lon,
-      angle: Math.abs(turnAngleAtS(full, s2)),
-      step: st
-    };
-  });
-}
-function denseStepForCoords(coords) {
-  let total = 0;
-  for (let i = 0; i < coords.length - 1; i++) {
-    total += haversine(
-      { lat: coords[i][0], lon: coords[i][1] },
-      { lat: coords[i + 1][0], lon: coords[i + 1][1] }
-    );
-  }
-  if (total > 12e4) return 8;
-  if (total > 4e4) return 5;
-  return DENSE_STEP;
-}
-function buildRouteGeometry(route) {
-  if (!route || !route.coords || route.coords.length < 2) return null;
-  resetManeuverFilterLog();
-  const stepM = denseStepForCoords(route.coords);
-  const { lat: latArr, lon: lonArr } = densifyCoords(route.coords, stepM);
-  const n = latArr.length;
-  if (n < 2) return null;
-  const lat = Float64Array.from(latArr);
-  const lon = Float64Array.from(lonArr);
-  const s2 = buildArcLength(latArr, lonArr);
-  const elev = new Float64Array(n);
-  const grade = new Float64Array(n);
-  const maneuvers = refineManeuvers(buildManeuvers(route.steps, route.coords, { s: s2, n, lat, lon }));
-  return {
-    lat,
-    lon,
-    s: s2,
-    elev,
-    grade,
-    maneuvers,
-    n,
-    elevReady: false,
-    curveReady: false,
-    crossings: [],
-    roundabouts: []
-  };
-}
-function findSegAtS(geom, s2) {
-  let lo = 0;
-  let hi = geom.n - 2;
-  while (lo < hi) {
-    const mid = lo + hi + 1 >> 1;
-    if (geom.s[mid] <= s2) lo = mid;
-    else hi = mid - 1;
-  }
-  return lo;
-}
-function interpolateAtS(geom, s2) {
-  if (s2 <= 0) return { lat: geom.lat[0], lon: geom.lon[0] };
-  const total = geom.s[geom.n - 1];
-  if (s2 >= total) return { lat: geom.lat[geom.n - 1], lon: geom.lon[geom.n - 1] };
-  const i = findSegAtS(geom, s2);
-  const s0 = geom.s[i];
-  const s1 = geom.s[i + 1];
-  const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
-  return {
-    lat: geom.lat[i] + t * (geom.lat[i + 1] - geom.lat[i]),
-    lon: geom.lon[i] + t * (geom.lon[i + 1] - geom.lon[i])
-  };
-}
-function turnAngleAtS(geom, s2) {
-  const ds = 18;
-  const total = geom.s[geom.n - 1];
-  const s0 = Math.max(0, s2 - ds);
-  const s22 = Math.min(total, s2 + ds);
-  if (s22 - s0 < 8) return 0;
-  const p0 = interpolateAtS(geom, s0);
-  const p1 = interpolateAtS(geom, s2);
-  const p2 = interpolateAtS(geom, s22);
-  const bIn = bearing(p0, p1);
-  const bOut = bearing(p1, p2);
-  return (bOut - bIn + 540) % 360 - 180;
-}
-function segmentBearing(geom, i) {
-  return bearing(
-    { lat: geom.lat[i], lon: geom.lon[i] },
-    { lat: geom.lat[i + 1], lon: geom.lon[i + 1] }
-  );
-}
-function projectOnSegment(gps, lat0, lon0, lat1, lon1) {
-  const r = Math.PI / 180;
-  const cosM = Math.cos((lat0 + lat1) / 2 * r);
-  const ax = lon0 * r * cosM;
-  const ay = lat0 * r;
-  const bx = lon1 * r * cosM;
-  const by = lat1 * r;
-  const px = gps.lon * r * cosM;
-  const py = gps.lat * r;
-  const dx = bx - ax;
-  const dy = by - ay;
-  const len2 = dx * dx + dy * dy;
-  const t = len2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2)) : 0;
-  const plat = (ay + t * dy) / r;
-  const plon = (ax + t * dx) / (r * cosM);
-  const lateral = haversine(gps, { lat: plat, lon: plon });
-  return { t, lat: plat, lon: plon, lateral };
-}
-function headingDot(tangentDeg, gpsHdg) {
-  if (gpsHdg == null || isNaN(gpsHdg)) return 1;
-  const diff = angleDiff(tangentDeg, gpsHdg);
-  return Math.cos(diff * Math.PI / 180);
-}
-function computeSnapWindow(spd, dt, acc) {
-  const v = Math.max(spd || 0, 0);
-  const a = Math.max(acc || 8, 8);
-  if (v < SNAP_STATIONARY_SPD_MPS) return Math.max(8, a * 0.5);
-  if (v < 1) return Math.max(25, SNAP_WINDOW_ACC_MULT * a);
-  return v * Math.min(dt, SNAP_WINDOW_DT_CAP_S) + SNAP_WINDOW_ACC_MULT * a + SNAP_WINDOW_BASE_M;
-}
-function headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs) {
-  if (gpsHdg == null || isNaN(gpsHdg)) return false;
-  const diff = angleDiff(tangent, gpsHdg);
-  if (diff > SNAP_HEADING_REJECT_DEG) return true;
-  const softGate = acc > SNAP_HEADING_GATE_ACC_MAX_M || headingAgeMs > SNAP_HEADING_MAX_AGE_MS;
-  if (softGate) return false;
-  if (spd >= SNAP_HEADING_GATE_MIN_SPD && diff > SNAP_HEADING_ACCEPT_DEG) return true;
-  if (spd >= SNAP_HEADING_GATE_MIN_SPD) {
-    const dot = headingDot(tangent, gpsHdg);
-    if (dot < SNAP_MIN_DOT) return true;
-  }
-  return false;
-}
-function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx) {
-  let best = null;
-  const i0 = findSegAtS(geom, sMin);
-  const spd = ctx?.spd ?? 0;
-  const acc = ctx?.acc ?? 8;
-  const headingAgeMs = ctx?.headingAgeMs ?? 0;
-  const prevS = ctx?.prevS ?? 0;
-  const skipJump = ctx?.skipJumpPenalty ?? false;
-  const dt = ctx?.dt ?? 1;
-  for (let i = i0; i < geom.n - 1; i++) {
-    if (geom.s[i] > sMax) break;
-    const proj = projectOnSegment(
-      gps,
-      geom.lat[i],
-      geom.lon[i],
-      geom.lat[i + 1],
-      geom.lon[i + 1]
-    );
-    const segLen = geom.s[i + 1] - geom.s[i];
-    const s2 = geom.s[i] + proj.t * segLen;
-    if (s2 < sMin - 1 || s2 > sMax + 1) continue;
-    const tangent = segmentBearing(geom, i);
-    const dot = headingDot(tangent, gpsHdg);
-    if (requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs)) continue;
-    if (requireDir && dot < SNAP_MIN_DOT) continue;
-    if (requireDir && spd > 1 && ctx?.prevPos) {
-      const moveBrg = bearing(ctx.prevPos, gps);
-      if (headingDot(tangent, moveBrg) < 0) continue;
-    }
-    let score = proj.lateral + SNAP_ANGLE_PENALTY * (gpsHdg != null ? (1 - dot) * 50 : 0);
-    if (!skipJump && prevS > 0) {
-      const maxJump2 = spd * dt + acc;
-      const jumpExcess = Math.max(0, Math.abs(s2 - prevS) - maxJump2);
-      score += SNAP_JUMP_PENALTY * jumpExcess / 10;
-    }
-    if (!best || score < best.score) {
-      best = {
-        s: s2,
-        segIdx: i,
-        lat: proj.lat,
-        lon: proj.lon,
-        lateral: proj.lateral,
-        tangent,
-        dot,
-        score,
-        confidence: dot >= SNAP_MIN_DOT ? 1 : 0.5
-      };
-    }
-  }
-  return best;
-}
-function snapNearS(gps, geom, hintS, gpsHdg) {
-  const total = geom.s[geom.n - 1];
-  const sMin = Math.max(0, hintS - 40);
-  const sMax = Math.min(total, hintS + 85);
-  return scanSnap(gps, geom, sMin, sMax, gpsHdg, false);
-}
-function snapToRoute(gps, geom, gpsHeadingDeg, meta) {
-  if (!gps || !geom || geom.n < 2) return null;
-  const prev = _snap;
-  const total = geom.s[geom.n - 1];
-  const prevS = prev ? prev.s : 0;
-  const now = gps.ts || Date.now();
-  const dt = _prevFixTs ? Math.min(SNAP_WINDOW_DT_CAP_S, (now - _prevFixTs) / 1e3) : 1;
-  const spd = gps.speed != null && gps.speed >= 0 ? gps.speed : 0;
-  const acc = gps.acc || 8;
-  const headingAgeMs = meta?.headingAgeMs ?? 0;
-  _fixesSinceReset++;
-  const sWin = prevS > 0 ? computeSnapWindow(spd, dt, acc) : Math.min(200, total * 0.05);
-  const sMin = Math.max(0, prevS - sWin);
-  const sMax = Math.min(total, prevS + sWin);
-  const ctx = {
-    spd,
-    acc,
-    headingAgeMs,
-    prevS,
-    dt,
-    skipJumpPenalty: prevS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES,
-    prevPos: _prevFixPos
-  };
-  let best = null;
-  if (takeForceReeval() && prevS > 0) {
-    const wide = 3 * acc + 100;
-    best = scanSnap(
-      gps,
-      geom,
-      Math.max(0, prevS - wide),
-      Math.min(total, prevS + wide),
-      gpsHeadingDeg,
-      false,
-      ctx
-    );
-  }
-  if (!best) {
-    best = scanSnap(gps, geom, sMin, sMax, gpsHeadingDeg, true, ctx);
-  }
-  if (!best) {
-    best = scanSnap(
-      gps,
-      geom,
-      Math.max(0, prevS - SNAP_FALLBACK_BACK_M),
-      Math.min(total, prevS + SNAP_FALLBACK_FWD_M),
-      gpsHeadingDeg,
-      false,
-      ctx
-    );
-  }
-  if (!best) {
-    if (prev) return prev;
-    best = scanSnap(gps, geom, 0, Math.min(total, 200), gpsHeadingDeg, false, ctx);
-    if (!best) return null;
-  }
-  const jump = prev && Math.abs(best.s - prev.s) > SNAP_QUALITY_JUMP_DS_M;
-  if (prev && best.lateral < 40 && best.s < prev.s - SNAP_REVERSE_EPS) {
-    best = { ...best, s: prev.s, segIdx: prev.segIdx, confidence: 0.4 };
-  }
-  if (prev && spd < SNAP_STATIONARY_SPD_MPS && best.s > prev.s) {
-    best = { ...best, s: prev.s, segIdx: prev.segIdx };
-  }
-  if (prev && best.lateral < 35 && spd >= SNAP_STATIONARY_SPD_MPS) {
-    const ds = best.s - prev.s;
-    if (ds > 0 && ds < 30) best.s = prev.s + ds * 0.65;
-  }
-  if (best.lateral > 60) best.confidence = Math.min(best.confidence, 0.3);
-  const { R } = radiusAtS(geom, best.s);
-  const curvMult = !isFinite(R) || R >= SNAP_CURVATURE_RADIUS_M ? 1 : SNAP_CURVATURE_THRESHOLD_MULT;
-  updateSnapQuality(best, gps, geom, { jump, curvMult });
-  _snap = best;
-  _prevFixTs = now;
-  _prevFixPos = { lat: gps.lat, lon: gps.lon };
-  return best;
-}
-function getNavSnap(gpsHeadingDeg) {
-  const raw = getRouteSnapForNav(gpsHeadingDeg);
-  if (!raw) return null;
-  const ns = navSFromSnap(raw);
-  if (ns == null || ns === raw.s) return raw;
-  const geom = S.route?.geometry;
-  if (!geom) return raw;
-  const p = interpolateAtS(geom, ns);
-  return {
-    ...raw,
-    s: ns,
-    lat: p.lat,
-    lon: p.lon,
-    segIdx: findSegAtS(geom, ns)
-  };
-}
-function getRouteSnapForNav(gpsHeadingDeg) {
-  const geom = S.route?.geometry;
-  const gps = S.gps;
-  if (!geom || !gps) return null;
-  if (_snapMemoTs === gps.ts && _snap) return _snap;
-  _snapMemoTs = gps.ts;
-  const headingAgeMs = S.lastReliableHeadingTs ? Date.now() - S.lastReliableHeadingTs : SNAP_HEADING_MAX_AGE_MS + 1;
-  return snapToRoute(gps, geom, gpsHeadingDeg, { headingAgeMs });
-}
-function frameDtSec() {
-  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const dtMs = _dispLastTs ? Math.min(48, now - _dispLastTs) : 16;
-  _dispLastTs = now;
-  return dtMs / 1e3;
-}
-function getDisplaySnap(rawSnap, geom, speedMps, gpsHeadingDeg) {
-  if (!rawSnap || !geom) return null;
-  const dt = frameDtSec();
-  const total = geom.s[geom.n - 1];
-  const spd = Math.max(0, speedMps || 0);
-  if (!_disp.inited) {
-    _disp.s = rawSnap.s;
-    _disp.inited = true;
-  } else if (spd > 0.05) {
-    _disp.s = Math.min(total, _disp.s + spd * dt);
-  }
-  let targetS = rawSnap.s;
-  const pos = curPos();
-  if (pos) {
-    const hit = snapNearS(pos, geom, _disp.s, gpsHeadingDeg);
-    if (hit) targetS = hit.s;
-  }
-  const tau = 0.11;
-  const alpha = 1 - Math.exp(-dt / tau);
-  _disp.s += (targetS - _disp.s) * alpha;
-  _disp.s = Math.max(0, Math.min(total, _disp.s));
-  const p = interpolateAtS(geom, _disp.s);
-  return {
-    s: _disp.s,
-    lat: p.lat,
-    lon: p.lon,
-    segIdx: findSegAtS(geom, _disp.s),
-    lateral: rawSnap.lateral,
-    confidence: rawSnap.confidence
-  };
-}
-function avgTangentDeg(geom, s2, windowM) {
-  const end = Math.min(geom.s[geom.n - 1], s2 + windowM);
-  let vx = 0;
-  let vz = 0;
-  const i0 = findSegAtS(geom, s2);
-  for (let i = i0; i < geom.n - 1 && geom.s[i] < end; i++) {
-    const r = Math.PI / 180;
-    const midLat = (geom.lat[i] + geom.lat[i + 1]) / 2;
-    const dLon = (geom.lon[i + 1] - geom.lon[i]) * Math.cos(midLat * r) * 111320;
-    const dLat = (geom.lat[i + 1] - geom.lat[i]) * 110540;
-    const len = Math.hypot(dLon, dLat) || 1;
-    vx += dLon / len;
-    vz += dLat / len;
-  }
-  if (vx === 0 && vz === 0) {
-    const i = findSegAtS(geom, s2);
-    return segmentBearing(geom, Math.min(i, geom.n - 2));
-  }
-  return (Math.atan2(vx, vz) * 180 / Math.PI + 360) % 360;
-}
-function camSmoothAlpha(dtSec) {
-  return 1 - Math.pow(1 - CAM_SMOOTH_ALPHA, Math.max(1, dtSec * 60));
-}
-function updateCamHeading(geom, snap) {
-  if (!geom || !snap) return _camHeadingRad;
-  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const dt = _camLastTs ? Math.min(48, now - _camLastTs) / 1e3 : 1 / 60;
-  _camLastTs = now;
-  const tgt = avgTangentDeg(geom, snap.s, CAM_TANGENT_WINDOW) * Math.PI / 180;
-  if (_camHeadingRad == null) {
-    _camHeadingRad = tgt;
-    return _camHeadingRad;
-  }
-  let diff = tgt - _camHeadingRad;
-  while (diff > Math.PI) diff -= 2 * Math.PI;
-  while (diff < -Math.PI) diff += 2 * Math.PI;
-  _camHeadingRad += diff * camSmoothAlpha(dt);
-  return _camHeadingRad;
-}
-function avgGradeAtS(geom, s2, windowM) {
-  if (!geom?.elevReady) return 0;
-  const total = geom.s[geom.n - 1];
-  const sEnd = Math.min(total, s2 + windowM);
-  const ds = sEnd - s2;
-  if (ds < 0.5) return 0;
-  const e0 = interpolateElevAtS(geom, s2);
-  const e1 = interpolateElevAtS(geom, sEnd);
-  return (e1 - e0) / ds;
-}
-function updateCamPitch(geom, snap, elevExag, enabled) {
-  if (!enabled || !geom?.elevReady || !snap) {
-    _camPitchRad = null;
-    return CAM_PITCH;
-  }
-  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const dt = _camPitchLastTs ? Math.min(48, now - _camPitchLastTs) / 1e3 : 1 / 60;
-  _camPitchLastTs = now;
-  const grade = avgGradeAtS(geom, snap.s, CAM_TANGENT_WINDOW);
-  const roadPitch = Math.atan(grade * elevExag) * 0.35;
-  const tgt = CAM_PITCH + Math.max(-0.14, Math.min(0.16, roadPitch));
-  if (_camPitchRad == null) {
-    _camPitchRad = tgt;
-    return _camPitchRad;
-  }
-  _camPitchRad += (tgt - _camPitchRad) * camSmoothAlpha(dt);
-  return _camPitchRad;
-}
-function getCamPitchRad() {
-  return _camPitchRad != null ? _camPitchRad : CAM_PITCH;
-}
-function getCamHeadingRad() {
-  return _camHeadingRad;
-}
-function interpolateElevAtS(geom, s2) {
-  if (!geom.elevReady || !geom.elev.length) return 0;
-  const i = findSegAtS(geom, s2);
-  const s0 = geom.s[i];
-  const s1 = geom.s[i + 1];
-  const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
-  return geom.elev[i] + t * (geom.elev[i + 1] - geom.elev[i]);
-}
-function meterScale(lat) {
-  const r = Math.PI / 180;
-  return { kx: Math.cos(lat * r) * 111320, ky: 110540 };
-}
-function radiusAtS(geom, s2) {
-  const ds = 2;
-  const total = geom.s[geom.n - 1];
-  const s0 = Math.max(0, s2 - ds);
-  const s1 = s2;
-  const s22 = Math.min(total, s2 + ds);
-  const p0 = interpolateAtS(geom, s0);
-  const p1 = interpolateAtS(geom, s1);
-  const p2 = interpolateAtS(geom, s22);
-  const { kx, ky } = meterScale(p1.lat);
-  const ax = (p1.lon - p0.lon) * kx;
-  const ay = (p1.lat - p0.lat) * ky;
-  const bx = (p2.lon - p1.lon) * kx;
-  const by = (p2.lat - p1.lat) * ky;
-  const cross = ax * by - ay * bx;
-  const la = Math.hypot(ax, ay);
-  const lb = Math.hypot(bx, by);
-  if (la < 0.01 || lb < 0.01) return { R: Infinity, turnSign: 0 };
-  const dot = Math.max(-1, Math.min(1, (ax * bx + ay * by) / (la * lb)));
-  const angle = Math.acos(dot);
-  if (angle < 0.02) return { R: Infinity, turnSign: 0 };
-  const R = Math.min(la, lb) / (2 * Math.sin(angle / 2));
-  return { R, turnSign: cross > 0 ? 1 : -1 };
-}
-function ribbonStepAtS() {
-  return RIBBON_STEP_M;
-}
-function extendRibbonNearCam(sections) {
-  if (sections.length < 2) return sections;
-  const s0 = sections[0];
-  const s1 = sections[1];
-  const dz = s1.cz - s0.cz;
-  if (dz < 0.02) return sections;
-  const inv = 1 / dz;
-  const rate = {
-    s: (s1.s - s0.s) * inv,
-    elev: (s1.elev - s0.elev) * inv,
-    cx: (s1.cx - s0.cx) * inv,
-    lx: (s1.lx - s0.lx) * inv,
-    lz: (s1.lz - s0.lz) * inv,
-    rx: (s1.rx - s0.rx) * inv,
-    rz: (s1.rz - s0.rz) * inv
-  };
-  const extra = [];
-  for (let z = s0.cz - RIBBON_NEAR_Z_STEP; z >= RIBBON_NEAR_Z_MIN; z -= RIBBON_NEAR_Z_STEP) {
-    const back = s0.cz - z;
-    extra.push({
-      s: s0.s - rate.s * back,
-      lat: s0.lat,
-      lon: s0.lon,
-      elev: s0.elev - rate.elev * back,
-      cx: s0.cx - rate.cx * back,
-      cz: z,
-      lx: s0.lx - rate.lx * back,
-      lz: s0.lz - rate.lz * back,
-      rx: s0.rx - rate.rx * back,
-      rz: s0.rz - rate.rz * back
-    });
-  }
-  return extra.length ? extra.concat(sections) : sections;
-}
-function computeRibbonSectionsCam(geom, snap, maxDist, halfW, headingRad) {
-  const elev0 = geom.elevReady ? interpolateElevAtS(geom, snap.s) : 0;
-  const sEnd = Math.min(geom.s[geom.n - 1], snap.s + maxDist);
-  const step = ribbonStepAtS();
-  const samples = [];
-  for (let s2 = snap.s; s2 <= sEnd + 0.01; s2 += step) {
-    const p = interpolateAtS(geom, s2);
-    const c = worldToCamXZ(p.lat, p.lon, snap, headingRad);
-    samples.push({
-      s: s2,
-      x: c.x,
-      z: c.z,
-      lat: p.lat,
-      lon: p.lon,
-      elev: geom.elevReady ? interpolateElevAtS(geom, s2) - elev0 : 0
-    });
-    if (s2 >= sEnd) break;
-  }
-  const sections = [];
-  let prevNx = null;
-  let prevNz = null;
-  for (let i = 0; i < samples.length; i++) {
-    const cur = samples[i];
-    if (cur.z < 0.12) continue;
-    const i0 = Math.max(0, i - 1);
-    const i1 = Math.min(samples.length - 1, i + 1);
-    let tx2 = samples[i1].x - samples[i0].x;
-    let tz = samples[i1].z - samples[i0].z;
-    const tl = Math.hypot(tx2, tz);
-    if (tl < 0.08) continue;
-    tx2 /= tl;
-    tz /= tl;
-    let nx = -tz;
-    let nz = tx2;
-    if (prevNx != null && nx * prevNx + nz * prevNz < 0) {
-      nx = -nx;
-      nz = -nz;
-    }
-    prevNx = nx;
-    prevNz = nz;
-    let leftW = halfW;
-    let rightW = halfW;
-    const { R, turnSign } = radiusAtS(geom, cur.s);
-    if (R < Infinity && R < halfW * 5) {
-      const maxOff = Math.max(0.55, R * 0.88);
-      if (turnSign > 0) leftW = Math.min(leftW, maxOff);
-      else if (turnSign < 0) rightW = Math.min(rightW, maxOff);
-    }
-    sections.push({
-      s: cur.s,
-      lat: cur.lat,
-      lon: cur.lon,
-      elev: cur.elev,
-      cx: cur.x,
-      cz: cur.z,
-      lx: cur.x + nx * leftW,
-      lz: cur.z + nz * leftW,
-      rx: cur.x - nx * rightW,
-      rz: cur.z - nz * rightW
-    });
-  }
-  return sections;
-}
-function worldToCamXZ(lat, lon, snap, headingRad) {
-  const { kx, ky } = meterScale(snap.lat);
-  const dx = (lon - snap.lon) * kx;
-  const dy = (lat - snap.lat) * ky;
-  const cosH = Math.cos(headingRad);
-  const sinH = Math.sin(headingRad);
-  return {
-    x: dx * cosH - dy * sinH,
-    z: dx * sinH + dy * cosH
-  };
-}
-function projectPointToRoute(geom, point) {
-  if (!geom || geom.n < 2 || !point) return null;
-  let best = null;
-  for (let i = 0; i < geom.n - 1; i++) {
-    const proj = projectOnSegment(
-      point,
-      geom.lat[i],
-      geom.lon[i],
-      geom.lat[i + 1],
-      geom.lon[i + 1]
-    );
-    const segLen = geom.s[i + 1] - geom.s[i];
-    const s2 = geom.s[i] + proj.t * segLen;
-    if (!best || proj.lateral < best.lateral) {
-      best = { s: s2, segIdx: i, lateral: proj.lateral, lat: proj.lat, lon: proj.lon };
-    }
-  }
-  return best;
-}
-function latLngsSliceByS(geom, sFrom, sTo) {
-  if (!geom || geom.n < 2) return [];
-  const total = geom.s[geom.n - 1];
-  const a = Math.max(0, Math.min(sFrom, total));
-  const b = Math.max(a, Math.min(sTo, total));
-  if (b - a < 0.5) return [];
-  const out = [];
-  const p0 = interpolateAtS(geom, a);
-  out.push([p0.lat, p0.lon]);
-  const i0 = findSegAtS(geom, a);
-  const i1 = findSegAtS(geom, b);
-  for (let i = i0 + 1; i <= i1 && i < geom.n; i++) {
-    if (geom.s[i] > a + 0.01 && geom.s[i] < b - 0.01) {
-      out.push([geom.lat[i], geom.lon[i]]);
-    }
-  }
-  const p1 = interpolateAtS(geom, b);
-  const last = out[out.length - 1];
-  if (!last || Math.abs(last[0] - p1.lat) > 1e-7 || Math.abs(last[1] - p1.lon) > 1e-7) {
-    out.push([p1.lat, p1.lon]);
-  }
-  return out;
-}
-function geometryToLatLngs(geom) {
-  if (!geom) return [];
-  const out = [];
-  for (let i = 0; i < geom.n; i++) out.push([geom.lat[i], geom.lon[i]]);
-  return out;
-}
-function remainingDistanceS(geom, snap) {
-  if (!geom || !snap) return 0;
-  return Math.max(0, geom.s[geom.n - 1] - snap.s);
-}
-var DENSE_STEP, ARC_ANGLE_THRESH, CAM_TANGENT_WINDOW, CAM_SMOOTH_ALPHA, RIBBON_STEP_M, _snap, _prevFixTs, _prevFixPos, _fixesSinceReset, _camHeadingRad, _camPitchRad, _snapMemoTs, _disp, _dispLastTs, _camLastTs, _camPitchLastTs, RIBBON_NEAR_Z_MIN, RIBBON_NEAR_Z_STEP;
-var init_route_geometry = __esm({
-  "js/route-geometry.js"() {
-    init_geo();
-    init_state();
-    init_gps();
-    init_maneuver_filter();
-    init_snap_quality();
-    init_nav_constants();
-    DENSE_STEP = 3;
-    ARC_ANGLE_THRESH = 15;
-    CAM_TANGENT_WINDOW = 25;
-    CAM_SMOOTH_ALPHA = 0.11;
-    RIBBON_STEP_M = 2;
-    _snap = null;
-    _prevFixTs = 0;
-    _prevFixPos = null;
-    _fixesSinceReset = 0;
-    _camHeadingRad = null;
-    _camPitchRad = null;
-    _snapMemoTs = null;
-    _disp = { s: 0, inited: false };
-    _dispLastTs = 0;
-    _camLastTs = 0;
-    _camPitchLastTs = 0;
-    RIBBON_NEAR_Z_MIN = 0.06;
-    RIBBON_NEAR_Z_STEP = 0.22;
-  }
-});
-
-// js/gps-converge.js
-function isNetworkFix(fix) {
-  return fix.provider === "network" || fix.lowAccuracy === true;
-}
-function maxJump(v, dt, acc) {
-  return (v || 0) * dt + (acc || GPS_CONVERGE_ACC_M) + GPS_CONVERGE_JUMP_PAD_M;
-}
-function checkBuffer(minFixes, accLimit) {
-  if (_buf.length < minFixes) return false;
-  const recent = _buf.slice(-minFixes);
-  if (recent.some((f2) => isNetworkFix(f2) || f2.acc > accLimit)) return false;
-  let gpsStreak = 0;
-  for (const f2 of recent) {
-    if (isNetworkFix(f2)) gpsStreak = 0;
-    else gpsStreak++;
-  }
-  if (gpsStreak < 2) return false;
-  for (let i = 1; i < recent.length; i++) {
-    const a = recent[i - 1];
-    const b = recent[i];
-    const dt = Math.max(0.2, (b.ts - a.ts) / 1e3);
-    const v = Math.max(a.speed || 0, b.speed || 0);
-    const d = haversine(a, b);
-    if (d > maxJump(v, dt, Math.max(a.acc, b.acc))) return false;
-  }
-  if (minFixes >= GPS_CONVERGE_MIN_FIXES) {
-    const last3 = _buf.slice(-3);
-    if (last3.length < 3 || last3.some((f2) => f2.acc > GPS_CONVERGE_LAST3_ACC_M)) return false;
-  }
-  return true;
-}
-function feedGpsConverge(fix) {
-  if (!fix) return S.gpsConverged;
-  if (isSim()) {
-    S.gpsConverged = true;
-    return true;
-  }
-  const acc = fix.acc != null && Number.isFinite(fix.acc) ? fix.acc : 50;
-  if (!isNetworkFix(fix)) _gpsFixCount++;
-  S.gpsFixCount = _gpsFixCount;
-  _buf.push({
-    lat: fix.lat,
-    lon: fix.lon,
-    acc,
-    speed: fix.speed,
-    ts: fix.ts,
-    provider: fix.provider
-  });
-  while (_buf.length > 8) _buf.shift();
-  const re = S.gpsConverged === false && _buf.length >= 2;
-  const minFixes = re ? GPS_CONVERGE_RE_MIN_FIXES : GPS_CONVERGE_MIN_FIXES;
-  const accLim = re ? GPS_CONVERGE_RE_ACC_M : GPS_CONVERGE_ACC_M;
-  if (checkBuffer(minFixes, accLim)) S.gpsConverged = true;
-  else if (!re && _buf.length < minFixes) S.gpsConverged = false;
-  return S.gpsConverged;
-}
-function invalidateGpsConverge() {
-  S.gpsConverged = false;
-}
-var _buf, _gpsFixCount;
-var init_gps_converge = __esm({
-  "js/gps-converge.js"() {
-    init_state();
-    init_geo();
-    init_platform();
-    init_nav_constants();
-    _buf = [];
-    _gpsFixCount = 0;
-  }
-});
-
-// js/gps.js
-function curPos() {
-  return RENDER_POS || S.gps;
-}
-function updateRenderPos() {
-  if (!S.gps) {
-    RENDER_POS = null;
-    return;
-  }
-  const v = S.gps.speed != null && S.gps.speed > 0.6 ? S.gps.speed : 0;
-  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
-  if (!v || hdg == null || isNaN(hdg) || !S.fixPos) {
-    RENDER_POS = S.gps;
-    return;
-  }
-  const rad = Math.PI / 180;
-  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1e3));
-  const dist = v * dt;
-  RENDER_POS = {
-    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
-    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
-    speed: S.gps.speed,
-    heading: S.gps.heading,
-    acc: S.gps.acc
-  };
-}
-function easeSpeed() {
-  const el = $2("v-speed");
-  if (!el || !S.gps) return;
-  const raw = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  const target = Math.min(raw, GPS_SPEED_MAX_MPS * 3.6);
-  S.dispSpeed += (target - S.dispSpeed) * 0.22;
-  if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
-  const shown = Math.round(S.dispSpeed);
-  el.textContent = shown;
-  el.classList.toggle("over", S.limit > 0 && target > S.limit + 3);
-  el.classList.toggle("speed-3", shown >= 100);
-}
-function resolveGpsSpeed(next, prev) {
-  const acc = next.acc ?? 999;
-  const device = next.speed != null && !isNaN(next.speed) && next.speed >= 0 ? next.speed : null;
-  let meas = 0;
-  let dist = 0;
-  if (prev) {
-    const dt = (next.ts - prev.ts) / 1e3;
-    if (dt > 0.15 && dt < 12) {
-      dist = haversine(prev, next);
-      if (dist >= GPS_SPEED_MEAS_MIN_DIST_M && dist < 500) meas = dist / dt;
-    }
-  }
-  const noiseRadius = Math.max(GPS_SPEED_STATIONARY_DIST_M, acc * 0.55);
-  if (prev && dist < noiseRadius) return 0;
-  if (device != null && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
-    if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
-      return device;
-    }
-  }
-  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
-  if (meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)) {
-    return S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
-  }
-  return 0;
-}
-function initGps(callbacks) {
-  _onTick = callbacks.onTick || _onTick;
-  _onVisual = callbacks.onVisual || _onVisual;
-}
-function visualLoop() {
-  S.rafId = requestAnimationFrame(visualLoop);
-  if (!$2("hud").classList.contains("on")) return;
-  telemetry_default.tickPerfFrame();
-  updateRenderPos();
-  easeSpeed();
-  _onVisual();
-}
-function startVisualLoop() {
-  if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
-}
-function stopVisualLoop() {
-  if (S.rafId) {
-    cancelAnimationFrame(S.rafId);
-    S.rafId = null;
-  }
-}
-function updateGpsConvergeUI() {
-  const el = $2("gps-converge");
-  if (el) {
-    el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
-  }
-  if (S.gpsConverged) {
-    const tag = isSim() ? " \u0441\u0438\u043C" : "";
-    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + Math.round(S.gps?.acc || 0) + "\u043C";
-    $2("s-gps").className = "chip ok";
-  } else if (S.gps) {
-    const acc = S.gps.acc != null ? Math.round(S.gps.acc) + "\u043C" : "\u2026";
-    $2("s-gps").textContent = "\u23F3 GPS \xB1" + acc;
-    $2("s-gps").className = "chip";
-  } else {
-    $2("s-gps").textContent = "\u23F3 GPS\u2026";
-    $2("s-gps").className = "chip";
-  }
-  checkStartReady();
-}
-function checkStartReady() {
-  const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
-  $2("btn-start").disabled = !(S.gps && S.finish && hasRoute);
-  const buildBtn = $2("btn-build-route");
-  if (buildBtn) buildBtn.disabled = !(S.gps && S.finish);
-}
-function onGpsError() {
-  $2("s-gps").textContent = "\u274C GPS";
-  $2("s-gps").className = "chip err";
-  invalidateGpsConverge();
-  if (!_gpsLost) {
-    _gpsLost = true;
-    telemetry_default.log("nav", { sub: "gps_lost" });
-  }
-}
-function applyGpsFix(next) {
-  if (S.lastPos) {
-    const d = haversine(S.lastPos, next);
-    const dt = (next.ts - S.lastPos.ts) / 1e3;
-    if (d > 3 && d < 500) S.distDone += d;
-    if ((next.heading == null || isNaN(next.heading)) && d > 3) {
-      next.heading = bearing(S.lastPos, next);
-    }
-  }
-  const resolved = resolveGpsSpeed(next, S.lastPos);
-  S.measSpeed = resolved;
-  next.speed = resolved;
-  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
-  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
-  if (fused != null && !isNaN(fused)) next.heading = fused;
-  if (next.heading != null && !isNaN(next.heading)) {
-    if ((next.speed ?? 0) >= 3.2) S.lastReliableHeadingTs = Date.now();
-    if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
-    else {
-      const spd = next.speed ?? S.measSpeed ?? 0;
-      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
-      const keep = 1 - alpha;
-      const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
-      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
-      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
-    }
-  }
-  S.lastPos = next;
-  S.gps = next;
-  S.fixPos = { lat: next.lat, lon: next.lon };
-  S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
-  feedGpsConverge(next);
-  if (next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge();
-  if ($2("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge();
-  updateGpsConvergeUI();
-  if ($2("hud").classList.contains("on")) _onTick();
-  const rcv = Date.now();
-  if (_gpsLost) {
-    _gpsLost = false;
-    telemetry_default.log("nav", { sub: "gps_restored" });
-  }
-  telemetry_default.logFix({
-    lat: next.lat,
-    lon: next.lon,
-    acc: next.acc,
-    speed: next.speed,
-    heading: next.heading,
-    alt: next.alt,
-    ts: next.ts,
-    rcv
-  });
-  if ($2("hud").classList.contains("on") && S.route?.geometry) {
-    const snap = getNavSnap(S.smoothedHeading);
-    telemetry_default.logSnapFromResult(snap);
-  }
-}
-function stopWebGps() {
-  if (S.watchId !== null && navigator.geolocation) {
-    navigator.geolocation.clearWatch(S.watchId);
-    S.watchId = null;
-  }
-}
-function startWebGps() {
-  if (!navigator.geolocation) {
-    $2("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
-    $2("s-gps").className = "chip err";
-    return;
-  }
-  stopWebGps();
-  $2("s-gps").textContent = "\u23F3 GPS\u2026";
-  $2("s-gps").className = "chip";
-  S.watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      const c = pos.coords;
-      applyGpsFix({
-        lat: c.latitude,
-        lon: c.longitude,
-        speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
-        heading: c.heading == null ? null : c.heading,
-        acc: c.accuracy,
-        alt: c.altitude != null && !isNaN(c.altitude) ? c.altitude : null,
-        ts: pos.timestamp
-      });
-    },
-    onGpsError,
-    { enableHighAccuracy: true, timeout: 15e3, maximumAge: 1e3 }
-  );
-}
-function startGps() {
-  _navMode = false;
-  startHeadingSensors();
-  if (isNative()) {
-    $2("s-gps").textContent = "\u23F3 GPS\u2026";
-    $2("s-gps").className = "chip";
-    stopWebGps();
-    startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
-    return;
-  }
-  startWebGps();
-}
-async function startNavigationGps() {
-  if (!isNative()) return;
-  _navMode = true;
-  await startNavGps(applyGpsFix, onGpsError);
-}
-async function stopNavigationGps() {
-  if (!isNative()) return;
-  _navMode = false;
-  await stopNavGps();
-  await startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
-}
-var RENDER_POS, _navMode, _gpsLost, _onTick, _onVisual;
-var init_gps = __esm({
-  "js/gps.js"() {
-    init_state();
-    init_geo();
-    init_util();
-    init_platform();
-    init_native_gps();
-    init_heading();
-    init_telemetry();
-    init_route_geometry();
-    init_nav_constants();
-    init_gps_converge();
-    init_snap_quality();
-    init_nav_constants();
-    RENDER_POS = null;
-    _navMode = false;
-    _gpsLost = false;
-    _onTick = () => {
-    };
-    _onVisual = () => {
-    };
   }
 });
 
@@ -5118,7 +4105,8 @@ function isTurnStep(step) {
   return isNavManeuverType(step);
 }
 function maneuverText(step) {
-  if (!isTurnStep(step)) return "";
+  if (!isTurnStep(step) && !isRoundaboutStep(step)) return "";
+  if (isRoundaboutStep(step)) return roundaboutManeuverText(step, null);
   const m = step.modifier || "";
   if (m === "uturn") return "\u0420\u0430\u0437\u0432\u043E\u0440\u043E\u0442";
   if (m.includes("left")) return "\u041F\u043E\u0432\u0435\u0440\u043D\u0438\u0442\u0435 \u043D\u0430\u043B\u0435\u0432\u043E";
@@ -5137,6 +4125,7 @@ var init_voice = __esm({
     init_platform();
     init_tts_ru();
     init_maneuver_filter();
+    init_roundabout();
     init_telemetry();
     _queue = [];
     _busy = false;
@@ -5161,7 +4150,7 @@ function buildRouteRequestUrl(from, to, opts = {}) {
   }
   const pts = opts.waypoints?.length ? opts.waypoints : [from, to];
   const coordStr = pts.map((p) => `${p.lon},${p.lat}`).join(";");
-  let url = OSRM_BASE + coordStr + "?overview=full&geometries=geojson&steps=true&annotations=false";
+  let url = OSRM_BASE + coordStr + "?overview=full&geometries=geojson&steps=true&annotations=speed";
   if (opts.alternatives) url += "&alternatives=2";
   if (opts.rerouteBearing != null && opts.rerouteRadius != null && pts.length === 2) {
     url += "&bearings=" + opts.rerouteBearing + ",45;&radiuses=" + opts.rerouteRadius + ";";
@@ -5202,6 +4191,514 @@ var init_route_quality = __esm({
   "js/route-quality.js"() {
     init_nav_constants();
     RouteQuality = { OK: "OK", LOW: "LOW" };
+  }
+});
+
+// js/speed-limit.js
+function resetSpeedLimitState() {
+  flushLimitCoverageTelemetry();
+  _graceUntil = 0;
+  _lastLimitKey = "";
+  _lookaheadWarnedKey = "";
+  S.currentLimit = null;
+  S.currentLimitSource = "default";
+  renderSpeedLimitSign({ limit: null, source: "default" }, null);
+  const graceEl = $2("speed-limit-grace");
+  if (graceEl) {
+    graceEl.textContent = "";
+    graceEl.classList.add("hidden");
+  }
+}
+function flushLimitCoverageTelemetry() {
+  if (_cov.total < 10) return;
+  const known = _cov.osm + _cov.implicit;
+  telemetry_default.log("nav", {
+    sub: "limit_coverage",
+    ticks: _cov.total,
+    osm: _cov.osm,
+    implicit: _cov.implicit,
+    default: _cov.default,
+    none: _cov.none,
+    known_pct: Math.round(known / _cov.total * 1e3) / 10
+  });
+  _cov = { total: 0, osm: 0, implicit: 0, default: 0, none: 0 };
+  _covTicks = 0;
+}
+function recordCoverage(source) {
+  _cov.total++;
+  if (source === "osm") _cov.osm++;
+  else if (source === "implicit") _cov.implicit++;
+  else if (source === "none") _cov.none++;
+  else _cov.default++;
+  _covTicks++;
+  if (_covTicks >= COV_FLUSH_TICKS) flushLimitCoverageTelemetry();
+}
+function normalizeMaxspeedEntry(entry) {
+  if (entry == null) return { unknown: true };
+  if (typeof entry === "number" && Number.isFinite(entry)) {
+    return { speed: entry, unit: "km/h" };
+  }
+  if (typeof entry === "string") {
+    const s2 = entry.trim().toLowerCase();
+    if (s2 === "unknown") return { unknown: true };
+    if (s2 === "none") return { none: true };
+    const m = s2.match(/^(\d+(?:\.\d+)?)\s*(km\/h|kmh|kph|mph)?$/i);
+    if (m) {
+      const n2 = parseFloat(m[1]);
+      const unit = (m[2] || "km/h").toLowerCase().startsWith("mph") ? "mph" : "km/h";
+      return { speed: n2, unit };
+    }
+    const n = parseInt(s2, 10);
+    if (!isNaN(n)) return { speed: n, unit: "km/h" };
+    return { unknown: true };
+  }
+  if (typeof entry === "object") {
+    if (entry.none) return { none: true };
+    if (entry.unknown) return { unknown: true };
+    if (entry.speed != null && Number.isFinite(Number(entry.speed))) {
+      return { speed: Number(entry.speed), unit: entry.unit || "km/h" };
+    }
+  }
+  return { unknown: true };
+}
+function maxspeedEntryToKmh(entry) {
+  const e = normalizeMaxspeedEntry(entry);
+  if (e.none) return null;
+  if (e.unknown || e.speed == null) return void 0;
+  if (e.unit === "mph") return Math.round(e.speed * 1.60934);
+  return Math.round(e.speed);
+}
+function parseMaxspeedTag(tag) {
+  if (tag == null) return null;
+  const s2 = String(tag).trim();
+  if (!s2 || /^(walk|none|signals|variable|ru:|de:)/i.test(s2)) return null;
+  const n = parseInt(s2, 10);
+  return !isNaN(n) && n > 0 ? n : null;
+}
+function parseSimpleConditional(tag, now = /* @__PURE__ */ new Date()) {
+  if (!tag || typeof tag !== "string") return null;
+  const m = tag.trim().match(
+    /^(\d+)\s*@?\s*\(?\s*([A-Za-z]{2}(?:-[A-Za-z]{2})?)\s+(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*\)?$/
+  );
+  if (!m) return null;
+  const speed = parseInt(m[1], 10);
+  if (!isDayInConditionalRange(m[2], now)) return null;
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const t0 = parseInt(m[3], 10) * 60 + parseInt(m[4], 10);
+  const t1 = parseInt(m[5], 10) * 60 + parseInt(m[6], 10);
+  if (cur >= t0 && cur < t1) return speed;
+  return null;
+}
+function isDayInConditionalRange(spec, date) {
+  const dow = date.getDay();
+  const parts = spec.split("-");
+  if (parts.length === 1) {
+    const d = DAY_MAP[parts[0]];
+    return d != null && d === dow;
+  }
+  const a = DAY_MAP[parts[0]];
+  const b = DAY_MAP[parts[1]];
+  if (a == null || b == null) return false;
+  if (a <= b) return dow >= a && dow <= b;
+  return dow >= a || dow <= b;
+}
+function parseMaxspeedsFromRoute(osrmRoute) {
+  const out = [];
+  if (!osrmRoute?.legs?.length) return out;
+  for (const leg of osrmRoute.legs) {
+    const arr = leg.annotation?.maxspeed;
+    if (!Array.isArray(arr)) continue;
+    for (const item of arr) out.push(normalizeMaxspeedEntry(item));
+  }
+  return out;
+}
+function parseSegmentSpeedsFromRoute(osrmRoute) {
+  const out = [];
+  if (!osrmRoute?.legs?.length) return out;
+  for (const leg of osrmRoute.legs) {
+    const arr = leg.annotation?.speed;
+    if (!Array.isArray(arr)) continue;
+    for (const v of arr) out.push(typeof v === "number" && Number.isFinite(v) ? v : 0);
+  }
+  return out;
+}
+function urbanCacheKey(lat, lon) {
+  return Math.round(lat * 100) / 100 + "," + Math.round(lon * 100) / 100;
+}
+async function checkUrbanZone(lat, lon) {
+  const key = urbanCacheKey(lat, lon);
+  if (_urbanCache.has(key)) return _urbanCache.get(key);
+  const r = SPEED_LIMIT_URBAN_PLACE_RADIUS_M;
+  const q = `[out:json][timeout:18];
+(
+  node["place"~"^(city|town|village|hamlet)$"](around:${r},${lat},${lon});
+  relation["boundary"="administrative"]["admin_level"="8"](around:${r},${lat},${lon});
+);
+out 1;`;
+  let urban = false;
+  try {
+    const res = await fetch(OVERPASS_URL, { method: "POST", body: "data=" + encodeURIComponent(q) });
+    if (res.ok) {
+      const j = await res.json();
+      urban = (j.elements?.length ?? 0) > 0;
+    }
+  } catch (e) {
+    console.warn("urban check:", e);
+  }
+  _urbanCache.set(key, urban);
+  return urban;
+}
+function resolveImplicitLimit(highwayType, isUrban) {
+  if (!highwayType) return null;
+  const hw = String(highwayType).toLowerCase();
+  if (hw === "motorway") return 110;
+  if (hw === "motorway_link") return 90;
+  if (hw === "trunk" || hw === "trunk_link") return 90;
+  const urbanClass = hw === "primary" || hw === "secondary" || hw === "tertiary" || hw === "primary_link" || hw === "secondary_link" || hw === "tertiary_link";
+  if (urbanClass) return isUrban ? 60 : 90;
+  if (hw === "residential" || hw === "unclassified") return 60;
+  if (hw === "living_street") return 20;
+  if (hw === "service") return 20;
+  return null;
+}
+function routeBbox(coords, buf = 0.015) {
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  for (const c of coords) {
+    if (c[0] < minLat) minLat = c[0];
+    if (c[0] > maxLat) maxLat = c[0];
+    if (c[1] < minLon) minLon = c[1];
+    if (c[1] > maxLon) maxLon = c[1];
+  }
+  return { s: minLat - buf, w: minLon - buf, n: maxLat + buf, e: maxLon + buf };
+}
+function wayBbox(geom) {
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  for (const p of geom) {
+    if (p.lat < minLat) minLat = p.lat;
+    if (p.lat > maxLat) maxLat = p.lat;
+    if (p.lon < minLon) minLon = p.lon;
+    if (p.lon > maxLon) maxLon = p.lon;
+  }
+  return { minLat, maxLat, minLon, maxLon };
+}
+function bboxOverlap(a, b, pad = 4e-4) {
+  return !(a.maxLat + pad < b.minLat - pad || a.minLat - pad > b.maxLat + pad || a.maxLon + pad < b.minLon - pad || a.minLon - pad > b.maxLon + pad);
+}
+function distPointToWayPolyline(point, geom) {
+  let best = Infinity;
+  for (let i = 0; i < geom.length - 1; i++) {
+    const d = distToSegment(
+      point,
+      { lat: geom[i].lat, lon: geom[i].lon },
+      { lat: geom[i + 1].lat, lon: geom[i + 1].lon }
+    );
+    if (d < best) best = d;
+  }
+  return best;
+}
+function matchWayAtPoint(point, ways) {
+  let best = null;
+  let bestD = WAY_MATCH_MAX_M;
+  const segBox = {
+    minLat: point.lat - 35e-5,
+    maxLat: point.lat + 35e-5,
+    minLon: point.lon - 5e-4,
+    maxLon: point.lon + 5e-4
+  };
+  for (const w of ways) {
+    if (!bboxOverlap(wayBbox(w.geom), segBox)) continue;
+    const d = distPointToWayPolyline(point, w.geom);
+    if (d < bestD) {
+      bestD = d;
+      best = w;
+    }
+  }
+  return best;
+}
+async function loadRouteHighwayTypes(route) {
+  if (!route?.coords || route.coords.length < 2) return;
+  const n = route.coords.length - 1;
+  const highwayTypes = new Array(n).fill(null);
+  const wayTags = new Array(n).fill(null);
+  const urbanSegments = new Array(n).fill(false);
+  const bb = routeBbox(route.coords);
+  const q = `[out:json][timeout:28];
+way["highway"](${bb.s},${bb.w},${bb.n},${bb.e});
+out geom;`;
+  let ways = [];
+  try {
+    const res = await fetch(OVERPASS_URL, { method: "POST", body: "data=" + encodeURIComponent(q) });
+    if (!res.ok) throw new Error("Overpass " + res.status);
+    const j = await res.json();
+    ways = (j.elements || []).filter((e) => e.type === "way" && e.tags?.highway && Array.isArray(e.geometry) && e.geometry.length >= 2).map((e) => ({
+      highway: e.tags.highway,
+      maxspeed: e.tags.maxspeed || null,
+      maxspeedConditional: e.tags["maxspeed:conditional"] || null,
+      geom: e.geometry
+    }));
+  } catch (e) {
+    console.warn("loadRouteHighwayTypes:", e);
+    route.highwayTypes = highwayTypes;
+    route.wayTags = wayTags;
+    route.urbanSegments = urbanSegments;
+    return;
+  }
+  const urbanPending = /* @__PURE__ */ new Map();
+  for (let i = 0; i < n; i++) {
+    const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
+    const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
+    const pt = { lat, lon };
+    const way = matchWayAtPoint(pt, ways);
+    if (way) {
+      highwayTypes[i] = way.highway;
+      wayTags[i] = {
+        maxspeed: way.maxspeed,
+        maxspeedConditional: way.maxspeedConditional
+      };
+    }
+    const uk = urbanCacheKey(lat, lon);
+    if (_urbanCache.has(uk)) {
+      urbanSegments[i] = _urbanCache.get(uk);
+    } else if (!urbanPending.has(uk)) {
+      urbanPending.set(uk, checkUrbanZone(lat, lon));
+    }
+  }
+  if (urbanPending.size) {
+    const keys = [...urbanPending.keys()];
+    const vals = await Promise.all([...urbanPending.values()]);
+    const urbanByKey = new Map(keys.map((k, idx) => [k, vals[idx]]));
+    for (let i = 0; i < n; i++) {
+      const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
+      const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
+      urbanSegments[i] = urbanByKey.get(urbanCacheKey(lat, lon)) ?? false;
+    }
+  }
+  route.highwayTypes = highwayTypes;
+  route.wayTags = wayTags;
+  route.urbanSegments = urbanSegments;
+  telemetry_default.log("nav", {
+    sub: "highway_types_loaded",
+    segments: n,
+    matched: highwayTypes.filter(Boolean).length,
+    ways: ways.length
+  });
+}
+function limitFromWayTags(tags, now) {
+  if (!tags) return null;
+  const cond = tags.maxspeedConditional ? parseSimpleConditional(tags.maxspeedConditional, now) : null;
+  if (cond != null) return cond;
+  return parseMaxspeedTag(tags.maxspeed);
+}
+function fallbackResult(userDefault, fallbackMode) {
+  if (fallbackMode === "hide") {
+    return { limit: null, source: "default" };
+  }
+  const lim = userDefault > 0 ? userDefault : null;
+  return { limit: lim, source: "default" };
+}
+function getCurrentSpeedLimit(snap, opts = {}) {
+  const dynamic = opts.dynamic ?? S.speedLimitDynamic !== false;
+  const userDefault = opts.userDefault ?? S.userDefaultLimit ?? 60;
+  const fallbackMode = opts.fallbackMode ?? S.speedLimitFallback ?? "user-default";
+  const route = opts.route ?? S.route;
+  const now = opts.now ?? /* @__PURE__ */ new Date();
+  if (!dynamic) {
+    return fallbackResult(userDefault, "user-default");
+  }
+  const idx = snap?.segIdx ?? snap?.idx;
+  if (idx == null || !route?.maxspeeds?.length) {
+    return fallbackResult(userDefault, fallbackMode);
+  }
+  const i = Math.max(0, Math.min(idx, route.maxspeeds.length - 1));
+  const entry = route.maxspeeds[i];
+  if (entry?.none) return { limit: null, source: "none" };
+  const kmh = maxspeedEntryToKmh(entry);
+  if (kmh != null && kmh > 0) return { limit: kmh, source: "osm" };
+  if (entry?.unknown) {
+    const fromWay = limitFromWayTags(route.wayTags?.[i], now);
+    if (fromWay != null) return { limit: fromWay, source: "osm" };
+    const hw = route.highwayTypes?.[i];
+    if (hw) {
+      const urban = route.urbanSegments?.[i] ?? false;
+      const implicit = resolveImplicitLimit(hw, urban);
+      if (implicit != null) return { limit: implicit, source: "implicit" };
+    }
+    return fallbackResult(userDefault, fallbackMode);
+  }
+  return fallbackResult(userDefault, fallbackMode);
+}
+function limitsEqual(a, b) {
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  return Math.round(a) === Math.round(b);
+}
+function findNextLimitChange(snap, lookaheadM = SPEED_LIMIT_LOOKAHEAD_M) {
+  if (S.speedLimitDynamic === false) return null;
+  const route = S.route;
+  if (!snap || !route?.maxspeeds?.length || !route.coords?.length) return null;
+  const startIdx = snap.segIdx ?? snap.idx ?? 0;
+  const cur = getCurrentSpeedLimit(snap);
+  const curVal = cur.source === "none" ? null : cur.limit;
+  const coords = route.coords;
+  let dist = 0;
+  for (let i = startIdx + 1; i < route.maxspeeds.length && dist <= lookaheadM; i++) {
+    const segDist = haversine(
+      { lat: coords[i][0], lon: coords[i][1] },
+      { lat: coords[i + 1][0], lon: coords[i + 1][1] }
+    );
+    dist += segDist;
+    const next = getCurrentSpeedLimit({ segIdx: i });
+    const nextVal = next.source === "none" ? null : next.limit;
+    if (!limitsEqual(curVal, nextVal)) {
+      const direction = nextVal != null && (curVal == null || nextVal < curVal) ? "down" : "up";
+      return { newLimit: nextVal, distance: dist, direction };
+    }
+  }
+  return null;
+}
+function getEffectiveSpeedLimit() {
+  if (S.speedLimitDynamic === false) return S.userDefaultLimit;
+  if (S.currentLimitSource === "none") return null;
+  if (S.currentLimit != null) return S.currentLimit;
+  return S.userDefaultLimit;
+}
+function isSpeedLimitGraceActive() {
+  return Date.now() < _graceUntil;
+}
+function renderSpeedLimitSign(info, preview) {
+  const el = $2("speed-limit-sign");
+  if (!el) return;
+  if (S.speedLimitDynamic === false) {
+    el.classList.add("hidden", "sls-hidden");
+    el.setAttribute("aria-hidden", "true");
+    return;
+  }
+  const numEl = $2("sls-num");
+  const tildeEl = $2("sls-tilde");
+  const noneEl = $2("sls-none");
+  const previewEl = $2("sls-preview");
+  el.classList.remove("sls-osm", "sls-implicit", "sls-default", "sls-none", "sls-hidden", "sls-preview-down");
+  const fallbackMode = S.speedLimitFallback ?? "user-default";
+  if (info.source === "none") {
+    el.classList.add("sls-none");
+    el.classList.remove("hidden");
+    el.setAttribute("aria-hidden", "false");
+    numEl?.classList.add("hidden");
+    noneEl?.classList.remove("hidden");
+    tildeEl?.classList.add("hidden");
+  } else if (info.limit == null && fallbackMode === "hide" && info.source === "default") {
+    el.classList.add("hidden", "sls-hidden");
+    el.setAttribute("aria-hidden", "true");
+  } else if (info.limit == null) {
+    el.classList.add("hidden", "sls-hidden");
+    el.setAttribute("aria-hidden", "true");
+  } else {
+    el.classList.remove("hidden");
+    el.setAttribute("aria-hidden", "false");
+    numEl?.classList.remove("hidden");
+    noneEl?.classList.add("hidden");
+    if (numEl) numEl.textContent = String(info.limit);
+    el.classList.add(
+      info.source === "osm" ? "sls-osm" : info.source === "implicit" ? "sls-implicit" : "sls-default"
+    );
+    if (tildeEl) tildeEl.classList.toggle("hidden", info.source !== "implicit");
+  }
+  if (previewEl) {
+    if (preview && preview.direction === "down" && preview.newLimit != null) {
+      previewEl.textContent = String(preview.newLimit);
+      previewEl.classList.remove("hidden");
+      el.classList.add("sls-preview-down");
+    } else {
+      previewEl.classList.add("hidden");
+      previewEl.textContent = "";
+    }
+  }
+}
+function limitKey(info) {
+  return info.source + ":" + (info.limit ?? "null");
+}
+function tickSpeedLimit(snap) {
+  if (!S.route) {
+    resetSpeedLimitState();
+    return;
+  }
+  const info = getCurrentSpeedLimit(snap);
+  const key = limitKey(info);
+  if (key !== _lastLimitKey) {
+    const prevParts = _lastLimitKey.split(":");
+    const from = prevParts.length > 1 ? prevParts[1] : null;
+    if (_lastLimitKey) {
+      _graceUntil = Date.now() + SPEED_LIMIT_GRACE_MS;
+      telemetry_default.log("nav", {
+        sub: "limit_change",
+        from: from === "null" ? null : Number(from),
+        to: info.limit,
+        source: info.source,
+        s: snap?.s != null ? Math.round(snap.s) : null
+      });
+    }
+    _lastLimitKey = key;
+    _lookaheadWarnedKey = "";
+  }
+  S.currentLimit = info.limit;
+  S.currentLimitSource = info.source;
+  if (S.speedLimitDynamic !== false) recordCoverage(info.source);
+  const preview = S.speedLimitDynamic !== false ? findNextLimitChange(snap) : null;
+  renderSpeedLimitSign(info, preview?.direction === "down" ? preview : null);
+  const graceEl = $2("speed-limit-grace");
+  if (graceEl) {
+    const hint = getSpeedLimitGraceHint();
+    if (hint) {
+      graceEl.textContent = hint;
+      graceEl.classList.remove("hidden");
+    } else {
+      graceEl.textContent = "";
+      graceEl.classList.add("hidden");
+    }
+  }
+  if (S.speedLimitDynamic !== false) tickSpeedLimitVoice(snap, preview);
+}
+function tickSpeedLimitVoice(snap, preview) {
+  if (!S.voice || !preview || preview.direction !== "down") return;
+  if (preview.newLimit == null) return;
+  if (preview.distance < SPEED_LIMIT_VOICE_MIN_M || preview.distance > SPEED_LIMIT_VOICE_MAX_M) return;
+  const bucket = Math.round(preview.distance / 25);
+  const warnKey = "lim_" + (snap?.segIdx ?? 0) + "_" + preview.newLimit + "_" + bucket;
+  if (_lookaheadWarnedKey === warnKey) return;
+  if (Date.now() - S.lastVoiceTs < 2500) return;
+  _lookaheadWarnedKey = warnKey;
+  S.lastVoiceTs = Date.now();
+  speak("\u0412\u043F\u0435\u0440\u0435\u0434\u0438 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0438\u0435 " + preview.newLimit);
+}
+function isSpeedOverLimit(kmh) {
+  const lim = getEffectiveSpeedLimit();
+  if (lim == null || lim <= 0) return false;
+  if (isSpeedLimitGraceActive()) return false;
+  return kmh > lim + SPEED_LIMIT_OVERSPEED_KMH;
+}
+function getSpeedLimitGraceHint() {
+  if (!isSpeedLimitGraceActive() || S.currentLimit == null) return null;
+  return "\u0421\u0431\u0440\u043E\u0441\u044C\u0442\u0435 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0434\u043E " + S.currentLimit;
+}
+var OVERPASS_URL, WAY_MATCH_MAX_M, COV_FLUSH_TICKS, _graceUntil, _lastLimitKey, _lookaheadWarnedKey, _urbanCache, _cov, _covTicks, DAY_MAP;
+var init_speed_limit = __esm({
+  "js/speed-limit.js"() {
+    init_state();
+    init_util();
+    init_geo();
+    init_telemetry();
+    init_voice();
+    init_nav_constants();
+    OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+    WAY_MATCH_MAX_M = 40;
+    COV_FLUSH_TICKS = 120;
+    _graceUntil = 0;
+    _lastLimitKey = "";
+    _lookaheadWarnedKey = "";
+    _urbanCache = /* @__PURE__ */ new Map();
+    _cov = { total: 0, osm: 0, implicit: 0, default: 0, none: 0 };
+    _covTicks = 0;
+    DAY_MAP = { Mo: 1, Tu: 2, We: 3, Th: 4, Fr: 5, Sa: 6, Su: 0 };
   }
 });
 
@@ -5253,6 +4750,7 @@ function attachRouteGeometry(route) {
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
+  loadRouteHighwayTypes(route).catch((e) => console.warn("highway types:", e));
 }
 function seedSnapAfterReroute() {
   const geom = S.route?.geometry;
@@ -5352,7 +4850,22 @@ function parseOsrmRoute(rt) {
       });
     });
   });
-  return { coords, steps, distance: rt.distance, duration: rt.duration };
+  const maxspeeds = parseMaxspeedsFromRoute(rt);
+  const need = Math.max(0, coords.length - 1);
+  while (maxspeeds.length < need) maxspeeds.push({ unknown: true });
+  if (maxspeeds.length > need) maxspeeds.length = need;
+  const segmentSpeeds = parseSegmentSpeedsFromRoute(rt);
+  while (segmentSpeeds.length < need) segmentSpeeds.push(0);
+  if (segmentSpeeds.length > need) segmentSpeeds.length = need;
+  return {
+    coords,
+    steps,
+    distance: rt.distance,
+    duration: rt.duration,
+    maxspeeds,
+    segmentSpeeds,
+    highwayTypes: null
+  };
 }
 async function fetchRouteAlternatives() {
   if (!S.gps || !S.finish) throw new Error("\u041D\u0443\u0436\u043D\u044B GPS \u0438 \u0444\u0438\u043D\u0438\u0448");
@@ -5409,6 +4922,7 @@ function selectRouteIndex(idx) {
   S.route = S.routeAlternatives[S.selectedRouteIdx];
   resetRouteSnap();
   resetFuelRouteBinding();
+  loadRouteHighwayTypes(S.route).catch((e) => console.warn("highway types:", e));
 }
 async function buildRoute(opts = {}) {
   const { reroute = false, allowCache = true } = opts;
@@ -5731,9 +5245,1748 @@ var init_route = __esm({
     init_router();
     init_maneuver_filter();
     init_route_quality();
+    init_speed_limit();
     _nearMemoPos = null;
     _nearMemoVal = null;
     _nearIdx = 0;
+  }
+});
+
+// js/roundabout.js
+function isRoundaboutStep(step) {
+  if (!step) return false;
+  const t = step.type;
+  return t === "roundabout" || t === "rotary" || t === "exit roundabout";
+}
+function shouldUseRoundaboutSchema() {
+  return S.roundaboutSchema !== false;
+}
+function normalizeBearingDiff(bb, ba) {
+  if (bb == null || ba == null || isNaN(bb) || isNaN(ba)) return 0;
+  return (ba - bb + 540) % 360 - 180;
+}
+function routeCacheKey(route) {
+  return route?.coords?.length + ":" + (route?.steps?.length ?? 0);
+}
+function getRoundaboutPairs(route) {
+  if (!route?.steps?.length) return [];
+  const key = routeCacheKey(route);
+  if (_pairsCache && _pairsRouteId === key) return _pairsCache;
+  const pairs = [];
+  const steps = route.steps;
+  for (let i = 0; i < steps.length; i++) {
+    const st = steps[i];
+    if (st.type !== "roundabout" && st.type !== "rotary") continue;
+    let exitSt = null;
+    let exitIdx = -1;
+    for (let j = i + 1; j < steps.length; j++) {
+      if (steps[j].type === "exit roundabout") {
+        exitSt = steps[j];
+        exitIdx = j;
+        break;
+      }
+      if (steps[j].type === "roundabout" || steps[j].type === "rotary") break;
+    }
+    const enterCi = stepCoordIndex(st);
+    const exitCi = exitSt ? stepCoordIndex(exitSt) : enterCi;
+    const exitNum = st.exit != null && st.exit > 0 ? st.exit : exitSt?.exit != null && exitSt.exit > 0 ? exitSt.exit : null;
+    pairs.push({
+      enterIdx: i,
+      exitIdx,
+      enterStep: st,
+      exitStep: exitSt,
+      enterSegIdx: Math.max(0, enterCi),
+      exitSegIdx: Math.max(enterCi, exitCi),
+      exitNumber: exitNum,
+      bearingDiff: normalizeBearingDiff(st.bearing_before, st.bearing_after),
+      radiusM: estimateRoundaboutRadius(route, enterCi, exitCi),
+      isMini: false
+    });
+    const p = pairs[pairs.length - 1];
+    p.isMini = p.radiusM != null && p.radiusM < ROUNDABOUT_MIN_RADIUS_M;
+  }
+  _pairsCache = pairs;
+  _pairsRouteId = key;
+  return pairs;
+}
+function invalidateRoundaboutCache() {
+  _pairsCache = null;
+  _pairsRouteId = null;
+}
+function estimateRoundaboutRadius(route, enterCi, exitCi) {
+  const c = route?.coords;
+  if (!c || c.length < 3) return null;
+  const lo = Math.max(0, Math.min(enterCi, exitCi));
+  const hi = Math.min(c.length - 1, Math.max(enterCi, exitCi));
+  if (hi - lo < 2) return null;
+  let lat = 0;
+  let lon = 0;
+  const n = hi - lo + 1;
+  for (let i = lo; i <= hi; i++) {
+    lat += c[i][0];
+    lon += c[i][1];
+  }
+  lat /= n;
+  lon /= n;
+  const center = { lat, lon };
+  let maxD = 0;
+  for (let i = lo; i <= hi; i++) {
+    maxD = Math.max(maxD, haversine(center, { lat: c[i][0], lon: c[i][1] }));
+  }
+  return maxD;
+}
+function findPairForSeg(segIdx, route) {
+  for (const p of getRoundaboutPairs(route)) {
+    if (segIdx >= p.enterSegIdx && segIdx <= p.exitSegIdx) return p;
+  }
+  return null;
+}
+function findApproachPair(route, snap) {
+  if (!snap || !route) return null;
+  const pairs = getRoundaboutPairs(route);
+  for (const p of pairs) {
+    if (snap.segIdx < p.enterSegIdx) {
+      const dist = haversine(snap, p.enterStep);
+      if (dist < 400) return p;
+    }
+  }
+  return null;
+}
+function isSegIdxOnRoundabout(segIdx, route) {
+  return !!findPairForSeg(segIdx, route);
+}
+function getRoundaboutContext(snap, route = S.route) {
+  if (!route?.steps?.length) return null;
+  let pair = snap?.segIdx != null ? findPairForSeg(snap.segIdx, route) : null;
+  let source = "approach";
+  let isOn = false;
+  if (pair) {
+    isOn = snap.segIdx > pair.enterSegIdx && snap.segIdx < pair.exitSegIdx;
+    source = isOn ? "on" : snap.segIdx >= pair.exitSegIdx ? "exit" : "approach";
+  } else if (snap) {
+    pair = findApproachPair(route, snap);
+    source = "approach";
+  }
+  if (!pair) return null;
+  const radiusM = pair.radiusM;
+  const isMini = pair.isMini || radiusM != null && radiusM < ROUNDABOUT_MIN_RADIUS_M;
+  const isOversized = radiusM != null && radiusM > ROUNDABOUT_MAX_RADIUS_M;
+  let distanceToExit = null;
+  let progressAngle = 0;
+  if (isOn && snap) {
+    if (pair.exitStep && S.gps) {
+      const geom = route.geometry;
+      if (geom && snap.s != null && pair.exitStep) {
+        const exitS = geom.maneuvers?.find((m) => m.step === pair.exitStep)?.s;
+        if (exitS != null) distanceToExit = Math.max(0, exitS - snap.s);
+      }
+      if (distanceToExit == null) {
+        distanceToExit = haversine(S.gps, pair.exitStep);
+      }
+    }
+    const span = Math.max(1, pair.exitSegIdx - pair.enterSegIdx);
+    progressAngle = Math.max(0, Math.min(1, (snap.segIdx - pair.enterSegIdx) / span));
+  }
+  const laneHint = extractLaneHint(pair.enterStep);
+  return {
+    active: true,
+    isOnRoundabout: isOn,
+    enterStep: pair.enterStep,
+    exitStep: pair.exitStep,
+    enterSegIdx: pair.enterSegIdx,
+    exitSegIdx: pair.exitSegIdx,
+    exitNumber: pair.exitNumber,
+    bearingDiff: pair.bearingDiff,
+    distanceToExit,
+    progressAngle,
+    radiusM,
+    isMini,
+    isOversized,
+    laneHint,
+    source
+  };
+}
+function extractLaneHint(step) {
+  if (!step?.intersections?.length) return null;
+  for (const ix of step.intersections) {
+    const lanes = ix.lanes;
+    if (!lanes?.length) continue;
+    const valid = lanes.filter((l) => l.valid);
+    if (!valid.length) continue;
+    const inds = valid.flatMap((l) => l.indications || []);
+    if (inds.some((i) => String(i).includes("left"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u043B\u0435\u0432\u0443\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
+    if (inds.some((i) => String(i).includes("right"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u043F\u0440\u0430\u0432\u0443\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
+    if (inds.some((i) => String(i).includes("straight"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u0441\u0440\u0435\u0434\u043D\u044E\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
+  }
+  return null;
+}
+function exitOrdinal(n) {
+  if (n == null || n <= 0) return null;
+  if (EXIT_ORDINAL[n]) return EXIT_ORDINAL[n];
+  return n + "-\u0439 \u0441\u044A\u0435\u0437\u0434";
+}
+function streetSuffix(name) {
+  const n = (name || "").trim();
+  return n ? ", " + n : "";
+}
+function roundaboutVoicePhrase(step, when, opts = {}) {
+  const exitN = step.exit != null && step.exit > 0 ? step.exit : null;
+  const ord = exitOrdinal(exitN);
+  const street = streetSuffix(step.name || opts.streetName);
+  if (!exitN) {
+    if (when === "far") return "\u0427\u0435\u0440\u0435\u0437 \u0442\u0440\u0438\u0441\u0442\u0430 \u043C\u0435\u0442\u0440\u043E\u0432 \u043A\u0440\u0443\u0433\u043E\u0432\u043E\u0435 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435, \u0441\u043B\u0435\u0434\u0443\u0439\u0442\u0435 \u043F\u043E \u0443\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044F\u043C";
+    if (when === "near") return "\u041A\u0440\u0443\u0433\u043E\u0432\u043E\u0435 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435, \u0441\u043B\u0435\u0434\u0443\u0439\u0442\u0435 \u043F\u043E \u0443\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044F\u043C";
+    if (when === "on_exit") return "\u0412\u0430\u0448 \u0441\u044A\u0435\u0437\u0434";
+    return "\u041A\u0440\u0443\u0433\u043E\u0432\u043E\u0435 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435, \u0441\u043B\u0435\u0434\u0443\u0439\u0442\u0435 \u043F\u043E \u0443\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044F\u043C";
+  }
+  if (when === "far") return "\u0427\u0435\u0440\u0435\u0437 \u0442\u0440\u0438\u0441\u0442\u0430 \u043C\u0435\u0442\u0440\u043E\u0432 \u043A\u0440\u0443\u0433\u043E\u0432\u043E\u0435 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435, " + ord + " \u0441\u044A\u0435\u0437\u0434" + street;
+  if (when === "near") return "\u041A\u0440\u0443\u0433\u043E\u0432\u043E\u0435 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435, " + ord + " \u0441\u044A\u0435\u0437\u0434" + street;
+  if (when === "on_exit") return "\u0412\u0430\u0448 \u0441\u044A\u0435\u0437\u0434";
+  return "\u041A\u0440\u0443\u0433\u043E\u0432\u043E\u0435 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435, " + ord + " \u0441\u044A\u0435\u0437\u0434";
+}
+function roundaboutManeuverText(step, ctx) {
+  if (!isRoundaboutStep(step)) return "";
+  if (ctx?.isOnRoundabout && ctx.distanceToExit != null) {
+    return "\u0412\u0430\u0448 \u0441\u044A\u0435\u0437\u0434 \u0447\u0435\u0440\u0435\u0437 " + Math.max(10, Math.round(ctx.distanceToExit / 10) * 10) + " \u043C";
+  }
+  if (step.exit > 0) return "\u0421\u044A\u0435\u0437\u0434 " + step.exit;
+  return "\u041A\u0440\u0443\u0433\u043E\u0432\u043E\u0435 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435";
+}
+function deg2rad(d) {
+  return d * Math.PI / 180;
+}
+function polar(cx, cy, r, degFromTop) {
+  const a = deg2rad(degFromTop);
+  return { x: cx + r * Math.sin(a), y: cy - r * Math.cos(a) };
+}
+function arcPath(cx, cy, r, startDeg, endDeg) {
+  const s2 = polar(cx, cy, r, startDeg);
+  const e = polar(cx, cy, r, endDeg);
+  const large = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+  const sweep = endDeg > startDeg ? 1 : 0;
+  return "M" + s2.x.toFixed(1) + "," + s2.y.toFixed(1) + " A" + r + "," + r + " 0 " + large + " " + sweep + " " + e.x.toFixed(1) + "," + e.y.toFixed(1);
+}
+function arrowHead(x, y, angleDeg, len, color, sw) {
+  const a = deg2rad(angleDeg);
+  const hx = x + len * Math.sin(a);
+  const hy = y - len * Math.cos(a);
+  const wing = len * 0.55;
+  const a1 = a + deg2rad(150);
+  const a2 = a - deg2rad(150);
+  const w1x = hx + wing * Math.sin(a1);
+  const w1y = hy - wing * Math.cos(a1);
+  const w2x = hx + wing * Math.sin(a2);
+  const w2y = hy - wing * Math.cos(a2);
+  return '<line x1="' + x.toFixed(1) + '" y1="' + y.toFixed(1) + '" x2="' + hx.toFixed(1) + '" y2="' + hy.toFixed(1) + '" stroke="' + color + '" stroke-width="' + sw + '" stroke-linecap="round"/><polygon points="' + hx.toFixed(1) + "," + hy.toFixed(1) + " " + w1x.toFixed(1) + "," + w1y.toFixed(1) + " " + w2x.toFixed(1) + "," + w2y.toFixed(1) + '" fill="' + color + '"/>';
+}
+function ghostExitAngles(exitN, activeDiff) {
+  if (!exitN || exitN < 2) return [];
+  const out = [];
+  const step = 360 / exitN;
+  const active = (activeDiff % 360 + 360) % 360;
+  for (let k = 1; k <= exitN; k++) {
+    const ang = k * step;
+    if (Math.abs((ang - active + 180) % 360 - 180) < 18) continue;
+    out.push(ang);
+  }
+  if (!out.length && exitN === 2) {
+    out.push(90, 270);
+  }
+  return out;
+}
+function buildRoundaboutSVG(step, opts = {}) {
+  if (!shouldUseRoundaboutSchema()) return null;
+  if (!isRoundaboutStep(step)) return null;
+  const ctx = opts.ctx || null;
+  const isOn = !!opts.isOnRoundabout || ctx?.isOnRoundabout;
+  const distanceToExit = opts.distanceToExit ?? ctx?.distanceToExit;
+  const progress = opts.progressAngle ?? ctx?.progressAngle ?? 0;
+  const displayStep = ctx?.enterStep || step;
+  const exitN = displayStep.exit != null && displayStep.exit > 0 ? displayStep.exit : step.exit > 0 ? step.exit : null;
+  const bb = displayStep.bearing_before ?? step.bearing_before;
+  const ba = displayStep.bearing_after ?? step.bearing_after;
+  const bearingDiff = normalizeBearingDiff(bb, ba);
+  const radiusM = ctx?.radiusM ?? estimateRoundaboutRadius(
+    S.route,
+    stepCoordIndex(displayStep),
+    ctx?.exitStep ? stepCoordIndex(ctx.exitStep) : stepCoordIndex(displayStep)
+  );
+  if (radiusM != null && radiusM > ROUNDABOUT_MAX_RADIUS_M) return null;
+  if (ctx?.isOversized) return null;
+  const isMini = ctx?.isMini || radiusM != null && radiusM < ROUNDABOUT_MIN_RADIUS_M;
+  if (isMini) return null;
+  const W = RB_SVG_W;
+  const H = RB_SVG_H;
+  const cx = W / 2;
+  const cy = H * 0.52;
+  const R = H * RB_RING_R_RATIO;
+  const sw = Math.max(4, 2 * R * RB_RING_STROKE_RATIO);
+  const entryDeg = 180;
+  const halfGap = (360 - RB_ARC_SPAN_DEG) / 2;
+  const arcStart = entryDeg + halfGap;
+  const arcEnd = entryDeg - halfGap + 360;
+  let svg = '<svg class="arrow-svg rb-schema" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="xMidYMid meet">';
+  svg += '<path d="' + arcPath(cx, cy, R, arcStart, arcEnd) + '" fill="none" stroke="' + RB_RING_COLOR + '" stroke-opacity="' + RB_RING_OPACITY + '" stroke-width="' + sw.toFixed(1) + '" stroke-linecap="round"/>';
+  const entryColor = isOn ? RB_GHOST_EXIT_COLOR : RB_ENTRY_COLOR;
+  const entrySw = isOn ? sw * 0.45 : sw * 0.85;
+  const entryPt = polar(cx, cy, R, entryDeg);
+  const entryFrom = { x: cx, y: cy + R + 28 };
+  svg += '<line x1="' + entryFrom.x.toFixed(1) + '" y1="' + entryFrom.y.toFixed(1) + '" x2="' + entryPt.x.toFixed(1) + '" y2="' + entryPt.y.toFixed(1) + '" stroke="' + entryColor + '" stroke-width="' + entrySw.toFixed(1) + '" stroke-linecap="round"/>';
+  svg += arrowHead(entryPt.x, entryPt.y, entryDeg, sw * 1.6, entryColor, entrySw);
+  const exitDeg = entryDeg + bearingDiff;
+  const ghostAngles = ghostExitAngles(exitN, bearingDiff);
+  for (const g of ghostAngles) {
+    const gp = polar(cx, cy, R, entryDeg + g);
+    svg += arrowHead(gp.x, gp.y, entryDeg + g, sw * 1.1, RB_GHOST_EXIT_COLOR, sw * 0.35);
+  }
+  const exitPt = polar(cx, cy, R, exitDeg);
+  svg += arrowHead(exitPt.x, exitPt.y, exitDeg, sw * 1.8, RB_EXIT_COLOR, sw * 0.9);
+  if (isOn) {
+    const dotDeg = entryDeg + bearingDiff * progress;
+    const dot = polar(cx, cy, R, dotDeg);
+    svg += '<circle cx="' + dot.x.toFixed(1) + '" cy="' + dot.y.toFixed(1) + '" r="' + (sw * 0.55).toFixed(1) + '" fill="' + RB_EXIT_COLOR + '"/>';
+  }
+  if (exitN) {
+    const fs = H * RB_EXIT_FONT_RATIO;
+    svg += '<text x="' + cx + '" y="' + (cy + fs * 0.12).toFixed(1) + '" text-anchor="middle" font-family="Consolas,Arial,sans-serif" font-weight="900" font-size="' + fs.toFixed(1) + '" fill="' + RB_EXIT_COLOR + '">' + exitN + "</text>";
+  }
+  const laneHint = opts.laneHint || ctx?.laneHint || extractLaneHint(displayStep);
+  if (laneHint) {
+    svg += '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#ccc">' + laneHint + "</text>";
+  }
+  if (isOn && distanceToExit != null) {
+    const dm = Math.max(10, Math.round(distanceToExit / 10) * 10);
+    svg += '<text x="' + cx + '" y="' + (H - (laneHint ? 22 : 10)) + '" text-anchor="middle" font-size="13" font-weight="800" fill="' + RB_EXIT_COLOR + '">\u0412\u0430\u0448 \u0441\u044A\u0435\u0437\u0434 \u0447\u0435\u0440\u0435\u0437 ' + dm + " \u043C</text>";
+  } else if (!exitN) {
+    svg += '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle" font-size="12" font-weight="700" fill="#ddd">\u041A\u0440\u0443\u0433\u043E\u0432\u043E\u0435 \u0434\u0432\u0438\u0436\u0435\u043D\u0438\u0435</text>';
+  }
+  svg += "</svg>";
+  return svg;
+}
+function logRoundaboutTelemetry(ctx) {
+  if (!ctx?.active) return;
+  const key = ctx.source + ":" + (ctx.exitNumber ?? "x") + ":" + Math.round(ctx.distanceToExit ?? 0);
+  if (key === _lastTelemetryKey) return;
+  _lastTelemetryKey = key;
+  telemetry_default.log("nav", {
+    sub: "roundabout",
+    exit: ctx.exitNumber,
+    bearing_diff: Math.round(ctx.bearingDiff),
+    distanceToExit: ctx.distanceToExit != null ? Math.round(ctx.distanceToExit) : null,
+    source: ctx.source,
+    radius_m: ctx.radiusM != null ? Math.round(ctx.radiusM) : null,
+    mini: !!ctx.isMini
+  });
+}
+function resetRoundaboutState() {
+  _lastRbHudMs = 0;
+  _lastTelemetryKey = "";
+  invalidateRoundaboutCache();
+}
+function tickRoundaboutHudRefresh(onTickFn) {
+  if (!S.route || !onTickFn) return;
+  const snap = getNavSnap(S.smoothedHeading);
+  const ctx = getRoundaboutContext(snap, S.route);
+  if (!ctx?.isOnRoundabout) return;
+  if (!$2("hud")?.classList.contains("on")) return;
+  const now = performance.now();
+  if (now - _lastRbHudMs < ROUNDABOUT_TICK_MS) return;
+  _lastRbHudMs = now;
+  onTickFn();
+}
+function getRoundaboutSnapFlags(segIdx, route) {
+  const on = isSegIdxOnRoundabout(segIdx, route);
+  return { onRoundabout: on };
+}
+var RB_SVG_W, RB_SVG_H, RB_RING_R_RATIO, RB_ARC_SPAN_DEG, RB_RING_STROKE_RATIO, RB_EXIT_FONT_RATIO, RB_RING_COLOR, RB_RING_OPACITY, RB_ENTRY_COLOR, RB_EXIT_COLOR, RB_GHOST_EXIT_COLOR, EXIT_ORDINAL, _lastRbHudMs, _lastTelemetryKey, _pairsCache, _pairsRouteId;
+var init_roundabout = __esm({
+  "js/roundabout.js"() {
+    init_state();
+    init_util();
+    init_geo();
+    init_route();
+    init_route_geometry();
+    init_telemetry();
+    init_nav_constants();
+    RB_SVG_W = 200;
+    RB_SVG_H = 200;
+    RB_RING_R_RATIO = 0.4;
+    RB_ARC_SPAN_DEG = 330;
+    RB_RING_STROKE_RATIO = 0.11;
+    RB_EXIT_FONT_RATIO = 0.4;
+    RB_RING_COLOR = "#00aa5c";
+    RB_RING_OPACITY = 0.7;
+    RB_ENTRY_COLOR = "#ffffff";
+    RB_EXIT_COLOR = "#ffd400";
+    RB_GHOST_EXIT_COLOR = "#888888";
+    EXIT_ORDINAL = {
+      1: "\u043F\u0435\u0440\u0432\u044B\u0439",
+      2: "\u0432\u0442\u043E\u0440\u043E\u0439",
+      3: "\u0442\u0440\u0435\u0442\u0438\u0439",
+      4: "\u0447\u0435\u0442\u0432\u0451\u0440\u0442\u044B\u0439",
+      5: "\u043F\u044F\u0442\u044B\u0439",
+      6: "\u0448\u0435\u0441\u0442\u043E\u0439"
+    };
+    _lastRbHudMs = 0;
+    _lastTelemetryKey = "";
+    _pairsCache = null;
+    _pairsRouteId = null;
+  }
+});
+
+// js/route-geometry.js
+function resetRouteSnap(opts) {
+  _snap = null;
+  _camHeadingRad = null;
+  _camPitchRad = null;
+  _snapMemoTs = null;
+  _disp.inited = false;
+  _dispLastTs = 0;
+  _camLastTs = 0;
+  _camPitchLastTs = 0;
+  _prevFixTs = 0;
+  _prevFixPos = null;
+  _fixesSinceReset = 0;
+  resetSnapQuality();
+  if (opts?.seedS != null && S.route?.geometry) {
+    const geom = S.route.geometry;
+    const p = interpolateAtS(geom, opts.seedS);
+    _snap = {
+      s: opts.seedS,
+      segIdx: findSegAtS(geom, opts.seedS),
+      lat: p.lat,
+      lon: p.lon,
+      lateral: opts.lateral ?? 0,
+      tangent: avgTangentDeg(geom, opts.seedS, 20),
+      confidence: 0.7
+    };
+    _disp.s = opts.seedS;
+    _disp.inited = true;
+  }
+}
+function destPoint2(from, brgDeg, distM) {
+  const r = Math.PI / 180;
+  const br = brgDeg * r;
+  const d = distM / 6371e3;
+  const lat1 = from.lat * r;
+  const lon1 = from.lon * r;
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(br)
+  );
+  const lon2 = lon1 + Math.atan2(
+    Math.sin(br) * Math.sin(d) * Math.cos(lat1),
+    Math.cos(d) - Math.sin(lat1) * Math.sin(lat2)
+  );
+  return { lat: lat2 / r, lon: lon2 / r };
+}
+function turnAngleDeg(A, B, C) {
+  const bIn = bearing(A, B);
+  const bOut = bearing(B, C);
+  return (bOut - bIn + 540) % 360 - 180;
+}
+function bezierCorner(A, B, C) {
+  const turn = turnAngleDeg(A, B, C);
+  if (Math.abs(turn) < ARC_ANGLE_THRESH) return null;
+  const dAB = haversine(A, B);
+  const dBC = haversine(B, C);
+  const lead = Math.min(15, dAB * 0.35, dBC * 0.35);
+  if (lead < 1.5) return null;
+  const bIn = bearing(A, B);
+  const bOut = bearing(B, C);
+  const E = destPoint2(B, bIn + 180, lead);
+  const X = destPoint2(B, bOut, lead);
+  const n = Math.max(4, Math.ceil(Math.abs(turn) / 3));
+  const pts = [];
+  for (let k = 0; k <= n; k++) {
+    const t = k / n;
+    const u2 = 1 - t;
+    pts.push({
+      lat: u2 * u2 * E.lat + 2 * u2 * t * B.lat + t * t * X.lat,
+      lon: u2 * u2 * E.lon + 2 * u2 * t * B.lon + t * t * X.lon
+    });
+  }
+  return pts;
+}
+function pushUnique(lat, lon, la, lo) {
+  const n = lat.length;
+  if (n) {
+    const d = haversine({ lat: lat[n - 1], lon: lon[n - 1] }, { lat: la, lon: lo });
+    if (d < 0.4) return;
+  }
+  lat.push(la);
+  lon.push(lo);
+}
+function interpolateSeg(lat, lon, a, b, stepM) {
+  const d = haversine(a, b);
+  const n = Math.max(1, Math.ceil(d / stepM));
+  for (let k = 1; k <= n; k++) {
+    const t = k / n;
+    pushUnique(
+      lat,
+      lon,
+      a.lat + t * (b.lat - a.lat),
+      a.lon + t * (b.lon - a.lon)
+    );
+  }
+}
+function densifyCoords(coords, stepM) {
+  const lat = [];
+  const lon = [];
+  if (!coords || coords.length < 2) return { lat, lon };
+  const first = { lat: coords[0][0], lon: coords[0][1] };
+  pushUnique(lat, lon, first.lat, first.lon);
+  for (let i = 0; i < coords.length - 1; i++) {
+    const B = { lat: coords[i][0], lon: coords[i][1] };
+    const C = { lat: coords[i + 1][0], lon: coords[i + 1][1] };
+    const A = i > 0 ? { lat: coords[i - 1][0], lon: coords[i - 1][1] } : null;
+    let segStart = B;
+    if (A) {
+      const arc = bezierCorner(A, B, C);
+      if (arc && arc.length > 1) {
+        if (lat.length) {
+          const last = { lat: lat[lat.length - 1], lon: lon[lon.length - 1] };
+          if (haversine(last, arc[0]) < 2) lat.pop(), lon.pop();
+        }
+        arc.forEach((p) => pushUnique(lat, lon, p.lat, p.lon));
+        segStart = { lat: lat[lat.length - 1], lon: lon[lon.length - 1] };
+      }
+    }
+    interpolateSeg(lat, lon, segStart, C, stepM);
+  }
+  return { lat, lon };
+}
+function buildArcLength(lat, lon) {
+  const n = lat.length;
+  const s2 = new Float64Array(n);
+  for (let i = 1; i < n; i++) {
+    s2[i] = s2[i - 1] + haversine(
+      { lat: lat[i - 1], lon: lon[i - 1] },
+      { lat: lat[i], lon: lon[i] }
+    );
+  }
+  return s2;
+}
+function findSForManeuver(sparseCoords, geom, targetLat, targetLon) {
+  return findSForLatLon(geom, targetLat, targetLon);
+}
+function findSForLatLon(geom, lat, lon) {
+  if (!geom || geom.n < 2) return 0;
+  const gps = { lat, lon };
+  let bestS = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < geom.n - 1; i++) {
+    const proj = projectOnSegment(
+      gps,
+      geom.lat[i],
+      geom.lon[i],
+      geom.lat[i + 1],
+      geom.lon[i + 1]
+    );
+    const segLen = geom.s[i + 1] - geom.s[i];
+    const s2 = geom.s[i] + proj.t * segLen;
+    if (proj.lateral < bestD) {
+      bestD = proj.lateral;
+      bestS = s2;
+    }
+  }
+  return bestS;
+}
+function buildManeuvers(steps, sparseCoords, geom) {
+  if (!steps || !sparseCoords) return [];
+  const full = { lat: geom.lat, lon: geom.lon, s: geom.s, n: geom.n };
+  return steps.filter((st) => st.type !== "depart" && st.type !== "arrive").map((st) => {
+    const s2 = findSForManeuver(sparseCoords, geom, st.lat, st.lon);
+    return {
+      s: s2,
+      lat: st.lat,
+      lon: st.lon,
+      angle: Math.abs(turnAngleAtS(full, s2)),
+      step: st
+    };
+  });
+}
+function denseStepForCoords(coords) {
+  let total = 0;
+  for (let i = 0; i < coords.length - 1; i++) {
+    total += haversine(
+      { lat: coords[i][0], lon: coords[i][1] },
+      { lat: coords[i + 1][0], lon: coords[i + 1][1] }
+    );
+  }
+  if (total > 12e4) return 8;
+  if (total > 4e4) return 5;
+  return DENSE_STEP;
+}
+function buildRouteGeometry(route) {
+  if (!route || !route.coords || route.coords.length < 2) return null;
+  resetManeuverFilterLog();
+  const stepM = denseStepForCoords(route.coords);
+  const { lat: latArr, lon: lonArr } = densifyCoords(route.coords, stepM);
+  const n = latArr.length;
+  if (n < 2) return null;
+  const lat = Float64Array.from(latArr);
+  const lon = Float64Array.from(lonArr);
+  const s2 = buildArcLength(latArr, lonArr);
+  const elev = new Float64Array(n);
+  const grade = new Float64Array(n);
+  const maneuvers = refineManeuvers(buildManeuvers(route.steps, route.coords, { s: s2, n, lat, lon }));
+  return {
+    lat,
+    lon,
+    s: s2,
+    elev,
+    grade,
+    maneuvers,
+    n,
+    elevReady: false,
+    curveReady: false,
+    crossings: [],
+    roundabouts: []
+  };
+}
+function findSegAtS(geom, s2) {
+  let lo = 0;
+  let hi = geom.n - 2;
+  while (lo < hi) {
+    const mid = lo + hi + 1 >> 1;
+    if (geom.s[mid] <= s2) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo;
+}
+function interpolateAtS(geom, s2) {
+  if (s2 <= 0) return { lat: geom.lat[0], lon: geom.lon[0] };
+  const total = geom.s[geom.n - 1];
+  if (s2 >= total) return { lat: geom.lat[geom.n - 1], lon: geom.lon[geom.n - 1] };
+  const i = findSegAtS(geom, s2);
+  const s0 = geom.s[i];
+  const s1 = geom.s[i + 1];
+  const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
+  return {
+    lat: geom.lat[i] + t * (geom.lat[i + 1] - geom.lat[i]),
+    lon: geom.lon[i] + t * (geom.lon[i + 1] - geom.lon[i])
+  };
+}
+function turnAngleAtS(geom, s2) {
+  const ds = 18;
+  const total = geom.s[geom.n - 1];
+  const s0 = Math.max(0, s2 - ds);
+  const s22 = Math.min(total, s2 + ds);
+  if (s22 - s0 < 8) return 0;
+  const p0 = interpolateAtS(geom, s0);
+  const p1 = interpolateAtS(geom, s2);
+  const p2 = interpolateAtS(geom, s22);
+  const bIn = bearing(p0, p1);
+  const bOut = bearing(p1, p2);
+  return (bOut - bIn + 540) % 360 - 180;
+}
+function segmentBearing(geom, i) {
+  return bearing(
+    { lat: geom.lat[i], lon: geom.lon[i] },
+    { lat: geom.lat[i + 1], lon: geom.lon[i + 1] }
+  );
+}
+function projectOnSegment(gps, lat0, lon0, lat1, lon1) {
+  const r = Math.PI / 180;
+  const cosM = Math.cos((lat0 + lat1) / 2 * r);
+  const ax = lon0 * r * cosM;
+  const ay = lat0 * r;
+  const bx = lon1 * r * cosM;
+  const by = lat1 * r;
+  const px = gps.lon * r * cosM;
+  const py = gps.lat * r;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2)) : 0;
+  const plat = (ay + t * dy) / r;
+  const plon = (ax + t * dx) / (r * cosM);
+  const lateral = haversine(gps, { lat: plat, lon: plon });
+  return { t, lat: plat, lon: plon, lateral };
+}
+function headingDot(tangentDeg, gpsHdg) {
+  if (gpsHdg == null || isNaN(gpsHdg)) return 1;
+  const diff = angleDiff(tangentDeg, gpsHdg);
+  return Math.cos(diff * Math.PI / 180);
+}
+function computeSnapWindow(spd, dt, acc) {
+  const v = Math.max(spd || 0, 0);
+  const a = Math.max(acc || 8, 8);
+  if (v < SNAP_STATIONARY_SPD_MPS) return Math.max(8, a * 0.5);
+  if (v < 1) return Math.max(25, SNAP_WINDOW_ACC_MULT * a);
+  return v * Math.min(dt, SNAP_WINDOW_DT_CAP_S) + SNAP_WINDOW_ACC_MULT * a + SNAP_WINDOW_BASE_M;
+}
+function headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, segIdx) {
+  if (gpsHdg == null || isNaN(gpsHdg)) return false;
+  const onRb = segIdx != null && isSegIdxOnRoundabout(segIdx, S.route);
+  const acceptDeg = onRb ? ROUNDABOUT_HEADING_GATE_DEG : SNAP_HEADING_ACCEPT_DEG;
+  const rejectDeg = onRb ? ROUNDABOUT_HEADING_GATE_DEG + 20 : SNAP_HEADING_REJECT_DEG;
+  const diff = angleDiff(tangent, gpsHdg);
+  if (diff > rejectDeg) return true;
+  const softGate = acc > SNAP_HEADING_GATE_ACC_MAX_M || headingAgeMs > SNAP_HEADING_MAX_AGE_MS;
+  if (softGate) return false;
+  if (spd >= SNAP_HEADING_GATE_MIN_SPD && diff > acceptDeg) return true;
+  if (spd >= SNAP_HEADING_GATE_MIN_SPD) {
+    const dot = headingDot(tangent, gpsHdg);
+    if (dot < SNAP_MIN_DOT) return true;
+  }
+  return false;
+}
+function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx) {
+  let best = null;
+  const i0 = findSegAtS(geom, sMin);
+  const spd = ctx?.spd ?? 0;
+  const acc = ctx?.acc ?? 8;
+  const headingAgeMs = ctx?.headingAgeMs ?? 0;
+  const prevS = ctx?.prevS ?? 0;
+  const skipJump = ctx?.skipJumpPenalty ?? false;
+  const dt = ctx?.dt ?? 1;
+  for (let i = i0; i < geom.n - 1; i++) {
+    if (geom.s[i] > sMax) break;
+    const proj = projectOnSegment(
+      gps,
+      geom.lat[i],
+      geom.lon[i],
+      geom.lat[i + 1],
+      geom.lon[i + 1]
+    );
+    const segLen = geom.s[i + 1] - geom.s[i];
+    const s2 = geom.s[i] + proj.t * segLen;
+    if (s2 < sMin - 1 || s2 > sMax + 1) continue;
+    const tangent = segmentBearing(geom, i);
+    const dot = headingDot(tangent, gpsHdg);
+    if (requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, i)) continue;
+    if (requireDir && dot < SNAP_MIN_DOT) continue;
+    if (requireDir && spd > 1 && ctx?.prevPos) {
+      const moveBrg = bearing(ctx.prevPos, gps);
+      if (headingDot(tangent, moveBrg) < 0) continue;
+    }
+    let score = proj.lateral + SNAP_ANGLE_PENALTY * (gpsHdg != null ? (1 - dot) * 50 : 0);
+    if (!skipJump && prevS > 0) {
+      const maxJump2 = spd * dt + acc;
+      const jumpExcess = Math.max(0, Math.abs(s2 - prevS) - maxJump2);
+      score += SNAP_JUMP_PENALTY * jumpExcess / 10;
+    }
+    if (!best || score < best.score) {
+      best = {
+        s: s2,
+        segIdx: i,
+        lat: proj.lat,
+        lon: proj.lon,
+        lateral: proj.lateral,
+        tangent,
+        dot,
+        score,
+        confidence: dot >= SNAP_MIN_DOT ? 1 : 0.5
+      };
+    }
+  }
+  return best;
+}
+function snapNearS(gps, geom, hintS, gpsHdg) {
+  const total = geom.s[geom.n - 1];
+  const sMin = Math.max(0, hintS - 40);
+  const sMax = Math.min(total, hintS + 85);
+  return scanSnap(gps, geom, sMin, sMax, gpsHdg, false);
+}
+function snapToRoute(gps, geom, gpsHeadingDeg, meta) {
+  if (!gps || !geom || geom.n < 2) return null;
+  const prev = _snap;
+  const total = geom.s[geom.n - 1];
+  const prevS = prev ? prev.s : 0;
+  const now = gps.ts || Date.now();
+  const dt = _prevFixTs ? Math.min(SNAP_WINDOW_DT_CAP_S, (now - _prevFixTs) / 1e3) : 1;
+  const spd = gps.speed != null && gps.speed >= 0 ? gps.speed : 0;
+  const acc = gps.acc || 8;
+  const headingAgeMs = meta?.headingAgeMs ?? 0;
+  _fixesSinceReset++;
+  const sWin = prevS > 0 ? computeSnapWindow(spd, dt, acc) : Math.min(200, total * 0.05);
+  const sMin = Math.max(0, prevS - sWin);
+  const sMax = Math.min(total, prevS + sWin);
+  const ctx = {
+    spd,
+    acc,
+    headingAgeMs,
+    prevS,
+    dt,
+    skipJumpPenalty: prevS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES,
+    prevPos: _prevFixPos
+  };
+  let best = null;
+  if (takeForceReeval() && prevS > 0) {
+    const wide = 3 * acc + 100;
+    best = scanSnap(
+      gps,
+      geom,
+      Math.max(0, prevS - wide),
+      Math.min(total, prevS + wide),
+      gpsHeadingDeg,
+      false,
+      ctx
+    );
+  }
+  if (!best) {
+    best = scanSnap(gps, geom, sMin, sMax, gpsHeadingDeg, true, ctx);
+  }
+  if (!best) {
+    best = scanSnap(
+      gps,
+      geom,
+      Math.max(0, prevS - SNAP_FALLBACK_BACK_M),
+      Math.min(total, prevS + SNAP_FALLBACK_FWD_M),
+      gpsHeadingDeg,
+      false,
+      ctx
+    );
+  }
+  if (!best) {
+    if (prev) return prev;
+    best = scanSnap(gps, geom, 0, Math.min(total, 200), gpsHeadingDeg, false, ctx);
+    if (!best) return null;
+  }
+  const jump = prev && Math.abs(best.s - prev.s) > SNAP_QUALITY_JUMP_DS_M;
+  if (prev && best.lateral < 40 && best.s < prev.s - SNAP_REVERSE_EPS) {
+    best = { ...best, s: prev.s, segIdx: prev.segIdx, confidence: 0.4 };
+  }
+  if (prev && spd < SNAP_STATIONARY_SPD_MPS && best.s > prev.s) {
+    best = { ...best, s: prev.s, segIdx: prev.segIdx };
+  }
+  if (prev && best.lateral < 35 && spd >= SNAP_STATIONARY_SPD_MPS) {
+    const ds = best.s - prev.s;
+    if (ds > 0 && ds < 30) best.s = prev.s + ds * 0.65;
+  }
+  if (best.lateral > 60) best.confidence = Math.min(best.confidence, 0.3);
+  const { R } = radiusAtS(geom, best.s);
+  const curvMult = !isFinite(R) || R >= SNAP_CURVATURE_RADIUS_M ? 1 : SNAP_CURVATURE_THRESHOLD_MULT;
+  const rbFlags = getRoundaboutSnapFlags(best.segIdx, S.route);
+  updateSnapQuality(best, gps, geom, { jump, curvMult, roundabout: rbFlags });
+  _snap = best;
+  _prevFixTs = now;
+  _prevFixPos = { lat: gps.lat, lon: gps.lon };
+  return best;
+}
+function getNavSnap(gpsHeadingDeg) {
+  const raw = getRouteSnapForNav(gpsHeadingDeg);
+  if (!raw) return null;
+  const ns = navSFromSnap(raw);
+  if (ns == null || ns === raw.s) return raw;
+  const geom = S.route?.geometry;
+  if (!geom) return raw;
+  const p = interpolateAtS(geom, ns);
+  return {
+    ...raw,
+    s: ns,
+    lat: p.lat,
+    lon: p.lon,
+    segIdx: findSegAtS(geom, ns)
+  };
+}
+function getRouteSnapForNav(gpsHeadingDeg) {
+  const geom = S.route?.geometry;
+  const gps = S.gps;
+  if (!geom || !gps) return null;
+  if (_snapMemoTs === gps.ts && _snap) return _snap;
+  _snapMemoTs = gps.ts;
+  const headingAgeMs = S.lastReliableHeadingTs ? Date.now() - S.lastReliableHeadingTs : SNAP_HEADING_MAX_AGE_MS + 1;
+  return snapToRoute(gps, geom, gpsHeadingDeg, { headingAgeMs });
+}
+function frameDtSec() {
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dtMs = _dispLastTs ? Math.min(48, now - _dispLastTs) : 16;
+  _dispLastTs = now;
+  return dtMs / 1e3;
+}
+function getDisplaySnap(rawSnap, geom, speedMps, gpsHeadingDeg) {
+  if (!rawSnap || !geom) return null;
+  const dt = frameDtSec();
+  const total = geom.s[geom.n - 1];
+  const spd = Math.max(0, speedMps || 0);
+  if (!_disp.inited) {
+    _disp.s = rawSnap.s;
+    _disp.inited = true;
+  } else if (spd > 0.05) {
+    _disp.s = Math.min(total, _disp.s + spd * dt);
+  }
+  let targetS = rawSnap.s;
+  const pos = curPos();
+  if (pos) {
+    const hit = snapNearS(pos, geom, _disp.s, gpsHeadingDeg);
+    if (hit) targetS = hit.s;
+  }
+  const tau = 0.11;
+  const alpha = 1 - Math.exp(-dt / tau);
+  _disp.s += (targetS - _disp.s) * alpha;
+  _disp.s = Math.max(0, Math.min(total, _disp.s));
+  const p = interpolateAtS(geom, _disp.s);
+  return {
+    s: _disp.s,
+    lat: p.lat,
+    lon: p.lon,
+    segIdx: findSegAtS(geom, _disp.s),
+    lateral: rawSnap.lateral,
+    confidence: rawSnap.confidence
+  };
+}
+function avgTangentDeg(geom, s2, windowM) {
+  const end = Math.min(geom.s[geom.n - 1], s2 + windowM);
+  let vx = 0;
+  let vz = 0;
+  const i0 = findSegAtS(geom, s2);
+  for (let i = i0; i < geom.n - 1 && geom.s[i] < end; i++) {
+    const r = Math.PI / 180;
+    const midLat = (geom.lat[i] + geom.lat[i + 1]) / 2;
+    const dLon = (geom.lon[i + 1] - geom.lon[i]) * Math.cos(midLat * r) * 111320;
+    const dLat = (geom.lat[i + 1] - geom.lat[i]) * 110540;
+    const len = Math.hypot(dLon, dLat) || 1;
+    vx += dLon / len;
+    vz += dLat / len;
+  }
+  if (vx === 0 && vz === 0) {
+    const i = findSegAtS(geom, s2);
+    return segmentBearing(geom, Math.min(i, geom.n - 2));
+  }
+  return (Math.atan2(vx, vz) * 180 / Math.PI + 360) % 360;
+}
+function camSmoothAlpha(dtSec) {
+  return 1 - Math.pow(1 - CAM_SMOOTH_ALPHA, Math.max(1, dtSec * 60));
+}
+function updateCamHeading(geom, snap) {
+  if (!geom || !snap) return _camHeadingRad;
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dt = _camLastTs ? Math.min(48, now - _camLastTs) / 1e3 : 1 / 60;
+  _camLastTs = now;
+  const tgt = avgTangentDeg(geom, snap.s, CAM_TANGENT_WINDOW) * Math.PI / 180;
+  if (_camHeadingRad == null) {
+    _camHeadingRad = tgt;
+    return _camHeadingRad;
+  }
+  let diff = tgt - _camHeadingRad;
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff < -Math.PI) diff += 2 * Math.PI;
+  _camHeadingRad += diff * camSmoothAlpha(dt);
+  return _camHeadingRad;
+}
+function avgGradeAtS(geom, s2, windowM) {
+  if (!geom?.elevReady) return 0;
+  const total = geom.s[geom.n - 1];
+  const sEnd = Math.min(total, s2 + windowM);
+  const ds = sEnd - s2;
+  if (ds < 0.5) return 0;
+  const e0 = interpolateElevAtS(geom, s2);
+  const e1 = interpolateElevAtS(geom, sEnd);
+  return (e1 - e0) / ds;
+}
+function updateCamPitch(geom, snap, elevExag, enabled) {
+  if (!enabled || !geom?.elevReady || !snap) {
+    _camPitchRad = null;
+    return CAM_PITCH;
+  }
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dt = _camPitchLastTs ? Math.min(48, now - _camPitchLastTs) / 1e3 : 1 / 60;
+  _camPitchLastTs = now;
+  const grade = avgGradeAtS(geom, snap.s, CAM_TANGENT_WINDOW);
+  const roadPitch = Math.atan(grade * elevExag) * 0.35;
+  const tgt = CAM_PITCH + Math.max(-0.14, Math.min(0.16, roadPitch));
+  if (_camPitchRad == null) {
+    _camPitchRad = tgt;
+    return _camPitchRad;
+  }
+  _camPitchRad += (tgt - _camPitchRad) * camSmoothAlpha(dt);
+  return _camPitchRad;
+}
+function getCamPitchRad() {
+  return _camPitchRad != null ? _camPitchRad : CAM_PITCH;
+}
+function getCamHeadingRad() {
+  return _camHeadingRad;
+}
+function interpolateElevAtS(geom, s2) {
+  if (!geom.elevReady || !geom.elev.length) return 0;
+  const i = findSegAtS(geom, s2);
+  const s0 = geom.s[i];
+  const s1 = geom.s[i + 1];
+  const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
+  return geom.elev[i] + t * (geom.elev[i + 1] - geom.elev[i]);
+}
+function meterScale(lat) {
+  const r = Math.PI / 180;
+  return { kx: Math.cos(lat * r) * 111320, ky: 110540 };
+}
+function radiusAtS(geom, s2) {
+  const ds = 2;
+  const total = geom.s[geom.n - 1];
+  const s0 = Math.max(0, s2 - ds);
+  const s1 = s2;
+  const s22 = Math.min(total, s2 + ds);
+  const p0 = interpolateAtS(geom, s0);
+  const p1 = interpolateAtS(geom, s1);
+  const p2 = interpolateAtS(geom, s22);
+  const { kx, ky } = meterScale(p1.lat);
+  const ax = (p1.lon - p0.lon) * kx;
+  const ay = (p1.lat - p0.lat) * ky;
+  const bx = (p2.lon - p1.lon) * kx;
+  const by = (p2.lat - p1.lat) * ky;
+  const cross = ax * by - ay * bx;
+  const la = Math.hypot(ax, ay);
+  const lb = Math.hypot(bx, by);
+  if (la < 0.01 || lb < 0.01) return { R: Infinity, turnSign: 0 };
+  const dot = Math.max(-1, Math.min(1, (ax * bx + ay * by) / (la * lb)));
+  const angle = Math.acos(dot);
+  if (angle < 0.02) return { R: Infinity, turnSign: 0 };
+  const R = Math.min(la, lb) / (2 * Math.sin(angle / 2));
+  return { R, turnSign: cross > 0 ? 1 : -1 };
+}
+function ribbonStepAtS() {
+  return RIBBON_STEP_M;
+}
+function extendRibbonNearCam(sections) {
+  if (sections.length < 2) return sections;
+  const s0 = sections[0];
+  const s1 = sections[1];
+  const dz = s1.cz - s0.cz;
+  if (dz < 0.02) return sections;
+  const inv = 1 / dz;
+  const rate = {
+    s: (s1.s - s0.s) * inv,
+    elev: (s1.elev - s0.elev) * inv,
+    cx: (s1.cx - s0.cx) * inv,
+    lx: (s1.lx - s0.lx) * inv,
+    lz: (s1.lz - s0.lz) * inv,
+    rx: (s1.rx - s0.rx) * inv,
+    rz: (s1.rz - s0.rz) * inv
+  };
+  const extra = [];
+  for (let z = s0.cz - RIBBON_NEAR_Z_STEP; z >= RIBBON_NEAR_Z_MIN; z -= RIBBON_NEAR_Z_STEP) {
+    const back = s0.cz - z;
+    extra.push({
+      s: s0.s - rate.s * back,
+      lat: s0.lat,
+      lon: s0.lon,
+      elev: s0.elev - rate.elev * back,
+      cx: s0.cx - rate.cx * back,
+      cz: z,
+      lx: s0.lx - rate.lx * back,
+      lz: s0.lz - rate.lz * back,
+      rx: s0.rx - rate.rx * back,
+      rz: s0.rz - rate.rz * back
+    });
+  }
+  return extra.length ? extra.concat(sections) : sections;
+}
+function computeRibbonSectionsCam(geom, snap, maxDist, halfW, headingRad) {
+  const elev0 = geom.elevReady ? interpolateElevAtS(geom, snap.s) : 0;
+  const sEnd = Math.min(geom.s[geom.n - 1], snap.s + maxDist);
+  const step = ribbonStepAtS();
+  const samples = [];
+  for (let s2 = snap.s; s2 <= sEnd + 0.01; s2 += step) {
+    const p = interpolateAtS(geom, s2);
+    const c = worldToCamXZ(p.lat, p.lon, snap, headingRad);
+    samples.push({
+      s: s2,
+      x: c.x,
+      z: c.z,
+      lat: p.lat,
+      lon: p.lon,
+      elev: geom.elevReady ? interpolateElevAtS(geom, s2) - elev0 : 0
+    });
+    if (s2 >= sEnd) break;
+  }
+  const sections = [];
+  let prevNx = null;
+  let prevNz = null;
+  for (let i = 0; i < samples.length; i++) {
+    const cur = samples[i];
+    if (cur.z < 0.12) continue;
+    const i0 = Math.max(0, i - 1);
+    const i1 = Math.min(samples.length - 1, i + 1);
+    let tx2 = samples[i1].x - samples[i0].x;
+    let tz = samples[i1].z - samples[i0].z;
+    const tl = Math.hypot(tx2, tz);
+    if (tl < 0.08) continue;
+    tx2 /= tl;
+    tz /= tl;
+    let nx = -tz;
+    let nz = tx2;
+    if (prevNx != null && nx * prevNx + nz * prevNz < 0) {
+      nx = -nx;
+      nz = -nz;
+    }
+    prevNx = nx;
+    prevNz = nz;
+    let leftW = halfW;
+    let rightW = halfW;
+    const { R, turnSign } = radiusAtS(geom, cur.s);
+    if (R < Infinity && R < halfW * 5) {
+      const maxOff = Math.max(0.55, R * 0.88);
+      if (turnSign > 0) leftW = Math.min(leftW, maxOff);
+      else if (turnSign < 0) rightW = Math.min(rightW, maxOff);
+    }
+    sections.push({
+      s: cur.s,
+      lat: cur.lat,
+      lon: cur.lon,
+      elev: cur.elev,
+      cx: cur.x,
+      cz: cur.z,
+      lx: cur.x + nx * leftW,
+      lz: cur.z + nz * leftW,
+      rx: cur.x - nx * rightW,
+      rz: cur.z - nz * rightW
+    });
+  }
+  return sections;
+}
+function worldToCamXZ(lat, lon, snap, headingRad) {
+  const { kx, ky } = meterScale(snap.lat);
+  const dx = (lon - snap.lon) * kx;
+  const dy = (lat - snap.lat) * ky;
+  const cosH = Math.cos(headingRad);
+  const sinH = Math.sin(headingRad);
+  return {
+    x: dx * cosH - dy * sinH,
+    z: dx * sinH + dy * cosH
+  };
+}
+function projectPointToRoute(geom, point) {
+  if (!geom || geom.n < 2 || !point) return null;
+  let best = null;
+  for (let i = 0; i < geom.n - 1; i++) {
+    const proj = projectOnSegment(
+      point,
+      geom.lat[i],
+      geom.lon[i],
+      geom.lat[i + 1],
+      geom.lon[i + 1]
+    );
+    const segLen = geom.s[i + 1] - geom.s[i];
+    const s2 = geom.s[i] + proj.t * segLen;
+    if (!best || proj.lateral < best.lateral) {
+      best = { s: s2, segIdx: i, lateral: proj.lateral, lat: proj.lat, lon: proj.lon };
+    }
+  }
+  return best;
+}
+function latLngsSliceByS(geom, sFrom, sTo) {
+  if (!geom || geom.n < 2) return [];
+  const total = geom.s[geom.n - 1];
+  const a = Math.max(0, Math.min(sFrom, total));
+  const b = Math.max(a, Math.min(sTo, total));
+  if (b - a < 0.5) return [];
+  const out = [];
+  const p0 = interpolateAtS(geom, a);
+  out.push([p0.lat, p0.lon]);
+  const i0 = findSegAtS(geom, a);
+  const i1 = findSegAtS(geom, b);
+  for (let i = i0 + 1; i <= i1 && i < geom.n; i++) {
+    if (geom.s[i] > a + 0.01 && geom.s[i] < b - 0.01) {
+      out.push([geom.lat[i], geom.lon[i]]);
+    }
+  }
+  const p1 = interpolateAtS(geom, b);
+  const last = out[out.length - 1];
+  if (!last || Math.abs(last[0] - p1.lat) > 1e-7 || Math.abs(last[1] - p1.lon) > 1e-7) {
+    out.push([p1.lat, p1.lon]);
+  }
+  return out;
+}
+function geometryToLatLngs(geom) {
+  if (!geom) return [];
+  const out = [];
+  for (let i = 0; i < geom.n; i++) out.push([geom.lat[i], geom.lon[i]]);
+  return out;
+}
+function remainingDistanceS(geom, snap) {
+  if (!geom || !snap) return 0;
+  return Math.max(0, geom.s[geom.n - 1] - snap.s);
+}
+var DENSE_STEP, ARC_ANGLE_THRESH, CAM_TANGENT_WINDOW, CAM_SMOOTH_ALPHA, RIBBON_STEP_M, _snap, _prevFixTs, _prevFixPos, _fixesSinceReset, _camHeadingRad, _camPitchRad, _snapMemoTs, _disp, _dispLastTs, _camLastTs, _camPitchLastTs, RIBBON_NEAR_Z_MIN, RIBBON_NEAR_Z_STEP;
+var init_route_geometry = __esm({
+  "js/route-geometry.js"() {
+    init_geo();
+    init_state();
+    init_gps();
+    init_maneuver_filter();
+    init_snap_quality();
+    init_nav_constants();
+    init_roundabout();
+    DENSE_STEP = 3;
+    ARC_ANGLE_THRESH = 15;
+    CAM_TANGENT_WINDOW = 25;
+    CAM_SMOOTH_ALPHA = 0.11;
+    RIBBON_STEP_M = 2;
+    _snap = null;
+    _prevFixTs = 0;
+    _prevFixPos = null;
+    _fixesSinceReset = 0;
+    _camHeadingRad = null;
+    _camPitchRad = null;
+    _snapMemoTs = null;
+    _disp = { s: 0, inited: false };
+    _dispLastTs = 0;
+    _camLastTs = 0;
+    _camPitchLastTs = 0;
+    RIBBON_NEAR_Z_MIN = 0.06;
+    RIBBON_NEAR_Z_STEP = 0.22;
+  }
+});
+
+// js/converge-telemetry.js
+function r22(n) {
+  if (n == null || !Number.isFinite(n)) return null;
+  return Math.round(n * 100) / 100;
+}
+function hudOn() {
+  try {
+    return !!$2("hud")?.classList.contains("on");
+  } catch (e) {
+    return false;
+  }
+}
+function phase() {
+  if (typeof document !== "undefined" && document.visibilityState === "hidden") return "background";
+  return hudOn() ? "riding" : "setup";
+}
+function spdKmh(fix) {
+  const mps = fix?.speed ?? S.gps?.speed;
+  if (mps == null || !Number.isFinite(mps) || mps < 0) return 0;
+  return mps * 3.6;
+}
+function fixAgeMs(fix) {
+  const ts = fix?.ts ?? S.gps?.ts;
+  if (!ts) return null;
+  return Math.max(0, Date.now() - ts);
+}
+function buildContext(fix, bufStats, snap) {
+  return {
+    hud_on: hudOn(),
+    phase: phase(),
+    acc: r22(fix?.acc ?? S.gps?.acc),
+    spd_kmh: r22(spdKmh(fix)),
+    buf_len: bufStats?.buf_len ?? null,
+    buf_acc_max: bufStats?.buf_acc_max ?? null,
+    fix_age_ms: fixAgeMs(fix),
+    snap_quality: snap?.quality ?? S.snapQuality ?? null,
+    lat_off: snap?.lateral != null ? r22(snap.lateral) : null,
+    re_converge: !!bufStats?.re_converge,
+    gps_fix_count: S.gpsFixCount ?? null,
+    had_route: !!S.route?.coords?.length,
+    off_route_state: S.offRouteState || null
+  };
+}
+function logTransition(from, to, reason, extra, fix, bufStats, snap) {
+  if (!telemetry_default.isActive?.()) return;
+  telemetry_default.log("nav", {
+    sub: "converge_transition",
+    from,
+    to,
+    reason,
+    ...buildContext(fix, bufStats, snap),
+    ...extra
+  });
+}
+function onBlockedStart() {
+  const now = Date.now();
+  if (!_blockedSince) _blockedSince = now;
+  if (!_currentBlockedStreakStart) _currentBlockedStreakStart = now;
+}
+function onBlockedEnd() {
+  if (_currentBlockedStreakStart) {
+    const streak = Date.now() - _currentBlockedStreakStart;
+    _blockedTotalMs += streak;
+    if (streak > _maxBlockedStreakMs) _maxBlockedStreakMs = streak;
+    _currentBlockedStreakStart = 0;
+    _blockedSince = 0;
+  }
+}
+function resetConvergeTelemetryRide() {
+  _rideStartWall = Date.now();
+  _firstConvergeLogged = false;
+  _hadConverged = false;
+  _blockedSince = 0;
+  _blockedTotalMs = 0;
+  _blockedMovingMs = 0;
+  _lastBlockedTick = 0;
+  _maxBlockedStreakMs = 0;
+  _currentBlockedStreakStart = 0;
+  _falseEvents = 0;
+  _invalidateAcc = 0;
+  _invalidateLost = 0;
+  _reConvergeCount = 0;
+}
+function noteConvergeTransition(from, to, reason, extra, fix, bufStats, snap) {
+  if (from === to) return;
+  if (to === false) {
+    _falseEvents++;
+    if (reason === "invalidate_acc") _invalidateAcc++;
+    if (reason === "invalidate_lost") _invalidateLost++;
+    if (_hadConverged && (reason === "invalidate_acc" || reason === "invalidate_lost" || reason === "invalidate_error")) {
+      _reConvergeCount++;
+    }
+    if (hudOn()) onBlockedStart();
+  } else {
+    if (bufStats?.re_converge) _reConvergeCount++;
+    _hadConverged = true;
+    onBlockedEnd();
+    _blockedSince = 0;
+    if (hudOn() && !_firstConvergeLogged && _rideStartWall) {
+      _firstConvergeLogged = true;
+      if (telemetry_default.isActive?.()) {
+        telemetry_default.log("nav", {
+          sub: "converge_first",
+          time_to_first_converge_ms: Date.now() - _rideStartWall,
+          ...buildContext(fix, bufStats, snap)
+        });
+      }
+    }
+  }
+  logTransition(from, to, reason, extra || {}, fix, bufStats, snap);
+}
+function tickConvergeBlocked(fix, snap) {
+  if (!hudOn() || S.gpsConverged !== false) return;
+  if (!telemetry_default.isActive?.()) return;
+  const now = Date.now();
+  if (fix?.ts) _lastFixTs = fix.ts;
+  onBlockedStart();
+  const dt = _lastBlockedTick ? now - _lastBlockedTick : 0;
+  if (_lastBlockedTick && dt > 0 && spdKmh(fix) >= MOVING_SPD_KMH) {
+    _blockedMovingMs += dt;
+  }
+  if (_lastBlockedTick && now - _lastBlockedTick < BLOCKED_TICK_MS) return;
+  _lastBlockedTick = now;
+  const durBlocked = _blockedSince ? now - _blockedSince : 0;
+  telemetry_default.log("nav", {
+    sub: "converge_blocked_tick",
+    dur_blocked_ms: durBlocked,
+    ...buildContext(fix, null, snap)
+  });
+}
+function flushConvergeSummary() {
+  if (!telemetry_default.isActive?.()) return;
+  let blockedTotal = _blockedTotalMs;
+  if (_currentBlockedStreakStart) {
+    const streak = Date.now() - _currentBlockedStreakStart;
+    blockedTotal += streak;
+    if (streak > _maxBlockedStreakMs) _maxBlockedStreakMs = streak;
+  }
+  telemetry_default.log("meta", {
+    sub: "converge_session_summary",
+    converge_false_events: _falseEvents,
+    converge_blocked_total_ms: Math.round(blockedTotal),
+    converge_blocked_while_moving_ms: Math.round(_blockedMovingMs),
+    invalidate_acc_count: _invalidateAcc,
+    invalidate_lost_count: _invalidateLost,
+    re_converge_count: _reConvergeCount,
+    max_blocked_streak_ms: _maxBlockedStreakMs,
+    reached_converge: _hadConverged
+  });
+}
+function initConvergeVisibilityLog() {
+  if (typeof document === "undefined" || document._convergeVisBound) return;
+  document._convergeVisBound = true;
+  document.addEventListener("visibilitychange", () => {
+    if (!telemetry_default.isActive?.()) return;
+    telemetry_default.log("nav", {
+      sub: "converge_visibility",
+      state: document.visibilityState,
+      gps_converged: S.gpsConverged !== false,
+      hud_on: hudOn(),
+      phase: phase()
+    });
+  });
+}
+var BLOCKED_TICK_MS, MOVING_SPD_KMH, _rideStartWall, _firstConvergeLogged, _hadConverged, _blockedSince, _blockedTotalMs, _blockedMovingMs, _lastBlockedTick, _lastFixTs, _maxBlockedStreakMs, _currentBlockedStreakStart, _falseEvents, _invalidateAcc, _invalidateLost, _reConvergeCount;
+var init_converge_telemetry = __esm({
+  "js/converge-telemetry.js"() {
+    init_state();
+    init_util();
+    init_telemetry();
+    BLOCKED_TICK_MS = 5e3;
+    MOVING_SPD_KMH = 5;
+    _rideStartWall = 0;
+    _firstConvergeLogged = false;
+    _hadConverged = false;
+    _blockedSince = 0;
+    _blockedTotalMs = 0;
+    _blockedMovingMs = 0;
+    _lastBlockedTick = 0;
+    _lastFixTs = 0;
+    _maxBlockedStreakMs = 0;
+    _currentBlockedStreakStart = 0;
+    _falseEvents = 0;
+    _invalidateAcc = 0;
+    _invalidateLost = 0;
+    _reConvergeCount = 0;
+  }
+});
+
+// js/gps-converge.js
+function isNetworkFix(fix) {
+  return fix.provider === "network" || fix.lowAccuracy === true;
+}
+function maxJump(v, dt, acc) {
+  return (v || 0) * dt + (acc || GPS_CONVERGE_ACC_M) + GPS_CONVERGE_JUMP_PAD_M;
+}
+function evaluateBuffer(minFixes, accLimit) {
+  if (_buf.length < minFixes) return { ok: false, fail_detail: "buffer_short" };
+  const recent = _buf.slice(-minFixes);
+  if (recent.some((f2) => isNetworkFix(f2))) return { ok: false, fail_detail: "network_fix" };
+  if (recent.some((f2) => f2.acc > accLimit)) return { ok: false, fail_detail: "acc_over_limit" };
+  let gpsStreak = 0;
+  for (const f2 of recent) {
+    if (isNetworkFix(f2)) gpsStreak = 0;
+    else gpsStreak++;
+  }
+  if (gpsStreak < 2) return { ok: false, fail_detail: "gps_streak_low" };
+  for (let i = 1; i < recent.length; i++) {
+    const a = recent[i - 1];
+    const b = recent[i];
+    const dt = Math.max(0.2, (b.ts - a.ts) / 1e3);
+    const v = Math.max(a.speed || 0, b.speed || 0);
+    const d = haversine(a, b);
+    if (d > maxJump(v, dt, Math.max(a.acc, b.acc))) {
+      return { ok: false, fail_detail: "jump_reject" };
+    }
+  }
+  if (minFixes >= GPS_CONVERGE_MIN_FIXES) {
+    const last3 = _buf.slice(-3);
+    if (last3.length < 3 || last3.some((f2) => f2.acc > GPS_CONVERGE_LAST3_ACC_M)) {
+      return { ok: false, fail_detail: "last3_acc" };
+    }
+  }
+  return { ok: true, fail_detail: null };
+}
+function getConvergeBufferStats(reConverge) {
+  let bufAccMax = null;
+  for (const f2 of _buf) {
+    if (bufAccMax == null || f2.acc > bufAccMax) bufAccMax = f2.acc;
+  }
+  return {
+    buf_len: _buf.length,
+    buf_acc_max: bufAccMax != null ? Math.round(bufAccMax * 10) / 10 : null,
+    re_converge: !!reConverge
+  };
+}
+function feedGpsConverge(fix, telCtx) {
+  if (!fix) return S.gpsConverged;
+  if (isSim()) {
+    const prev2 = S.gpsConverged;
+    S.gpsConverged = true;
+    if (prev2 !== true) noteConvergeTransition(prev2, true, "sim", {}, fix, null, telCtx?.snap);
+    return true;
+  }
+  const prev = S.gpsConverged;
+  const acc = fix.acc != null && Number.isFinite(fix.acc) ? fix.acc : 50;
+  if (!isNetworkFix(fix)) _gpsFixCount++;
+  S.gpsFixCount = _gpsFixCount;
+  _buf.push({
+    lat: fix.lat,
+    lon: fix.lon,
+    acc,
+    speed: fix.speed,
+    ts: fix.ts,
+    provider: fix.provider
+  });
+  while (_buf.length > 8) _buf.shift();
+  const re = _everConverged && S.gpsConverged === false && _buf.length >= 2;
+  const minFixes = re ? GPS_CONVERGE_RE_MIN_FIXES : GPS_CONVERGE_MIN_FIXES;
+  const accLim = re ? GPS_CONVERGE_RE_ACC_M : GPS_CONVERGE_ACC_M;
+  const bufStats = getConvergeBufferStats(re);
+  const snap = telCtx?.snap;
+  const ev = evaluateBuffer(minFixes, accLim);
+  if (ev.ok) {
+    S.gpsConverged = true;
+    _everConverged = true;
+    if (prev !== true) {
+      noteConvergeTransition(prev, true, "converged", {}, fix, bufStats, snap);
+    }
+  } else if (!re && _buf.length < minFixes) {
+    S.gpsConverged = false;
+  }
+  return S.gpsConverged;
+}
+function invalidateGpsConverge(reason = "invalidate_unknown", telCtx) {
+  const prev = S.gpsConverged;
+  S.gpsConverged = false;
+  if (prev !== false) {
+    noteConvergeTransition(prev, false, reason, {}, telCtx?.fix ?? S.gps, getConvergeBufferStats(_everConverged), telCtx?.snap);
+  }
+}
+var _buf, _gpsFixCount, _everConverged;
+var init_gps_converge = __esm({
+  "js/gps-converge.js"() {
+    init_state();
+    init_geo();
+    init_platform();
+    init_nav_constants();
+    init_converge_telemetry();
+    _buf = [];
+    _gpsFixCount = 0;
+    _everConverged = false;
+  }
+});
+
+// js/gps.js
+function curPos() {
+  return RENDER_POS || S.gps;
+}
+function updateRenderPos() {
+  if (!S.gps) {
+    RENDER_POS = null;
+    return;
+  }
+  const v = S.gps.speed != null && S.gps.speed > 0.6 ? S.gps.speed : 0;
+  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
+  if (!v || hdg == null || isNaN(hdg) || !S.fixPos) {
+    RENDER_POS = S.gps;
+    return;
+  }
+  const rad = Math.PI / 180;
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1e3));
+  const dist = v * dt;
+  RENDER_POS = {
+    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
+    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
+    speed: S.gps.speed,
+    heading: S.gps.heading,
+    acc: S.gps.acc
+  };
+}
+function easeSpeed() {
+  const el = $2("v-speed");
+  if (!el || !S.gps) return;
+  const raw = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const target = Math.min(raw, GPS_SPEED_MAX_MPS * 3.6);
+  S.dispSpeed += (target - S.dispSpeed) * 0.22;
+  if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
+  const shown = Math.round(S.dispSpeed);
+  el.textContent = shown;
+  el.classList.toggle("over", isSpeedOverLimit(target));
+  el.classList.toggle("speed-3", shown >= 100);
+}
+function resolveGpsSpeed(next, prev) {
+  const acc = next.acc ?? 999;
+  const device = next.speed != null && !isNaN(next.speed) && next.speed >= 0 ? next.speed : null;
+  let meas = 0;
+  let dist = 0;
+  if (prev) {
+    const dt = (next.ts - prev.ts) / 1e3;
+    if (dt > 0.15 && dt < 12) {
+      dist = haversine(prev, next);
+      if (dist >= GPS_SPEED_MEAS_MIN_DIST_M && dist < 500) meas = dist / dt;
+    }
+  }
+  const noiseRadius = Math.max(GPS_SPEED_STATIONARY_DIST_M, acc * 0.55);
+  if (prev && dist < noiseRadius) return 0;
+  if (device != null && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
+    if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
+      return device;
+    }
+  }
+  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
+  if (meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)) {
+    return S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+  }
+  return 0;
+}
+function initGps(callbacks) {
+  _onTick = callbacks.onTick || _onTick;
+  _onVisual = callbacks.onVisual || _onVisual;
+}
+function visualLoop() {
+  S.rafId = requestAnimationFrame(visualLoop);
+  if (!$2("hud").classList.contains("on")) return;
+  telemetry_default.tickPerfFrame();
+  updateRenderPos();
+  easeSpeed();
+  tickRoundaboutHudRefresh(_onTick);
+  _onVisual();
+}
+function startVisualLoop() {
+  if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
+}
+function stopVisualLoop() {
+  if (S.rafId) {
+    cancelAnimationFrame(S.rafId);
+    S.rafId = null;
+  }
+}
+function updateGpsConvergeUI() {
+  const el = $2("gps-converge");
+  if (el) {
+    el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
+  }
+  if (S.gpsConverged) {
+    const tag = isSim() ? " \u0441\u0438\u043C" : "";
+    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + Math.round(S.gps?.acc || 0) + "\u043C";
+    $2("s-gps").className = "chip ok";
+  } else if (S.gps) {
+    const acc = S.gps.acc != null ? Math.round(S.gps.acc) + "\u043C" : "\u2026";
+    $2("s-gps").textContent = "\u23F3 GPS \xB1" + acc;
+    $2("s-gps").className = "chip";
+  } else {
+    $2("s-gps").textContent = "\u23F3 GPS\u2026";
+    $2("s-gps").className = "chip";
+  }
+  checkStartReady();
+}
+function checkStartReady() {
+  const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
+  $2("btn-start").disabled = !(S.gps && S.finish && hasRoute);
+  const buildBtn = $2("btn-build-route");
+  if (buildBtn) buildBtn.disabled = !(S.gps && S.finish);
+}
+function onGpsError() {
+  $2("s-gps").textContent = "\u274C GPS";
+  $2("s-gps").className = "chip err";
+  invalidateGpsConverge("invalidate_error");
+  if (!_gpsLost) {
+    _gpsLost = true;
+    telemetry_default.log("nav", { sub: "gps_lost" });
+  }
+}
+function applyGpsFix(next) {
+  if (S.lastPos) {
+    const d = haversine(S.lastPos, next);
+    const dt = (next.ts - S.lastPos.ts) / 1e3;
+    if (d > 3 && d < 500) S.distDone += d;
+    if ((next.heading == null || isNaN(next.heading)) && d > 3) {
+      next.heading = bearing(S.lastPos, next);
+    }
+  }
+  const resolved = resolveGpsSpeed(next, S.lastPos);
+  S.measSpeed = resolved;
+  next.speed = resolved;
+  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
+  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
+  if (fused != null && !isNaN(fused)) next.heading = fused;
+  if (next.heading != null && !isNaN(next.heading)) {
+    if ((next.speed ?? 0) >= 3.2) S.lastReliableHeadingTs = Date.now();
+    if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
+    else {
+      const spd = next.speed ?? S.measSpeed ?? 0;
+      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
+      const keep = 1 - alpha;
+      const r = Math.PI / 180, d = 180 / Math.PI;
+      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
+      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
+      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
+    }
+  }
+  S.lastPos = next;
+  S.gps = next;
+  S.fixPos = { lat: next.lat, lon: next.lon };
+  S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
+  let telSnap = null;
+  let navSnap = null;
+  if ($2("hud").classList.contains("on") && S.route?.geometry) {
+    navSnap = getNavSnap(S.smoothedHeading);
+    if (navSnap) telSnap = { lateral: navSnap.lateral, quality: S.snapQuality };
+  }
+  const telCtx = { fix: next, snap: telSnap };
+  feedGpsConverge(next, telCtx);
+  if (next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge("invalidate_acc", telCtx);
+  if ($2("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge("invalidate_lost", telCtx);
+  updateGpsConvergeUI();
+  tickConvergeBlocked(next, telSnap);
+  if ($2("hud").classList.contains("on")) _onTick();
+  const rcv = Date.now();
+  if (_gpsLost) {
+    _gpsLost = false;
+    telemetry_default.log("nav", { sub: "gps_restored" });
+  }
+  telemetry_default.logFix({
+    lat: next.lat,
+    lon: next.lon,
+    acc: next.acc,
+    speed: next.speed,
+    heading: next.heading,
+    alt: next.alt,
+    ts: next.ts,
+    rcv
+  });
+  if (navSnap) telemetry_default.logSnapFromResult(navSnap);
+}
+function stopWebGps() {
+  if (S.watchId !== null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(S.watchId);
+    S.watchId = null;
+  }
+}
+function startWebGps() {
+  if (!navigator.geolocation) {
+    $2("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
+    $2("s-gps").className = "chip err";
+    return;
+  }
+  stopWebGps();
+  $2("s-gps").textContent = "\u23F3 GPS\u2026";
+  $2("s-gps").className = "chip";
+  S.watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const c = pos.coords;
+      applyGpsFix({
+        lat: c.latitude,
+        lon: c.longitude,
+        speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
+        heading: c.heading == null ? null : c.heading,
+        acc: c.accuracy,
+        alt: c.altitude != null && !isNaN(c.altitude) ? c.altitude : null,
+        ts: pos.timestamp
+      });
+    },
+    onGpsError,
+    { enableHighAccuracy: true, timeout: 15e3, maximumAge: 1e3 }
+  );
+}
+function startGps() {
+  _navMode = false;
+  startHeadingSensors();
+  if (isNative()) {
+    $2("s-gps").textContent = "\u23F3 GPS\u2026";
+    $2("s-gps").className = "chip";
+    stopWebGps();
+    startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+    return;
+  }
+  startWebGps();
+}
+async function startNavigationGps() {
+  if (!isNative()) return;
+  _navMode = true;
+  await startNavGps(applyGpsFix, onGpsError);
+}
+async function stopNavigationGps() {
+  if (!isNative()) return;
+  _navMode = false;
+  await stopNavGps();
+  await startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+}
+var RENDER_POS, _navMode, _gpsLost, _onTick, _onVisual;
+var init_gps = __esm({
+  "js/gps.js"() {
+    init_state();
+    init_geo();
+    init_util();
+    init_platform();
+    init_native_gps();
+    init_heading();
+    init_telemetry();
+    init_route_geometry();
+    init_nav_constants();
+    init_speed_limit();
+    init_roundabout();
+    init_gps_converge();
+    init_snap_quality();
+    init_converge_telemetry();
+    init_nav_constants();
+    RENDER_POS = null;
+    _navMode = false;
+    _gpsLost = false;
+    _onTick = () => {
+    };
+    _onVisual = () => {
+    };
   }
 });
 
@@ -5932,7 +7185,7 @@ function textBBox(cx, cy, fontSize, text) {
   const h = fontSize * 1.12;
   return { left: cx - w * 0.5, right: cx + w * 0.5, top: cy - h * 0.82, bottom: cy + h * 0.18 };
 }
-function bboxOverlap(a, b, pad) {
+function bboxOverlap2(a, b, pad) {
   return a.left - pad < b.right + pad && a.right + pad > b.left - pad && a.top - pad < b.bottom + pad && a.bottom + pad > b.top - pad;
 }
 function clampLabelX(cx, halfW, vbX, vbW) {
@@ -5970,7 +7223,7 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
           vbH
         );
         const box = textBBox(dx, dy, m.degFont, m.deg);
-        if (!placed.some((p) => bboxOverlap(box, p, pad))) {
+        if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
           m.degX = dx;
           m.degY = dy;
           placed.push(box);
@@ -5997,7 +7250,7 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
       x = clampLabelX(x, m.distFont * distText.length * 0.32, vbX, vbW);
       y = clampLabelY(y, m.distFont, vbY, vbH);
       const box = textBBox(x, y, m.distFont, distText);
-      if (!placed.some((p) => bboxOverlap(box, p, pad))) {
+      if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
         m.distX = x;
         m.distY = y;
         placed.push(box);
@@ -6350,9 +7603,21 @@ function buildTurnArrowSVG(turnDeg) {
   const turn = Math.max(-178, Math.min(178, turnDeg || 0));
   return renderManeuverArrow(turn);
 }
-function buildArrowSVG(step) {
+function buildArrowSVG(step, opts = {}) {
   if (!step) return "";
   if (step.type === "arrive") return arriveFlagSVG();
+  if (shouldUseRoundaboutSchema() && isRoundaboutStep(step)) {
+    const ctx = opts.ctx || (opts.snap ? getRoundaboutContext(opts.snap, S.route) : null);
+    const rbOpts = {
+      ...opts,
+      ctx,
+      isOnRoundabout: opts.isOnRoundabout ?? ctx?.isOnRoundabout,
+      distanceToExit: opts.distanceToExit ?? ctx?.distanceToExit,
+      progressAngle: opts.progressAngle ?? ctx?.progressAngle
+    };
+    const rb = buildRoundaboutSVG(step, rbOpts);
+    if (rb) return rb;
+  }
   let turn = maneuverTurnAngle(step);
   if (Math.abs(turn) < MANEUVER_BEND_ANGLE) {
     if (step.modifier === "uturn") turn = 175;
@@ -6421,6 +7686,7 @@ var init_render = __esm({
     init_geo();
     init_gps();
     init_route();
+    init_roundabout();
     init_fuel();
     init_route();
     init_route_geometry();
@@ -7057,7 +8323,16 @@ function loadAppOptsFromStorage() {
     setCheck("opt-back-only", o.backOnly);
     setVal("opt-tol", o.tolerance);
     setVal("opt-nodir", o.noDirPolicy);
-    setVal("opt-limit", o.limit);
+    setVal("opt-limit", o.userDefaultLimit ?? o.limit);
+    if (o.userDefaultLimit != null || o.limit != null) {
+      S.userDefaultLimit = o.userDefaultLimit ?? o.limit ?? 60;
+    }
+    if (typeof o.speedLimitDynamic === "boolean") S.speedLimitDynamic = o.speedLimitDynamic;
+    if (o.speedLimitFallback) S.speedLimitFallback = o.speedLimitFallback;
+    setCheck("opt-speed-limit-dynamic", o.speedLimitDynamic !== false);
+    setVal("opt-speed-limit-fallback", o.speedLimitFallback || "user-default");
+    setCheck("opt-roundabout-schema", o.roundaboutSchema !== false);
+    if (typeof o.roundaboutSchema === "boolean") S.roundaboutSchema = o.roundaboutSchema;
     setVal("opt-cam-speed-tol", o.camSpeedTol != null ? o.camSpeedTol : DEFAULT_CAM_SPEED_TOL);
   } catch (e) {
   }
@@ -7076,7 +8351,11 @@ function saveAppOptsToStorage() {
       backOnly: !!S.backOnly,
       tolerance: S.tolerance,
       noDirPolicy: S.noDirPolicy,
-      limit: S.limit,
+      limit: S.userDefaultLimit,
+      userDefaultLimit: S.userDefaultLimit,
+      speedLimitDynamic: S.speedLimitDynamic !== false,
+      speedLimitFallback: S.speedLimitFallback,
+      roundaboutSchema: S.roundaboutSchema !== false,
       camSpeedTol: S.camSpeedTol
     }));
   } catch (e) {
@@ -12951,7 +14230,7 @@ var require_leaflet_src = __commonJS({
           this._updateBounds();
         },
         _updateBounds: function() {
-          var r = this._radius, r23 = this._radiusY || r, w = this._clickTolerance(), p = [r + w, r23 + w];
+          var r = this._radius, r24 = this._radiusY || r, w = this._clickTolerance(), p = [r + w, r24 + w];
           this._pxBounds = new Bounds(this._point.subtract(p), this._point.add(p));
         },
         _update: function() {
@@ -16201,8 +17480,8 @@ var require_leaflet_src = __commonJS({
           }
         },
         _updateCircle: function(layer) {
-          var p = layer._point.round(), r = Math.round(layer._radius), r23 = Math.round(layer._radiusY || r);
-          this._setPath(layer, layer._empty() ? "M0 0" : "AL " + p.x + "," + p.y + " " + r + "," + r23 + " 0," + 65535 * 360);
+          var p = layer._point.round(), r = Math.round(layer._radius), r24 = Math.round(layer._radiusY || r);
+          this._setPath(layer, layer._empty() ? "M0 0" : "AL " + p.x + "," + p.y + " " + r + "," + r24 + " 0," + 65535 * 360);
         },
         _setPath: function(layer, path) {
           layer._path.v = path;
@@ -16308,7 +17587,7 @@ var require_leaflet_src = __commonJS({
           this._setPath(layer, pointsToPath(layer._parts, closed));
         },
         _updateCircle: function(layer) {
-          var p = layer._point, r = Math.max(Math.round(layer._radius), 1), r23 = Math.max(Math.round(layer._radiusY), 1) || r, arc = "a" + r + "," + r23 + " 0 1,0 ";
+          var p = layer._point, r = Math.max(Math.round(layer._radius), 1), r24 = Math.max(Math.round(layer._radiusY), 1) || r, arc = "a" + r + "," + r24 + " 0 1,0 ";
           var d = layer._empty() ? "M0 0" : "M" + (p.x - r) + "," + p.y + arc + r * 2 + ",0 " + arc + -r * 2 + ",0 ";
           this._setPath(layer, d);
         },
@@ -18204,7 +19483,19 @@ function bindSetupUI() {
     saveAppOptsToStorage();
   });
   $2("opt-limit").addEventListener("change", (e) => {
-    S.limit = parseInt(e.target.value, 10) || 0;
+    S.userDefaultLimit = parseInt(e.target.value, 10) || 0;
+    saveAppOptsToStorage();
+  });
+  $2("opt-speed-limit-dynamic")?.addEventListener("change", (e) => {
+    S.speedLimitDynamic = !!e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $2("opt-speed-limit-fallback")?.addEventListener("change", (e) => {
+    S.speedLimitFallback = e.target.value === "hide" ? "hide" : "user-default";
+    saveAppOptsToStorage();
+  });
+  $2("opt-roundabout-schema")?.addEventListener("change", (e) => {
+    S.roundaboutSchema = !!e.target.checked;
     saveAppOptsToStorage();
   });
   $2("opt-cam-speed-tol")?.addEventListener("change", (e) => {
@@ -18308,7 +19599,10 @@ function syncOptionsFromDom() {
   S.backOnly = $2("opt-back-only").checked;
   S.tolerance = parseInt($2("opt-tol").value, 10) || 45;
   S.noDirPolicy = $2("opt-nodir").value;
-  S.limit = parseInt($2("opt-limit").value, 10) || 60;
+  S.userDefaultLimit = parseInt($2("opt-limit").value, 10) || 60;
+  S.speedLimitDynamic = $2("opt-speed-limit-dynamic")?.checked !== false;
+  S.speedLimitFallback = $2("opt-speed-limit-fallback")?.value === "hide" ? "hide" : "user-default";
+  S.roundaboutSchema = $2("opt-roundabout-schema")?.checked !== false;
   S.camSpeedTol = Math.max(0, Math.min(
     50,
     parseInt($2("opt-cam-speed-tol")?.value, 10) || DEFAULT_CAM_SPEED_TOL
@@ -19004,6 +20298,38 @@ var init_offroute = __esm({
       offlineEntryVoice: false,
       offlineVoiceBucket: null
     };
+  }
+});
+
+// js/telemetry-funnel.js
+function readStore() {
+  try {
+    const raw = localStorage.getItem(FUNNEL_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : { counts: {}, last: {} };
+  } catch (e) {
+    return { counts: {}, last: {} };
+  }
+}
+function writeStore(st) {
+  try {
+    localStorage.setItem(FUNNEL_STORAGE_KEY, JSON.stringify(st));
+  } catch (e) {
+  }
+}
+function logFunnel(stage, detail = {}) {
+  const st = readStore();
+  st.counts[stage] = (st.counts[stage] || 0) + 1;
+  st.last[stage] = { ts: Date.now(), ...detail };
+  writeStore(st);
+  if (telemetry_default.isActive?.()) {
+    telemetry_default.log("meta", { sub: "funnel", stage, ...detail });
+  }
+}
+var FUNNEL_STORAGE_KEY;
+var init_telemetry_funnel = __esm({
+  "js/telemetry-funnel.js"() {
+    init_telemetry();
+    FUNNEL_STORAGE_KEY = "moto-hud-telemetry-funnel-v1";
   }
 });
 
@@ -20256,6 +21582,727 @@ var init_track_recorder = __esm({
   }
 });
 
+// js/telemetry-ui.js
+function bindMarkButton() {
+  const btn = $2("btn-telemetry-mark");
+  if (!btn || btn.dataset.bound) return;
+  btn.dataset.bound = "1";
+  btn.addEventListener("click", () => {
+    _tapCount++;
+    clearTimeout(_tapTimer);
+    _tapTimer = setTimeout(() => {
+      const n = _tapCount;
+      _tapCount = 0;
+      const ctx = getLastMarkContext();
+      if (n >= 3) {
+        telemetry_default.mark({
+          tags: ["phantom_turn"],
+          note: "phantom_turn",
+          ...ctx || {}
+        });
+        logFunnel("mark_placed", { kind: "phantom_turn" });
+        btn.classList.add("critical-flash");
+        setTimeout(() => btn.classList.remove("critical-flash"), 400);
+        try {
+          navigator.vibrate?.([30, 40, 30, 40, 30]);
+        } catch (e) {
+        }
+      } else if (n >= 2) {
+        telemetry_default.mark("critical");
+        logFunnel("mark_placed", { kind: "critical" });
+        btn.classList.add("critical-flash");
+        setTimeout(() => btn.classList.remove("critical-flash"), 400);
+        try {
+          navigator.vibrate?.([30, 40, 30]);
+        } catch (e) {
+        }
+      } else {
+        telemetry_default.mark(ctx ? { note: "mark", ...ctx } : void 0);
+        logFunnel("mark_placed", { kind: "mark" });
+        try {
+          navigator.vibrate?.(25);
+        } catch (e) {
+        }
+      }
+      btn.classList.add("flash");
+      setTimeout(() => btn.classList.remove("flash"), 200);
+    }, MARK_TAP_MS);
+  });
+}
+function fmtDur(ms) {
+  if (!ms || ms < 0) return "\u2014";
+  const s2 = Math.floor(ms / 1e3);
+  const m = Math.floor(s2 / 60);
+  const h = Math.floor(m / 60);
+  if (h > 0) return h + "\u0447 " + m % 60 + "\u043C";
+  if (m > 0) return m + "\u043C " + s2 % 60 + "\u0441";
+  return s2 + "\u0441";
+}
+function fmtDate(ts) {
+  if (!ts) return "\u2014";
+  const d = new Date(ts);
+  const p = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+async function refreshSessionsList() {
+  const list = $2("telemetry-sessions");
+  const stats = $2("telemetry-stats");
+  if (!list) return;
+  try {
+    const sessions = await telemetry_default.listSessions();
+    const st = await telemetry_default.storageStats();
+    if (stats) {
+      stats.textContent = "\u0421\u0435\u0441\u0441\u0438\u0439: " + st.sessions + " / " + st.maxSessions + " \xB7 \u0441\u043E\u0431\u044B\u0442\u0438\u0439: ~" + st.events;
+    }
+    if (!sessions.length) {
+      list.innerHTML = '<div class="hint">\u0417\u0430\u043F\u0438\u0441\u0435\u0439 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442. \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u0442\u0435\u043B\u0435\u043C\u0435\u0442\u0440\u0438\u044E \u0438 \u043D\u0430\u0447\u043D\u0438\u0442\u0435 \u043F\u043E\u0435\u0437\u0434\u043A\u0443.</div>';
+      return;
+    }
+    list.innerHTML = sessions.map((s2) => {
+      const dirty = s2.dirty ? ' <span class="tel-dirty">dirty</span>' : "";
+      let shareBadge = "";
+      if (s2.sharePendingConfirm) {
+        shareBadge = ' <span class="tel-share-pending">Share ?</span>';
+      } else if ((s2.shareAttempts || 0) > 0) {
+        shareBadge = ' <span class="tel-share-done">\u043F\u0435\u0440\u0435\u0434\u0430\u043D\u043E</span>';
+      }
+      return '<div class="tel-row" data-id="' + s2.id + '"><div class="tel-main"><strong>' + fmtDate(s2.startedAt) + "</strong>" + dirty + shareBadge + '<span class="tel-meta">' + fmtDur(s2.durationMs) + " \xB7 " + s2.eventCount + " \u0441\u043E\u0431. \xB7 \u043C\u0435\u0442\u043E\u043A " + s2.markCount + '</span></div><div class="tel-actions"><button type="button" class="tel-btn" data-act="export" data-id="' + s2.id + '">\u{1F4E4}</button><button type="button" class="tel-btn" data-act="delete" data-id="' + s2.id + '">\u{1F5D1}</button></div></div>';
+    }).join("");
+  } catch (e) {
+    list.innerHTML = '<div class="hint err">IndexedDB: ' + e.message + "</div>";
+  }
+}
+function bindSessionsList() {
+  const list = $2("telemetry-sessions");
+  if (!list || list.dataset.bound) return;
+  list.dataset.bound = "1";
+  list.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.act === "export") {
+      try {
+        await telemetry_default.export(id);
+      } catch (err) {
+        alert(err.message);
+      }
+    } else if (btn.dataset.act === "delete") {
+      if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F?")) return;
+      await telemetry_default.deleteSession(id);
+      await refreshSessionsList();
+    }
+  });
+  $2("btn-telemetry-export-all")?.addEventListener("click", async () => {
+    const sessions = await telemetry_default.listSessions();
+    for (const s2 of sessions) {
+      try {
+        await telemetry_default.export(s2.id);
+      } catch (e) {
+        console.warn(e);
+      }
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  });
+}
+function initTelemetryUI() {
+  bindMarkButton();
+  bindSessionsList();
+  const toggle = $2("opt-telemetry");
+  if (toggle) {
+    toggle.checked = telemetry_default.isEnabled();
+    toggle.addEventListener("change", async () => {
+      await telemetry_default.setEnabled(toggle.checked);
+      logFunnel(toggle.checked ? "telemetry_opt_in" : "telemetry_opt_out", { source: "settings" });
+      telemetry_default.updateMarkButtonVisibility();
+      await refreshSessionsList();
+    });
+  }
+  document.getElementById("opts-telemetry-section")?.addEventListener("toggle", (e) => {
+    if (e.target.open) refreshSessionsList();
+  });
+  refreshSessionsList();
+  telemetry_default.updateMarkButtonVisibility();
+}
+var _tapCount, _tapTimer, MARK_TAP_MS;
+var init_telemetry_ui = __esm({
+  "js/telemetry-ui.js"() {
+    init_telemetry();
+    init_hud();
+    init_util();
+    init_telemetry_funnel();
+    _tapCount = 0;
+    _tapTimer = null;
+    MARK_TAP_MS = 450;
+  }
+});
+
+// node_modules/@capacitor/app/dist/esm/definitions.js
+var init_definitions5 = __esm({
+  "node_modules/@capacitor/app/dist/esm/definitions.js"() {
+  }
+});
+
+// node_modules/@capacitor/app/dist/esm/web.js
+var web_exports5 = {};
+__export(web_exports5, {
+  AppWeb: () => AppWeb
+});
+var AppWeb;
+var init_web5 = __esm({
+  "node_modules/@capacitor/app/dist/esm/web.js"() {
+    init_dist();
+    AppWeb = class extends WebPlugin {
+      constructor() {
+        super();
+        this.handleVisibilityChange = () => {
+          const data = {
+            isActive: document.hidden !== true
+          };
+          this.notifyListeners("appStateChange", data);
+          if (document.hidden) {
+            this.notifyListeners("pause", null);
+          } else {
+            this.notifyListeners("resume", null);
+          }
+        };
+        document.addEventListener("visibilitychange", this.handleVisibilityChange, false);
+      }
+      exitApp() {
+        throw this.unimplemented("Not implemented on web.");
+      }
+      async getInfo() {
+        throw this.unimplemented("Not implemented on web.");
+      }
+      async getLaunchUrl() {
+        return { url: "" };
+      }
+      async getState() {
+        return { isActive: document.hidden !== true };
+      }
+      async minimizeApp() {
+        throw this.unimplemented("Not implemented on web.");
+      }
+      async toggleBackButtonHandler() {
+        throw this.unimplemented("Not implemented on web.");
+      }
+    };
+  }
+});
+
+// node_modules/@capacitor/app/dist/esm/index.js
+var esm_exports3 = {};
+__export(esm_exports3, {
+  App: () => App
+});
+var App;
+var init_esm5 = __esm({
+  "node_modules/@capacitor/app/dist/esm/index.js"() {
+    init_dist();
+    init_definitions5();
+    App = registerPlugin("App", {
+      web: () => Promise.resolve().then(() => (init_web5(), web_exports5)).then((m) => new m.AppWeb())
+    });
+  }
+});
+
+// js/legal-consent.js
+function readConsent() {
+  try {
+    const raw = localStorage.getItem(LEGAL_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+function hasValidLegalConsent() {
+  const data = readConsent();
+  return data?.version === LEGAL_DISCLAIMER_VERSION && typeof data?.ts === "string";
+}
+function saveConsent() {
+  localStorage.setItem(LEGAL_STORAGE_KEY, JSON.stringify({
+    version: LEGAL_DISCLAIMER_VERSION,
+    ts: (/* @__PURE__ */ new Date()).toISOString()
+  }));
+}
+function showBlockedScreen() {
+  document.getElementById("legalModal")?.classList.remove("on");
+  document.getElementById("legalBlocked")?.classList.add("on");
+  document.body.classList.add("legal-blocked");
+}
+function applyStoreLegalUi() {
+  if (!isNative()) return;
+  document.querySelectorAll(".pwa-only").forEach((el) => {
+    el.style.display = "none";
+  });
+}
+async function onDecline() {
+  try {
+    const { App: App2 } = await Promise.resolve().then(() => (init_esm5(), esm_exports3));
+    const { Capacitor: Capacitor2 } = await Promise.resolve().then(() => (init_dist(), dist_exports));
+    if (Capacitor2.isNativePlatform()) {
+      await App2.exitApp();
+      return;
+    }
+  } catch {
+  }
+  showBlockedScreen();
+}
+function initLegalConsent(opts) {
+  applyStoreLegalUi();
+  if (hasValidLegalConsent()) {
+    opts?.onAccepted?.();
+    return;
+  }
+  const modal = document.getElementById("legalModal");
+  if (!modal) return;
+  modal.classList.add("on");
+  document.body.classList.add("legal-gate");
+  document.getElementById("legal-accept")?.addEventListener("click", () => {
+    saveConsent();
+    modal.classList.remove("on");
+    document.body.classList.remove("legal-gate");
+    opts?.onAccepted?.();
+  }, { once: true });
+  document.getElementById("legal-decline")?.addEventListener("click", () => {
+    void onDecline();
+  }, { once: true });
+}
+var LEGAL_DISCLAIMER_VERSION, LEGAL_STORAGE_KEY;
+var init_legal_consent = __esm({
+  "js/legal-consent.js"() {
+    init_platform();
+    LEGAL_DISCLAIMER_VERSION = 1;
+    LEGAL_STORAGE_KEY = "moto-hud-legal-consent";
+  }
+});
+
+// js/telemetry-share.js
+function fmtDate2(ts) {
+  if (!ts) return "\u2014";
+  const d = new Date(ts);
+  const p = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+function screenInfo() {
+  try {
+    return (window.screen?.width || "?") + "\xD7" + (window.screen?.height || "?") + (window.screen?.orientation?.type ? " \xB7 " + window.screen.orientation.type : "");
+  } catch (e) {
+    return null;
+  }
+}
+function buildShareMessage(summary, userNote) {
+  const lines = [
+    "\u041C\u043E\u0442\u043E \u0418\u041B\u0421 \xB7 \u0442\u0435\u043B\u0435\u043C\u0435\u0442\u0440\u0438\u044F \u043F\u043E\u0435\u0437\u0434\u043A\u0438",
+    "\u0414\u0430\u0442\u0430: " + fmtDate2(summary.startedAt),
+    "\u0414\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C: " + (summary.durationMin || 0) + " \u043C\u0438\u043D",
+    "GPS-\u0442\u043E\u0447\u0435\u043A: ~" + (summary.fixCount || 0) + " \xB7 \u043C\u0435\u0442\u043E\u043A: " + (summary.markCount || 0),
+    "\u0420\u0430\u0437\u043C\u0435\u0440 \u0444\u0430\u0439\u043B\u0430: ~" + (summary.sizeKb || 0) + " \u041A\u0411",
+    "\u0420\u0435\u0433\u0438\u043E\u043D (\u0441\u0442\u0430\u0440\u0442): " + (summary.region || "\u2014"),
+    "\u0412\u0435\u0440\u0441\u0438\u044F: " + (summary.appVersion || "?") + " \xB7 build " + (summary.buildId || "?"),
+    "\u042D\u043A\u0440\u0430\u043D: " + (screenInfo() || "\u2014"),
+    "Session: " + (summary.sessionId || "").slice(0, 12),
+    "",
+    "\u0427\u0442\u043E \u0431\u044B\u043B\u043E \u043D\u0435 \u0442\u0430\u043A:",
+    userNote && userNote.trim() ? userNote.trim() : "(\u043E\u043F\u0438\u0448\u0438\u0442\u0435, \u0435\u0441\u043B\u0438 \u0431\u044B\u043B\u0430 \u043E\u0448\u0438\u0431\u043A\u0430 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u0438)",
+    "",
+    "\u0424\u0430\u0439\u043B JSONL \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0447\u0435\u0440\u0435\u0437 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB."
+  ];
+  return lines.join("\n");
+}
+function shareFileViaSheet(file, text) {
+  if (!navigator.share) return Promise.reject(new Error("Share API \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D"));
+  const payload = { title: "\u041C\u043E\u0442\u043E \u0418\u041B\u0421 \u2014 \u0442\u0435\u043B\u0435\u043C\u0435\u0442\u0440\u0438\u044F", text };
+  if (file) {
+    if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+      return Promise.reject(new Error("\u0424\u0430\u0439\u043B \u043D\u0435\u043B\u044C\u0437\u044F \u043F\u0435\u0440\u0435\u0434\u0430\u0442\u044C \u0447\u0435\u0440\u0435\u0437 Share \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435"));
+    }
+    payload.files = [file];
+  }
+  return navigator.share(payload);
+}
+async function shareSession(sessionId, userNote) {
+  const summary = await telemetry_default.getSessionShareSummary(sessionId);
+  const text = buildShareMessage(summary, userNote);
+  const { blob, filename, body } = await telemetry_default.buildSessionExport(sessionId);
+  let file = new File([blob], filename, { type: "application/x-ndjson" });
+  try {
+    await shareFileViaSheet(file, text);
+  } catch (e) {
+    if (file.type !== "text/plain") {
+      const txtName = filename.replace(/\.jsonl$/i, ".txt");
+      file = new File([body], txtName, { type: "text/plain" });
+      await shareFileViaSheet(file, text);
+    } else {
+      throw e;
+    }
+  }
+  if (userNote?.trim()) logFunnel("share_note_nonempty", { sessionId, len: userNote.trim().length });
+  logFunnel("share_sheet_opened", { sessionId });
+  await telemetry_default.recordSessionShare(sessionId, "share_sheet", { pendingConfirm: true });
+  return summary;
+}
+async function downloadSession(sessionId) {
+  await telemetry_default.export(sessionId);
+  logFunnel("share_download", { sessionId });
+}
+function openShareEmail(summary, userNote) {
+  const subject = encodeURIComponent("\u041C\u043E\u0442\u043E \u0418\u041B\u0421 \u2014 \u0442\u0435\u043B\u0435\u043C\u0435\u0442\u0440\u0438\u044F");
+  const body = encodeURIComponent(buildShareMessage(summary, userNote) + "\n\n(\u041F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u0441\u043A\u0430\u0447\u0430\u043D\u043D\u044B\u0439 JSONL \u0432\u0440\u0443\u0447\u043D\u0443\u044E)");
+  window.location.href = "mailto:" + DEV_EMAIL + "?subject=" + subject + "&body=" + body;
+  logFunnel("share_email", { sessionId: summary.sessionId });
+}
+function openTelegramChat() {
+  window.open(DEV_TELEGRAM, "_blank", "noopener");
+  logFunnel("share_telegram_chat");
+}
+function formatSharePreviewHtml(summary) {
+  const dirty = summary.dirty ? ' <span class="tel-dirty">\u043D\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430</span>' : "";
+  const shared = summary.sharePendingConfirm ? '<p class="telemetry-preview-warn">\u0420\u0430\u043D\u0435\u0435 \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u043E \u0432 Share \u2014 \u0443\u0431\u0435\u0434\u0438\u0442\u0435\u0441\u044C, \u0447\u0442\u043E \u0444\u0430\u0439\u043B \u0443\u0448\u0451\u043B \u0432 Telegram/email.</p>' : "";
+  return '<div class="telemetry-preview"><p><strong>\u0427\u0442\u043E \u0431\u0443\u0434\u0435\u0442 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E</strong>' + dirty + "</p><ul><li>\u041F\u043E\u0435\u0437\u0434\u043A\u0430: " + fmtDate2(summary.startedAt) + " \xB7 " + (summary.durationMin || 0) + " \u043C\u0438\u043D</li><li>GPS-\u0442\u043E\u0447\u0435\u043A: ~" + (summary.fixCount || 0) + " \xB7 \u043C\u0435\u0442\u043E\u043A: " + (summary.markCount || 0) + "</li><li>\u0420\u0430\u0437\u043C\u0435\u0440: ~" + (summary.sizeKb || 0) + " \u041A\u0411</li><li>\u0420\u0435\u0433\u0438\u043E\u043D \u0441\u0442\u0430\u0440\u0442\u0430: " + (summary.region || "\u2014") + "</li><li>build " + (summary.buildId || "?") + '</li></ul><p class="hint">\u041F\u043E\u043B\u043D\u044B\u0439 \u0442\u0440\u0435\u043A \u043F\u043E\u0435\u0437\u0434\u043A\u0438 \u0432 \u0444\u0430\u0439\u043B\u0435. \u0410\u0434\u0440\u0435\u0441\u0430 \u0434\u043E\u043C\u0430/\u0440\u0430\u0431\u043E\u0442\u044B \u043C\u043E\u0433\u0443\u0442 \u043F\u043E\u043F\u0430\u0441\u0442\u044C \u0432 \u043D\u0430\u0447\u0430\u043B\u043E/\u043A\u043E\u043D\u0435\u0446 \u2014 \u043F\u0440\u0438 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E\u0441\u0442\u0438 \u043E\u043F\u0438\u0448\u0438\u0442\u0435 \u044D\u0442\u043E \u0432 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0438.</p>' + shared + "</div>";
+}
+var DEV_EMAIL, DEV_TELEGRAM;
+var init_telemetry_share = __esm({
+  "js/telemetry-share.js"() {
+    init_telemetry();
+    init_telemetry_funnel();
+    DEV_EMAIL = "iliawagen@gmail.com";
+    DEV_TELEGRAM = "https://t.me/MotoILS";
+  }
+});
+
+// js/telemetry-ask.js
+var telemetry_ask_exports = {};
+__export(telemetry_ask_exports, {
+  DEV_EMAIL: () => DEV_EMAIL,
+  DEV_TELEGRAM: () => DEV_TELEGRAM,
+  TELEMETRY_ASK_KEY: () => TELEMETRY_ASK_KEY,
+  TELEMETRY_SEND_ASK_KEY: () => TELEMETRY_SEND_ASK_KEY,
+  TELEMETRY_SEND_SKIP_EACH_KEY: () => TELEMETRY_SEND_SKIP_EACH_KEY,
+  initTelemetryAsk: () => initTelemetryAsk,
+  maybeShowSendPrompt: () => maybeShowSendPrompt,
+  maybeShowTelemetryAsk: () => maybeShowTelemetryAsk,
+  openTelemetrySettings: () => openTelemetrySettings
+});
+function readAskState() {
+  try {
+    return localStorage.getItem(TELEMETRY_ASK_KEY) || "";
+  } catch (e) {
+    return "";
+  }
+}
+function writeAskState(v) {
+  try {
+    localStorage.setItem(TELEMETRY_ASK_KEY, v);
+  } catch (e) {
+  }
+}
+function readSendAskState() {
+  try {
+    return localStorage.getItem(TELEMETRY_SEND_ASK_KEY) || "";
+  } catch (e) {
+    return "";
+  }
+}
+function writeSendAskState(v) {
+  try {
+    localStorage.setItem(TELEMETRY_SEND_ASK_KEY, v);
+  } catch (e) {
+  }
+}
+function readSkipEachRide() {
+  try {
+    return localStorage.getItem(TELEMETRY_SEND_SKIP_EACH_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
+}
+function writeSkipEachRide(on) {
+  try {
+    if (on) localStorage.setItem(TELEMETRY_SEND_SKIP_EACH_KEY, "1");
+    else localStorage.removeItem(TELEMETRY_SEND_SKIP_EACH_KEY);
+  } catch (e) {
+  }
+}
+function openTelemetrySettings() {
+  const opts = document.getElementById("opts-settings");
+  const section = document.getElementById("opts-telemetry-section");
+  if (opts && !opts.open) opts.open = true;
+  if (section) section.open = true;
+  section?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+}
+async function enableTelemetryFromAsk() {
+  await telemetry_default.setEnabled(true);
+  logFunnel("telemetry_opt_in", { source: "ask_modal" });
+  const toggle = $2("opt-telemetry");
+  if (toggle) toggle.checked = true;
+  telemetry_default.updateMarkButtonVisibility();
+  await refreshSessionsList();
+  openTelemetrySettings();
+  writeAskState("enabled");
+  $2("telemetry-ask-modal")?.classList.remove("on");
+}
+async function loadSendPreview(sessionId) {
+  const box = $2("telemetry-send-preview");
+  if (!box) return null;
+  if (!sessionId) {
+    box.innerHTML = '<p class="hint">\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0441\u0435\u0441\u0441\u0438\u044E \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0438\u043B\u0438 \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u043F\u043E\u0435\u0437\u0434\u043A\u0443.</p>';
+    return null;
+  }
+  try {
+    const summary = await telemetry_default.getSessionShareSummary(sessionId);
+    box.innerHTML = formatSharePreviewHtml(summary);
+    return summary;
+  } catch (e) {
+    box.innerHTML = '<p class="hint err">' + (e.message || String(e)) + "</p>";
+    return null;
+  }
+}
+function setSendStatus(msg, kind) {
+  const el = $2("telemetry-send-status");
+  if (!el) return;
+  if (!msg) {
+    el.textContent = "";
+    el.classList.add("hidden");
+    return;
+  }
+  el.textContent = msg;
+  el.classList.remove("hidden", "ok", "warn");
+  if (kind) el.classList.add(kind);
+}
+function bindEnableModal() {
+  const modal = $2("telemetry-ask-modal");
+  if (!modal || modal.dataset.bound) return;
+  modal.dataset.bound = "1";
+  $2("telemetry-ask-enable")?.addEventListener("click", () => {
+    void enableTelemetryFromAsk();
+  });
+  $2("telemetry-ask-later")?.addEventListener("click", () => {
+    writeAskState("later");
+    modal.classList.remove("on");
+  });
+  $2("telemetry-ask-dismiss")?.addEventListener("click", () => {
+    writeAskState("dismissed");
+    modal.classList.remove("on");
+  });
+  $2("telemetry-ask-open-settings")?.addEventListener("click", () => {
+    openTelemetrySettings();
+    modal.classList.remove("on");
+  });
+}
+function bindSendModal() {
+  const modal = $2("telemetry-send-modal");
+  if (!modal || modal.dataset.bound) return;
+  modal.dataset.bound = "1";
+  let pendingSessionId = null;
+  let pendingSummary = null;
+  modal.addEventListener("telemetry-send-open", (e) => {
+    pendingSessionId = e.detail?.sessionId || null;
+    const meta = $2("telemetry-send-meta");
+    const n = e.detail?.eventCount;
+    if (meta) {
+      meta.textContent = n != null && n > 0 ? "\u0417\u0430\u043F\u0438\u0441\u0430\u043D\u043E \u0441\u043E\u0431\u044B\u0442\u0438\u0439: " + n + ". \u0424\u0430\u0439\u043B \u0442\u043E\u043B\u044C\u043A\u043E \u043D\u0430 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435 \u2014 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 \u0434\u043E\u0431\u0440\u043E\u0432\u043E\u043B\u044C\u043D\u0430\u044F." : "\u0424\u0430\u0439\u043B JSONL \u043D\u0430 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435. \u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 \u0440\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A\u0443, \u0435\u0441\u043B\u0438 \u0431\u044B\u043B\u0430 \u043F\u0440\u043E\u0431\u043B\u0435\u043C\u0430 \u0441 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u0435\u0439.";
+    }
+    const note = $2("telemetry-send-note");
+    if (note) note.value = "";
+    const skip = $2("telemetry-send-skip-each");
+    if (skip) skip.checked = readSkipEachRide();
+    setSendStatus("", null);
+    $2("telemetry-send-confirm")?.classList.add("hidden");
+    void loadSendPreview(pendingSessionId).then((s2) => {
+      pendingSummary = s2;
+    });
+  });
+  $2("telemetry-send-share")?.addEventListener("click", async () => {
+    try {
+      let sid = pendingSessionId;
+      if (!sid) {
+        const sessions = await telemetry_default.listSessions();
+        sid = sessions[0]?.id;
+      }
+      if (!sid) {
+        alert("\u041D\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043D\u044B\u0445 \u0441\u0435\u0441\u0441\u0438\u0439");
+        return;
+      }
+      const note = $2("telemetry-send-note")?.value || "";
+      await shareSession(sid, note);
+      setSendStatus(
+        "\u041F\u0435\u0440\u0435\u0434\u0430\u043D\u043E \u0432 Share. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 Telegram \u0438\u043B\u0438 \u043F\u043E\u0447\u0442\u0443 \u2014 \u044D\u0442\u043E \u043D\u0435 \u043E\u0437\u043D\u0430\u0447\u0430\u0435\u0442 \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0443\u044E \u0434\u043E\u0441\u0442\u0430\u0432\u043A\u0443.",
+        "ok"
+      );
+      $2("telemetry-send-confirm")?.classList.remove("hidden");
+      await refreshSessionsList();
+    } catch (err) {
+      if (err?.name === "AbortError") return;
+      const msg = err?.message || String(err);
+      if (/Share API|нельзя передать/i.test(msg)) {
+        setSendStatus("Share \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u2014 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0438 \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u0432\u0440\u0443\u0447\u043D\u0443\u044E.", "warn");
+      } else {
+        alert(msg);
+      }
+    }
+  });
+  $2("telemetry-send-export")?.addEventListener("click", async () => {
+    try {
+      let sid = pendingSessionId;
+      if (!sid) {
+        const sessions = await telemetry_default.listSessions();
+        sid = sessions[0]?.id;
+      }
+      if (!sid) {
+        alert("\u041D\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043D\u044B\u0445 \u0441\u0435\u0441\u0441\u0438\u0439");
+        return;
+      }
+      await downloadSession(sid);
+      setSendStatus("\u0424\u0430\u0439\u043B \u0441\u043A\u0430\u0447\u0430\u043D \u2014 \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u043A \u043F\u0438\u0441\u044C\u043C\u0443 \u0438\u043B\u0438 \u0432 Telegram.", "ok");
+    } catch (err) {
+      alert(err.message || String(err));
+    }
+  });
+  $2("telemetry-send-email")?.addEventListener("click", async () => {
+    try {
+      let sid = pendingSessionId;
+      if (!sid) {
+        const sessions = await telemetry_default.listSessions();
+        sid = sessions[0]?.id;
+      }
+      const summary = pendingSummary || (sid ? await telemetry_default.getSessionShareSummary(sid) : null);
+      if (!summary) {
+        alert("\u041D\u0435\u0442 \u0441\u0435\u0441\u0441\u0438\u0438 \u0434\u043B\u044F \u043F\u0438\u0441\u044C\u043C\u0430");
+        return;
+      }
+      const note = $2("telemetry-send-note")?.value || "";
+      openShareEmail(summary, note);
+      setSendStatus("\u041E\u0442\u043A\u0440\u044B\u0442\u0430 \u043F\u043E\u0447\u0442\u0430 \u2014 \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u0441\u043A\u0430\u0447\u0430\u043D\u043D\u044B\u0439 JSONL \u0432\u0440\u0443\u0447\u043D\u0443\u044E.", "warn");
+    } catch (err) {
+      alert(err.message || String(err));
+    }
+  });
+  $2("telemetry-send-telegram")?.addEventListener("click", () => {
+    openTelegramChat();
+    setSendStatus("\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0447\u0430\u0442 \u0438 \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u0444\u0430\u0439\u043B, \u0435\u0441\u043B\u0438 Share \u043D\u0435 \u0441\u0440\u0430\u0431\u043E\u0442\u0430\u043B.", "warn");
+  });
+  $2("telemetry-send-confirm")?.addEventListener("click", async () => {
+    if (!pendingSessionId) return;
+    await telemetry_default.recordSessionShare(pendingSessionId, "user_confirmed", { clearPending: true });
+    logFunnel("session_marked_shared", { sessionId: pendingSessionId });
+    setSendStatus("\u041E\u0442\u043C\u0435\u0447\u0435\u043D\u043E: \u0432\u044B \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u043B\u0438 \u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0443 \u0444\u0430\u0439\u043B\u0430.", "ok");
+    await refreshSessionsList();
+    setTimeout(() => modal.classList.remove("on"), 800);
+  });
+  $2("telemetry-send-later")?.addEventListener("click", () => {
+    logFunnel("share_prompt_dismissed_later", { sessionId: pendingSessionId });
+    modal.classList.remove("on");
+    pendingSessionId = null;
+    pendingSummary = null;
+  });
+  $2("telemetry-send-dismiss")?.addEventListener("click", () => {
+    writeSendAskState("dismissed");
+    logFunnel("share_prompt_dismissed_never");
+    modal.classList.remove("on");
+    pendingSessionId = null;
+    pendingSummary = null;
+  });
+  $2("telemetry-send-skip-each")?.addEventListener("change", (e) => {
+    const on = !!e.target.checked;
+    writeSkipEachRide(on);
+    if (on) logFunnel("share_prompt_skip_per_ride");
+  });
+}
+function maybeShowTelemetryAsk() {
+  if (isSim()) return;
+  if (!hasValidLegalConsent()) return;
+  if (telemetry_default.isEnabled()) return;
+  const st = readAskState();
+  if (st === "enabled" || st === "dismissed") return;
+  const modal = $2("telemetry-ask-modal");
+  if (!modal) return;
+  bindEnableModal();
+  modal.classList.add("on");
+}
+async function maybeShowSendPrompt(sessionId) {
+  if (isSim() || !sessionId) return;
+  if (!telemetry_default.isEnabled()) return;
+  if (readSendAskState() === "dismissed") return;
+  if (readSkipEachRide()) return;
+  let eventCount = 0;
+  let durationMs = 0;
+  try {
+    const sessions = await telemetry_default.listSessions();
+    const s2 = sessions.find((x) => x.id === sessionId);
+    if (!s2) return;
+    eventCount = s2.eventCount || 0;
+    durationMs = s2.durationMs || 0;
+    if (eventCount < MIN_SEND_EVENTS) {
+      logFunnel("share_prompt_skipped_short", { sessionId, reason: "events", eventCount });
+      return;
+    }
+    if (durationMs < MIN_SEND_RIDE_MS) {
+      logFunnel("share_prompt_skipped_short", { sessionId, reason: "duration", durationMs });
+      return;
+    }
+  } catch (e) {
+    return;
+  }
+  const modal = $2("telemetry-send-modal");
+  if (!modal) return;
+  bindSendModal();
+  logFunnel("share_prompt_shown", { sessionId, eventCount, durationMs });
+  modal.dispatchEvent(new CustomEvent("telemetry-send-open", {
+    detail: { sessionId, eventCount }
+  }));
+  $2("telemetry-send-status")?.classList.add("hidden");
+  modal.classList.add("on");
+}
+async function maybeShowPendingShareBanner() {
+  try {
+    const pending = await telemetry_default.listPendingShareConfirm();
+    if (!pending.length) return;
+    const el = $2("telemetry-pending-share-hint");
+    if (!el) return;
+    el.classList.remove("hidden");
+    el.textContent = "\u0415\u0441\u0442\u044C " + pending.length + " \u0441\u0435\u0441\u0441\u0438\u0439, \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u043D\u044B\u0445 \u0432 Share \u2014 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u0435 \u0434\u043E\u0441\u0442\u0430\u0432\u043A\u0443 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0442\u0435\u043B\u0435\u043C\u0435\u0442\u0440\u0438\u0438.";
+  } catch (e) {
+  }
+}
+function initTelemetryAsk() {
+  bindEnableModal();
+  bindSendModal();
+  $2("btn-telemetry-help")?.addEventListener("click", () => {
+    bindEnableModal();
+    $2("telemetry-ask-modal")?.classList.add("on");
+  });
+  $2("btn-telemetry-share-help")?.addEventListener("click", () => {
+    openTelemetrySettings();
+    $2("telemetry-send-modal")?.classList.add("on");
+    $2("telemetry-send-modal")?.dispatchEvent(new CustomEvent("telemetry-send-open", { detail: {} }));
+  });
+  void maybeShowPendingShareBanner();
+  try {
+    if (localStorage.getItem("moto-hud-onboarding-v1") === "1") {
+      setTimeout(maybeShowTelemetryAsk, 600);
+    }
+  } catch (e) {
+  }
+}
+var TELEMETRY_ASK_KEY, TELEMETRY_SEND_ASK_KEY, TELEMETRY_SEND_SKIP_EACH_KEY, MIN_SEND_EVENTS, MIN_SEND_RIDE_MS;
+var init_telemetry_ask = __esm({
+  "js/telemetry-ask.js"() {
+    init_telemetry();
+    init_telemetry_ui();
+    init_legal_consent();
+    init_platform();
+    init_util();
+    init_telemetry_funnel();
+    init_telemetry_share();
+    TELEMETRY_ASK_KEY = "moto-hud-telemetry-ask-v1";
+    TELEMETRY_SEND_ASK_KEY = "moto-hud-telemetry-send-ask-v1";
+    TELEMETRY_SEND_SKIP_EACH_KEY = "moto-hud-telemetry-send-skip-each";
+    MIN_SEND_EVENTS = 5;
+    MIN_SEND_RIDE_MS = 12e4;
+  }
+});
+
 // js/hud.js
 function getLastMarkContext() {
   return _lastMarkCtx;
@@ -20438,6 +22485,7 @@ function onTick() {
     updateFinishInfo(remaining, kmh, now);
     tickAutoMode();
     checkCamerasILS();
+    if (snap) tickSpeedLimit(snap);
     refreshFuelPanel();
     return;
   }
@@ -20472,32 +22520,64 @@ function onTick() {
     if (nm) {
       cacheLastManeuver(nm);
       logManeuverContext(nm, snap, true, null);
-      $2("arrow-box").innerHTML = buildArrowSVG(nm.step);
+      const rbCtx = snap ? getRoundaboutContext(snap, S.route) : null;
+      if (rbCtx) logRoundaboutTelemetry(rbCtx);
+      const displayStep = rbCtx?.isOnRoundabout && rbCtx.enterStep ? rbCtx.enterStep : isRoundaboutStep(nm.step) && rbCtx?.enterStep ? rbCtx.enterStep : nm.step;
+      $2("arrow-box").innerHTML = buildArrowSVG(displayStep, { snap, ctx: rbCtx });
       const rbEl = $2("rb-exit-label");
-      if (rbEl) {
-        const geom = S.route.geometry;
-        const rb = isCrossingContextEnabled() && geom && snap ? getActiveRoundabout(geom, snap.s, spdMps) : null;
-        const isRbStep = nm.step.type === "roundabout" || nm.step.type === "rotary";
-        if (rb && isRbStep && rb.exitNumber > 0) {
-          rbEl.textContent = String(rb.exitNumber);
-          rbEl.classList.remove("hidden");
-        } else {
-          rbEl.textContent = "";
-          rbEl.classList.add("hidden");
-        }
+      if (rbEl) rbEl.classList.add("hidden");
+      if (rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null) {
+        $2("street").textContent = roundaboutManeuverText(displayStep, rbCtx);
+      } else if (isRoundaboutStep(displayStep)) {
+        const mini = rbCtx?.isMini ? " \xB7 \u043C\u0438\u043D\u0438-\u043A\u0440\u0443\u0433" : "";
+        $2("street").textContent = (roundaboutManeuverText(displayStep, rbCtx) || formatStreetLabel(nm.step.name || displayStep.name)) + mini;
+      } else {
+        $2("street").textContent = formatStreetLabel(nm.step.name);
       }
-      if (nm.dist < 1e3) {
+      if (rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null) {
+        const dm = Math.max(10, Math.round(rbCtx.distanceToExit / 10) * 10);
+        if (dm < 1e3) {
+          $2("v-mdist").textContent = dm;
+          $2("v-mdist-u").textContent = "\u043C";
+        } else {
+          $2("v-mdist").textContent = (dm / 1e3).toFixed(1);
+          $2("v-mdist-u").textContent = "\u043A\u043C";
+        }
+      } else if (nm.dist < 1e3) {
         $2("v-mdist").textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
         $2("v-mdist-u").textContent = "\u043C";
       } else {
         $2("v-mdist").textContent = (nm.dist / 1e3).toFixed(1);
         $2("v-mdist-u").textContent = "\u043A\u043C";
       }
-      $2("street").textContent = formatStreetLabel(nm.step.name);
       const stIdx = S.route.steps.indexOf(nm.step);
       const kFar = "st_" + stIdx + "_far";
       const kNear = "st_" + stIdx + "_near";
-      if (isTurnStep(nm.step)) {
+      const kRbOn = "rb_on_" + (rbCtx?.enterSegIdx ?? stIdx);
+      if (isRoundaboutStep(displayStep) || isRoundaboutStep(nm.step)) {
+        try {
+          const rbStep = displayStep;
+          const dist = rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null ? rbCtx.distanceToExit : nm.dist;
+          if (rbCtx?.isOnRoundabout && dist <= 50 && dist >= 25 && !S.camWarned.has(kRbOn)) {
+            S.camWarned.add(kRbOn);
+            S.lastVoiceTs = Date.now();
+            speak(roundaboutVoicePhrase(rbStep, "on_exit"));
+          } else if (!rbCtx?.isOnRoundabout) {
+            if (dist <= 320 && dist > 80 && !S.camWarned.has(kFar)) {
+              S.camWarned.add(kFar);
+              telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(dist), phase: "rb_far" });
+              speak(roundaboutVoicePhrase(rbStep, "far", { streetName: rbStep.name }));
+            }
+            if (dist <= 70 && !S.camWarned.has(kNear)) {
+              S.camWarned.add(kNear);
+              telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(dist), phase: "rb_near" });
+              speak(roundaboutVoicePhrase(rbStep, "near", { streetName: rbStep.name }));
+            }
+          }
+        } catch (e) {
+          console.warn("roundabout voice:", e);
+        }
+      } else if (isTurnStep(nm.step)) {
         try {
           const txt = maneuverText(nm.step);
           const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
@@ -20531,6 +22611,7 @@ function onTick() {
   tickAutoMode();
   checkCamerasILS();
   checkCurveSpeedWarn(kmh);
+  if (snap) tickSpeedLimit(snap);
   refreshFuelPanel();
   tickNavMap();
   syncTripHudBadge();
@@ -20547,7 +22628,7 @@ function checkCurveSpeedWarn(kmh) {
   S.lastVoiceTs = Date.now();
   speak("\u0421\u043D\u0438\u0437\u044C\u0442\u0435 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u043F\u0435\u0440\u0435\u0434 \u043F\u043E\u0432\u043E\u0440\u043E\u0442\u043E\u043C. \u0420\u0435\u043A\u043E\u043C\u0435\u043D\u0434\u0443\u0435\u0442\u0441\u044F " + warn.vSafeKmh + " \u043A\u0438\u043B\u043E\u043C\u0435\u0442\u0440\u043E\u0432 \u0432 \u0447\u0430\u0441");
 }
-function r22(n) {
+function r23(n) {
   return n != null && Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
 }
 async function startHud() {
@@ -20559,9 +22640,11 @@ async function startHud() {
   }
   saveLastRun();
   if (telemetry_default.isEnabled()) {
-    telemetry_default.start({ routeKm: S.route?.distance ? r22(S.route.distance / 1e3) : null });
+    telemetry_default.start({ routeKm: S.route?.distance ? r23(S.route.distance / 1e3) : null });
     telemetry_default.updateMarkButtonVisibility();
+    logFunnel("ride_start", { routeKm: S.route?.distance ? r23(S.route.distance / 1e3) : null });
   }
+  resetConvergeTelemetryRide();
   if (isTrackRecordEnabled()) startTrackRecorder();
   S.startTs = Date.now();
   S.distDone = 0;
@@ -20571,6 +22654,8 @@ async function startHud() {
   resetRouteSnap();
   resetSnapQuality();
   resetCurveRibbonState();
+  resetSpeedLimitState();
+  resetRoundaboutState();
   ensureRouteGeometry(S.route);
   $2("setup").style.display = "none";
   $2("setup").style.zIndex = "30";
@@ -20599,11 +22684,20 @@ async function startHud() {
   onTick();
   startVisualLoop();
 }
-function stopHud() {
+async function stopHud() {
   if (window.__SIM__?.onNavigationStop) window.__SIM__.onNavigationStop();
-  telemetry_default.stop().catch(() => {
-  });
+  flushConvergeSummary();
+  let telSessionId = null;
+  try {
+    telSessionId = await telemetry_default.stop();
+  } catch (e) {
+  }
   telemetry_default.updateMarkButtonVisibility();
+  if (telSessionId) {
+    logFunnel("ride_stop", { sessionId: telSessionId });
+    Promise.resolve().then(() => (init_telemetry_ask(), telemetry_ask_exports)).then((m) => m.maybeShowSendPrompt(telSessionId)).catch(() => {
+    });
+  }
   const trackPts = stopTrackRecorder();
   if (trackPts.length >= 2) rememberLastRide(trackPts);
   stopVisualLoop();
@@ -20624,6 +22718,8 @@ function stopHud() {
   releaseWakeLock();
   clearVoiceQueue();
   resetOffRouteMachine();
+  resetSpeedLimitState();
+  resetRoundaboutState();
   resetViewMode();
   syncTripHudBadge();
   try {
@@ -20821,7 +22917,7 @@ async function selectQuickFinish(id, loadFavs2, buildAndLoad) {
     $2("mid-info").textContent = "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430";
   }
 }
-var _lastMarkCtx, _fuelBusy, _fuelPanelShownAt, FUEL_PANEL_MS;
+var _fuelBusy, _fuelPanelShownAt, FUEL_PANEL_MS;
 var init_hud = __esm({
   "js/hud.js"() {
     init_state();
@@ -20841,7 +22937,6 @@ var init_hud = __esm({
     init_snap_quality();
     init_route_quality();
     init_maneuver_filter();
-    init_crossings();
     init_route();
     init_curve_speed();
     init_favorites();
@@ -20853,82 +22948,16 @@ var init_hud = __esm({
     init_hud_chrome();
     init_offroute();
     init_telemetry();
+    init_telemetry_funnel();
     init_view_mode();
     init_trip_ui();
     init_track_recorder();
-    _lastMarkCtx = null;
+    init_speed_limit();
+    init_roundabout();
+    init_converge_telemetry();
     _fuelBusy = false;
     _fuelPanelShownAt = 0;
     FUEL_PANEL_MS = 9e3;
-  }
-});
-
-// node_modules/@capacitor/app/dist/esm/definitions.js
-var init_definitions5 = __esm({
-  "node_modules/@capacitor/app/dist/esm/definitions.js"() {
-  }
-});
-
-// node_modules/@capacitor/app/dist/esm/web.js
-var web_exports5 = {};
-__export(web_exports5, {
-  AppWeb: () => AppWeb
-});
-var AppWeb;
-var init_web5 = __esm({
-  "node_modules/@capacitor/app/dist/esm/web.js"() {
-    init_dist();
-    AppWeb = class extends WebPlugin {
-      constructor() {
-        super();
-        this.handleVisibilityChange = () => {
-          const data = {
-            isActive: document.hidden !== true
-          };
-          this.notifyListeners("appStateChange", data);
-          if (document.hidden) {
-            this.notifyListeners("pause", null);
-          } else {
-            this.notifyListeners("resume", null);
-          }
-        };
-        document.addEventListener("visibilitychange", this.handleVisibilityChange, false);
-      }
-      exitApp() {
-        throw this.unimplemented("Not implemented on web.");
-      }
-      async getInfo() {
-        throw this.unimplemented("Not implemented on web.");
-      }
-      async getLaunchUrl() {
-        return { url: "" };
-      }
-      async getState() {
-        return { isActive: document.hidden !== true };
-      }
-      async minimizeApp() {
-        throw this.unimplemented("Not implemented on web.");
-      }
-      async toggleBackButtonHandler() {
-        throw this.unimplemented("Not implemented on web.");
-      }
-    };
-  }
-});
-
-// node_modules/@capacitor/app/dist/esm/index.js
-var esm_exports3 = {};
-__export(esm_exports3, {
-  App: () => App
-});
-var App;
-var init_esm5 = __esm({
-  "node_modules/@capacitor/app/dist/esm/index.js"() {
-    init_dist();
-    init_definitions5();
-    App = registerPlugin("App", {
-      web: () => Promise.resolve().then(() => (init_web5(), web_exports5)).then((m) => new m.AppWeb())
-    });
   }
 });
 
@@ -20948,144 +22977,9 @@ init_theme();
 init_theme_manager();
 init_tts_health();
 init_telemetry();
-
-// js/telemetry-ui.js
-init_telemetry();
-init_hud();
-init_util();
-var _tapCount = 0;
-var _tapTimer = null;
-var MARK_TAP_MS = 450;
-function bindMarkButton() {
-  const btn = $2("btn-telemetry-mark");
-  if (!btn || btn.dataset.bound) return;
-  btn.dataset.bound = "1";
-  btn.addEventListener("click", () => {
-    _tapCount++;
-    clearTimeout(_tapTimer);
-    _tapTimer = setTimeout(() => {
-      const n = _tapCount;
-      _tapCount = 0;
-      const ctx = getLastMarkContext();
-      if (n >= 3) {
-        telemetry_default.mark({
-          tags: ["phantom_turn"],
-          note: "phantom_turn",
-          ...ctx || {}
-        });
-        btn.classList.add("critical-flash");
-        setTimeout(() => btn.classList.remove("critical-flash"), 400);
-        try {
-          navigator.vibrate?.([30, 40, 30, 40, 30]);
-        } catch (e) {
-        }
-      } else if (n >= 2) {
-        telemetry_default.mark("critical");
-        btn.classList.add("critical-flash");
-        setTimeout(() => btn.classList.remove("critical-flash"), 400);
-        try {
-          navigator.vibrate?.([30, 40, 30]);
-        } catch (e) {
-        }
-      } else {
-        telemetry_default.mark(ctx ? { note: "mark", ...ctx } : void 0);
-        try {
-          navigator.vibrate?.(25);
-        } catch (e) {
-        }
-      }
-      btn.classList.add("flash");
-      setTimeout(() => btn.classList.remove("flash"), 200);
-    }, MARK_TAP_MS);
-  });
-}
-function fmtDur(ms) {
-  if (!ms || ms < 0) return "\u2014";
-  const s2 = Math.floor(ms / 1e3);
-  const m = Math.floor(s2 / 60);
-  const h = Math.floor(m / 60);
-  if (h > 0) return h + "\u0447 " + m % 60 + "\u043C";
-  if (m > 0) return m + "\u043C " + s2 % 60 + "\u0441";
-  return s2 + "\u0441";
-}
-function fmtDate(ts) {
-  if (!ts) return "\u2014";
-  const d = new Date(ts);
-  const p = (n) => String(n).padStart(2, "0");
-  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
-}
-async function refreshSessionsList() {
-  const list = $2("telemetry-sessions");
-  const stats = $2("telemetry-stats");
-  if (!list) return;
-  try {
-    const sessions = await telemetry_default.listSessions();
-    const st = await telemetry_default.storageStats();
-    if (stats) {
-      stats.textContent = "\u0421\u0435\u0441\u0441\u0438\u0439: " + st.sessions + " / " + st.maxSessions + " \xB7 \u0441\u043E\u0431\u044B\u0442\u0438\u0439: ~" + st.events;
-    }
-    if (!sessions.length) {
-      list.innerHTML = '<div class="hint">\u0417\u0430\u043F\u0438\u0441\u0435\u0439 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442. \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u0442\u0435\u043B\u0435\u043C\u0435\u0442\u0440\u0438\u044E \u0438 \u043D\u0430\u0447\u043D\u0438\u0442\u0435 \u043F\u043E\u0435\u0437\u0434\u043A\u0443.</div>';
-      return;
-    }
-    list.innerHTML = sessions.map((s2) => {
-      const dirty = s2.dirty ? ' <span class="tel-dirty">dirty</span>' : "";
-      return '<div class="tel-row" data-id="' + s2.id + '"><div class="tel-main"><strong>' + fmtDate(s2.startedAt) + "</strong>" + dirty + '<span class="tel-meta">' + fmtDur(s2.durationMs) + " \xB7 " + s2.eventCount + " \u0441\u043E\u0431. \xB7 \u043C\u0435\u0442\u043E\u043A " + s2.markCount + '</span></div><div class="tel-actions"><button type="button" class="tel-btn" data-act="export" data-id="' + s2.id + '">\u{1F4E4}</button><button type="button" class="tel-btn" data-act="delete" data-id="' + s2.id + '">\u{1F5D1}</button></div></div>';
-    }).join("");
-  } catch (e) {
-    list.innerHTML = '<div class="hint err">IndexedDB: ' + e.message + "</div>";
-  }
-}
-function bindSessionsList() {
-  const list = $2("telemetry-sessions");
-  if (!list || list.dataset.bound) return;
-  list.dataset.bound = "1";
-  list.addEventListener("click", async (e) => {
-    const btn = e.target.closest("[data-act]");
-    if (!btn) return;
-    const id = btn.dataset.id;
-    if (btn.dataset.act === "export") {
-      try {
-        await telemetry_default.export(id);
-      } catch (err) {
-        alert(err.message);
-      }
-    } else if (btn.dataset.act === "delete") {
-      if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F?")) return;
-      await telemetry_default.deleteSession(id);
-      await refreshSessionsList();
-    }
-  });
-  $2("btn-telemetry-export-all")?.addEventListener("click", async () => {
-    const sessions = await telemetry_default.listSessions();
-    for (const s2 of sessions) {
-      try {
-        await telemetry_default.export(s2.id);
-      } catch (e) {
-        console.warn(e);
-      }
-      await new Promise((r) => setTimeout(r, 300));
-    }
-  });
-}
-function initTelemetryUI() {
-  bindMarkButton();
-  bindSessionsList();
-  const toggle = $2("opt-telemetry");
-  if (toggle) {
-    toggle.checked = telemetry_default.isEnabled();
-    toggle.addEventListener("change", async () => {
-      await telemetry_default.setEnabled(toggle.checked);
-      telemetry_default.updateMarkButtonVisibility();
-      await refreshSessionsList();
-    });
-  }
-  document.getElementById("opts-telemetry-section")?.addEventListener("toggle", (e) => {
-    if (e.target.open) refreshSessionsList();
-  });
-  refreshSessionsList();
-  telemetry_default.updateMarkButtonVisibility();
-}
+init_telemetry_ui();
+init_telemetry_ask();
+init_converge_telemetry();
 
 // js/sw-register.js
 function registerServiceWorker() {
@@ -21113,76 +23007,11 @@ function registerServiceWorker() {
 
 // js/main.js
 init_vintage_vfd();
-
-// js/legal-consent.js
-init_platform();
-var LEGAL_DISCLAIMER_VERSION = 1;
-var LEGAL_STORAGE_KEY = "moto-hud-legal-consent";
-function readConsent() {
-  try {
-    const raw = localStorage.getItem(LEGAL_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-function hasValidLegalConsent() {
-  const data = readConsent();
-  return data?.version === LEGAL_DISCLAIMER_VERSION && typeof data?.ts === "string";
-}
-function saveConsent() {
-  localStorage.setItem(LEGAL_STORAGE_KEY, JSON.stringify({
-    version: LEGAL_DISCLAIMER_VERSION,
-    ts: (/* @__PURE__ */ new Date()).toISOString()
-  }));
-}
-function showBlockedScreen() {
-  document.getElementById("legalModal")?.classList.remove("on");
-  document.getElementById("legalBlocked")?.classList.add("on");
-  document.body.classList.add("legal-blocked");
-}
-function applyStoreLegalUi() {
-  if (!isNative()) return;
-  document.querySelectorAll(".pwa-only").forEach((el) => {
-    el.style.display = "none";
-  });
-}
-async function onDecline() {
-  try {
-    const { App: App2 } = await Promise.resolve().then(() => (init_esm5(), esm_exports3));
-    const { Capacitor: Capacitor2 } = await Promise.resolve().then(() => (init_dist(), dist_exports));
-    if (Capacitor2.isNativePlatform()) {
-      await App2.exitApp();
-      return;
-    }
-  } catch {
-  }
-  showBlockedScreen();
-}
-function initLegalConsent(opts) {
-  applyStoreLegalUi();
-  if (hasValidLegalConsent()) {
-    opts?.onAccepted?.();
-    return;
-  }
-  const modal = document.getElementById("legalModal");
-  if (!modal) return;
-  modal.classList.add("on");
-  document.body.classList.add("legal-gate");
-  document.getElementById("legal-accept")?.addEventListener("click", () => {
-    saveConsent();
-    modal.classList.remove("on");
-    document.body.classList.remove("legal-gate");
-    opts?.onAccepted?.();
-  }, { once: true });
-  document.getElementById("legal-decline")?.addEventListener("click", () => {
-    void onDecline();
-  }, { once: true });
-}
+init_legal_consent();
 
 // js/onboarding.js
 init_util();
+init_legal_consent();
 init_app_opts();
 var ONBOARD_KEY = "moto-hud-onboarding-v1";
 var FIRST_RUN_CLASS = "setup-first-run";
@@ -21200,6 +23029,10 @@ function markDone() {
   }
   document.body.classList.remove(FIRST_RUN_CLASS);
   $2("onboarding-modal")?.classList.remove("on");
+  Promise.resolve().then(() => (init_telemetry_ask(), telemetry_ask_exports)).then((m) => {
+    setTimeout(() => m.maybeShowTelemetryAsk(), 450);
+  }).catch(() => {
+  });
 }
 function applyFirstRunLayout() {
   document.body.classList.add(FIRST_RUN_CLASS);
@@ -21263,7 +23096,10 @@ var STEPPER_IDS = [
 var HELP_TEXTS = {
   "opt-voice": "\u0413\u043E\u043B\u043E\u0441\u043E\u0432\u044B\u0435 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u0430\u043D\u0451\u0432\u0440\u043E\u0432 \u0438 \u043A\u0430\u043C\u0435\u0440. \u0420\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0447\u0435\u0440\u0435\u0437 \u0441\u0438\u043D\u0442\u0435\u0437 \u0440\u0435\u0447\u0438 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430.",
   "opt-path": "\u041F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430 \u043D\u0430 HUD: \u0440\u0435\u043B\u044C\u0435\u0444, \u0448\u0435\u0432\u0440\u043E\u043D\u044B, \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u043F\u0435\u0440\u0435\u043A\u0440\u0451\u0441\u0442\u043A\u043E\u0432.",
-  "opt-limit": "\u041B\u0438\u043C\u0438\u0442 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u0438 \u0434\u043B\u044F \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u0439 \u043A\u0430\u043C\u0435\u0440. \u041F\u043E\u0434\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043F\u043E\u0434 \u0441\u0432\u043E\u0439 \u043C\u043E\u0442\u043E\u0446\u0438\u043A\u043B \u0438 \u0441\u0442\u0438\u043B\u044C.",
+  "opt-limit": "\u041B\u0438\u043C\u0438\u0442 \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E, \u043A\u043E\u0433\u0434\u0430 OSM \u043D\u0435 \u0437\u043D\u0430\u0435\u0442 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0438\u0435. \u041F\u0440\u0438 \u0434\u0438\u043D\u0430\u043C\u0438\u043A\u0435 \u2014 fallback.",
+  "opt-speed-limit-dynamic": "\u0414\u0438\u043D\u0430\u043C\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u043B\u0438\u043C\u0438\u0442 \u043F\u043E \u0442\u0435\u0433\u0443 maxspeed OSM \u0432\u0434\u043E\u043B\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430. \u0412\u044B\u043A\u043B. \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u0435\u0444\u043E\u043B\u0442 \u0438\u0437 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438.",
+  "opt-speed-limit-fallback": "\u0415\u0441\u043B\u0438 OSM \u0438 implicit \u043D\u0435 \u0434\u0430\u043B\u0438 \u043B\u0438\u043C\u0438\u0442: \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0432\u0430\u0448 \u0434\u0435\u0444\u043E\u043B\u0442 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u0437\u043D\u0430\u043A.",
+  "opt-roundabout-schema": "SVG-\u0441\u0445\u0435\u043C\u0430 \u043A\u0440\u0443\u0433\u043E\u0432\u043E\u0433\u043E \u0441 \u043D\u043E\u043C\u0435\u0440\u043E\u043C \u0441\u044A\u0435\u0437\u0434\u0430. \u0412\u044B\u043A\u043B. \u2014 \u043E\u0431\u044B\u0447\u043D\u0430\u044F \u0441\u0442\u0440\u0435\u043B\u043A\u0430.",
   "opt-back-only": "\u041F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0430\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u043E \u043A\u0430\u043C\u0435\u0440\u0430\u0445 \xAB\u0432 \u0441\u043F\u0438\u043D\u0443\xBB \u2014 \u0432\u0441\u0442\u0440\u0435\u0447\u043D\u044B\u0439 \u043F\u043E\u0442\u043E\u043A.",
   "opt-cam-speed-tol": "\u0414\u043E\u043F\u0443\u0441\u043A \u043F\u0440\u0435\u0432\u044B\u0448\u0435\u043D\u0438\u044F \u043B\u0438\u043C\u0438\u0442\u0430 (\u043A\u043C/\u0447) \u043F\u0435\u0440\u0435\u0434 \u0441\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u043D\u0438\u0435\u043C \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u044F.",
   "opt-tol": "\u0414\u043E\u043F\u0443\u0441\u043A \u0443\u0433\u043B\u0430 \u043D\u0430\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044F \u043A\u0430\u043C\u0435\u0440\u044B \u043E\u0442\u043D\u043E\u0441\u0438\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u0430\u0448\u0435\u0433\u043E \u043A\u0443\u0440\u0441\u0430 (\u0433\u0440\u0430\u0434\u0443\u0441\u044B).",
@@ -21500,7 +23336,11 @@ initOptControls();
 initFuelReportUi();
 initThemeManager();
 initVintageVfd();
-initTelemetry().then(() => initTelemetryUI());
+initTelemetry().then(() => {
+  initTelemetryUI();
+  initTelemetryAsk();
+  initConvergeVisibilityLog();
+});
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();

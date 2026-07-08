@@ -1,0 +1,5 @@
+{"type":"session","id":"t1"}
+{"type":"nav","sub":"converge_transition","t":100,"to":false,"from":true,"reason":"invalidate_acc"}
+{"type":"nav","sub":"converge_blocked_tick","t":5000,"dur_blocked_ms":4000,"spd_kmh":35}
+{"type":"nav","sub":"converge_first","time_to_first_converge_ms":8200}
+{"type":"meta","sub":"converge_session_summary","converge_false_events":1,"converge_blocked_total_ms":12000,"converge_blocked_while_moving_ms":9000,"re_converge_count":1}

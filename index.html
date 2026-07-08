@@ -169,7 +169,16 @@
         </div>
         <div class="toggle opt-row">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
         <div class="toggle opt-row">🛣 Прогноз-дорожка <input type="checkbox" id="opt-path" checked></div>
-        <div class="toggle opt-row">🚧 Лимит скорости (км/ч) <input type="number" id="opt-limit" value="60" min="0" max="200"></div>
+        <div class="toggle opt-row">🚧 Лимит по умолчанию (км/ч) <input type="number" id="opt-limit" value="60" min="0" max="200"></div>
+        <div class="toggle opt-row">🚦 Лимит по карте (OSM) <input type="checkbox" id="opt-speed-limit-dynamic" checked></div>
+        <div class="toggle opt-row">
+          Если лимит неизвестен
+          <select id="opt-speed-limit-fallback" class="opt-select">
+            <option value="user-default" selected>дефолт из настройки</option>
+            <option value="hide">скрыть знак</option>
+          </select>
+        </div>
+        <div class="toggle opt-row">🔁 Схема кругового <input type="checkbox" id="opt-roundabout-schema" checked></div>
         <div class="opt-preset-row">
           <span class="opt-preset-lbl">Пресет</span>
           <div class="opt-preset-btns">
@@ -268,10 +277,33 @@
       <details class="opts-fold" data-section="telemetry" id="opts-telemetry-section">
         <summary class="opts-fold-summary">Телеметрия</summary>
         <div class="opts-fold-body">
+          <div class="telemetry-explainer">
+            <p><strong>Помогите улучшить ИЛС.</strong> Запись хранится <em>только на телефоне</em>. После поездки экспортируйте JSONL и отправьте разработчику — так проще ловить баги GPS и навигации.</p>
+            <p class="telemetry-explainer-title">Что записывается</p>
+            <ul class="telemetry-explainer-list">
+              <li>GPS: координаты, точность, скорость, курс</li>
+              <li>Привязка к маршруту: смещение от линии, качество snap, съезд с маршрута</li>
+              <li>Навигация: манёвры, голос, перестроения, лимиты скорости</li>
+              <li>Метки по кнопке «МЕТКА» на HUD (ошибка подсказки)</li>
+              <li>Техническое: плавность экрана, батарея, сбои</li>
+            </ul>
+            <p class="telemetry-explainer-title">Чего нет</p>
+            <ul class="telemetry-explainer-list">
+              <li>Адресов и названий финиша в открытом виде — только координаты и события навигации</li>
+              <li>Автоотправки на сервер — файл скачиваете вы сами</li>
+            </ul>
+            <p class="telemetry-explainer-title">Зачем это нужно</p>
+            <p class="telemetry-explainer-note">Отладка на разных телефонах и в реальных поездках: точность GPS, ложные повороты, кольца, голос, «GPS потерян».</p>
+          </div>
           <div class="toggle opt-row">📊 Запись сессии (JSONL) <input type="checkbox" id="opt-telemetry"></div>
           <div class="toggle opt-row">📍 Запись трека (GPX) <input type="checkbox" id="opt-track-record"></div>
+          <div class="btnrow c2" style="margin:8px 0">
+            <button type="button" class="secondary opt-full-btn" id="btn-telemetry-help">ℹ️ Подробнее</button>
+            <button type="button" class="secondary opt-full-btn" id="btn-telemetry-share-help">📤 Как отправить</button>
+          </div>
           <p class="opt-hint">URL: <code>?telemetry=1</code> · <code>?track=1</code></p>
           <div class="hint" id="telemetry-stats" style="margin:8px 0">—</div>
+          <p class="hint telemetry-pending-hint hidden" id="telemetry-pending-share-hint"></p>
           <div id="telemetry-sessions"></div>
           <button type="button" class="secondary opt-full-btn" id="btn-telemetry-export-all">📤 Экспорт всех сессий</button>
           <button type="button" class="secondary opt-full-btn hidden" id="btn-track-gpx">📤 GPX последней поездки</button>
@@ -323,14 +355,16 @@
   </details>
 
   <details class="setup-details support-drawer pwa-only" id="drawer-support">
-    <summary>💚 Поддержать</summary>
+    <summary>💚 Для друзей</summary>
     <div class="drawer-body">
-      <p class="hint" style="line-height:1.55;margin-bottom:8px">
-        «Мото ИЛС» — <strong>бесплатное</strong> ПО. Все функции доступны без оплаты.
-        Добровольное вознаграждение — по <a href="docs/offer.html" target="_blank" rel="noopener">публичной оферте</a> (УСН 6%, от 1&nbsp;₽, СБП).
+      <p class="support-free-notice">Для друзей — <strong>бесплатно</strong>. Все функции доступны без оплаты.</p>
+      <a class="support-link-btn" href="https://t.me/MotoILS" target="_blank" rel="noopener">💬 Отзывы, комментарии и предложения</a>
+      <p class="support-telemetry-hint">
+        <strong>Помогите с отладкой:</strong> включите «📊 Запись сессии» в настройках, после поездки экспортируйте JSONL и пришлите в Telegram или на <a href="mailto:iliawagen@gmail.com">iliawagen@gmail.com</a>. Данные не уходят сами — только с вашего согласия.
       </p>
-      <a class="support-link-btn" href="docs/support.html" target="_blank" rel="noopener">Открыть оплату СБП</a>
-      <p class="hint" style="margin-top:8px;font-size:12px">На странице — QR-код и поле email для кассового чека. Контакт: <a href="mailto:iliawagen@gmail.com">iliawagen@gmail.com</a></p>
+      <p class="hint" style="margin-top:10px;font-size:12px;line-height:1.45">
+        Telegram-чат проекта. Ссылка на оплату временно отключена. Email: <a href="mailto:iliawagen@gmail.com">iliawagen@gmail.com</a>
+      </p>
     </div>
   </details>
 
@@ -348,6 +382,20 @@
         <b>HUD в пути</b>
         Крупная стрелка, скорость, прогноз-дорожка (рельеф, шевроны). Карты в движении нет — только то, что читается через визор.<br>
         <b>Кнопки:</b> ЭКРАН — полный экран · НАСТР. — сюда · ⛽ ЗАПР. — ближайшая АЗС (1-й тап по маршруту, 2-й — перестроение) · СТОП — двойной тап.
+      </span>
+      <span class="help-section">
+        <b>Круговое движение</b>
+        Схема с цифрой съезда и жёлтой стрелкой выхода. На кольце — точка положения и «Ваш съезд через N м».
+        Голос: за 300 м и 60 м до кольца, «Ваш съезд» за 30–50 м. Выкл. схему: «Схема кругового» в настройках.
+      </span>
+        Знак у блока скорости — лимит с карты OSM. Серая обводка — ваш дефолт из настроек, «~» — оценка по типу дороги.
+        При смене зоны 3 с — жёлтая плашка «Сбросьте скорость». Голос за 150–250 м до снижения лимита.
+        В настройках: «Лимит по карте (OSM)» и поведение при неизвестном лимите.
+      </span>
+      <span class="help-section">
+        <b>Телеметрия для разработчика</b>
+        В «⚙ Настройки → Телеметрия» можно включить запись поездки (JSONL, только на устройстве).
+        После СТОП экспортируйте файл и отправьте в <a href="https://t.me/MotoILS" target="_blank" rel="noopener">Telegram</a> или на email — это помогает чинить GPS и навигацию. Запись выключена по умолчанию.
       </span>
       <span class="help-section">
         <b>Избранное и опции</b>
@@ -374,8 +422,9 @@
         Настройки и места — локально на устройстве. Маршрут и карта — через интернет (OSRM, OpenStreetMap). При плохом GPS HUD может показать «GPS ПОТЕРЯН» — ориентируйтесь по дороге.
       </span>
       <span class="help-section pwa-only" id="help-support-hint">
-        <b>Поддержка разработки</b>
-        Раздел «💚 Поддержать» — добровольное вознаграждение по оферте (СБП). Paywall нет.
+        <b>Для друзей</b>
+        Приложение бесплатно для друзей. Оплата и paywall отключены.<br>
+        <a href="https://t.me/MotoILS" target="_blank" rel="noopener">Отзывы, комментарии и предложения</a> — в Telegram.
       </span>
       <p style="margin-top:10px" id="help-legal-links">
         <a href="docs/privacy.html" target="_blank" rel="noopener">Конфиденциальность</a> ·
@@ -442,6 +491,60 @@
     <div class="btnrow c2" style="margin-top:14px">
       <button type="button" id="onboarding-skip">Пропустить</button>
       <button type="button" class="ok" id="onboarding-save">Готово</button>
+    </div>
+  </div>
+</div>
+
+<!-- просьба включить телеметрию -->
+<div class="modal telemetry-ask-modal" id="telemetry-ask-modal" role="dialog" aria-modal="true" aria-labelledby="telemetry-ask-title">
+  <div class="modal-card telemetry-ask-card">
+    <h3 id="telemetry-ask-title">📊 Помогите улучшить навигацию</h3>
+    <p class="sub">Добровольная запись поездки — только на вашем устройстве. Без автоотправки.</p>
+    <div class="telemetry-ask-body">
+      <p><strong>Что собирается:</strong> GPS (координаты, точность, скорость), привязка к маршруту, манёвры и голос, метки «ошибка HUD», техника (FPS, батарея).</p>
+      <p><strong>Зачем:</strong> отладка на реальных поездках — ложные повороты, потеря GPS, кольца, лимиты скорости на разных телефонах.</p>
+      <p><strong>Как отправить:</strong> после поездки — экспорт JSONL в настройках → файл в <a href="https://t.me/MotoILS" target="_blank" rel="noopener">Telegram</a> или на <a href="mailto:iliawagen@gmail.com">iliawagen@gmail.com</a>.</p>
+      <p class="hint">Адреса финиша в файле не сохраняются отдельно — только координаты и события навигации.</p>
+    </div>
+    <div class="btnrow" style="grid-template-columns:1fr;margin-top:10px">
+      <button type="button" class="ok" id="telemetry-ask-enable">Включить запись</button>
+    </div>
+    <div class="btnrow c2" style="margin-top:8px">
+      <button type="button" class="secondary" id="telemetry-ask-open-settings">Только настройки</button>
+      <button type="button" id="telemetry-ask-later">Позже</button>
+    </div>
+    <button type="button" class="telemetry-ask-dismiss" id="telemetry-ask-dismiss">Не напоминать</button>
+  </div>
+</div>
+
+<!-- после поездки: отправить файл -->
+<div class="modal telemetry-send-modal" id="telemetry-send-modal" role="dialog" aria-modal="true" aria-labelledby="telemetry-send-title">
+  <div class="modal-card telemetry-ask-card">
+    <h3 id="telemetry-send-title">📤 Отправить запись разработчику?</h3>
+    <p class="sub" id="telemetry-send-meta">Поездка записана локально.</p>
+    <div class="telemetry-ask-body">
+      <div id="telemetry-send-preview" class="telemetry-send-preview"><p class="hint">Загрузка превью…</p></div>
+      <label class="telemetry-send-note-label" for="telemetry-send-note">Что было не так (необязательно)</label>
+      <textarea id="telemetry-send-note" class="telemetry-send-note" rows="3" placeholder="Например: ложный поворот на кольце, пропал GPS после тоннеля…"></textarea>
+      <p class="status ok hidden" id="telemetry-send-status"></p>
+      <label class="telemetry-send-skip-label">
+        <input type="checkbox" id="telemetry-send-skip-each"> Не спрашивать после каждой поездки
+      </label>
+    </div>
+    <div class="btnrow" style="grid-template-columns:1fr;margin-top:10px">
+      <button type="button" class="ok" id="telemetry-send-share">📤 Отправить</button>
+    </div>
+    <div class="btnrow c2" style="margin-top:8px">
+      <button type="button" class="secondary" id="telemetry-send-export">📥 Скачать JSONL</button>
+      <button type="button" class="secondary" id="telemetry-send-telegram">Открыть чат</button>
+    </div>
+    <div class="btnrow c2" style="margin-top:8px">
+      <button type="button" class="secondary" id="telemetry-send-email">Email</button>
+      <button type="button" class="secondary hidden" id="telemetry-send-confirm">✓ Файл доставлен</button>
+    </div>
+    <div class="btnrow c2" style="margin-top:8px">
+      <button type="button" id="telemetry-send-later">Позже</button>
+      <button type="button" class="telemetry-ask-dismiss" id="telemetry-send-dismiss">Не напоминать</button>
     </div>
   </div>
 </div>
@@ -548,6 +651,16 @@
       <button type="button" class="corner-btn btn-telemetry-mark hidden" id="btn-telemetry-mark" title="Метка: 1× — метка, 2× — critical, 3× — ложный поворот" aria-label="Метка"><span class="cb-icon">📍</span><span class="cb-lbl">МЕТКА</span></button>
     </div>
     <div class="speed-stack">
+      <div class="speed-limit-sign hidden" id="speed-limit-sign" aria-hidden="true">
+        <svg class="sls-svg" viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="sls-ring" cx="50" cy="50" r="44" fill="#fff" stroke="#e02020" stroke-width="9"/>
+          <text class="sls-num" id="sls-num" x="50" y="58" text-anchor="middle">60</text>
+          <text class="sls-tilde hidden" id="sls-tilde" x="78" y="28" font-size="22">~</text>
+          <text class="sls-none hidden" id="sls-none" x="50" y="54" text-anchor="middle" font-size="14">нет</text>
+        </svg>
+        <span class="sls-preview hidden" id="sls-preview" aria-hidden="true"></span>
+      </div>
+      <div class="speed-limit-grace hidden" id="speed-limit-grace" aria-live="polite"></div>
       <div class="speed-ghost" id="speed-ghost" aria-hidden="true">888</div>
       <div class="speed-val" id="v-speed">0</div>
       <div class="speed-unit">км/ч</div>

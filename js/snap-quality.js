@@ -9,7 +9,8 @@ import {
   SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M,
   SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_HOLD_MS,
   SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_DEGRADED_TIMEOUT_MS,
-  SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT
+  SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT,
+  ROUNDABOUT_LATERAL_MULTIPLIER
 } from './nav-constants.js';
 
 export const SnapQuality = { GOOD: 'GOOD', DEGRADED: 'DEGRADED', LOST: 'LOST' };
@@ -89,8 +90,10 @@ export function updateSnapQuality(snap, gps, geom, opts){
   if(opts?.jump) _jumpUntil = now + SNAP_QUALITY_JUMP_DEGRADED_MS;
 
   const mult = curvatureMult(geom, snap.s, opts?.curvMult);
+  const latMult = opts?.roundabout?.onRoundabout ? ROUNDABOUT_LATERAL_MULTIPLIER : 1;
   const score = rawScore(snap, gps);
-  const instant = now < _jumpUntil ? SnapQuality.DEGRADED : classifyInstant(score, snap.lateral, mult);
+  const lateral = snap.lateral / latMult;
+  const instant = now < _jumpUntil ? SnapQuality.DEGRADED : classifyInstant(score, lateral, mult);
   pushHist(instant);
 
   const prev = S.snapQuality || SnapQuality.GOOD;
@@ -100,11 +103,11 @@ export function updateSnapQuality(snap, gps, geom, opts){
     if(instant === SnapQuality.LOST && histAgrees(SnapQuality.LOST)) next = SnapQuality.LOST;
     else if(instant !== SnapQuality.GOOD && histAgrees(SnapQuality.DEGRADED)) next = SnapQuality.DEGRADED;
   } else if(prev === SnapQuality.DEGRADED){
-    const exitQ = classifyExit(score, snap.lateral, mult);
+    const exitQ = classifyExit(score, lateral, mult);
     if(instant === SnapQuality.LOST && histAgrees(SnapQuality.LOST)) next = SnapQuality.LOST;
     else if(exitQ === SnapQuality.GOOD && histAgrees(SnapQuality.GOOD)) next = SnapQuality.GOOD;
   } else {
-    const exitQ = classifyExit(score, snap.lateral, mult);
+    const exitQ = classifyExit(score, lateral, mult);
     if(exitQ !== SnapQuality.LOST && histAgrees(SnapQuality.DEGRADED)) next = SnapQuality.DEGRADED;
     if(exitQ === SnapQuality.GOOD && histAgrees(SnapQuality.GOOD)) next = SnapQuality.GOOD;
   }

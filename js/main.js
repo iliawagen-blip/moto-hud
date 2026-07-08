@@ -14,6 +14,8 @@ import { initThemeManager, applyTheme, loadThemePrefs } from './theme-manager.js
 import { initTtsHealth } from './tts-health.js';
 import { initTelemetry } from './telemetry.js';
 import { initTelemetryUI } from './telemetry-ui.js';
+import { initTelemetryAsk } from './telemetry-ask.js';
+import { initConvergeVisibilityLog } from './converge-telemetry.js';
 import { registerServiceWorker } from './sw-register.js';
 import { initVintageVfd } from './vintage-vfd.js';
 import { initLegalConsent } from './legal-consent.js';
@@ -70,7 +72,11 @@ initOptControls();
 initFuelReportUi();
 initThemeManager();
 initVintageVfd();
-initTelemetry().then(() => initTelemetryUI());
+initTelemetry().then(() => {
+  initTelemetryUI();
+  initTelemetryAsk();
+  initConvergeVisibilityLog();
+});
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();

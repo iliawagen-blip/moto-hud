@@ -16,8 +16,11 @@ import {
   GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M,
   GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO
 } from './nav-constants.js';
+import { isSpeedOverLimit } from './speed-limit.js';
+import { tickRoundaboutHudRefresh } from './roundabout.js';
 import { feedGpsConverge, invalidateGpsConverge } from './gps-converge.js';
 import { isSnapLost, lostDurationMs } from './snap-quality.js';
+import { tickConvergeBlocked } from './converge-telemetry.js';
 import { SNAP_HEADING_MAX_AGE_MS } from './nav-constants.js';
 
 let RENDER_POS = null;
@@ -52,7 +55,7 @@ export function easeSpeed(){
   if(Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
   const shown = Math.round(S.dispSpeed);
   el.textContent = shown;
-  el.classList.toggle('over', S.limit > 0 && target > S.limit + 3);
+  el.classList.toggle('over', isSpeedOverLimit(target));
   el.classList.toggle('speed-3', shown >= 100);
 }
 
@@ -100,6 +103,7 @@ export function visualLoop(){
   telemetry.tickPerfFrame();
   updateRenderPos();
   easeSpeed();
+  tickRoundaboutHudRefresh(_onTick);
   _onVisual();
 }
 
@@ -141,7 +145,7 @@ export function checkStartReady(){
 function onGpsError(){
   $('s-gps').textContent = '❌ GPS';
   $('s-gps').className = 'chip err';
-  invalidateGpsConverge();
+  invalidateGpsConverge('invalidate_error');
   if(!_gpsLost){
     _gpsLost = true;
     telemetry.log('nav', { sub: 'gps_lost' });
@@ -181,11 +185,21 @@ export function applyGpsFix(next){
   S.gps = next;
   S.fixPos = { lat: next.lat, lon: next.lon };
   S.fixAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-  feedGpsConverge(next);
-  if(next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge();
+
+  let telSnap = null;
+  let navSnap = null;
+  if($('hud').classList.contains('on') && S.route?.geometry){
+    navSnap = getNavSnap(S.smoothedHeading);
+    if(navSnap) telSnap = { lateral: navSnap.lateral, quality: S.snapQuality };
+  }
+  const telCtx = { fix: next, snap: telSnap };
+
+  feedGpsConverge(next, telCtx);
+  if(next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge('invalidate_acc', telCtx);
   if($('hud').classList.contains('on') && isSnapLost() &&
-     lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge();
+     lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge('invalidate_lost', telCtx);
   updateGpsConvergeUI();
+  tickConvergeBlocked(next, telSnap);
   if($('hud').classList.contains('on')) _onTick();
 
   const rcv = Date.now();
@@ -198,10 +212,7 @@ export function applyGpsFix(next){
     speed: next.speed, heading: next.heading, alt: next.alt,
     ts: next.ts, rcv
   });
-  if($('hud').classList.contains('on') && S.route?.geometry){
-    const snap = getNavSnap(S.smoothedHeading);
-    telemetry.logSnapFromResult(snap);
-  }
+  if(navSnap) telemetry.logSnapFromResult(navSnap);
 }
 
 function stopWebGps(){

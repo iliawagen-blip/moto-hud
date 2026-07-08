@@ -29,8 +29,10 @@ export function buildRouteRequestUrl(from, to, opts = {}){
     ? opts.waypoints
     : [from, to];
   const coordStr = pts.map(p => `${p.lon},${p.lat}`).join(';');
+  // Публичный router.project-osrm.org не поддерживает annotation maxspeed (HTTP 400).
+  // Лимит скорости по OSM — через Overpass (speed-limit.js).
   let url = OSRM_BASE + coordStr +
-    '?overview=full&geometries=geojson&steps=true&annotations=false';
+    '?overview=full&geometries=geojson&steps=true&annotations=speed';
   if(opts.alternatives) url += '&alternatives=2';
   if(opts.rerouteBearing != null && opts.rerouteRadius != null && pts.length === 2){
     url += '&bearings=' + opts.rerouteBearing + ',45;&radiuses=' + opts.rerouteRadius + ';';

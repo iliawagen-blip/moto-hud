@@ -23,7 +23,6 @@ import { resetRouteSnap, getNavSnap } from './route-geometry.js';
 import { isSnapLost, isSnapDegraded, getCachedManeuver, cacheLastManeuver, resetSnapQuality } from './snap-quality.js';
 import { RouteQuality } from './route-quality.js';
 import { stepTurnAngleDeg } from './maneuver-filter.js';
-import { getActiveRoundabout, isCrossingContextEnabled } from './crossings.js';
 import { ensureRouteGeometry } from './route.js';
 import { pickCurveVoiceWarn, resetCurveRibbonState } from './curve-speed.js';
 import { renderFavs } from './favorites.js';
@@ -35,14 +34,19 @@ import { applyFinishInfoVisibility } from './hud-opts.js';
 import { clearHudChromeReveal, applyHudChrome } from './hud-chrome.js';
 import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide } from './offroute.js';
 import telemetry from './telemetry.js';
+import { logFunnel } from './telemetry-funnel.js';
 import { tickNavMap, resetViewMode } from './view-mode.js';
 import { syncTripHudBadge } from './trip-ui.js';
 import {
   startTrackRecorder, stopTrackRecorder, isTrackRecordEnabled, rememberLastRide,
   tickTrackRecorder
 } from './track-recorder.js';
-
-let _lastMarkCtx = null;
+import { tickSpeedLimit, resetSpeedLimitState } from './speed-limit.js';
+import {
+  getRoundaboutContext, isRoundaboutStep, roundaboutVoicePhrase,
+  roundaboutManeuverText, logRoundaboutTelemetry, resetRoundaboutState
+} from './roundabout.js';
+import { resetConvergeTelemetryRide, flushConvergeSummary } from './converge-telemetry.js';
 
 /** Контекст для телеметрической метки (phantom_turn и др.) */
 export function getLastMarkContext(){ return _lastMarkCtx; }
@@ -248,6 +252,7 @@ export function onTick(){
     updateFinishInfo(remaining, kmh, now);
     tickAutoMode();
     checkCamerasILS();
+    if(snap) tickSpeedLimit(snap);
     refreshFuelPanel();
     return;
   }
@@ -286,33 +291,67 @@ export function onTick(){
     if(nm){
       cacheLastManeuver(nm);
       logManeuverContext(nm, snap, true, null);
-      $('arrow-box').innerHTML = buildArrowSVG(nm.step);
+      const rbCtx = snap ? getRoundaboutContext(snap, S.route) : null;
+      if(rbCtx) logRoundaboutTelemetry(rbCtx);
+      const displayStep = (rbCtx?.isOnRoundabout && rbCtx.enterStep) ? rbCtx.enterStep :
+        (isRoundaboutStep(nm.step) && rbCtx?.enterStep ? rbCtx.enterStep : nm.step);
+      $('arrow-box').innerHTML = buildArrowSVG(displayStep, { snap, ctx: rbCtx });
       const rbEl = $('rb-exit-label');
-      if(rbEl){
-        const geom = S.route.geometry;
-        const rb = isCrossingContextEnabled() && geom && snap
-          ? getActiveRoundabout(geom, snap.s, spdMps) : null;
-        const isRbStep = nm.step.type === 'roundabout' || nm.step.type === 'rotary';
-        if(rb && isRbStep && rb.exitNumber > 0){
-          rbEl.textContent = String(rb.exitNumber);
-          rbEl.classList.remove('hidden');
-        } else {
-          rbEl.textContent = '';
-          rbEl.classList.add('hidden');
-        }
+      if(rbEl) rbEl.classList.add('hidden');
+      if(rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null){
+        $('street').textContent = roundaboutManeuverText(displayStep, rbCtx);
+      } else if(isRoundaboutStep(displayStep)){
+        const mini = rbCtx?.isMini ? ' · мини-круг' : '';
+        $('street').textContent = (roundaboutManeuverText(displayStep, rbCtx) ||
+          formatStreetLabel(nm.step.name || displayStep.name)) + mini;
+      } else {
+        $('street').textContent = formatStreetLabel(nm.step.name);
       }
-      if(nm.dist < 1000){
+      if(rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null){
+        const dm = Math.max(10, Math.round(rbCtx.distanceToExit / 10) * 10);
+        if(dm < 1000){
+          $('v-mdist').textContent = dm;
+          $('v-mdist-u').textContent = 'м';
+        } else {
+          $('v-mdist').textContent = (dm / 1000).toFixed(1);
+          $('v-mdist-u').textContent = 'км';
+        }
+      } else if(nm.dist < 1000){
         $('v-mdist').textContent = Math.max(0, Math.round(nm.dist / 10) * 10);
         $('v-mdist-u').textContent = 'м';
       } else {
         $('v-mdist').textContent = (nm.dist / 1000).toFixed(1);
         $('v-mdist-u').textContent = 'км';
       }
-      $('street').textContent = formatStreetLabel(nm.step.name);
       const stIdx = S.route.steps.indexOf(nm.step);
       const kFar = 'st_' + stIdx + '_far';
       const kNear = 'st_' + stIdx + '_near';
-      if(isTurnStep(nm.step)){
+      const kRbOn = 'rb_on_' + (rbCtx?.enterSegIdx ?? stIdx);
+      if(isRoundaboutStep(displayStep) || isRoundaboutStep(nm.step)){
+        try{
+          const rbStep = displayStep;
+          const dist = rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null
+            ? rbCtx.distanceToExit : nm.dist;
+          if(rbCtx?.isOnRoundabout && dist <= 50 && dist >= 25 && !S.camWarned.has(kRbOn)){
+            S.camWarned.add(kRbOn);
+            S.lastVoiceTs = Date.now();
+            speak(roundaboutVoicePhrase(rbStep, 'on_exit'));
+          } else if(!rbCtx?.isOnRoundabout){
+            if(dist <= 320 && dist > 80 && !S.camWarned.has(kFar)){
+              S.camWarned.add(kFar);
+              telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(dist), phase: 'rb_far' });
+              speak(roundaboutVoicePhrase(rbStep, 'far', { streetName: rbStep.name }));
+            }
+            if(dist <= 70 && !S.camWarned.has(kNear)){
+              S.camWarned.add(kNear);
+              telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(dist), phase: 'rb_near' });
+              speak(roundaboutVoicePhrase(rbStep, 'near', { streetName: rbStep.name }));
+            }
+          }
+        }catch(e){
+          console.warn('roundabout voice:', e);
+        }
+      } else if(isTurnStep(nm.step)){
         try{
           const txt = maneuverText(nm.step);
           const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
@@ -347,6 +386,7 @@ export function onTick(){
   tickAutoMode();
   checkCamerasILS();
   checkCurveSpeedWarn(kmh);
+  if(snap) tickSpeedLimit(snap);
   refreshFuelPanel();
   tickNavMap();
   syncTripHudBadge();
@@ -378,7 +418,9 @@ export async function startHud(){
   if(telemetry.isEnabled()){
     telemetry.start({ routeKm: S.route?.distance ? r2(S.route.distance / 1000) : null });
     telemetry.updateMarkButtonVisibility();
+    logFunnel('ride_start', { routeKm: S.route?.distance ? r2(S.route.distance / 1000) : null });
   }
+  resetConvergeTelemetryRide();
   if(isTrackRecordEnabled()) startTrackRecorder();
   S.startTs = Date.now();
   S.distDone = 0;
@@ -388,6 +430,8 @@ export async function startHud(){
   resetRouteSnap();
   resetSnapQuality();
   resetCurveRibbonState();
+  resetSpeedLimitState();
+  resetRoundaboutState();
   ensureRouteGeometry(S.route);
   $('setup').style.display = 'none';
   $('setup').style.zIndex = '30';
@@ -410,10 +454,16 @@ export async function startHud(){
   startVisualLoop();
 }
 
-export function stopHud(){
+export async function stopHud(){
   if(window.__SIM__?.onNavigationStop) window.__SIM__.onNavigationStop();
-  telemetry.stop().catch(() => {});
+  flushConvergeSummary();
+  let telSessionId = null;
+  try{ telSessionId = await telemetry.stop(); }catch(e){}
   telemetry.updateMarkButtonVisibility();
+  if(telSessionId){
+    logFunnel('ride_stop', { sessionId: telSessionId });
+    import('./telemetry-ask.js').then(m => m.maybeShowSendPrompt(telSessionId)).catch(() => {});
+  }
   const trackPts = stopTrackRecorder();
   if(trackPts.length >= 2) rememberLastRide(trackPts);
   stopVisualLoop();
@@ -433,6 +483,8 @@ export function stopHud(){
   releaseWakeLock();
   clearVoiceQueue();
   resetOffRouteMachine();
+  resetSpeedLimitState();
+  resetRoundaboutState();
   resetViewMode();
   syncTripHudBadge();
   try{ document.exitFullscreen && document.exitFullscreen(); }catch(e){}

@@ -3,6 +3,9 @@ import { $ } from './util.js';
 import { haversine, bearing } from './geo.js';
 import { curPos } from './gps.js';
 import { maneuverTurnAngle, getVisibleTurnManeuvers, MANEUVER_BEND_ANGLE } from './route.js';
+import {
+  buildRoundaboutSVG, isRoundaboutStep, shouldUseRoundaboutSchema, getRoundaboutContext
+} from './roundabout.js';
 import { fuelStationsForRoad, fuelColor } from './fuel.js';
 import { ensureRouteGeometry } from './route.js';
 import {
@@ -744,9 +747,23 @@ export function buildTurnArrowSVG(turnDeg){
   return renderManeuverArrow(turn);
 }
 
-export function buildArrowSVG(step){
+export function buildArrowSVG(step, opts = {}){
   if(!step) return '';
   if(step.type === 'arrive') return arriveFlagSVG();
+
+  if(shouldUseRoundaboutSchema() && isRoundaboutStep(step)){
+    const ctx = opts.ctx || (opts.snap ? getRoundaboutContext(opts.snap, S.route) : null);
+    const rbOpts = {
+      ...opts,
+      ctx,
+      isOnRoundabout: opts.isOnRoundabout ?? ctx?.isOnRoundabout,
+      distanceToExit: opts.distanceToExit ?? ctx?.distanceToExit,
+      progressAngle: opts.progressAngle ?? ctx?.progressAngle
+    };
+    const rb = buildRoundaboutSVG(step, rbOpts);
+    if(rb) return rb;
+  }
+
   let turn = maneuverTurnAngle(step);
   if(Math.abs(turn) < MANEUVER_BEND_ANGLE){
     if(step.modifier === 'uturn') turn = 175;

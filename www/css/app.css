@@ -198,6 +198,37 @@ html.dev-mode .opts-fold--dev.hidden{display:block}
 .onboard-choice-row{display:flex;gap:8px}
 .onboard-choice{flex:1;min-height:52px}
 .onboard-choice.active{background:var(--accent);color:var(--accent-on);border-color:var(--accent)}
+
+/* телеметрия — пояснения и просьба */
+.telemetry-explainer{font-size:12px;line-height:1.5;color:var(--dim);margin-bottom:10px}
+.telemetry-explainer p{margin:0 0 8px}
+.telemetry-explainer strong{color:var(--fg)}
+.telemetry-explainer-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:10px 0 4px}
+.telemetry-explainer-list{margin:0 0 6px;padding-left:18px}
+.telemetry-explainer-list li{margin-bottom:3px}
+.telemetry-explainer-note{font-size:11px;margin:0}
+.support-telemetry-hint{font-size:12px;line-height:1.5;color:var(--dim);margin:10px 0 0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}
+.support-telemetry-hint strong{color:var(--fg)}
+.support-telemetry-hint a{color:var(--accent);font-weight:700}
+.telemetry-ask-modal{z-index:95}
+.telemetry-send-modal{z-index:94}
+.telemetry-ask-card{max-width:480px;max-height:min(92vh,680px);display:flex;flex-direction:column}
+.telemetry-ask-body{overflow-y:auto;max-height:min(50vh,360px);font-size:13px;line-height:1.55;color:var(--fg-dim,#ccc);margin-bottom:4px;padding-right:4px}
+.telemetry-ask-body p{margin:0 0 10px}
+.telemetry-ask-body a{color:var(--accent);font-weight:700}
+.telemetry-ask-dismiss{display:block;width:100%;margin-top:10px;padding:8px;background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;text-decoration:underline}
+.telemetry-ask-dismiss:hover{color:var(--fg)}
+.telemetry-send-preview{margin:0 0 10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);font-size:12px;line-height:1.5}
+.telemetry-preview ul{margin:6px 0 0;padding-left:18px}
+.telemetry-preview-warn{color:var(--sem-warn);font-size:12px;margin:8px 0 0}
+.telemetry-send-note-label{display:block;font-size:12px;font-weight:700;margin:8px 0 4px;color:var(--fg)}
+.telemetry-send-note{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--fg);font:inherit;font-size:13px;resize:vertical;min-height:64px}
+.telemetry-send-skip-label{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--dim);margin:10px 0 0;cursor:pointer}
+.telemetry-send-skip-label input{margin-top:2px}
+.telemetry-pending-hint{color:var(--sem-warn);font-weight:600}
+.tel-share-pending{color:var(--sem-warn);font-size:11px;font-weight:800}
+.tel-share-done{color:var(--sem-ok,#6c6);font-size:11px;font-weight:700}
+
 body.setup-first-run #drawer-trip,
 body.setup-first-run #drawer-support{display:none}
 body.setup-first-run #opts-migration-banner{display:none!important}
@@ -297,6 +328,11 @@ body.setup-first-run #opts-migration-banner{display:none!important}
 }
 .hud-settings-toast.on{opacity:1}
 #help-app-version{cursor:pointer;text-decoration:underline;text-decoration-style:dotted}
+.support-free-notice{
+  margin:0;padding:14px 16px;border-radius:12px;border:2px solid var(--accent);
+  background:var(--panel2);color:var(--fg);font-size:15px;line-height:1.45;
+  text-align:center;font-weight:700
+}
 .support-link-btn{
   display:block;text-align:center;margin:10px 0 4px;padding:12px 16px;border-radius:10px;
   background:var(--accent);color:#000;font-weight:800;text-decoration:none;min-height:48px;line-height:1.3
@@ -488,6 +524,7 @@ body.legal-blocked #hud{display:none!important}
 #arrow-box{flex:1;min-height:0;width:100%;max-height:clamp(96px,min(28vw,24vh),220px);
   display:flex;align-items:center;justify-content:center;overflow:hidden}
 #arrow-box svg{width:auto;height:100%;max-width:100%;max-height:100%;display:block}
+#arrow-box svg.rb-schema{max-height:clamp(110px,min(32vw,28vh),240px)}
 .rb-exit-label{
   position:absolute;right:6%;top:58%;
   font-family:var(--font-num);font-weight:var(--num-weight);
@@ -512,6 +549,45 @@ body.legal-blocked #hud{display:none!important}
   color:var(--fg);opacity:var(--speed-ghost-opacity);pointer-events:none;font:inherit;
   font-weight:var(--num-weight);letter-spacing:inherit;user-select:none;z-index:0}
 .speed-stack .speed-val,.speed-stack .speed-unit{position:relative;z-index:1;flex-shrink:0}
+
+/* Знак ограничения скорости */
+.speed-limit-sign{
+  position:absolute;z-index:2;pointer-events:none;
+  width:clamp(36px,min(9vw,8vh),72px);height:clamp(36px,min(9vw,8vh),72px);
+  bottom:calc(100% + 2px);left:50%;transform:translateX(-50%)
+}
+.speed-limit-sign .sls-svg{width:100%;height:100%;display:block}
+.speed-limit-sign .sls-num{
+  font-family:var(--font-num);font-weight:900;font-size:38px;fill:#111;stroke:none
+}
+.speed-limit-sign .sls-tilde{fill:var(--fg-dim);font-weight:900}
+.speed-limit-sign .sls-none{font-family:var(--font-label);font-weight:800;fill:#111}
+.speed-limit-sign.sls-default .sls-ring{stroke:#888}
+.speed-limit-sign.sls-implicit{opacity:.7}
+.speed-limit-sign.sls-none .sls-ring{stroke:#666}
+.speed-limit-sign.sls-none .sls-none{font-size:16px}
+.speed-limit-sign.sls-preview-down .sls-ring{
+  stroke:var(--sem-warn);transition:stroke .4s ease
+}
+.speed-limit-sign .sls-preview{
+  position:absolute;right:-6px;bottom:-4px;
+  font-size:11px;font-weight:800;color:var(--sem-warn);
+  background:color-mix(in srgb,var(--bg) 80%,transparent);border-radius:4px;padding:1px 3px
+}
+.speed-limit-grace{
+  position:absolute;z-index:3;top:0;left:50%;transform:translateX(-50%);
+  font-size:clamp(10px,2.8vw,13px);font-weight:800;color:#1a1a1a;
+  background:var(--sem-warn);border:1px solid color-mix(in srgb,var(--sem-warn) 70%,#000);
+  padding:3px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.25)
+}
+@media (orientation:landscape){
+  .speed-limit-sign{
+    bottom:auto;left:auto;right:calc(100% + 6px);top:50%;
+    transform:translateY(-50%)
+  }
+  .speed-limit-grace{top:auto;bottom:calc(100% + 2px)}
+}
 
 /* кнопки HUD (в .speed-btns и телеметрия) */
 .corner-btn{

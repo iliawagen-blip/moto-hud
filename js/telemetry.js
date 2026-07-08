@@ -305,7 +305,7 @@ async function start(meta){
 }
 
 async function stop(){
-  if(!_active) return;
+  if(!_active) return null;
   flushPerfAggregate();
   const agg = computeSessionAggregate();
   if(agg) log('meta', { sub: 'session_aggregate', ...agg });
@@ -327,6 +327,7 @@ async function stop(){
   document.documentElement.classList.remove('telemetry-on');
   stopTimers();
   updateMarkButtonVisibility();
+  return id;
 }
 
 function mark(noteOrObj){
@@ -366,7 +367,11 @@ async function listSessions(){
     dirty: !!s.dirty,
     eventCount: s.eventCount || 0,
     markCount: s.markCount || 0,
-    durationMs: (s.endedAt || Date.now()) - (s.startedAt || 0)
+    durationMs: (s.endedAt || Date.now()) - (s.startedAt || 0),
+    shareAttempts: s.shareAttempts || 0,
+    sharePendingConfirm: !!s.sharePendingConfirm,
+    lastShareAt: s.lastShareAt || null,
+    lastShareMethod: s.lastShareMethod || null
   }));
 }
 
@@ -394,7 +399,22 @@ function formatExportFilename(startedAt){
     '_' + p(d.getHours()) + '-' + p(d.getMinutes()) + '.jsonl';
 }
 
-async function exportSession(sessionId){
+function getBuildId(){
+  try{
+    const raw = typeof window !== 'undefined' ? window.__BUILD_ID__ : '';
+    return raw && raw !== '__BUILD_ID__' ? raw : 'dev';
+  }catch(e){ return 'dev'; }
+}
+
+function roughRegionLabel(lat, lon){
+  if(lat == null || lon == null) return null;
+  if(lat >= 54.5 && lat <= 56.5 && lon >= 36.5 && lon <= 38.5) return 'Москва и область';
+  if(lat >= 59.5 && lat <= 60.5 && lon >= 29.5 && lon <= 31.5) return 'Санкт-Петербург и область';
+  if(lat >= 43 && lat <= 47 && lon >= 38 && lon <= 41) return 'Юг России (Краснодарский край)';
+  return lat.toFixed(1) + '°N, ' + lon.toFixed(1) + '°E';
+}
+
+async function buildSessionExport(sessionId){
   const sess = await getSession(sessionId);
   if(!sess) throw new Error('Сессия не найдена');
   const events = await getSessionEvents(sessionId);
@@ -406,16 +426,77 @@ async function exportSession(sessionId){
     dirty: !!sess.dirty,
     userAgent: sess.userAgent,
     appVersion: sess.appVersion,
+    buildId: getBuildId(),
     eventCount: events.length,
     markCount: sess.markCount || 0
   };
   const lines = [JSON.stringify(head), ...events.map(e => JSON.stringify(e))];
-  const blob = new Blob([lines.join('\n') + '\n'], { type: 'application/x-ndjson' });
+  const body = lines.join('\n') + '\n';
+  const filename = formatExportFilename(sess.startedAt);
+  const blob = new Blob([body], { type: 'application/x-ndjson' });
+  return { sess, events, head, body, filename, blob };
+}
+
+async function getSessionShareSummary(sessionId){
+  const { sess, events } = await buildSessionExport(sessionId);
+  const fixes = events.filter(e => e.type === 'fix');
+  const marks = events.filter(e => e.type === 'mark');
+  const firstFix = fixes[0];
+  const durationMs = (sess.endedAt || Date.now()) - (sess.startedAt || 0);
+  const sizeKb = Math.max(1, Math.round(
+    events.reduce((n, e) => n + JSON.stringify(e).length, 64) / 1024
+  ));
+  return {
+    sessionId: sess.id,
+    startedAt: sess.startedAt,
+    endedAt: sess.endedAt,
+    durationMs,
+    durationMin: Math.round(durationMs / 60000),
+    eventCount: events.length,
+    fixCount: fixes.length,
+    markCount: marks.length,
+    sizeKb,
+    region: roughRegionLabel(firstFix?.lat, firstFix?.lon),
+    buildId: getBuildId(),
+    appVersion: sess.appVersion || APP_VERSION,
+    userAgent: sess.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : ''),
+    dirty: !!sess.dirty,
+    shareAttempts: sess.shareAttempts || 0,
+    sharePendingConfirm: !!sess.sharePendingConfirm,
+    lastShareAt: sess.lastShareAt || null,
+    lastShareMethod: sess.lastShareMethod || null
+  };
+}
+
+async function recordSessionShare(sessionId, method, opts = {}){
+  const sess = await getSession(sessionId);
+  if(!sess) return;
+  sess.shareAttempts = (sess.shareAttempts || 0) + 1;
+  sess.lastShareMethod = method;
+  sess.lastShareAt = Date.now();
+  sess.sharePendingConfirm = opts.pendingConfirm !== false;
+  if(opts.clearPending) sess.sharePendingConfirm = false;
+  await putSession(sess);
+}
+
+async function exportSession(sessionId){
+  const { blob, filename } = await buildSessionExport(sessionId);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = formatExportFilename(sess.startedAt);
+  a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+async function countUnsharedSessions(){
+  const all = await listSessionsRaw();
+  return all.filter(s => s.endedAt && !s.sharePendingConfirm && (s.shareAttempts || 0) === 0).length;
+}
+
+async function listPendingShareConfirm(){
+  const all = await listSessionsRaw();
+  const t0 = Date.now() - 3 * 86400000;
+  return all.filter(s => s.sharePendingConfirm && (s.lastShareAt || 0) > t0);
 }
 
 async function deleteSession(sessionId){
@@ -479,6 +560,11 @@ export const telemetry = {
   log,
   mark,
   export: exportSession,
+  buildSessionExport,
+  getSessionShareSummary,
+  recordSessionShare,
+  countUnsharedSessions,
+  listPendingShareConfirm,
   listSessions,
   deleteSession,
   storageStats,
@@ -488,6 +574,7 @@ export const telemetry = {
   tickPerfFrame,
   logSnapFromResult,
   updateMarkButtonVisibility,
+  getBuildId,
   /** @param {object} fix */
   logFix(fix){
     if(!_active) return;

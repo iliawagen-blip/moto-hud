@@ -3,6 +3,7 @@ import { angleDiff } from './geo.js';
 import { isNative } from './platform.js';
 import { getNativeRuVoiceIdx, getWebRuVoice, refreshRuVoice } from './tts-ru.js';
 import { isNavManeuverType } from './maneuver-filter.js';
+import { isRoundaboutStep, roundaboutVoicePhrase, roundaboutManeuverText } from './roundabout.js';
 import telemetry from './telemetry.js';
 
 const _queue = [];
@@ -103,12 +104,18 @@ export function isTurnStep(step){
 }
 
 export function maneuverText(step){
-  if(!isTurnStep(step)) return '';
+  if(!isTurnStep(step) && !isRoundaboutStep(step)) return '';
+  if(isRoundaboutStep(step)) return roundaboutManeuverText(step, null);
   const m = step.modifier || '';
   if(m === 'uturn') return 'Разворот';
   if(m.includes('left')) return 'Поверните налево';
   if(m.includes('right')) return 'Поверните направо';
   return '';
+}
+
+export function maneuverPhrase(step, when = 'near'){
+  if(isRoundaboutStep(step)) return roundaboutVoicePhrase(step, when);
+  return maneuverText(step);
 }
 
 export function isCameraBehind(cam, heading){

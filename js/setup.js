@@ -751,7 +751,22 @@ export function bindSetupUI(){
   });
 
   $('opt-limit').addEventListener('change', e => {
-    S.limit = parseInt(e.target.value, 10) || 0;
+    S.userDefaultLimit = parseInt(e.target.value, 10) || 0;
+    saveAppOptsToStorage();
+  });
+
+  $('opt-speed-limit-dynamic')?.addEventListener('change', e => {
+    S.speedLimitDynamic = !!e.target.checked;
+    saveAppOptsToStorage();
+  });
+
+  $('opt-speed-limit-fallback')?.addEventListener('change', e => {
+    S.speedLimitFallback = e.target.value === 'hide' ? 'hide' : 'user-default';
+    saveAppOptsToStorage();
+  });
+
+  $('opt-roundabout-schema')?.addEventListener('change', e => {
+    S.roundaboutSchema = !!e.target.checked;
     saveAppOptsToStorage();
   });
 
@@ -897,7 +912,10 @@ export function syncOptionsFromDom(){
 
   S.noDirPolicy = $('opt-nodir').value;
 
-  S.limit = parseInt($('opt-limit').value, 10) || 60;
+  S.userDefaultLimit = parseInt($('opt-limit').value, 10) || 60;
+  S.speedLimitDynamic = $('opt-speed-limit-dynamic')?.checked !== false;
+  S.speedLimitFallback = $('opt-speed-limit-fallback')?.value === 'hide' ? 'hide' : 'user-default';
+  S.roundaboutSchema = $('opt-roundabout-schema')?.checked !== false;
   S.camSpeedTol = Math.max(0, Math.min(50,
     parseInt($('opt-cam-speed-tol')?.value, 10) || DEFAULT_CAM_SPEED_TOL));
   if($('opt-cam-speed-tol')) $('opt-cam-speed-tol').value = String(S.camSpeedTol);

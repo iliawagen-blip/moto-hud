@@ -30,7 +30,16 @@ export function loadAppOptsFromStorage(){
     setCheck('opt-back-only', o.backOnly);
     setVal('opt-tol', o.tolerance);
     setVal('opt-nodir', o.noDirPolicy);
-    setVal('opt-limit', o.limit);
+    setVal('opt-limit', o.userDefaultLimit ?? o.limit);
+    if(o.userDefaultLimit != null || o.limit != null){
+      S.userDefaultLimit = o.userDefaultLimit ?? o.limit ?? 60;
+    }
+    if(typeof o.speedLimitDynamic === 'boolean') S.speedLimitDynamic = o.speedLimitDynamic;
+    if(o.speedLimitFallback) S.speedLimitFallback = o.speedLimitFallback;
+    setCheck('opt-speed-limit-dynamic', o.speedLimitDynamic !== false);
+    setVal('opt-speed-limit-fallback', o.speedLimitFallback || 'user-default');
+    setCheck('opt-roundabout-schema', o.roundaboutSchema !== false);
+    if(typeof o.roundaboutSchema === 'boolean') S.roundaboutSchema = o.roundaboutSchema;
     setVal('opt-cam-speed-tol', o.camSpeedTol != null ? o.camSpeedTol : DEFAULT_CAM_SPEED_TOL);
   }catch(e){}
 }
@@ -49,7 +58,11 @@ export function saveAppOptsToStorage(){
       backOnly: !!S.backOnly,
       tolerance: S.tolerance,
       noDirPolicy: S.noDirPolicy,
-      limit: S.limit,
+      limit: S.userDefaultLimit,
+      userDefaultLimit: S.userDefaultLimit,
+      speedLimitDynamic: S.speedLimitDynamic !== false,
+      speedLimitFallback: S.speedLimitFallback,
+      roundaboutSchema: S.roundaboutSchema !== false,
       camSpeedTol: S.camSpeedTol
     }));
   }catch(e){}

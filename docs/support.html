@@ -3,70 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Мото ИЛС — поддержать проект</title>
+<title>Мото ИЛС — для друзей</title>
 <link rel="stylesheet" href="legal-doc.css">
 <style>
-.qr-box{text-align:center;margin:20px 0;padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
-.qr-box img{max-width:280px;width:100%;height:auto;border-radius:8px}
-.btn{display:inline-block;margin-top:12px;padding:12px 20px;border-radius:10px;background:var(--accent);color:#000;
-  font-weight:800;text-decoration:none}
-.field{margin:12px 0}
-.field label{display:block;font-size:.9rem;color:var(--dim);margin-bottom:6px}
-.field input{width:100%;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);
-  background:var(--panel2);color:var(--fg);font-size:16px}
-.hint{font-size:.9rem;color:var(--dim);margin-top:8px}
+.notice{
+  margin:24px 0;padding:18px 20px;border:2px solid var(--accent);border-radius:12px;
+  background:var(--panel2);text-align:center;font-size:1.05rem;line-height:1.5
+}
+.notice strong{color:var(--accent)}
+.btn{display:inline-block;padding:12px 20px;border-radius:10px;background:var(--accent);color:#000;
+  font-weight:800;text-decoration:none;min-height:48px;line-height:1.3}
 </style>
 </head>
 <body>
 
-<h1>Поддержать развитие «Мото ИЛС»</h1>
-<p class="meta">ПО бесплатное. Оплата — добровольное вознаграждение по <a href="offer.html">публичной оферте</a> (УСН 6%, от 1 ₽).</p>
+<h1>Мото ИЛС</h1>
+<p class="meta">ПО бесплатное для друзей. Все функции доступны без оплаты.</p>
 
-<div class="requisites" style="margin-bottom:20px">
-  <strong>Получатель:</strong> ИП Вагин Илья Александрович<br>
-  <strong>ИНН:</strong> 772872195683<br>
-  <strong>Назначение:</strong> Вознаграждение по оферте за ПО «Мото ИЛС»<br>
-  <strong>Контакт:</strong> <a href="mailto:iliawagen@gmail.com">iliawagen@gmail.com</a>
+<div class="notice">
+  <strong>Для друзей — бесплатно.</strong><br>
+  Ссылка на оплату СБП временно отключена.
 </div>
 
-<div class="qr-box">
-  <p><strong>Отсканируйте QR-код СБП</strong></p>
-  <img src="assets/sbp-qr.png" width="280" height="280" alt="QR-код СБП для поддержки Мото ИЛС">
-  <p class="hint">Сумму выбираете сами (не менее 1 ₽)</p>
-</div>
-
-<div class="field">
-  <label for="receipt-email">Email для кассового чека (рекомендуется)</label>
-  <input type="email" id="receipt-email" name="email" autocomplete="email" placeholder="you@example.com">
-</div>
-
-<p>
-  <a class="btn" id="sbp-link" href="https://qr.nspk.ru/AS1A0073KULGI2489639NQM5QPNBUIOH" target="_blank" rel="noopener">
-    Перейти к оплате СБП
-  </a>
+<p style="text-align:center;margin:20px 0">
+  <a class="btn" href="https://t.me/MotoILS" target="_blank" rel="noopener">💬 Отзывы, комментарии и предложения</a>
 </p>
 
-<p class="hint">На телефоне ссылка откроет приложение банка. На iPhone, если не сработает — отсканируйте QR камерой или из другого банковского приложения.</p>
-
-<p class="hint">Альтернатива: перевод по реквизитам в приложении банка (р/с 40802810302280007293, БИК 044525593).</p>
+<p class="hint">По вопросам: <a href="mailto:iliawagen@gmail.com">iliawagen@gmail.com</a></p>
 
 <footer>
 <a href="privacy.html">Конфиденциальность</a> · <a href="offer.html">Оферта</a> · <a href="disclaimer.html">Отказ от ответственности</a> · <a href="../index.html">В приложение</a>
 </footer>
-
-<script>
-(function(){
-  var link = document.getElementById('sbp-link');
-  var emailInput = document.getElementById('receipt-email');
-  if(!link) return;
-  link.addEventListener('click', function(){
-    var email = emailInput && emailInput.value ? emailInput.value.trim() : '';
-    if(email){
-      try{ sessionStorage.setItem('moto-hud-receipt-email', email); }catch(e){}
-    }
-  });
-})();
-</script>
 
 </body>
 </html>
