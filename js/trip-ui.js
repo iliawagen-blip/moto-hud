@@ -4,7 +4,9 @@
 import { S } from './state.js';
 import { $, escapeHtml } from './util.js';
 import {
-  getDayVariant, tripSummaryText, buildTripFromNights, auditSegment
+  getDayVariant, tripSummaryText, buildTripFromNights, auditSegment,
+  getTodayDayNumber, resolveTodayTarget, calendarDateForDay, formatTripDayDate,
+  touchTripRevision
 } from './trip-model.js';
 import {
   loadAllTrips, loadTrip, saveTrip, deleteTrip, loadDemoTrip
@@ -18,8 +20,17 @@ import {
   downloadTripJson, parseTripJson, buildPortableShareUrl, copyText,
   shareTripFile, readTripDeepLink, replaceTripLocalUrl, decodeTripPack
 } from './trip-share.js';
+import {
+  getVariantMode, setVariantMode, getLastApplied, markSegmentApplied,
+  isSegmentDone, toggleSegmentDone, clearTripProgress
+} from './trip-progress.js';
+import {
+  listBikeProfiles, getActiveBikeId, setActiveBikeId, getActiveBikeProfile,
+  getBikeProfile, saveCustomBikeProfile, profileSnapshot, formatBikeRangeLine
+} from './bike-profile.js';
+import { assessSegmentFuel, assessDayFuel, formatFuelHint } from './trip-fuel.js';
+import { initSegmentEditor, openSegmentEditor } from './trip-segment-editor.js';
 
-let _variantMode = {}; // tripId -> 'calm' | 'intense'
 let _busy = false;
 
 function setTripNewError(msg){
@@ -30,7 +41,71 @@ function setTripNewError(msg){
 }
 
 function variantForTrip(tripId){
-  return _variantMode[tripId] || 'calm';
+  return getVariantMode(tripId);
+}
+
+function getTripBikeProfile(trip){
+  if(trip?.meta?.bikeProfileSnapshot){
+    const s = trip.meta.bikeProfileSnapshot;
+    return { ...s, id: trip.meta.bikeProfileId || s.id };
+  }
+  return getActiveBikeProfile();
+}
+
+function attachBikeToTrip(trip){
+  const p = getActiveBikeProfile();
+  if(!trip || !p) return;
+  trip.meta = trip.meta || {};
+  trip.meta.bikeProfileId = p.id;
+  trip.meta.bikeProfileSnapshot = profileSnapshot(p);
+}
+
+async function persistTrip(trip, opts){
+  const bump = opts?.bump !== false;
+  attachBikeToTrip(trip);
+  if(bump) touchTripRevision(trip);
+  else trip.updatedAt = Date.now();
+  await saveTrip(trip);
+}
+
+function saveCustomFromForm(){
+  const tank = parseFloat($('trip-bike-tank')?.value);
+  const cons = parseFloat($('trip-bike-consumption')?.value);
+  const reserve = parseFloat($('trip-bike-reserve')?.value);
+  if(!Number.isFinite(tank) || !Number.isFinite(cons)) return;
+  const base = getBikeProfile('bike_custom') || { id: 'bike_custom', name: 'Свой профиль', fuelType: '95' };
+  saveCustomBikeProfile({
+    ...base,
+    tankLiters: tank,
+    reserveKm: Number.isFinite(reserve) ? reserve : 40,
+    consumptionL100: { ...base.consumptionL100, default: cons }
+  });
+}
+
+function renderBikePanel(){
+  const sel = $('trip-bike-select');
+  const rangeEl = $('trip-bike-range');
+  const custom = $('trip-bike-custom');
+  if(!sel) return;
+  const profiles = listBikeProfiles();
+  const activeId = getActiveBikeId();
+  sel.innerHTML = '<option value="">— не выбран —</option>' +
+    profiles.map(p => `<option value="${escapeHtml(p.id)}"${p.id === activeId ? ' selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
+  const profile = getActiveBikeProfile();
+  if(rangeEl){
+    rangeEl.textContent = profile
+      ? formatBikeRangeLine(profile) + ' · оценка ±20–30%'
+      : 'Без профиля оценка топлива скрыта';
+  }
+  custom?.classList.toggle('hidden', profile?.id !== 'bike_custom');
+  if(profile?.id === 'bike_custom'){
+    const tank = $('trip-bike-tank');
+    const cons = $('trip-bike-consumption');
+    const res = $('trip-bike-reserve');
+    if(tank) tank.value = String(profile.tankLiters);
+    if(cons) cons.value = String(profile.consumptionL100?.default ?? 5.5);
+    if(res) res.value = String(profile.reserveKm);
+  }
 }
 
 function setStatus(msg, err){
@@ -38,6 +113,12 @@ function setStatus(msg, err){
   if(!el) return;
   el.textContent = msg || '';
   el.className = 'status' + (err ? ' err' : msg ? ' ok' : '');
+}
+
+function dayDateLabel(trip, day){
+  if(day.date) return day.date;
+  const d = calendarDateForDay(trip, day.n);
+  return d ? formatTripDayDate(d) : '';
 }
 
 function renderTripList(trips){
@@ -50,12 +131,32 @@ function renderTripList(trips){
   el.innerHTML = trips.map(t => `
     <button type="button" class="trip-list-item${S.activeTrip?.id === t.id ? ' active' : ''}" data-trip-id="${escapeHtml(t.id)}">
       <strong>${escapeHtml(t.title)}</strong>
-      <span class="hint">${t.days?.length || 0} дн. · ${new Date(t.updatedAt || 0).toLocaleDateString('ru-RU')}</span>
+      <span class="hint">${t.days?.length || 0} дн.${t.startDate ? ' · с ' + t.startDate : ''}</span>
     </button>
   `).join('');
   el.querySelectorAll('[data-trip-id]').forEach(btn => {
     btn.addEventListener('click', () => openTrip(btn.getAttribute('data-trip-id')));
   });
+}
+
+function updateTodayButton(){
+  const trip = S.activeTrip;
+  const btn = $('btn-trip-today');
+  const hint = $('trip-today-hint');
+  if(!btn) return;
+  if(!trip){
+    btn.disabled = true;
+    if(hint) hint.textContent = '';
+    return;
+  }
+  btn.disabled = false;
+  const todayN = getTodayDayNumber(trip);
+  const target = resolveTodayTarget(trip, variantForTrip(trip.id), getLastApplied(trip.id));
+  if(hint){
+    if(todayN != null) hint.textContent = 'Сегодня: день ' + todayN + ' из ' + trip.days.length;
+    else if(target) hint.textContent = target.hint;
+    else hint.textContent = 'Выберите сегмент вручную';
+  }
 }
 
 function renderActiveTrip(){
@@ -65,38 +166,63 @@ function renderActiveTrip(){
   if(!trip){
     wrap.innerHTML = '<p class="hint">Выберите или загрузите план поездки.</p>';
     $('trip-export-row')?.classList.add('hidden');
+    $('trip-today-row')?.classList.add('hidden');
+    updateTodayButton();
     return;
   }
   $('trip-export-row')?.classList.remove('hidden');
+  $('trip-today-row')?.classList.remove('hidden');
   const vid = variantForTrip(trip.id);
   const hasIntense = trip.days.some(d => d.variants.some(v => v.id === 'intense'));
   $('trip-variant-bar')?.classList.toggle('hidden', !hasIntense);
+  document.querySelectorAll('#trip-variant-bar .mode-btn').forEach(b => {
+    b.classList.toggle('active', (b.getAttribute('data-mode') || 'calm') === vid);
+  });
+
+  const todayN = getTodayDayNumber(trip);
+  const last = getLastApplied(trip.id);
+  const ctx = S.tripContext;
+  const bikeProf = getTripBikeProfile(trip);
 
   wrap.innerHTML = trip.days.map(day => {
     const v = getDayVariant(day, vid);
     const segs = v?.segments || [];
+    const isToday = todayN === day.n;
+    const dateLbl = dayDateLabel(trip, day);
+    const dayFuel = bikeProf ? assessDayFuel(day, vid, bikeProf) : null;
     return `
-    <article class="trip-day-card" data-day="${day.n}">
+    <article class="trip-day-card${isToday ? ' is-today' : ''}" data-day="${day.n}" id="trip-day-${day.n}">
       <div class="trip-day-head">
-        <strong>День ${day.n}</strong>
-        <span class="hint">${escapeHtml(day.date || '')}${day.badge ? ' · ' + escapeHtml(day.badge) : ''}</span>
+        <strong>День ${day.n}${isToday ? ' · сегодня' : ''}</strong>
+        <span class="hint">${escapeHtml(dateLbl)}${day.badge ? ' · ' + escapeHtml(day.badge) : ''}</span>
       </div>
+      ${dayFuel ? `<p class="trip-day-fuel fuel-${dayFuel.level}">⛽ ~${dayFuel.totalLiters} л · ${dayFuel.totalKm} км за день</p>` : ''}
       ${v?.schedule ? `<p class="trip-schedule">${escapeHtml(v.schedule)}</p>` : ''}
       ${v?.summary ? `<p class="trip-summary">${escapeHtml(v.summary)}</p>` : ''}
       ${v?.stats ? `<p class="trip-stats">${escapeHtml(v.stats)}</p>` : ''}
+      ${v?.lunch ? `<p class="trip-lunch">${escapeHtml(v.lunch)}</p>` : ''}
       ${v?.night ? `<p class="trip-night">${escapeHtml(v.night)}</p>` : ''}
       <div class="trip-segments">
-        ${segs.map((seg, i) => `
-          <div class="trip-seg">
-            <span class="trip-seg-label">${escapeHtml(seg.label)}</span>
+        ${segs.map((seg, i) => {
+          const done = isSegmentDone(trip.id, day.n, i);
+          const active = ctx?.tripId === trip.id && ctx?.dayN === day.n && ctx?.segmentLabel === seg.label;
+          const wasLast = last?.dayN === day.n && last?.segIdx === i;
+          const fuel = bikeProf ? assessSegmentFuel(seg, bikeProf) : null;
+          const cls = ['trip-seg', done ? 'is-done' : '', active ? 'is-active' : '', wasLast && !active ? 'is-last' : ''].filter(Boolean).join(' ');
+          return `
+          <div class="${cls}">
+            <span class="trip-seg-label">${done ? '✓ ' : ''}${escapeHtml(seg.label)}</span>
             <span class="trip-seg-audit">${escapeHtml(formatSegmentAudit(seg))}</span>
+            ${fuel ? `<span class="trip-seg-fuel fuel-${fuel.level}">${escapeHtml(formatFuelHint(fuel))}</span>` : ''}
             <div class="btnrow c3 trip-seg-actions">
               <button type="button" class="secondary trip-osrm" data-day="${day.n}" data-seg="${i}">🗺 OSRM</button>
               <button type="button" class="secondary trip-yandex" data-day="${day.n}" data-seg="${i}">🧭 Яндекс</button>
               <button type="button" class="secondary trip-gpx" data-day="${day.n}" data-seg="${i}">GPX</button>
             </div>
-          </div>
-        `).join('')}
+            <button type="button" class="secondary trip-edit-btn" data-day="${day.n}" data-seg="${i}">✎ Точки</button>
+            <button type="button" class="trip-done-btn" data-day="${day.n}" data-seg="${i}">${done ? '↩ Снять «готово»' : '✓ Отметить готово'}</button>
+          </div>`;
+        }).join('')}
       </div>
     </article>`;
   }).join('');
@@ -110,6 +236,24 @@ function renderActiveTrip(){
   wrap.querySelectorAll('.trip-gpx').forEach(btn => {
     btn.addEventListener('click', () => onGpxSegment(+btn.dataset.day, +btn.dataset.seg));
   });
+  wrap.querySelectorAll('.trip-done-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tripId = S.activeTrip?.id;
+      if(!tripId) return;
+      toggleSegmentDone(tripId, +btn.dataset.day, +btn.dataset.seg);
+      renderActiveTrip();
+    });
+  });
+  wrap.querySelectorAll('.trip-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => onEditSegment(+btn.dataset.day, +btn.dataset.seg));
+  });
+
+  updateTodayButton();
+  if(todayN != null){
+    requestAnimationFrame(() => {
+      document.getElementById('trip-day-' + todayN)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  }
 }
 
 async function refreshTripList(){
@@ -120,8 +264,8 @@ async function refreshTripList(){
 async function importTripFromFile(file){
   const text = await file.text();
   const trip = parseTripJson(text);
-  trip.updatedAt = Date.now();
-  await saveTrip(trip);
+  attachBikeToTrip(trip);
+  await persistTrip(trip, { bump: false });
   await openTrip(trip.id);
   $('drawer-trip')?.setAttribute('open', '');
   setStatus('✓ Импорт: «' + trip.title + '»');
@@ -137,7 +281,7 @@ async function shareTripLink(){
     return;
   }
   await copyText(url);
-  setStatus('✓ Ссылка скопирована — откройте на телефоне в том же браузере');
+  setStatus('✓ Ссылка скопирована — откройте на телефоне (нужен trip_pack в URL)');
 }
 
 async function handleTripDeepLink(){
@@ -148,8 +292,8 @@ async function handleTripDeepLink(){
     try{
       setStatus('Загрузка плана из ссылки…');
       const trip = await decodeTripPack(pack);
-      trip.updatedAt = Date.now();
-      await saveTrip(trip);
+      attachBikeToTrip(trip);
+      await persistTrip(trip, { bump: false });
       await openTrip(trip.id, { syncUrl: true });
       setStatus('✓ План из ссылки: «' + trip.title + '»');
       return;
@@ -164,10 +308,11 @@ async function handleTripDeepLink(){
       $('drawer-trip')?.setAttribute('open', '');
       setStatus('');
     }else if(openPlanner){
-      setStatus('План не найден на этом устройстве — импортируйте JSON или откройте ссылку с упакованным планом', true);
+      setStatus('План не найден на этом устройстве — импортируйте JSON или откройте ссылку с trip_pack', true);
     }
   }
 }
+
 async function openTrip(id, opts){
   const trip = await loadTrip(id);
   if(!trip) return false;
@@ -177,6 +322,28 @@ async function openTrip(id, opts){
   await refreshTripList();
   if(opts?.syncUrl !== false) replaceTripLocalUrl(trip.id, true);
   return true;
+}
+
+function onEditSegment(dayN, segIdx){
+  const trip = S.activeTrip;
+  if(!trip) return;
+  const day = trip.days.find(d => d.n === dayN);
+  const vid = variantForTrip(trip.id);
+  const v = getDayVariant(day, vid);
+  const seg = v?.segments?.[segIdx];
+  if(!seg) return;
+  openSegmentEditor({
+    trip,
+    dayN,
+    segIdx,
+    variantId: vid,
+    segment: seg,
+    onSaved: async t => {
+      await persistTrip(t, { bump: true });
+      renderActiveTrip();
+      setStatus('✓ Сегмент сохранён');
+    }
+  });
 }
 
 async function onApplySegment(dayN, segIdx, mode){
@@ -198,12 +365,29 @@ async function onApplySegment(dayN, segIdx, mode){
       variantId: v.id,
       segmentLabel: seg.label
     });
+    markSegmentApplied(trip.id, dayN, segIdx);
     setStatus(`✓ День ${dayN}: ${seg.label}`);
+    renderActiveTrip();
     document.getElementById('setup')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }catch(e){
     setStatus('❌ ' + (e.message || e), true);
   }finally{
     _busy = false;
+  }
+}
+
+async function applyToday(){
+  const trip = S.activeTrip;
+  if(!trip) return;
+  const vid = variantForTrip(trip.id);
+  const target = resolveTodayTarget(trip, vid, getLastApplied(trip.id));
+  if(!target){
+    setStatus('❌ Нет сегмента для сегодня', true);
+    return;
+  }
+  await onApplySegment(target.dayN, target.segIdx, 'osrm');
+  if(target.hint && target.hint !== 'сегодня по календарю'){
+    setStatus(`✓ День ${target.dayN} (${target.hint})`);
   }
 }
 
@@ -229,8 +413,8 @@ async function loadDemo(){
   setStatus('Загрузка демо…');
   try{
     const trip = await loadDemoTrip();
-    trip.updatedAt = Date.now();
-    await saveTrip(trip);
+    attachBikeToTrip(trip);
+    await persistTrip(trip, { bump: false });
     S.activeTrip = trip;
     renderActiveTrip();
     await refreshTripList();
@@ -246,8 +430,12 @@ function showNewTripModal(on){
   if(on){
     setTripNewError('');
     const startEl = $('trip-new-start');
+    const dateEl = $('trip-new-start-date');
     if(startEl && !startEl.value.trim() && Number.isFinite(S.gps?.lat) && Number.isFinite(S.gps?.lon)){
       startEl.value = `${S.gps.lat.toFixed(6)}, ${S.gps.lon.toFixed(6)}`;
+    }
+    if(dateEl && !dateEl.value){
+      dateEl.value = new Date().toISOString().slice(0, 10);
     }
   }
 }
@@ -258,6 +446,7 @@ async function createTripFromForm(){
   const startRaw = $('trip-new-start')?.value?.trim();
   const finishRaw = $('trip-new-finish')?.value?.trim();
   const nightsRaw = $('trip-new-nights')?.value?.trim();
+  const startDate = $('trip-new-start-date')?.value?.trim() || new Date().toISOString().slice(0, 10);
   if(!startRaw || !finishRaw){
     setTripNewError('Укажите старт и финиш');
     return;
@@ -286,16 +475,17 @@ async function createTripFromForm(){
     start,
     finish,
     nights,
-    startDate: new Date().toISOString().slice(0, 10)
+    startDate
   });
-  await saveTrip(trip);
+  attachBikeToTrip(trip);
+  await persistTrip(trip, { bump: true });
   S.activeTrip = trip;
   showNewTripModal(false);
   $('drawer-trip')?.setAttribute('open', '');
   renderActiveTrip();
   await refreshTripList();
   replaceTripLocalUrl(trip.id, true);
-  setStatus('✓ План создан — «🔗 Ссылка» или «📤 JSON» для телефона');
+  setStatus('✓ План создан — «▶ Сегодня» или «🔗 Ссылка» для телефона');
 }
 
 function exportTripText(){
@@ -311,8 +501,38 @@ function exportTripText(){
 }
 
 export function initTripPlannerUi(){
+  initSegmentEditor();
+  renderBikePanel();
+
+  $('trip-bike-select')?.addEventListener('change', async e => {
+    const id = e.target.value;
+    setActiveBikeId(id);
+    if(id === 'bike_custom') saveCustomFromForm();
+    renderBikePanel();
+    const trip = S.activeTrip;
+    if(trip){
+      attachBikeToTrip(trip);
+      await persistTrip(trip, { bump: true });
+      renderActiveTrip();
+    }
+  });
+  for(const id of ['trip-bike-tank', 'trip-bike-consumption', 'trip-bike-reserve']){
+    $(id)?.addEventListener('change', async () => {
+      if(getActiveBikeId() !== 'bike_custom') return;
+      saveCustomFromForm();
+      renderBikePanel();
+      const trip = S.activeTrip;
+      if(trip){
+        attachBikeToTrip(trip);
+        await persistTrip(trip, { bump: true });
+        renderActiveTrip();
+      }
+    });
+  }
+
   $('btn-trip-demo')?.addEventListener('click', loadDemo);
   $('btn-trip-new')?.addEventListener('click', () => showNewTripModal(true));
+  $('btn-trip-today')?.addEventListener('click', () => applyToday().catch(e => setStatus('❌ ' + (e.message || e), true)));
   $('trip-new-cancel')?.addEventListener('click', () => showNewTripModal(false));
   $('trip-new-save')?.addEventListener('click', () => createTripFromForm().catch(e => setTripNewError(e.message || String(e))));
   $('btn-trip-export')?.addEventListener('click', exportTripText);
@@ -350,6 +570,7 @@ export function initTripPlannerUi(){
     const trip = S.activeTrip;
     if(!trip || !confirm('Удалить план «' + trip.title + '»?')) return;
     await deleteTrip(trip.id);
+    clearTripProgress(trip.id);
     S.activeTrip = null;
     clearTripContext();
     renderActiveTrip();
@@ -362,10 +583,8 @@ export function initTripPlannerUi(){
     btn.addEventListener('click', () => {
       const trip = S.activeTrip;
       if(!trip) return;
-      _variantMode[trip.id] = btn.getAttribute('data-mode') || 'calm';
-      document.querySelectorAll('#trip-variant-bar .mode-btn').forEach(b => {
-        b.classList.toggle('active', b === btn);
-      });
+      const mode = btn.getAttribute('data-mode') || 'calm';
+      setVariantMode(trip.id, mode);
       renderActiveTrip();
     });
   });

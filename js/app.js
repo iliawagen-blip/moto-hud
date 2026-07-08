@@ -20620,13 +20620,20 @@ function buildTripFromNights({ id, title, start: start2, finish, nights, startDa
     meta: {}
   };
   const chain = [start2, ...nights || [], finish];
+  const baseDate = startDate ? /* @__PURE__ */ new Date(startDate + "T12:00:00") : null;
   for (let i = 0; i < chain.length - 1; i++) {
     const a = chain[i];
     const b = chain[i + 1];
     const rtext = rtextFromPoints([a, b]);
+    let dateLabel = "";
+    if (baseDate && !isNaN(baseDate.getTime())) {
+      const d = new Date(baseDate.getTime());
+      d.setDate(d.getDate() + i);
+      dateLabel = formatTripDayDate(d);
+    }
     trip.days.push({
       n: i + 1,
-      date: "",
+      date: dateLabel,
       badge: i === chain.length - 2 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D",
       variants: [{
         id: "calm",
@@ -20637,10 +20644,17 @@ function buildTripFromNights({ id, title, start: start2, finish, nights, startDa
       }]
     });
   }
+  if (baseDate && !isNaN(baseDate.getTime()) && trip.days.length) {
+    const end = new Date(baseDate.getTime());
+    end.setDate(end.getDate() + trip.days.length - 1);
+    trip.endDate = end.toISOString().slice(0, 10);
+  }
   return trip;
 }
 function tripSummaryText(trip, variantId = "calm") {
   const lines = [trip.title, ""];
+  if (trip.startDate) lines.push("\u0421\u0442\u0430\u0440\u0442: " + trip.startDate + (trip.endDate ? " \u2192 " + trip.endDate : ""));
+  lines.push("");
   for (const day of trip.days) {
     const v = getDayVariant(day, variantId);
     lines.push(`\u0414\u0435\u043D\u044C ${day.n}${day.date ? " " + day.date : ""}${day.badge ? " \xB7 " + day.badge : ""}`);
@@ -20654,12 +20668,95 @@ function tripSummaryText(trip, variantId = "calm") {
   }
   return lines.join("\n").trim();
 }
-var TRIP_MODEL_REV;
+function formatTripDayDate(d) {
+  if (!d || isNaN(d.getTime())) return "";
+  return "\xB7 " + d.getDate() + " " + MO_SHORT[d.getMonth()] + ", " + WD_SHORT[d.getDay()];
+}
+function calendarDateForDay(trip, dayN) {
+  if (!trip?.startDate || !dayN) return null;
+  const d = /* @__PURE__ */ new Date(trip.startDate + "T12:00:00");
+  if (isNaN(d.getTime())) return null;
+  d.setDate(d.getDate() + (dayN - 1));
+  return d;
+}
+function getTodayDayNumber(trip) {
+  if (!trip?.startDate || !trip.days?.length) return null;
+  const start2 = /* @__PURE__ */ new Date(trip.startDate + "T00:00:00");
+  const today = /* @__PURE__ */ new Date();
+  today.setHours(0, 0, 0, 0);
+  if (isNaN(start2.getTime())) return null;
+  const diff = Math.floor((today - start2) / 864e5) + 1;
+  if (diff < 1 || diff > trip.days.length) return null;
+  return diff;
+}
+function resolveTodayTarget(trip, variantId, lastApplied) {
+  if (!trip?.days?.length) return null;
+  const vid = variantId || "calm";
+  const todayN = getTodayDayNumber(trip);
+  function pack(dayN, segIdx, hint) {
+    const day = trip.days.find((d) => d.n === dayN);
+    if (!day) return null;
+    const v = getDayVariant(day, vid);
+    const seg = v?.segments?.[segIdx];
+    if (!seg) return null;
+    return { dayN, segIdx, day, seg, hint };
+  }
+  if (todayN != null) return pack(todayN, 0, "\u0441\u0435\u0433\u043E\u0434\u043D\u044F \u043F\u043E \u043A\u0430\u043B\u0435\u043D\u0434\u0430\u0440\u044E");
+  if (trip.startDate) {
+    const start2 = /* @__PURE__ */ new Date(trip.startDate + "T00:00:00");
+    const today = /* @__PURE__ */ new Date();
+    today.setHours(0, 0, 0, 0);
+    if (!isNaN(start2.getTime())) {
+      const diff = Math.floor((today - start2) / 864e5) + 1;
+      if (diff < 1) return pack(1, 0, "\u043F\u043E\u0435\u0437\u0434\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u043D\u0430\u0447\u0430\u043B\u0430\u0441\u044C \u2014 \u0434\u0435\u043D\u044C 1");
+      if (diff > trip.days.length) {
+        const lastDay = trip.days[trip.days.length - 1];
+        return pack(lastDay.n, 0, "\u0434\u0430\u0442\u044B \u043F\u043E\u0435\u0437\u0434\u043A\u0438 \u043F\u0440\u043E\u0448\u043B\u0438 \u2014 \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0439 \u0434\u0435\u043D\u044C");
+      }
+    }
+  }
+  if (lastApplied) {
+    const t = pack(lastApplied.dayN, lastApplied.segIdx, "\u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u044C \u0441 \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0435\u0433\u043E \u0441\u0435\u0433\u043C\u0435\u043D\u0442\u0430");
+    if (t) return t;
+  }
+  return pack(trip.days[0].n, 0, "\u0434\u0435\u043D\u044C 1 (\u0434\u0430\u0442\u044B \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B)");
+}
+function formatSegmentEditorText(seg) {
+  const pts = parseRtext(seg?.rtext);
+  return pts.map((p) => {
+    const base = `${p.lat}, ${p.lon}`;
+    if (p.label && !/^Точка \d+$/.test(p.label) && p.label !== "\u0421\u0442\u0430\u0440\u0442" && p.label !== "\u0424\u0438\u043D\u0438\u0448") {
+      return `${base} ${p.label}`;
+    }
+    return base;
+  }).join("\n");
+}
+function parseSegmentEditorText(text) {
+  const lines = String(text || "").split(/\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 2) throw new Error("\u041D\u0443\u0436\u043D\u043E \u043C\u0438\u043D\u0438\u043C\u0443\u043C 2 \u0442\u043E\u0447\u043A\u0438 (\u043F\u043E \u043E\u0434\u043D\u043E\u0439 \u043D\u0430 \u0441\u0442\u0440\u043E\u043A\u0443)");
+  const pts = [];
+  for (let i = 0; i < lines.length; i++) {
+    const fb = i === 0 ? "\u0421\u0442\u0430\u0440\u0442" : i === lines.length - 1 ? "\u0424\u0438\u043D\u0438\u0448" : `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
+    const p = parseTripPoint(lines[i], fb);
+    if (!p) throw new Error(`\u0421\u0442\u0440\u043E\u043A\u0430 ${i + 1}: \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D\u044B \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B`);
+    pts.push(p);
+  }
+  return { rtext: rtextFromPoints(pts), points: pts };
+}
+function touchTripRevision(trip) {
+  trip.meta = trip.meta || {};
+  trip.meta.revision = (trip.meta.revision || 0) + 1;
+  trip.meta.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+  trip.updatedAt = Date.now();
+}
+var TRIP_MODEL_REV, WD_SHORT, MO_SHORT;
 var init_trip_model = __esm({
   "js/trip-model.js"() {
     init_geo();
     init_util();
-    TRIP_MODEL_REV = 1;
+    TRIP_MODEL_REV = 2;
+    WD_SHORT = ["\u0432\u0441", "\u043F\u043D", "\u0432\u0442", "\u0441\u0440", "\u0447\u0442", "\u043F\u0442", "\u0441\u0431"];
+    MO_SHORT = ["\u044F\u043D\u0432", "\u0444\u0435\u0432", "\u043C\u0430\u0440", "\u0430\u043F\u0440", "\u043C\u0430\u044F", "\u0438\u044E\u043D", "\u0438\u044E\u043B", "\u0430\u0432\u0433", "\u0441\u0435\u043D", "\u043E\u043A\u0442", "\u043D\u043E\u044F", "\u0434\u0435\u043A"];
   }
 });
 
@@ -21124,6 +21221,373 @@ var init_trip_share = __esm({
   }
 });
 
+// js/trip-progress.js
+function readJson(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "{}");
+  } catch (e) {
+    return {};
+  }
+}
+function writeJson(key, obj) {
+  try {
+    localStorage.setItem(key, JSON.stringify(obj));
+  } catch (e) {
+  }
+}
+function getVariantMode(tripId) {
+  const m = readJson(VARIANT_KEY);
+  return m[tripId] === "intense" ? "intense" : "calm";
+}
+function setVariantMode(tripId, mode) {
+  const m = readJson(VARIANT_KEY);
+  m[tripId] = mode === "intense" ? "intense" : "calm";
+  writeJson(VARIANT_KEY, m);
+}
+function getLastApplied(tripId) {
+  const p = readJson(PROGRESS_KEY)[tripId];
+  if (!p || p.dayN == null) return null;
+  return { dayN: p.dayN, segIdx: p.segIdx ?? 0, at: p.at || 0 };
+}
+function markSegmentApplied(tripId, dayN, segIdx) {
+  const all = readJson(PROGRESS_KEY);
+  const cur = all[tripId] || { done: [] };
+  cur.dayN = dayN;
+  cur.segIdx = segIdx;
+  cur.at = Date.now();
+  all[tripId] = cur;
+  writeJson(PROGRESS_KEY, all);
+}
+function isSegmentDone(tripId, dayN, segIdx) {
+  const cur = readJson(PROGRESS_KEY)[tripId];
+  if (!cur?.done?.length) return false;
+  return cur.done.some((d) => d.dayN === dayN && d.segIdx === segIdx);
+}
+function toggleSegmentDone(tripId, dayN, segIdx) {
+  const all = readJson(PROGRESS_KEY);
+  const cur = all[tripId] || { done: [] };
+  cur.done = cur.done || [];
+  const i = cur.done.findIndex((d) => d.dayN === dayN && d.segIdx === segIdx);
+  if (i >= 0) cur.done.splice(i, 1);
+  else cur.done.push({ dayN, segIdx, at: Date.now() });
+  all[tripId] = cur;
+  writeJson(PROGRESS_KEY, all);
+  return i < 0;
+}
+function clearTripProgress(tripId) {
+  const all = readJson(PROGRESS_KEY);
+  delete all[tripId];
+  writeJson(PROGRESS_KEY, all);
+  const v = readJson(VARIANT_KEY);
+  delete v[tripId];
+  writeJson(VARIANT_KEY, v);
+}
+var PROGRESS_KEY, VARIANT_KEY;
+var init_trip_progress = __esm({
+  "js/trip-progress.js"() {
+    PROGRESS_KEY = "moto-hud-trip-progress-v1";
+    VARIANT_KEY = "moto-hud-trip-variant-v1";
+  }
+});
+
+// js/bike-profile.js
+function readCustomProfiles() {
+  try {
+    const raw = localStorage.getItem(BIKE_STORAGE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) {
+    return [];
+  }
+}
+function writeCustomProfiles(list) {
+  try {
+    localStorage.setItem(BIKE_STORAGE_KEY, JSON.stringify(list));
+  } catch (e) {
+  }
+}
+function listBikeProfiles() {
+  const savedCustom = readCustomProfiles().find((p) => p.id === "bike_custom");
+  return BUILTIN_BIKES.map((p) => {
+    if (p.id === "bike_custom" && savedCustom) {
+      return { ...p, ...savedCustom, id: "bike_custom", name: "\u0421\u0432\u043E\u0439 \u043F\u0440\u043E\u0444\u0438\u043B\u044C", custom: true, builtin: true };
+    }
+    return { ...p };
+  });
+}
+function getBikeProfile(id) {
+  if (!id) return null;
+  return listBikeProfiles().find((p) => p.id === id) || null;
+}
+function getActiveBikeId() {
+  try {
+    return localStorage.getItem(ACTIVE_BIKE_KEY) || "";
+  } catch (e) {
+    return "";
+  }
+}
+function setActiveBikeId(id) {
+  try {
+    if (id) localStorage.setItem(ACTIVE_BIKE_KEY, id);
+    else localStorage.removeItem(ACTIVE_BIKE_KEY);
+  } catch (e) {
+  }
+}
+function getActiveBikeProfile() {
+  const id = getActiveBikeId();
+  if (!id) return null;
+  return getBikeProfile(id);
+}
+function saveCustomBikeProfile(profile) {
+  if (!profile?.id) return;
+  const list = readCustomProfiles().filter((p) => p.id !== profile.id);
+  list.push({
+    id: profile.id,
+    name: profile.name,
+    tankLiters: profile.tankLiters,
+    reserveKm: profile.reserveKm,
+    fuelType: profile.fuelType || "95",
+    consumptionL100: { ...profile.consumptionL100 }
+  });
+  writeCustomProfiles(list);
+}
+function profileSnapshot(profile) {
+  if (!profile) return null;
+  return {
+    id: profile.id,
+    name: profile.name,
+    tankLiters: profile.tankLiters,
+    reserveKm: profile.reserveKm,
+    fuelType: profile.fuelType,
+    consumptionL100: { ...profile.consumptionL100 }
+  };
+}
+function consumption(profile, roadType) {
+  const c = profile?.consumptionL100;
+  if (!c) return 5.5;
+  const key = roadType && c[roadType] != null ? roadType : "default";
+  const v = c[key] ?? c.default;
+  return Number.isFinite(v) && v > 0 ? v : 5.5;
+}
+function rangeKm(profile, roadType = "default") {
+  if (!profile?.tankLiters) return 0;
+  const l100 = consumption(profile, roadType);
+  const reserve = profile.reserveKm || 0;
+  return Math.max(0, profile.tankLiters / l100 * 100 - reserve);
+}
+function fuelLitersForKm(km, profile, roadType = "default") {
+  if (!profile || !Number.isFinite(km) || km <= 0) return 0;
+  return km * consumption(profile, roadType) / 100;
+}
+function formatBikeRangeLine(profile, roadType = "default") {
+  if (!profile) return "";
+  const r = Math.round(rangeKm(profile, roadType));
+  const l100 = consumption(profile, roadType);
+  return `\u0417\u0430\u043F\u0430\u0441 ~${r} \u043A\u043C \xB7 ${profile.tankLiters} \u043B \xB7 ${l100} \u043B/100 \xB7 \u0410\u0418-${profile.fuelType || "95"}`;
+}
+var BIKE_STORAGE_KEY, ACTIVE_BIKE_KEY, BUILTIN_BIKES;
+var init_bike_profile = __esm({
+  "js/bike-profile.js"() {
+    BIKE_STORAGE_KEY = "moto-hud-bike-profiles-v1";
+    ACTIVE_BIKE_KEY = "moto-hud-active-bike-id";
+    BUILTIN_BIKES = [
+      {
+        id: "bike_ktm_1290",
+        name: "KTM 1290 Super Adventure",
+        tankLiters: 22,
+        reserveKm: 40,
+        fuelType: "95",
+        builtin: true,
+        consumptionL100: { default: 5.2, highway: 5, city: 6.5, mountain: 6.5, offroad: 8 }
+      },
+      {
+        id: "bike_yamaha_tracer9",
+        name: "Yamaha Tracer 9 GT",
+        tankLiters: 19,
+        reserveKm: 35,
+        fuelType: "95",
+        builtin: true,
+        consumptionL100: { default: 5, highway: 4.8, city: 5.8, mountain: 6, offroad: 7.5 }
+      },
+      {
+        id: "bike_bmw_r1250gs",
+        name: "BMW R 1250 GS",
+        tankLiters: 20,
+        reserveKm: 40,
+        fuelType: "95",
+        builtin: true,
+        consumptionL100: { default: 5.4, highway: 5.1, city: 6.2, mountain: 6.8, offroad: 8.2 }
+      },
+      {
+        id: "bike_enduro_450",
+        name: "\u042D\u043D\u0434\u0443\u0440\u043E 450 (\u0431\u0430\u043A 8 \u043B)",
+        tankLiters: 8,
+        reserveKm: 25,
+        fuelType: "95",
+        builtin: true,
+        consumptionL100: { default: 4.5, highway: 4, city: 5, mountain: 5.5, offroad: 6.5 }
+      },
+      {
+        id: "bike_custom",
+        name: "\u0421\u0432\u043E\u0439 \u043F\u0440\u043E\u0444\u0438\u043B\u044C",
+        tankLiters: 18,
+        reserveKm: 40,
+        fuelType: "95",
+        custom: true,
+        builtin: true,
+        consumptionL100: { default: 5.5, highway: 5, city: 6.5, mountain: 6.5, offroad: 8 }
+      }
+    ];
+  }
+});
+
+// js/trip-fuel.js
+function assessSegmentFuel(segment, profile, roadType) {
+  const p = profile || getActiveBikeProfile();
+  if (!p || !segment?.rtext) return null;
+  const road = roadType || segment.roadMix || "default";
+  const km = segment.plannedKm != null ? segment.plannedKm : auditSegment(segment.rtext).km;
+  const range = rangeKm(p, road);
+  const liters = fuelLitersForKm(km, p, road);
+  const exceeds = km > range;
+  const tight = !exceeds && km > range * 0.85;
+  let level = "ok";
+  if (exceeds) level = "danger";
+  else if (tight) level = "warn";
+  let warning = null;
+  if (exceeds) warning = `~${Math.round(km)} \u043A\u043C > \u0437\u0430\u043F\u0430\u0441 ~${Math.round(range)} \u043A\u043C \u2014 \u043D\u0443\u0436\u043D\u0430 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0430`;
+  else if (tight) warning = `\u0411\u043B\u0438\u0437\u043A\u043E \u043A \u043F\u0440\u0435\u0434\u0435\u043B\u0443 \u0431\u0430\u043A\u0430 (~${Math.round(range)} \u043A\u043C)`;
+  return {
+    km: Math.round(km * 10) / 10,
+    liters: Math.round(liters * 10) / 10,
+    rangeKm: Math.round(range),
+    exceeds,
+    tight,
+    level,
+    warning,
+    fuelType: p.fuelType
+  };
+}
+function formatFuelHint(assessment) {
+  if (!assessment) return "";
+  let s2 = `\u26FD ~${assessment.liters} \u043B \xB7 \u0437\u0430\u043F\u0430\u0441 ${assessment.rangeKm} \u043A\u043C`;
+  if (assessment.warning) s2 += " \xB7 \u26A0 " + assessment.warning;
+  return s2;
+}
+function assessDayFuel(day, variantId, profile) {
+  const v = day?.variants?.find((x) => x.id === variantId) || day?.variants?.[0];
+  if (!v?.segments?.length) return null;
+  let totalKm = 0;
+  let totalLiters = 0;
+  let worst = "ok";
+  const warnings = [];
+  for (const seg of v.segments) {
+    const a = assessSegmentFuel(seg, profile);
+    if (!a) continue;
+    totalKm += a.km;
+    totalLiters += a.liters;
+    if (a.level === "danger") worst = "danger";
+    else if (a.level === "warn" && worst !== "danger") worst = "warn";
+    if (a.warning) warnings.push(a.warning);
+  }
+  const p = profile || getActiveBikeProfile();
+  const range = p ? rangeKm(p) : 0;
+  return {
+    totalKm: Math.round(totalKm),
+    totalLiters: Math.round(totalLiters * 10) / 10,
+    rangeKm: range,
+    level: totalKm > range ? "danger" : totalKm > range * 0.85 ? "warn" : worst,
+    warnings: [...new Set(warnings)]
+  };
+}
+var init_trip_fuel = __esm({
+  "js/trip-fuel.js"() {
+    init_trip_model();
+    init_bike_profile();
+  }
+});
+
+// js/trip-segment-editor.js
+function updateFuelPreview() {
+  const el = $2("trip-seg-edit-fuel");
+  const ta = $2("trip-seg-edit-points");
+  if (!el || !ta) return;
+  try {
+    const { rtext } = parseSegmentEditorText(ta.value);
+    const a = assessSegmentFuel({ rtext }, getActiveBikeProfile(), $2("trip-seg-edit-road")?.value);
+    el.textContent = a ? formatFuelHint(a) : "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u043C\u043E\u0442\u043E \u0434\u043B\u044F \u043E\u0446\u0435\u043D\u043A\u0438 \u0442\u043E\u043F\u043B\u0438\u0432\u0430";
+    el.className = "trip-seg-edit-fuel hint" + (a?.level === "danger" ? " fuel-danger" : a?.level === "warn" ? " fuel-warn" : "");
+  } catch (e) {
+    el.textContent = "";
+    el.className = "trip-seg-edit-fuel hint";
+  }
+}
+function setError(msg) {
+  const el = $2("trip-seg-edit-error");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.classList.toggle("hidden", !msg);
+}
+function openSegmentEditor(ctx) {
+  _ctx2 = ctx;
+  const seg = ctx.segment;
+  const label = $2("trip-seg-edit-label");
+  const points = $2("trip-seg-edit-points");
+  const meta = $2("trip-seg-edit-meta");
+  if (label) label.value = seg.label || "";
+  if (points) points.value = formatSegmentEditorText(seg);
+  if (meta) {
+    meta.textContent = `\u0414\u0435\u043D\u044C ${ctx.dayN} \xB7 \u0441\u0435\u0433\u043C\u0435\u043D\u0442 ${ctx.segIdx + 1}`;
+  }
+  setError("");
+  updateFuelPreview();
+  $2("trip-segment-modal")?.classList.add("on");
+}
+function closeSegmentEditor() {
+  _ctx2 = null;
+  $2("trip-segment-modal")?.classList.remove("on");
+}
+function initSegmentEditor() {
+  const modal = $2("trip-segment-modal");
+  if (!modal || modal.dataset.bound) return;
+  modal.dataset.bound = "1";
+  $2("trip-seg-edit-cancel")?.addEventListener("click", closeSegmentEditor);
+  $2("trip-seg-edit-points")?.addEventListener("input", updateFuelPreview);
+  $2("trip-seg-edit-road")?.addEventListener("change", updateFuelPreview);
+  $2("trip-seg-edit-save")?.addEventListener("click", async () => {
+    if (!_ctx2) return;
+    try {
+      const label = ($2("trip-seg-edit-label")?.value || "").trim() || "\u0421\u0435\u0433\u043C\u0435\u043D\u0442";
+      const { rtext, points } = parseSegmentEditorText($2("trip-seg-edit-points")?.value || "");
+      const audit = auditSegment(rtext);
+      const day = _ctx2.trip.days.find((d) => d.n === _ctx2.dayN);
+      const v = day?.variants?.find((x) => x.id === _ctx2.variantId) || day?.variants?.[0];
+      const seg = v?.segments?.[_ctx2.segIdx];
+      if (!seg) throw new Error("\u0421\u0435\u0433\u043C\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+      seg.label = label;
+      seg.rtext = rtext;
+      seg.plannedKm = audit.km;
+      seg.type = audit.isLoop ? "radial" : points.length === 2 ? "transfer" : "route";
+      if (typeof _ctx2.onSaved === "function") {
+        await _ctx2.onSaved(_ctx2.trip);
+      }
+      closeSegmentEditor();
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+  });
+}
+var _ctx2;
+var init_trip_segment_editor = __esm({
+  "js/trip-segment-editor.js"() {
+    init_util();
+    init_trip_model();
+    init_trip_fuel();
+    init_bike_profile();
+    _ctx2 = null;
+  }
+});
+
 // js/trip-ui.js
 function setTripNewError(msg) {
   const el = $2("trip-new-error");
@@ -21132,13 +21596,74 @@ function setTripNewError(msg) {
   el.classList.toggle("hidden", !msg);
 }
 function variantForTrip(tripId) {
-  return _variantMode[tripId] || "calm";
+  return getVariantMode(tripId);
+}
+function getTripBikeProfile(trip) {
+  if (trip?.meta?.bikeProfileSnapshot) {
+    const s2 = trip.meta.bikeProfileSnapshot;
+    return { ...s2, id: trip.meta.bikeProfileId || s2.id };
+  }
+  return getActiveBikeProfile();
+}
+function attachBikeToTrip(trip) {
+  const p = getActiveBikeProfile();
+  if (!trip || !p) return;
+  trip.meta = trip.meta || {};
+  trip.meta.bikeProfileId = p.id;
+  trip.meta.bikeProfileSnapshot = profileSnapshot(p);
+}
+async function persistTrip(trip, opts) {
+  const bump = opts?.bump !== false;
+  attachBikeToTrip(trip);
+  if (bump) touchTripRevision(trip);
+  else trip.updatedAt = Date.now();
+  await saveTrip(trip);
+}
+function saveCustomFromForm() {
+  const tank = parseFloat($2("trip-bike-tank")?.value);
+  const cons = parseFloat($2("trip-bike-consumption")?.value);
+  const reserve = parseFloat($2("trip-bike-reserve")?.value);
+  if (!Number.isFinite(tank) || !Number.isFinite(cons)) return;
+  const base = getBikeProfile("bike_custom") || { id: "bike_custom", name: "\u0421\u0432\u043E\u0439 \u043F\u0440\u043E\u0444\u0438\u043B\u044C", fuelType: "95" };
+  saveCustomBikeProfile({
+    ...base,
+    tankLiters: tank,
+    reserveKm: Number.isFinite(reserve) ? reserve : 40,
+    consumptionL100: { ...base.consumptionL100, default: cons }
+  });
+}
+function renderBikePanel() {
+  const sel = $2("trip-bike-select");
+  const rangeEl = $2("trip-bike-range");
+  const custom = $2("trip-bike-custom");
+  if (!sel) return;
+  const profiles = listBikeProfiles();
+  const activeId = getActiveBikeId();
+  sel.innerHTML = '<option value="">\u2014 \u043D\u0435 \u0432\u044B\u0431\u0440\u0430\u043D \u2014</option>' + profiles.map((p) => `<option value="${escapeHtml(p.id)}"${p.id === activeId ? " selected" : ""}>${escapeHtml(p.name)}</option>`).join("");
+  const profile = getActiveBikeProfile();
+  if (rangeEl) {
+    rangeEl.textContent = profile ? formatBikeRangeLine(profile) + " \xB7 \u043E\u0446\u0435\u043D\u043A\u0430 \xB120\u201330%" : "\u0411\u0435\u0437 \u043F\u0440\u043E\u0444\u0438\u043B\u044F \u043E\u0446\u0435\u043D\u043A\u0430 \u0442\u043E\u043F\u043B\u0438\u0432\u0430 \u0441\u043A\u0440\u044B\u0442\u0430";
+  }
+  custom?.classList.toggle("hidden", profile?.id !== "bike_custom");
+  if (profile?.id === "bike_custom") {
+    const tank = $2("trip-bike-tank");
+    const cons = $2("trip-bike-consumption");
+    const res = $2("trip-bike-reserve");
+    if (tank) tank.value = String(profile.tankLiters);
+    if (cons) cons.value = String(profile.consumptionL100?.default ?? 5.5);
+    if (res) res.value = String(profile.reserveKm);
+  }
 }
 function setStatus(msg, err) {
   const el = $2("trip-status");
   if (!el) return;
   el.textContent = msg || "";
   el.className = "status" + (err ? " err" : msg ? " ok" : "");
+}
+function dayDateLabel(trip, day) {
+  if (day.date) return day.date;
+  const d = calendarDateForDay(trip, day.n);
+  return d ? formatTripDayDate(d) : "";
 }
 function renderTripList(trips) {
   const el = $2("trip-list");
@@ -21150,12 +21675,31 @@ function renderTripList(trips) {
   el.innerHTML = trips.map((t) => `
     <button type="button" class="trip-list-item${S.activeTrip?.id === t.id ? " active" : ""}" data-trip-id="${escapeHtml(t.id)}">
       <strong>${escapeHtml(t.title)}</strong>
-      <span class="hint">${t.days?.length || 0} \u0434\u043D. \xB7 ${new Date(t.updatedAt || 0).toLocaleDateString("ru-RU")}</span>
+      <span class="hint">${t.days?.length || 0} \u0434\u043D.${t.startDate ? " \xB7 \u0441 " + t.startDate : ""}</span>
     </button>
   `).join("");
   el.querySelectorAll("[data-trip-id]").forEach((btn) => {
     btn.addEventListener("click", () => openTrip(btn.getAttribute("data-trip-id")));
   });
+}
+function updateTodayButton() {
+  const trip = S.activeTrip;
+  const btn = $2("btn-trip-today");
+  const hint = $2("trip-today-hint");
+  if (!btn) return;
+  if (!trip) {
+    btn.disabled = true;
+    if (hint) hint.textContent = "";
+    return;
+  }
+  btn.disabled = false;
+  const todayN = getTodayDayNumber(trip);
+  const target = resolveTodayTarget(trip, variantForTrip(trip.id), getLastApplied(trip.id));
+  if (hint) {
+    if (todayN != null) hint.textContent = "\u0421\u0435\u0433\u043E\u0434\u043D\u044F: \u0434\u0435\u043D\u044C " + todayN + " \u0438\u0437 " + trip.days.length;
+    else if (target) hint.textContent = target.hint;
+    else hint.textContent = "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0441\u0435\u0433\u043C\u0435\u043D\u0442 \u0432\u0440\u0443\u0447\u043D\u0443\u044E";
+  }
 }
 function renderActiveTrip() {
   const wrap = $2("trip-days");
@@ -21164,37 +21708,61 @@ function renderActiveTrip() {
   if (!trip) {
     wrap.innerHTML = '<p class="hint">\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u043B\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u043F\u043B\u0430\u043D \u043F\u043E\u0435\u0437\u0434\u043A\u0438.</p>';
     $2("trip-export-row")?.classList.add("hidden");
+    $2("trip-today-row")?.classList.add("hidden");
+    updateTodayButton();
     return;
   }
   $2("trip-export-row")?.classList.remove("hidden");
+  $2("trip-today-row")?.classList.remove("hidden");
   const vid = variantForTrip(trip.id);
   const hasIntense = trip.days.some((d) => d.variants.some((v) => v.id === "intense"));
   $2("trip-variant-bar")?.classList.toggle("hidden", !hasIntense);
+  document.querySelectorAll("#trip-variant-bar .mode-btn").forEach((b) => {
+    b.classList.toggle("active", (b.getAttribute("data-mode") || "calm") === vid);
+  });
+  const todayN = getTodayDayNumber(trip);
+  const last = getLastApplied(trip.id);
+  const ctx = S.tripContext;
+  const bikeProf = getTripBikeProfile(trip);
   wrap.innerHTML = trip.days.map((day) => {
     const v = getDayVariant(day, vid);
     const segs = v?.segments || [];
+    const isToday = todayN === day.n;
+    const dateLbl = dayDateLabel(trip, day);
+    const dayFuel = bikeProf ? assessDayFuel(day, vid, bikeProf) : null;
     return `
-    <article class="trip-day-card" data-day="${day.n}">
+    <article class="trip-day-card${isToday ? " is-today" : ""}" data-day="${day.n}" id="trip-day-${day.n}">
       <div class="trip-day-head">
-        <strong>\u0414\u0435\u043D\u044C ${day.n}</strong>
-        <span class="hint">${escapeHtml(day.date || "")}${day.badge ? " \xB7 " + escapeHtml(day.badge) : ""}</span>
+        <strong>\u0414\u0435\u043D\u044C ${day.n}${isToday ? " \xB7 \u0441\u0435\u0433\u043E\u0434\u043D\u044F" : ""}</strong>
+        <span class="hint">${escapeHtml(dateLbl)}${day.badge ? " \xB7 " + escapeHtml(day.badge) : ""}</span>
       </div>
+      ${dayFuel ? `<p class="trip-day-fuel fuel-${dayFuel.level}">\u26FD ~${dayFuel.totalLiters} \u043B \xB7 ${dayFuel.totalKm} \u043A\u043C \u0437\u0430 \u0434\u0435\u043D\u044C</p>` : ""}
       ${v?.schedule ? `<p class="trip-schedule">${escapeHtml(v.schedule)}</p>` : ""}
       ${v?.summary ? `<p class="trip-summary">${escapeHtml(v.summary)}</p>` : ""}
       ${v?.stats ? `<p class="trip-stats">${escapeHtml(v.stats)}</p>` : ""}
+      ${v?.lunch ? `<p class="trip-lunch">${escapeHtml(v.lunch)}</p>` : ""}
       ${v?.night ? `<p class="trip-night">${escapeHtml(v.night)}</p>` : ""}
       <div class="trip-segments">
-        ${segs.map((seg, i) => `
-          <div class="trip-seg">
-            <span class="trip-seg-label">${escapeHtml(seg.label)}</span>
+        ${segs.map((seg, i) => {
+      const done = isSegmentDone(trip.id, day.n, i);
+      const active = ctx?.tripId === trip.id && ctx?.dayN === day.n && ctx?.segmentLabel === seg.label;
+      const wasLast = last?.dayN === day.n && last?.segIdx === i;
+      const fuel = bikeProf ? assessSegmentFuel(seg, bikeProf) : null;
+      const cls = ["trip-seg", done ? "is-done" : "", active ? "is-active" : "", wasLast && !active ? "is-last" : ""].filter(Boolean).join(" ");
+      return `
+          <div class="${cls}">
+            <span class="trip-seg-label">${done ? "\u2713 " : ""}${escapeHtml(seg.label)}</span>
             <span class="trip-seg-audit">${escapeHtml(formatSegmentAudit(seg))}</span>
+            ${fuel ? `<span class="trip-seg-fuel fuel-${fuel.level}">${escapeHtml(formatFuelHint(fuel))}</span>` : ""}
             <div class="btnrow c3 trip-seg-actions">
               <button type="button" class="secondary trip-osrm" data-day="${day.n}" data-seg="${i}">\u{1F5FA} OSRM</button>
               <button type="button" class="secondary trip-yandex" data-day="${day.n}" data-seg="${i}">\u{1F9ED} \u042F\u043D\u0434\u0435\u043A\u0441</button>
               <button type="button" class="secondary trip-gpx" data-day="${day.n}" data-seg="${i}">GPX</button>
             </div>
-          </div>
-        `).join("")}
+            <button type="button" class="secondary trip-edit-btn" data-day="${day.n}" data-seg="${i}">\u270E \u0422\u043E\u0447\u043A\u0438</button>
+            <button type="button" class="trip-done-btn" data-day="${day.n}" data-seg="${i}">${done ? "\u21A9 \u0421\u043D\u044F\u0442\u044C \xAB\u0433\u043E\u0442\u043E\u0432\u043E\xBB" : "\u2713 \u041E\u0442\u043C\u0435\u0442\u0438\u0442\u044C \u0433\u043E\u0442\u043E\u0432\u043E"}</button>
+          </div>`;
+    }).join("")}
       </div>
     </article>`;
   }).join("");
@@ -21207,6 +21775,23 @@ function renderActiveTrip() {
   wrap.querySelectorAll(".trip-gpx").forEach((btn) => {
     btn.addEventListener("click", () => onGpxSegment(+btn.dataset.day, +btn.dataset.seg));
   });
+  wrap.querySelectorAll(".trip-done-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tripId = S.activeTrip?.id;
+      if (!tripId) return;
+      toggleSegmentDone(tripId, +btn.dataset.day, +btn.dataset.seg);
+      renderActiveTrip();
+    });
+  });
+  wrap.querySelectorAll(".trip-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => onEditSegment(+btn.dataset.day, +btn.dataset.seg));
+  });
+  updateTodayButton();
+  if (todayN != null) {
+    requestAnimationFrame(() => {
+      document.getElementById("trip-day-" + todayN)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+  }
 }
 async function refreshTripList() {
   const trips = await loadAllTrips();
@@ -21215,8 +21800,8 @@ async function refreshTripList() {
 async function importTripFromFile(file) {
   const text = await file.text();
   const trip = parseTripJson(text);
-  trip.updatedAt = Date.now();
-  await saveTrip(trip);
+  attachBikeToTrip(trip);
+  await persistTrip(trip, { bump: false });
   await openTrip(trip.id);
   $2("drawer-trip")?.setAttribute("open", "");
   setStatus("\u2713 \u0418\u043C\u043F\u043E\u0440\u0442: \xAB" + trip.title + "\xBB");
@@ -21231,7 +21816,7 @@ async function shareTripLink() {
     return;
   }
   await copyText(url);
-  setStatus("\u2713 \u0421\u0441\u044B\u043B\u043A\u0430 \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u0430 \u2014 \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435 \u0432 \u0442\u043E\u043C \u0436\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435");
+  setStatus("\u2713 \u0421\u0441\u044B\u043B\u043A\u0430 \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u0430 \u2014 \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435 (\u043D\u0443\u0436\u0435\u043D trip_pack \u0432 URL)");
 }
 async function handleTripDeepLink() {
   const { localId, pack, openPlanner } = readTripDeepLink();
@@ -21240,8 +21825,8 @@ async function handleTripDeepLink() {
     try {
       setStatus("\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043F\u043B\u0430\u043D\u0430 \u0438\u0437 \u0441\u0441\u044B\u043B\u043A\u0438\u2026");
       const trip = await decodeTripPack(pack);
-      trip.updatedAt = Date.now();
-      await saveTrip(trip);
+      attachBikeToTrip(trip);
+      await persistTrip(trip, { bump: false });
       await openTrip(trip.id, { syncUrl: true });
       setStatus("\u2713 \u041F\u043B\u0430\u043D \u0438\u0437 \u0441\u0441\u044B\u043B\u043A\u0438: \xAB" + trip.title + "\xBB");
       return;
@@ -21255,7 +21840,7 @@ async function handleTripDeepLink() {
       $2("drawer-trip")?.setAttribute("open", "");
       setStatus("");
     } else if (openPlanner) {
-      setStatus("\u041F\u043B\u0430\u043D \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435 \u2014 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u0443\u0439\u0442\u0435 JSON \u0438\u043B\u0438 \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0443 \u0441 \u0443\u043F\u0430\u043A\u043E\u0432\u0430\u043D\u043D\u044B\u043C \u043F\u043B\u0430\u043D\u043E\u043C", true);
+      setStatus("\u041F\u043B\u0430\u043D \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435 \u2014 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u0443\u0439\u0442\u0435 JSON \u0438\u043B\u0438 \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0443 \u0441 trip_pack", true);
     }
   }
 }
@@ -21268,6 +21853,27 @@ async function openTrip(id, opts) {
   await refreshTripList();
   if (opts?.syncUrl !== false) replaceTripLocalUrl(trip.id, true);
   return true;
+}
+function onEditSegment(dayN, segIdx) {
+  const trip = S.activeTrip;
+  if (!trip) return;
+  const day = trip.days.find((d) => d.n === dayN);
+  const vid = variantForTrip(trip.id);
+  const v = getDayVariant(day, vid);
+  const seg = v?.segments?.[segIdx];
+  if (!seg) return;
+  openSegmentEditor({
+    trip,
+    dayN,
+    segIdx,
+    variantId: vid,
+    segment: seg,
+    onSaved: async (t) => {
+      await persistTrip(t, { bump: true });
+      renderActiveTrip();
+      setStatus("\u2713 \u0421\u0435\u0433\u043C\u0435\u043D\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D");
+    }
+  });
 }
 async function onApplySegment(dayN, segIdx, mode) {
   if (_busy2) return;
@@ -21288,12 +21894,28 @@ async function onApplySegment(dayN, segIdx, mode) {
       variantId: v.id,
       segmentLabel: seg.label
     });
+    markSegmentApplied(trip.id, dayN, segIdx);
     setStatus(`\u2713 \u0414\u0435\u043D\u044C ${dayN}: ${seg.label}`);
+    renderActiveTrip();
     document.getElementById("setup")?.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) {
     setStatus("\u274C " + (e.message || e), true);
   } finally {
     _busy2 = false;
+  }
+}
+async function applyToday() {
+  const trip = S.activeTrip;
+  if (!trip) return;
+  const vid = variantForTrip(trip.id);
+  const target = resolveTodayTarget(trip, vid, getLastApplied(trip.id));
+  if (!target) {
+    setStatus("\u274C \u041D\u0435\u0442 \u0441\u0435\u0433\u043C\u0435\u043D\u0442\u0430 \u0434\u043B\u044F \u0441\u0435\u0433\u043E\u0434\u043D\u044F", true);
+    return;
+  }
+  await onApplySegment(target.dayN, target.segIdx, "osrm");
+  if (target.hint && target.hint !== "\u0441\u0435\u0433\u043E\u0434\u043D\u044F \u043F\u043E \u043A\u0430\u043B\u0435\u043D\u0434\u0430\u0440\u044E") {
+    setStatus(`\u2713 \u0414\u0435\u043D\u044C ${target.dayN} (${target.hint})`);
   }
 }
 function onYandexSegment(dayN, segIdx) {
@@ -21320,8 +21942,8 @@ async function loadDemo() {
   setStatus("\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0435\u043C\u043E\u2026");
   try {
     const trip = await loadDemoTrip();
-    trip.updatedAt = Date.now();
-    await saveTrip(trip);
+    attachBikeToTrip(trip);
+    await persistTrip(trip, { bump: false });
     S.activeTrip = trip;
     renderActiveTrip();
     await refreshTripList();
@@ -21336,8 +21958,12 @@ function showNewTripModal(on) {
   if (on) {
     setTripNewError("");
     const startEl = $2("trip-new-start");
+    const dateEl = $2("trip-new-start-date");
     if (startEl && !startEl.value.trim() && Number.isFinite(S.gps?.lat) && Number.isFinite(S.gps?.lon)) {
       startEl.value = `${S.gps.lat.toFixed(6)}, ${S.gps.lon.toFixed(6)}`;
+    }
+    if (dateEl && !dateEl.value) {
+      dateEl.value = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
     }
   }
 }
@@ -21347,6 +21973,7 @@ async function createTripFromForm() {
   const startRaw = $2("trip-new-start")?.value?.trim();
   const finishRaw = $2("trip-new-finish")?.value?.trim();
   const nightsRaw = $2("trip-new-nights")?.value?.trim();
+  const startDate = $2("trip-new-start-date")?.value?.trim() || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   if (!startRaw || !finishRaw) {
     setTripNewError("\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0441\u0442\u0430\u0440\u0442 \u0438 \u0444\u0438\u043D\u0438\u0448");
     return;
@@ -21375,16 +22002,17 @@ async function createTripFromForm() {
     start: start2,
     finish,
     nights,
-    startDate: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10)
+    startDate
   });
-  await saveTrip(trip);
+  attachBikeToTrip(trip);
+  await persistTrip(trip, { bump: true });
   S.activeTrip = trip;
   showNewTripModal(false);
   $2("drawer-trip")?.setAttribute("open", "");
   renderActiveTrip();
   await refreshTripList();
   replaceTripLocalUrl(trip.id, true);
-  setStatus("\u2713 \u041F\u043B\u0430\u043D \u0441\u043E\u0437\u0434\u0430\u043D \u2014 \xAB\u{1F517} \u0421\u0441\u044B\u043B\u043A\u0430\xBB \u0438\u043B\u0438 \xAB\u{1F4E4} JSON\xBB \u0434\u043B\u044F \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430");
+  setStatus("\u2713 \u041F\u043B\u0430\u043D \u0441\u043E\u0437\u0434\u0430\u043D \u2014 \xAB\u25B6 \u0421\u0435\u0433\u043E\u0434\u043D\u044F\xBB \u0438\u043B\u0438 \xAB\u{1F517} \u0421\u0441\u044B\u043B\u043A\u0430\xBB \u0434\u043B\u044F \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430");
 }
 function exportTripText() {
   const trip = S.activeTrip;
@@ -21398,8 +22026,36 @@ function exportTripText() {
   URL.revokeObjectURL(a.href);
 }
 function initTripPlannerUi() {
+  initSegmentEditor();
+  renderBikePanel();
+  $2("trip-bike-select")?.addEventListener("change", async (e) => {
+    const id = e.target.value;
+    setActiveBikeId(id);
+    if (id === "bike_custom") saveCustomFromForm();
+    renderBikePanel();
+    const trip = S.activeTrip;
+    if (trip) {
+      attachBikeToTrip(trip);
+      await persistTrip(trip, { bump: true });
+      renderActiveTrip();
+    }
+  });
+  for (const id of ["trip-bike-tank", "trip-bike-consumption", "trip-bike-reserve"]) {
+    $2(id)?.addEventListener("change", async () => {
+      if (getActiveBikeId() !== "bike_custom") return;
+      saveCustomFromForm();
+      renderBikePanel();
+      const trip = S.activeTrip;
+      if (trip) {
+        attachBikeToTrip(trip);
+        await persistTrip(trip, { bump: true });
+        renderActiveTrip();
+      }
+    });
+  }
   $2("btn-trip-demo")?.addEventListener("click", loadDemo);
   $2("btn-trip-new")?.addEventListener("click", () => showNewTripModal(true));
+  $2("btn-trip-today")?.addEventListener("click", () => applyToday().catch((e) => setStatus("\u274C " + (e.message || e), true)));
   $2("trip-new-cancel")?.addEventListener("click", () => showNewTripModal(false));
   $2("trip-new-save")?.addEventListener("click", () => createTripFromForm().catch((e) => setTripNewError(e.message || String(e))));
   $2("btn-trip-export")?.addEventListener("click", exportTripText);
@@ -21437,6 +22093,7 @@ function initTripPlannerUi() {
     const trip = S.activeTrip;
     if (!trip || !confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043F\u043B\u0430\u043D \xAB" + trip.title + "\xBB?")) return;
     await deleteTrip(trip.id);
+    clearTripProgress(trip.id);
     S.activeTrip = null;
     clearTripContext();
     renderActiveTrip();
@@ -21448,10 +22105,8 @@ function initTripPlannerUi() {
     btn.addEventListener("click", () => {
       const trip = S.activeTrip;
       if (!trip) return;
-      _variantMode[trip.id] = btn.getAttribute("data-mode") || "calm";
-      document.querySelectorAll("#trip-variant-bar .mode-btn").forEach((b) => {
-        b.classList.toggle("active", b === btn);
-      });
+      const mode = btn.getAttribute("data-mode") || "calm";
+      setVariantMode(trip.id, mode);
       renderActiveTrip();
     });
   });
@@ -21474,7 +22129,7 @@ function syncTripHudBadge() {
   el.textContent = label;
   el.classList.toggle("hidden", !on || !label);
 }
-var _variantMode, _busy2;
+var _busy2;
 var init_trip_ui = __esm({
   "js/trip-ui.js"() {
     init_state();
@@ -21484,7 +22139,10 @@ var init_trip_ui = __esm({
     init_trip_planner();
     init_geo();
     init_trip_share();
-    _variantMode = {};
+    init_trip_progress();
+    init_bike_profile();
+    init_trip_fuel();
+    init_trip_segment_editor();
     _busy2 = false;
   }
 });
