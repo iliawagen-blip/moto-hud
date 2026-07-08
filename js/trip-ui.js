@@ -35,6 +35,10 @@ import {
   findTripConflict, applyConflictChoice,
   initTripConflictModal, openTripConflictUi
 } from './trip-import-conflict.js';
+import { downloadTripMarkdown } from './trip-markdown.js';
+import { proposeRebuildRemaining, applyRebuildRemaining } from './trip-rebuild.js';
+import { formatTripHudExtraLine } from './trip-hud-context.js';
+import { syncTripRefuelHud } from './trip-refuel-hud.js';
 
 let _busy = false;
 
@@ -609,6 +613,52 @@ function exportTripText(){
   URL.revokeObjectURL(a.href);
 }
 
+function exportTripMd(){
+  const trip = S.activeTrip;
+  if(!trip) return;
+  downloadTripMarkdown(trip, variantForTrip(trip.id), getTripBikeProfile(trip));
+  setStatus('✓ Markdown скачан');
+}
+
+function showRebuildModal(){
+  const trip = S.activeTrip;
+  if(!trip) return;
+  const fromDayN = getTodayDayNumber(trip) || getLastApplied(trip.id)?.dayN || trip.days[0]?.n;
+  const pos = S.gps;
+  if(!pos?.lat){
+    setStatus('❌ Нужен GPS для пересборки', true);
+    return;
+  }
+  const start = { lat: pos.lat, lon: pos.lon, label: 'Сейчас' };
+  try{
+    const { previewLines } = proposeRebuildRemaining(trip, fromDayN, start, variantForTrip(trip.id));
+    const pre = $('trip-rebuild-preview');
+    if(pre) pre.innerHTML = '<ul>' + previewLines.map(l => '<li>' + escapeHtml(l) + '</li>').join('') + '</ul>';
+    $('trip-rebuild-modal')?.classList.add('on');
+    $('trip-rebuild-modal').dataset.fromDay = String(fromDayN);
+  }catch(e){
+    setStatus('❌ ' + (e.message || e), true);
+  }
+}
+
+async function confirmRebuild(){
+  const trip = S.activeTrip;
+  const modal = $('trip-rebuild-modal');
+  if(!trip || !modal) return;
+  const fromDayN = +modal.dataset.fromDay || 1;
+  const pos = S.gps;
+  if(!pos) return;
+  try{
+    applyRebuildRemaining(trip, fromDayN, { lat: pos.lat, lon: pos.lon, label: 'Сейчас' }, variantForTrip(trip.id));
+    await persistTrip(trip, { bump: true });
+    modal.classList.remove('on');
+    renderActiveTrip();
+    setStatus(`✓ Пересобраны дни с ${fromDayN}`);
+  }catch(e){
+    setStatus('❌ ' + (e.message || e), true);
+  }
+}
+
 export function initTripPlannerUi(){
   initSegmentEditor();
   initSegmentMapEditor();
@@ -648,6 +698,10 @@ export function initTripPlannerUi(){
   $('trip-new-cancel')?.addEventListener('click', () => showNewTripModal(false));
   $('trip-new-save')?.addEventListener('click', () => createTripFromForm().catch(e => setTripNewError(e.message || String(e))));
   $('btn-trip-export')?.addEventListener('click', exportTripText);
+  $('btn-trip-markdown')?.addEventListener('click', exportTripMd);
+  $('btn-trip-rebuild')?.addEventListener('click', showRebuildModal);
+  $('trip-rebuild-cancel')?.addEventListener('click', () => $('trip-rebuild-modal')?.classList.remove('on'));
+  $('trip-rebuild-ok')?.addEventListener('click', () => confirmRebuild().catch(e => setStatus('❌ ' + e.message, true)));
   $('btn-trip-json')?.addEventListener('click', () => {
     const trip = S.activeTrip;
     if(!trip) return;
@@ -713,11 +767,22 @@ export function getTripHudLabel(){
   return s;
 }
 
+export function getTripHudSubLabel(){
+  return formatTripHudExtraLine();
+}
+
 export function syncTripHudBadge(){
   const el = $('trip-hud-badge');
+  const sub = $('trip-hud-extra');
   if(!el) return;
   const on = $('hud')?.classList.contains('on');
   const label = getTripHudLabel();
+  const extra = getTripHudSubLabel();
   el.textContent = label;
   el.classList.toggle('hidden', !on || !label);
+  if(sub){
+    sub.textContent = extra;
+    sub.classList.toggle('hidden', !on || !extra);
+  }
+  syncTripRefuelHud();
 }

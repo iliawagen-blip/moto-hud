@@ -28,6 +28,7 @@ import { initViewMode } from './view-mode.js';
 import { initYandexExportUi } from './yandex-export.js';
 import { initTrackRecorderUi } from './track-recorder.js';
 import { initTripPlannerUi } from './trip-ui.js';
+import { initTripRefuelHud } from './trip-refuel-hud.js';
 import { initHudChrome } from './hud-chrome.js';
 import { initSettingsUi } from './settings-ui.js';
 import { initHudSettingsSheet } from './hud-settings-sheet.js';
@@ -70,6 +71,7 @@ initSettingsUi(reloadAllSettingsFromStorage, persistSettingsFromDom);
 initHudSettingsSheet(syncOptionsFromDom);
 initOptControls();
 initFuelReportUi();
+initTripRefuelHud();
 initThemeManager();
 initVintageVfd();
 initTelemetry().then(() => {
