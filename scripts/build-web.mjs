@@ -48,6 +48,17 @@ await esbuild.build({
   logLevel: 'info'
 });
 
+// IIFE для открытия index.html через file:// (ES modules в Chrome/Edge блокируются)
+await esbuild.build({
+  entryPoints: [path.join(ROOT, 'js', 'main.js')],
+  outfile: path.join(ROOT, 'js', 'app-iife.js'),
+  bundle: true,
+  format: 'iife',
+  platform: 'browser',
+  target: ['es2020'],
+  logLevel: 'info'
+});
+
 await esbuild.build({
   entryPoints: [path.join(ROOT, 'js', 'sim-main.js')],
   outfile: path.join(ROOT, 'js', 'sim.js'),
@@ -72,7 +83,8 @@ STATIC_FILES.forEach(f => {
 });
 STATIC_DIRS.forEach(d => {
   if(d === 'js'){
-    cpDir(path.join(ROOT, 'js'), path.join(WWW, 'js'), n => n === 'sim.js' || n === 'app.js' || n === 'app.js.map' || n === 'sim-replay.js');
+    cpDir(path.join(ROOT, 'js'), path.join(WWW, 'js'), n =>
+      n === 'sim.js' || n === 'app.js' || n === 'app-iife.js' || n === 'app.js.map' || n === 'sim-replay.js');
   } else {
     cpDir(path.join(ROOT, d), path.join(WWW, d));
   }

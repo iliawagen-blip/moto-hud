@@ -27,3 +27,13 @@ export function escapeHtml(s){
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
+
+/** ID без secure context (file:// не поддерживает crypto.randomUUID). */
+export function newId(){
+  try{
+    if(typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'){
+      return crypto.randomUUID();
+    }
+  }catch(e){}
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}

@@ -140,6 +140,8 @@ html,body{height:100%;overflow:hidden}
   width:100%;max-width:440px;color:#fff}
 .modal-card h3{font-size:18px;margin-bottom:6px;color:var(--accent)}
 .modal-card .sub{font-size:12px;color:var(--dim);margin-bottom:12px}
+.modal-card .status{margin-top:8px;font-size:13px}
+.modal-card .status.err{color:var(--warn)}
 .modal-card input{width:100%;min-height:56px;padding:12px;border-radius:12px;border:1px solid var(--border);
   background:var(--panel2);color:#fff;font-size:16px;font-weight:700;margin-bottom:10px}
 .emoji-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:12px}
@@ -472,6 +474,16 @@ body.legal-blocked #hud{display:none!important}
 .trip-hud-badge{text-align:center;font-size:13px;font-weight:800;color:var(--accent2);
   padding:4px 8px;background:rgba(77,171,247,.12);border-bottom:1px solid var(--border)}
 .trip-hud-badge.hidden{display:none}
+
+/* file:// — подсказка если JS не загрузился */
+.file-protocol-tip{display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:200;
+  background:#3d1f1f;border:1px solid #e10600;color:#ffe8e8;padding:12px 14px;border-radius:12px;
+  font-size:14px;line-height:1.45;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.file-protocol-tip.on{display:block}
+html[data-file-protocol="1"] .headrow::after{
+  content:"file:// — локальный режим";
+  display:block;width:100%;font-size:11px;color:var(--warn);margin-top:4px;font-weight:700
+}
 .tel-meta{font-size:12px;color:var(--dim)}
 .tel-dirty{color:var(--sem-warn);font-size:11px;font-weight:800}
 .tel-actions{display:flex;gap:6px;flex-shrink:0}
