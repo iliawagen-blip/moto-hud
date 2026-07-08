@@ -408,6 +408,13 @@ function escapeHtml(s2) {
     "'": "&#39;"
   })[c]);
 }
+function formatStreetLabel(name) {
+  if (name == null || name === "") return "\u2014";
+  let s2 = String(name).trim();
+  s2 = s2.replace(/\bул\.?\b/giu, " ").replace(/\bулица\b/giu, " ");
+  s2 = s2.replace(/\s{2,}/g, " ").replace(/^[\s,.·-]+|[\s,.·-]+$/g, "").trim();
+  return s2 || String(name).trim();
+}
 function newId() {
   try {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -1380,7 +1387,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1406,6 +1413,7 @@ var init_nav_constants = __esm({
     SNAP_WINDOW_BASE_M = 10;
     SNAP_WINDOW_ACC_MULT = 3;
     SNAP_WINDOW_DT_CAP_S = 2;
+    SNAP_STATIONARY_SPD_MPS = 0.6;
     SNAP_JUMP_PENALTY = 3;
     SNAP_ANGLE_PENALTY = 2;
     SNAP_COLD_START_SKIP_FIXES = 3;
@@ -2618,6 +2626,7 @@ function headingDot(tangentDeg, gpsHdg) {
 function computeSnapWindow(spd, dt, acc) {
   const v = Math.max(spd || 0, 0);
   const a = Math.max(acc || 8, 8);
+  if (v < SNAP_STATIONARY_SPD_MPS) return Math.max(8, a * 0.5);
   if (v < 1) return Math.max(25, SNAP_WINDOW_ACC_MULT * a);
   return v * Math.min(dt, SNAP_WINDOW_DT_CAP_S) + SNAP_WINDOW_ACC_MULT * a + SNAP_WINDOW_BASE_M;
 }
@@ -2750,7 +2759,10 @@ function snapToRoute(gps, geom, gpsHeadingDeg, meta) {
   if (prev && best.lateral < 40 && best.s < prev.s - SNAP_REVERSE_EPS) {
     best = { ...best, s: prev.s, segIdx: prev.segIdx, confidence: 0.4 };
   }
-  if (prev && best.lateral < 35) {
+  if (prev && spd < SNAP_STATIONARY_SPD_MPS && best.s > prev.s) {
+    best = { ...best, s: prev.s, segIdx: prev.segIdx };
+  }
+  if (prev && best.lateral < 35 && spd >= SNAP_STATIONARY_SPD_MPS) {
     const ds = best.s - prev.s;
     if (ds > 0 && ds < 30) best.s = prev.s + ds * 0.65;
   }
@@ -4528,8 +4540,8 @@ function fuelStatusHint() {
   if (S.fuelSource === "gdebenz" || S.fuelSource === "gdebenz+crowd") return "";
   if (S.fuelStations.some((st) => st.statusSource === "crowd" && st.status !== "unknown")) return "";
   const proxy = getFuelProxyBase();
-  if (proxy) return " \xB7 \u0413\u0434\u0435\u0411\u0415\u041D\u0417 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D (\u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 URL \u043F\u0440\u043E\u043A\u0441\u0438)";
-  return " \xB7 \u0413\u0434\u0435\u0411\u0415\u041D\u0417 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \xB7 \u043E\u0442\u043C\u0435\u0442\u044C\u0442\u0435 \u0432 HUD";
+  if (proxy) return " \xB7 \u0441\u0442\u0430\u0442\u0443\u0441 \u0410\u0417\u0421 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D (\u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 URL \u043F\u0440\u043E\u043A\u0441\u0438)";
+  return " \xB7 \u0441\u0442\u0430\u0442\u0443\u0441 \u0410\u0417\u0421 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \xB7 \u043E\u0442\u043C\u0435\u0442\u044C\u0442\u0435 \u0432 HUD";
 }
 function routeBBox(bufDeg) {
   const buf = bufDeg || 0.05;
@@ -4640,7 +4652,7 @@ async function fetchGdebenzNearby(lat, lon, radiusKm) {
       }
     }
   } catch (e) {
-    console.warn("\u0413\u0434\u0435\u0411\u0415\u041D\u0417 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e);
+    console.warn("\u0421\u0435\u0440\u0432\u0438\u0441 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u0410\u0417\u0421 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e);
   }
   if (data?.stations) writeGdebenzCache(lat, lon, data);
   return data;
@@ -6280,58 +6292,47 @@ function renderChopperArrow(turnDeg) {
   const rim = tok.line || col;
   return '<svg class="arrow-svg arrow-chopper" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet"><polygon points="' + bodyPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/><polygon points="' + headPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/></svg>';
 }
-function vfdSegmentBar(cx, cy, tdx, tdy, halfLen, thick, col) {
-  const len = Math.hypot(tdx, tdy) || 1;
-  const nx = -tdy / len, ny = tdx / len;
-  const x1 = (cx - nx * halfLen).toFixed(1);
-  const y1 = (cy - ny * halfLen).toFixed(1);
-  const x2 = (cx + nx * halfLen).toFixed(1);
-  const y2 = (cy + ny * halfLen).toFixed(1);
-  return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + col + '" stroke-width="' + thick + '" stroke-linecap="butt"/>';
+function vfdQuant(v, step = 2) {
+  return Math.round(v / step) * step;
 }
-function sampleStem(stem, step) {
-  const out = [];
-  for (let i = 0; i < stem.length - 1; i++) {
-    const a = stem[i], b = stem[i + 1];
-    const dx = b[0] - a[0], dy = b[1] - a[1];
-    const seg = Math.hypot(dx, dy);
-    if (seg < 0.01) continue;
-    const n = Math.max(1, Math.ceil(seg / step));
-    for (let s2 = 0; s2 < n; s2++) {
-      if (i > 0 && s2 === 0) continue;
-      const t = s2 / n;
-      out.push({ x: a[0] + dx * t, y: a[1] + dy * t, dx, dy });
+function offsetRibbonPoints(centerPts, halfW) {
+  const left = [], right = [];
+  for (let i = 0; i < centerPts.length; i++) {
+    const p = centerPts[i];
+    let dx, dy;
+    if (i < centerPts.length - 1) {
+      dx = centerPts[i + 1][0] - p[0];
+      dy = centerPts[i + 1][1] - p[1];
+    } else {
+      dx = p[0] - centerPts[i - 1][0];
+      dy = p[1] - centerPts[i - 1][1];
     }
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    left.push([vfdQuant(p[0] + nx * halfW), vfdQuant(p[1] + ny * halfW)]);
+    right.push([vfdQuant(p[0] - nx * halfW), vfdQuant(p[1] - ny * halfW)]);
   }
-  const last = stem[stem.length - 1];
-  const prev = out.length ? out[out.length - 1] : { dx: 0, dy: -1 };
-  out.push({ x: last[0], y: last[1], dx: prev.dx, dy: prev.dy });
-  return out;
+  return { left, right };
 }
 function renderVintageArrow(turnDeg) {
   const tok = getThemeTokens();
   const col = tok.accent;
-  const barHalf = 13;
-  const barThick = 6.5;
-  const barGap = 8;
+  const halfW = 6.5;
+  const H = 120;
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
   const hl = 22, hw = 17;
-  const { pts, dir, tip } = computeArrowCenterline(turnDeg, 120);
   const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
+  const wingA = [vfdQuant(back[0] + perp[0] * hw), vfdQuant(back[1] + perp[1] * hw)];
+  const wingB = [vfdQuant(back[0] - perp[0] * hw), vfdQuant(back[1] - perp[1] * hw)];
+  const tipQ = [vfdQuant(tip[0]), vfdQuant(tip[1])];
   const stem = pts.slice(0, pts.length - 1).concat([back]);
-  const samples = sampleStem(stem, barGap);
-  const parts = samples.map((p) => vfdSegmentBar(p.x, p.y, p.dx, p.dy, barHalf, barThick, col));
-  const headN = 7;
-  for (let i = 0; i < headN; i++) {
-    const t = i / (headN - 1);
-    const along = hl * (0.06 + t * 0.94);
-    const cx = tip[0] - dir[0] * along;
-    const cy = tip[1] - dir[1] * along;
-    const half = hw * (0.08 + t * 0.92);
-    parts.push(vfdSegmentBar(cx, cy, dir[0], dir[1], half, barThick, col));
-  }
-  const all = [...stem, tip, back];
-  const { vb } = arrowViewBox(all, barHalf + barThick + 2);
-  return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" filter="url(#vfd-glow-cyan)">' + parts.join("") + "</svg>";
+  const { left, right } = offsetRibbonPoints(stem, halfW);
+  const poly = left.concat([wingA, tipQ, wingB]).concat(right.slice().reverse());
+  const polyPts = poly.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const all = [...stem, tipQ, wingA, wingB];
+  const { vb } = arrowViewBox(all, halfW + 4);
+  return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" filter="url(#vfd-glow-cyan)"><polygon points="' + polyPts + '" fill="' + col + '" stroke="none"/></svg>';
 }
 function renderManeuverArrow(turnDeg) {
   const shape = getThemeTokens().arrowShape || "parametric";
@@ -6454,6 +6455,856 @@ function resetVintageVfd() {
 var init_vintage_vfd = __esm({
   "js/vintage-vfd.js"() {
     init_util();
+  }
+});
+
+// js/settings-telemetry.js
+function logSettingsEvent(type, data) {
+  const rec = { ts: Date.now(), type, ...data || {} };
+  try {
+    const arr = JSON.parse(localStorage.getItem(RING_KEY) || "[]");
+    arr.push(rec);
+    if (arr.length > RING_MAX) arr.splice(0, arr.length - RING_MAX);
+    localStorage.setItem(RING_KEY, JSON.stringify(arr));
+  } catch (e) {
+  }
+  try {
+    if (telemetry_default.isActive?.()) telemetry_default.log("settings", { subtype: type, ...data });
+  } catch (e) {
+  }
+}
+var RING_KEY, RING_MAX;
+var init_settings_telemetry = __esm({
+  "js/settings-telemetry.js"() {
+    init_telemetry();
+    RING_KEY = "moto-hud-settings-events";
+    RING_MAX = 200;
+  }
+});
+
+// js/settings-presets.js
+function setOptDom(id, value) {
+  const el = $2(id);
+  if (!el) return;
+  if (el.type === "checkbox") el.checked = !!value;
+  else el.value = String(value);
+}
+function applyPresetToDom(presetId) {
+  const p = PRESETS2[presetId];
+  if (!p) return false;
+  for (const [id, val] of Object.entries(p.values)) setOptDom(id, val);
+  return true;
+}
+function getPresetLabel(presetId) {
+  return PRESETS2[presetId]?.label || presetId;
+}
+function initSettingsPresets(onApplied) {
+  document.querySelectorAll("[data-preset]").forEach((btn) => {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-preset");
+      const p = PRESETS2[id];
+      if (!p) return;
+      if (!confirm("\u0417\u0430\u043C\u0435\u043D\u0438\u0442\u044C \u0442\u0435\u043A\u0443\u0449\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043F\u0440\u0435\u0441\u0435\u0442\u043E\u043C \xAB" + p.label + "\xBB?")) return;
+      applyPresetToDom(id);
+      try {
+        localStorage.setItem("moto-hud-preset-applied", id);
+      } catch (e) {
+      }
+      logSettingsEvent("preset_apply", { preset: id });
+      if (typeof onApplied === "function") onApplied(id);
+    });
+  });
+}
+var PRESETS2;
+var init_settings_presets = __esm({
+  "js/settings-presets.js"() {
+    init_util();
+    init_settings_telemetry();
+    PRESETS2 = {
+      city: {
+        label: "\u0413\u043E\u0440\u043E\u0434",
+        values: {
+          "opt-voice": true,
+          "opt-cams": true,
+          "opt-back-only": true,
+          "opt-path": false,
+          "opt-crossings": true,
+          "opt-elev-profile": false,
+          "opt-curve-warn": true,
+          "opt-curve-strict": "strict",
+          "opt-limit": 60,
+          "opt-cam-speed-tol": 10,
+          "opt-hud-status-mode": "tap",
+          "opt-hud-finish-mode": "tap"
+        }
+      },
+      highway: {
+        label: "\u0422\u0440\u0430\u0441\u0441\u0430",
+        values: {
+          "opt-voice": true,
+          "opt-cams": true,
+          "opt-back-only": true,
+          "opt-path": true,
+          "opt-crossings": true,
+          "opt-elev-profile": false,
+          "opt-curve-warn": true,
+          "opt-curve-strict": "normal",
+          "opt-limit": 90,
+          "opt-cam-speed-tol": 15,
+          "opt-hud-status-mode": "tap",
+          "opt-hud-finish-mode": "always"
+        }
+      },
+      tour: {
+        label: "\u0422\u0443\u0440",
+        values: {
+          "opt-voice": true,
+          "opt-cams": true,
+          "opt-back-only": false,
+          "opt-path": true,
+          "opt-crossings": true,
+          "opt-elev-profile": true,
+          "opt-curve-warn": true,
+          "opt-curve-strict": "relaxed",
+          "opt-limit": 90,
+          "opt-cam-speed-tol": 20,
+          "opt-hud-status-mode": "tap",
+          "opt-hud-finish-mode": "tap"
+        }
+      }
+    };
+  }
+});
+
+// js/sun-mode.js
+function sunTimes(lat, lon, date = /* @__PURE__ */ new Date()) {
+  const zenith = 90.833;
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
+  const lngHour = lon / 15;
+  function calc(isSunrise) {
+    const t = isSunrise ? dayOfYear + (6 - lngHour) / 24 : dayOfYear + (18 - lngHour) / 24;
+    const M = 0.9856 * t - 3.289;
+    let L5 = M + 1.916 * Math.sin(M * Math.PI / 180) + 0.02 * Math.sin(2 * M * Math.PI / 180) + 282.634;
+    L5 = (L5 % 360 + 360) % 360;
+    let RA = Math.atan(0.91764 * Math.tan(L5 * Math.PI / 180)) * 180 / Math.PI;
+    RA = (RA % 360 + 360) % 360;
+    const Lq = Math.floor(L5 / 90) * 90;
+    const Rq = Math.floor(RA / 90) * 90;
+    RA = (RA + (Lq - Rq)) / 15;
+    const sinDec = 0.39782 * Math.sin(L5 * Math.PI / 180);
+    const cosDec = Math.cos(Math.asin(sinDec));
+    const cosH = (Math.cos(zenith * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
+    if (cosH > 1 || cosH < -1) {
+      return isSunrise ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0) : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 18, 0, 0);
+    }
+    let H = Math.acos(cosH) * 180 / Math.PI / 15;
+    if (!isSunrise) H = 24 - H;
+    const T = H + RA - 0.06571 * t - 6.622;
+    let ut = T - lngHour;
+    ut = (ut % 24 + 24) % 24;
+    const h = Math.floor(ut);
+    const m = Math.floor((ut - h) * 60);
+    const s2 = Math.floor(((ut - h) * 60 - m) * 60);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, s2);
+  }
+  return { sunrise: calc(true), sunset: calc(false) };
+}
+function resolveDisplayMode(pref, pos, now = /* @__PURE__ */ new Date()) {
+  if (pref === "day") return "day";
+  if (pref === "night") return "night";
+  const lat = pos?.lat;
+  const lon = pos?.lon;
+  if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
+    const { sunrise, sunset } = sunTimes(lat, lon, now);
+    const dawn = sunrise.getTime() + HYST_MS;
+    const dusk = sunset.getTime() - HYST_MS;
+    const ts = now.getTime();
+    let target = ts >= dawn && ts < dusk ? "day" : "night";
+    if (target !== _lastResolved && ts - _lastSwitchTs < HYST_MS) {
+      return _lastResolved;
+    }
+    if (target !== _lastResolved) {
+      _lastResolved = target;
+      _lastSwitchTs = ts;
+    }
+    return target;
+  }
+  const h = now.getHours() + now.getMinutes() / 60;
+  return h >= 7 && h < 21 ? "day" : "night";
+}
+function resetModeHysteresis() {
+  _lastResolved = "night";
+  _lastSwitchTs = 0;
+}
+var HYST_MS, _lastResolved, _lastSwitchTs;
+var init_sun_mode = __esm({
+  "js/sun-mode.js"() {
+    HYST_MS = 20 * 60 * 1e3;
+    _lastResolved = "night";
+    _lastSwitchTs = 0;
+  }
+});
+
+// js/theme-manager.js
+function loadThemePrefs() {
+  try {
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
+    if (!raw) return { theme: "avionics", modePref: "night" };
+    const o = JSON.parse(raw);
+    return {
+      theme: THEME_IDS.includes(o.theme) ? o.theme : "avionics",
+      modePref: MODE_PREFS.includes(o.modePref) ? o.modePref : "night"
+    };
+  } catch (e) {
+    return { theme: "avionics", modePref: "night" };
+  }
+}
+function saveThemePrefs(prefs) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(prefs));
+  } catch (e) {
+  }
+}
+function applyTheme(theme, modePref, save = true) {
+  const html = document.documentElement;
+  THEME_IDS.forEach((id) => html.classList.remove("theme-" + id));
+  const tid = THEME_IDS.includes(theme) ? theme : "avionics";
+  html.classList.add("theme-" + tid);
+  const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
+  const mode = resolveDisplayMode(modePref, pos);
+  html.setAttribute("data-mode", mode);
+  if (save) saveThemePrefs({ theme: tid, modePref });
+  applyThemeCss();
+  syncThemeControls(tid, modePref);
+  updateModeButtonLabel(modePref, mode);
+  if ($3("hud")?.classList.contains("on")) renderVisualFrame();
+  syncVintageVfdDomClasses();
+}
+function $3(id) {
+  return document.getElementById(id);
+}
+function syncThemeControls(theme, modePref) {
+  const sel = $3("opt-theme");
+  if (sel) sel.value = theme;
+  const mDay = $3("opt-mode-day");
+  const mNight = $3("opt-mode-night");
+  const mAuto = $3("opt-mode-auto");
+  if (mDay) mDay.checked = modePref === "day";
+  if (mNight) mNight.checked = modePref === "night";
+  if (mAuto) mAuto.checked = modePref === "auto";
+}
+function updateModeButtonLabel(modePref, resolved) {
+  const btn = $3("btn-mode");
+  if (!btn) return;
+  const lbl = btn.querySelector(".cb-lbl");
+  if (!lbl) return;
+  if (modePref === "auto") {
+    lbl.textContent = resolved === "day" ? "\u0410\u0412\u0422\u041E\u2600" : "\u0410\u0412\u0422\u041E\u{1F319}";
+  } else if (modePref === "day") {
+    lbl.textContent = "\u0414\u0415\u041D\u042C";
+  } else {
+    lbl.textContent = "\u041D\u041E\u0427\u042C";
+  }
+}
+function tickAutoMode() {
+  const cur = loadThemePrefs();
+  if (cur.modePref !== "auto") return;
+  const now = Date.now();
+  if (now - _lastAutoCheck < 3e4) return;
+  _lastAutoCheck = now;
+  const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
+  const mode = resolveDisplayMode("auto", pos);
+  const html = document.documentElement;
+  if (html.getAttribute("data-mode") !== mode) {
+    html.setAttribute("data-mode", mode);
+    invalidateThemeTokens();
+    applyThemeCss();
+    updateModeButtonLabel("auto", mode);
+    if ($3("hud")?.classList.contains("on")) renderVisualFrame();
+  } else {
+    updateModeButtonLabel("auto", mode);
+  }
+}
+function themeLabel(id) {
+  return LABELS[id] || id;
+}
+function initThemeManager() {
+  const cur = loadThemePrefs();
+  applyTheme(cur.theme, cur.modePref, false);
+  $3("opt-theme")?.addEventListener("change", (e) => {
+    applyTheme(e.target.value, loadThemePrefs().modePref);
+  });
+  ["opt-mode-day", "opt-mode-night", "opt-mode-auto"].forEach((id) => {
+    $3(id)?.addEventListener("change", (e) => {
+      if (!e.target.checked) return;
+      const mode = id.replace("opt-mode-", "");
+      if (mode !== "auto") resetModeHysteresis();
+      applyTheme(loadThemePrefs().theme, mode);
+    });
+  });
+}
+var THEME_STORAGE_KEY, THEME_IDS, MODE_PREFS, LABELS, _lastAutoCheck;
+var init_theme_manager = __esm({
+  "js/theme-manager.js"() {
+    init_state();
+    init_theme();
+    init_sun_mode();
+    init_render();
+    init_vintage_vfd();
+    THEME_STORAGE_KEY = "moto-hud-theme";
+    THEME_IDS = ["avionics", "hitech", "space", "sport", "chopper", "vintage"];
+    MODE_PREFS = ["day", "night", "auto"];
+    LABELS = {
+      avionics: "\u0410\u0432\u0438\u043E\u043D\u0438\u043A\u0430",
+      hitech: "\u0425\u0430\u0439\u0442\u0435\u043A",
+      space: "\u041A\u043E\u0441\u043C\u043E\u0441",
+      sport: "\u0421\u043F\u043E\u0440\u0442",
+      chopper: "\u0427\u043E\u043F\u043F\u0435\u0440",
+      vintage: "\u0412\u0438\u043D\u0442\u0430\u0436"
+    };
+    _lastAutoCheck = 0;
+  }
+});
+
+// js/settings-export.js
+function collectSettingsBundle() {
+  const read = (key) => {
+    try {
+      return JSON.parse(localStorage.getItem(key) || "null");
+    } catch (e) {
+      return null;
+    }
+  };
+  return {
+    kind: SETTINGS_BUNDLE_KIND,
+    version: SETTINGS_BUNDLE_VERSION,
+    exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    appOpts: read(APP_OPTS_KEY),
+    hudOpts: read(HUD_OPTS_KEY),
+    elevOpts: read(ELEV_OPTS_KEY),
+    curveOpts: read(CURVE_OPTS_KEY),
+    theme: read(THEME_STORAGE_KEY),
+    fuelProxy: localStorage.getItem(FUEL_PROXY_LS_KEY) || ""
+  };
+}
+function applySettingsBundle(data) {
+  if (!data || data.kind !== SETTINGS_BUNDLE_KIND) throw new Error("\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u0430\u0439\u043B \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A");
+  const write = (key, val) => {
+    if (val == null) return;
+    localStorage.setItem(key, JSON.stringify(val));
+  };
+  write(APP_OPTS_KEY, data.appOpts);
+  write(HUD_OPTS_KEY, data.hudOpts);
+  write(ELEV_OPTS_KEY, data.elevOpts);
+  write(CURVE_OPTS_KEY, data.curveOpts);
+  write(THEME_STORAGE_KEY, data.theme);
+  if (data.fuelProxy != null && data.fuelProxy !== "") {
+    localStorage.setItem(FUEL_PROXY_LS_KEY, String(data.fuelProxy));
+  } else {
+    localStorage.removeItem(FUEL_PROXY_LS_KEY);
+  }
+}
+function clearAllSettings() {
+  [APP_OPTS_KEY, HUD_OPTS_KEY, ELEV_OPTS_KEY, CURVE_OPTS_KEY, THEME_STORAGE_KEY, FUEL_PROXY_LS_KEY].forEach((k) => {
+    try {
+      localStorage.removeItem(k);
+    } catch (e) {
+    }
+  });
+}
+function downloadSettingsJson() {
+  const blob = new Blob(
+    [JSON.stringify(collectSettingsBundle(), null, 2)],
+    { type: "application/json;charset=utf-8" }
+  );
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "moto-hud-settings.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+var SETTINGS_BUNDLE_KIND, SETTINGS_BUNDLE_VERSION;
+var init_settings_export = __esm({
+  "js/settings-export.js"() {
+    init_state();
+    init_theme_manager();
+    init_fuel_config();
+    SETTINGS_BUNDLE_KIND = "moto-hud-settings";
+    SETTINGS_BUNDLE_VERSION = 1;
+  }
+});
+
+// js/settings-ui.js
+function openSettingsPanel() {
+  const setup = $2("setup");
+  const drawer = $2("drawer-opts");
+  if (!setup || !drawer) return;
+  setup.style.display = "block";
+  setup.style.zIndex = "40";
+  drawer.open = true;
+  requestAnimationFrame(() => {
+    drawer.scrollIntoView({ behavior: "smooth", block: "start" });
+    const core = drawer.querySelector('[data-section="core"]');
+    if (core) core.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  logSettingsEvent("panel_open", { from: $2("hud")?.classList.contains("on") ? "hud" : "setup" });
+}
+function readSectionState() {
+  try {
+    const raw = localStorage.getItem(SECTIONS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+function saveSectionOpen(id, open) {
+  const o = readSectionState();
+  o[id] = !!open;
+  try {
+    localStorage.setItem(SECTIONS_KEY, JSON.stringify(o));
+  } catch (e) {
+  }
+}
+function applySectionState() {
+  const state = readSectionState();
+  document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
+    const id = det.getAttribute("data-section");
+    if (id && state[id] != null) det.open = !!state[id];
+  });
+}
+function bindSectionPersistence() {
+  document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
+    det.addEventListener("toggle", () => {
+      const id = det.getAttribute("data-section");
+      if (!id) return;
+      saveSectionOpen(id, det.open);
+      if (det.open) logSettingsEvent("section_open", { section: id });
+    });
+  });
+  const main = $2("drawer-opts");
+  main?.addEventListener("toggle", () => {
+    if (main.open) logSettingsEvent("drawer_open", {});
+  });
+}
+function updateDevSectionVisible() {
+  let on = false;
+  try {
+    on = localStorage.getItem(DEV_KEY) === "1";
+  } catch (e) {
+  }
+  if (new URLSearchParams(location.search).get("dev") === "1") on = true;
+  document.documentElement.classList.toggle("dev-mode", on);
+  const dev = $2("opts-dev-section");
+  if (dev) dev.classList.toggle("hidden", !on);
+}
+function bindDevModeEasterEgg() {
+  let taps = 0;
+  let lastTap = 0;
+  const el = $2(DEV_TAP_TARGET);
+  if (!el) return;
+  el.addEventListener("click", () => {
+    const now = Date.now();
+    if (now - lastTap > 2500) taps = 0;
+    lastTap = now;
+    taps++;
+    if (taps >= DEV_TAPS_NEEDED) {
+      taps = 0;
+      try {
+        localStorage.setItem(DEV_KEY, "1");
+      } catch (e) {
+      }
+      updateDevSectionVisible();
+      logSettingsEvent("dev_mode_on", {});
+    }
+  });
+}
+function bindOptChangeLogging() {
+  const root = $2("drawer-opts");
+  if (!root) return;
+  root.querySelectorAll("input, select").forEach((el) => {
+    if (!el.id || !el.id.startsWith("opt-")) return;
+    const ev = el.type === "checkbox" || el.type === "radio" ? "change" : "change";
+    el.addEventListener(ev, () => {
+      const val = el.type === "checkbox" ? el.checked : el.value;
+      logSettingsEvent("opt_change", { optId: el.id, value: val });
+    });
+  });
+}
+function initSettingsUi(reloadAllOpts, persistFromDom2) {
+  applySectionState();
+  bindSectionPersistence();
+  bindDevModeEasterEgg();
+  updateDevSectionVisible();
+  bindOptChangeLogging();
+  bindSettingsDataActions(reloadAllOpts);
+  initSettingsPresets(() => {
+    if (typeof persistFromDom2 === "function") persistFromDom2();
+  });
+}
+function bindSettingsDataActions(reloadAllOpts) {
+  $2("btn-settings-export")?.addEventListener("click", () => {
+    downloadSettingsJson();
+    logSettingsEvent("settings_export", {});
+  });
+  $2("btn-settings-import")?.addEventListener("click", () => $2("settings-import-file")?.click());
+  $2("settings-import-file")?.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const text = await file.text();
+      applySettingsBundle(JSON.parse(text));
+      if (typeof reloadAllOpts === "function") reloadAllOpts();
+      logSettingsEvent("settings_import", {});
+      alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u044B");
+    } catch (err) {
+      alert("\u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043C\u043F\u043E\u0440\u0442\u0430: " + (err.message || err));
+    }
+  });
+  $2("btn-settings-reset")?.addEventListener("click", () => {
+    if (!confirm("\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u0441\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A \u0437\u0430\u0432\u043E\u0434\u0441\u043A\u0438\u043C?")) return;
+    clearAllSettings();
+    if (typeof reloadAllOpts === "function") reloadAllOpts();
+    logSettingsEvent("settings_reset", {});
+    alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B. \u041F\u0440\u0438 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E\u0441\u0442\u0438 \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443.");
+  });
+}
+var SECTIONS_KEY, DEV_KEY, DEV_TAP_TARGET, DEV_TAPS_NEEDED;
+var init_settings_ui = __esm({
+  "js/settings-ui.js"() {
+    init_util();
+    init_settings_telemetry();
+    init_settings_presets();
+    init_settings_export();
+    SECTIONS_KEY = "moto-hud-opts-sections";
+    DEV_KEY = "moto-hud-dev-mode";
+    DEV_TAP_TARGET = "help-app-version";
+    DEV_TAPS_NEEDED = 7;
+  }
+});
+
+// js/app-opts.js
+function loadAppOptsFromStorage() {
+  try {
+    const raw = localStorage.getItem(APP_OPTS_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    const setCheck = (id, v) => {
+      if (typeof v !== "boolean") return;
+      const el = $2(id);
+      if (el) el.checked = v;
+    };
+    const setVal = (id, v) => {
+      if (v == null) return;
+      const el = $2(id);
+      if (el) el.value = String(v);
+    };
+    setCheck("opt-voice", o.voice);
+    setCheck("opt-path", o.showPath);
+    setCheck("opt-crossings", o.showCrossingContext);
+    setCheck("opt-path-chevrons", o.showPathChevrons !== false);
+    setCheck("opt-chevron-labels", o.pathChevronLabels !== false);
+    setVal("opt-chevron-max", o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
+    setCheck("opt-heading", o.showCompass);
+    setCheck("opt-cams", o.cams);
+    setCheck("opt-back-only", o.backOnly);
+    setVal("opt-tol", o.tolerance);
+    setVal("opt-nodir", o.noDirPolicy);
+    setVal("opt-limit", o.limit);
+    setVal("opt-cam-speed-tol", o.camSpeedTol != null ? o.camSpeedTol : DEFAULT_CAM_SPEED_TOL);
+  } catch (e) {
+  }
+}
+function saveAppOptsToStorage() {
+  try {
+    localStorage.setItem(APP_OPTS_KEY, JSON.stringify({
+      voice: !!S.voice,
+      showPath: !!S.showPath,
+      showCrossingContext: S.showCrossingContext !== false,
+      showPathChevrons: S.showPathChevrons !== false,
+      pathChevronLabels: S.pathChevronLabels !== false,
+      pathChevronMax: S.pathChevronMax,
+      showCompass: !!S.showCompass,
+      cams: !!S.cams,
+      backOnly: !!S.backOnly,
+      tolerance: S.tolerance,
+      noDirPolicy: S.noDirPolicy,
+      limit: S.limit,
+      camSpeedTol: S.camSpeedTol
+    }));
+  } catch (e) {
+  }
+}
+var init_app_opts = __esm({
+  "js/app-opts.js"() {
+    init_state();
+    init_util();
+  }
+});
+
+// js/hud-chrome.js
+function normalizeChromeMode(v) {
+  return v === "always" || v === "off" ? v : "tap";
+}
+function chromeShown(mode) {
+  const m = normalizeChromeMode(mode);
+  if (m === "off") return false;
+  if (m === "always") return true;
+  return $2("hud")?.classList.contains("chrome-reveal");
+}
+function revealHudChrome() {
+  const hud = $2("hud");
+  if (!hud?.classList.contains("on")) return;
+  hud.classList.add("chrome-reveal");
+  applyHudChrome();
+  clearTimeout(_revealTimer);
+  _revealTimer = setTimeout(() => {
+    hud.classList.remove("chrome-reveal");
+    applyHudChrome();
+  }, HUD_CHROME_TAP_MS);
+}
+function onHudTap() {
+  revealHudChrome();
+}
+function clearHudChromeReveal() {
+  clearTimeout(_revealTimer);
+  _revealTimer = null;
+  $2("hud")?.classList.remove("chrome-reveal");
+  applyHudChrome();
+}
+function applyHudChrome() {
+  const hud = $2("hud");
+  if (!hud) return;
+  const reveal = hud.classList.contains("chrome-reveal");
+  const statusOn = chromeShown(S.hudStatusMode);
+  const finishFields = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
+  const finishOn = finishFields && chromeShown(S.hudFinishMode);
+  hud.classList.toggle("chrome-btns-on", reveal);
+  hud.classList.toggle("chrome-status-on", statusOn);
+  hud.classList.toggle("chrome-finish-on", finishOn);
+  const panel = $2("finish-info");
+  if (panel) {
+    panel.classList.toggle("hidden", !finishOn);
+    $2("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
+    $2("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
+    $2("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
+  }
+}
+function initHudChrome() {
+  if (_bound) return;
+  _bound = true;
+  applyHudChrome();
+}
+var HUD_CHROME_TAP_MS, _revealTimer, _bound;
+var init_hud_chrome = __esm({
+  "js/hud-chrome.js"() {
+    init_state();
+    init_util();
+    HUD_CHROME_TAP_MS = 15e3;
+    _revealTimer = null;
+    _bound = false;
+  }
+});
+
+// js/hud-opts.js
+function loadHudOptsFromStorage() {
+  try {
+    const raw = localStorage.getItem(HUD_OPTS_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    if (typeof o.showFinishDist === "boolean") {
+      const el = $("opt-finish-dist");
+      if (el) el.checked = o.showFinishDist;
+    }
+    if (typeof o.showFinishTime === "boolean") {
+      const el = $("opt-finish-time");
+      if (el) el.checked = o.showFinishTime;
+    }
+    if (typeof o.showFinishEta === "boolean") {
+      const el = $("opt-finish-eta");
+      if (el) el.checked = o.showFinishEta;
+    }
+    if (typeof o.fuelPlannerCount === "number") {
+      S.fuelPlannerCount = clampFuelPlannerCount(o.fuelPlannerCount);
+      const el = $("opt-fuel-count");
+      if (el) el.value = String(S.fuelPlannerCount);
+    }
+    if (o.hudStatusMode) {
+      S.hudStatusMode = normalizeChromeMode(o.hudStatusMode);
+      const el = $("opt-hud-status-mode");
+      if (el) el.value = S.hudStatusMode;
+    }
+    if (o.hudFinishMode) {
+      S.hudFinishMode = normalizeChromeMode(o.hudFinishMode);
+      const el = $("opt-hud-finish-mode");
+      if (el) el.value = S.hudFinishMode;
+    }
+  } catch (e) {
+  }
+}
+function clampFuelPlannerCount(n) {
+  return Math.max(MIN_FUEL_PLANNER_COUNT, Math.min(
+    MAX_FUEL_PLANNER_COUNT,
+    parseInt(n, 10) || DEFAULT_FUEL_PLANNER_COUNT
+  ));
+}
+function saveHudOptsToStorage() {
+  try {
+    localStorage.setItem(HUD_OPTS_KEY, JSON.stringify({
+      showFinishDist: !!S.showFinishDist,
+      showFinishTime: !!S.showFinishTime,
+      showFinishEta: !!S.showFinishEta,
+      hudStatusMode: normalizeChromeMode(S.hudStatusMode),
+      hudFinishMode: normalizeChromeMode(S.hudFinishMode),
+      fuelPlannerCount: clampFuelPlannerCount(S.fuelPlannerCount)
+    }));
+  } catch (e) {
+  }
+}
+var init_hud_opts = __esm({
+  "js/hud-opts.js"() {
+    init_state();
+    init_hud_chrome();
+  }
+});
+
+// js/hud-settings-sheet.js
+function isStationary() {
+  return (S.dispSpeed || 0) <= STATIONARY_KMH;
+}
+function showHudToast(msg) {
+  let el = $2("hud-settings-toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "hud-settings-toast";
+    el.className = "hud-settings-toast";
+    $2("hud")?.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add("on");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove("on"), 2800);
+}
+function closeSheet() {
+  const sheet = $2("hud-settings-sheet");
+  sheet?.classList.remove("on");
+  if (sheet) sheet.setAttribute("aria-hidden", "true");
+}
+function closeHudSettingsSheet() {
+  closeSheet();
+}
+function syncSheetFromDom() {
+  const voice = $2("hud-opt-voice");
+  const cams = $2("hud-opt-cams");
+  if (voice) voice.checked = !!$2("opt-voice")?.checked;
+  if (cams) cams.checked = !!$2("opt-cams")?.checked;
+  const cur = loadThemePrefs();
+  document.querySelectorAll(".hud-theme-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.theme === cur.theme);
+  });
+}
+function persistFromDom(syncOptionsFromDom2) {
+  if (typeof syncOptionsFromDom2 === "function") syncOptionsFromDom2();
+  saveAppOptsToStorage();
+  saveHudOptsToStorage();
+  saveElevOptsToStorage();
+  saveCurveOptsToStorage();
+  applyHudChrome();
+}
+function openSheet() {
+  const sheet = $2("hud-settings-sheet");
+  if (!sheet) return;
+  syncSheetFromDom();
+  sheet.classList.add("on");
+  sheet.setAttribute("aria-hidden", "false");
+  logSettingsEvent("hud_sheet_open", {});
+}
+function handleHudGearClick(syncOptionsFromDom2) {
+  if (!isStationary()) {
+    showHudToast("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u2014 \u043D\u0430 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0435");
+    logSettingsEvent("hud_sheet_blocked", { speed: Math.round(S.dispSpeed || 0) });
+    return;
+  }
+  openSheet();
+  $2("hud-settings-sheet")._sync = syncOptionsFromDom2;
+}
+function bindHudThemeRow() {
+  const row = $2("hud-theme-row");
+  if (!row || row.dataset.bound) return;
+  row.dataset.bound = "1";
+  const cur = loadThemePrefs();
+  row.innerHTML = THEME_IDS.map(
+    (id) => '<button type="button" class="secondary hud-theme-btn' + (id === cur.theme ? " active" : "") + '" data-theme="' + id + '">' + themeLabel(id) + "</button>"
+  ).join("");
+  row.querySelectorAll(".hud-theme-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const theme = btn.getAttribute("data-theme");
+      if (!THEME_IDS.includes(theme)) return;
+      applyTheme(theme, loadThemePrefs().modePref);
+      row.querySelectorAll(".hud-theme-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      logSettingsEvent("hud_sheet_change", { optId: "opt-theme", value: theme });
+    });
+  });
+}
+function initHudSettingsSheet(syncOptionsFromDom2) {
+  const sheet = $2("hud-settings-sheet");
+  if (!sheet || sheet.dataset.bound) return;
+  sheet.dataset.bound = "1";
+  sheet.setAttribute("aria-hidden", "true");
+  bindHudThemeRow();
+  $2("hud-settings-backdrop")?.addEventListener("click", closeSheet);
+  $2("hud-settings-close")?.addEventListener("click", closeSheet);
+  $2("hud-opt-voice")?.addEventListener("change", (e) => {
+    const main = $2("opt-voice");
+    if (main) main.checked = e.target.checked;
+    S.voice = e.target.checked;
+    saveAppOptsToStorage();
+    logSettingsEvent("hud_sheet_change", { optId: "opt-voice", value: S.voice });
+  });
+  $2("hud-opt-cams")?.addEventListener("change", (e) => {
+    const main = $2("opt-cams");
+    if (main) main.checked = e.target.checked;
+    S.cams = e.target.checked;
+    saveAppOptsToStorage();
+    logSettingsEvent("hud_sheet_change", { optId: "opt-cams", value: S.cams });
+  });
+  sheet.querySelectorAll(".hud-preset-btn[data-preset]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-preset");
+      if (!confirm("\u041F\u0440\u0435\u0441\u0435\u0442 \xAB" + getPresetLabel(id) + "\xBB?")) return;
+      applyPresetToDom(id);
+      persistFromDom(syncOptionsFromDom2);
+      syncSheetFromDom();
+      logSettingsEvent("hud_sheet_preset", { preset: id });
+    });
+  });
+  $2("hud-settings-full")?.addEventListener("click", () => {
+    closeSheet();
+    openSettingsPanel();
+  });
+}
+var STATIONARY_KMH, _toastTimer;
+var init_hud_settings_sheet = __esm({
+  "js/hud-settings-sheet.js"() {
+    init_state();
+    init_util();
+    init_settings_ui();
+    init_settings_presets();
+    init_app_opts();
+    init_hud_opts();
+    init_elevation();
+    init_curve_speed();
+    init_hud_chrome();
+    init_settings_telemetry();
+    init_theme_manager();
+    STATIONARY_KMH = 15;
+    _toastTimer = null;
   }
 });
 
@@ -6671,206 +7522,6 @@ var init_yandex_import = __esm({
     DB_VER2 = 1;
     _pendingWaypoints = null;
     _pendingUrl = "";
-  }
-});
-
-// js/hud-chrome.js
-function normalizeChromeMode(v) {
-  return v === "always" || v === "off" ? v : "tap";
-}
-function hudOn() {
-  return $2("hud")?.classList.contains("on");
-}
-function chromeShown(mode) {
-  const m = normalizeChromeMode(mode);
-  if (m === "off") return false;
-  if (m === "always") return true;
-  return $2("hud")?.classList.contains("chrome-reveal");
-}
-function isChromeExcluded(el) {
-  if (!el || !(el instanceof Element)) return true;
-  return !!el.closest(
-    ".corner-btn, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #nav-map-pane"
-  );
-}
-function revealHudChrome() {
-  const hud = $2("hud");
-  if (!hud?.classList.contains("on")) return;
-  hud.classList.add("chrome-reveal");
-  applyHudChrome();
-  clearTimeout(_revealTimer);
-  _revealTimer = setTimeout(() => {
-    hud.classList.remove("chrome-reveal");
-    applyHudChrome();
-  }, HUD_CHROME_TAP_MS);
-}
-function onHudTap() {
-  revealHudChrome();
-}
-function clearHudChromeReveal() {
-  clearTimeout(_revealTimer);
-  _revealTimer = null;
-  $2("hud")?.classList.remove("chrome-reveal");
-  applyHudChrome();
-}
-function applyHudChrome() {
-  const hud = $2("hud");
-  if (!hud) return;
-  const reveal = hud.classList.contains("chrome-reveal");
-  const statusOn = chromeShown(S.hudStatusMode);
-  const finishFields = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
-  const finishOn = finishFields && chromeShown(S.hudFinishMode);
-  hud.classList.toggle("chrome-btns-on", reveal);
-  hud.classList.toggle("chrome-status-on", statusOn);
-  hud.classList.toggle("chrome-finish-on", finishOn);
-  const panel = $2("finish-info");
-  if (panel) {
-    panel.classList.toggle("hidden", !finishOn);
-    $2("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
-    $2("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
-    $2("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
-  }
-}
-function initHudChrome() {
-  if (_bound) return;
-  const hud = $2("hud");
-  if (!hud) return;
-  hud.addEventListener("click", (e) => {
-    if (!hudOn() || isChromeExcluded(e.target)) return;
-    onHudTap();
-  });
-  _bound = true;
-  applyHudChrome();
-}
-var HUD_CHROME_TAP_MS, _revealTimer, _bound;
-var init_hud_chrome = __esm({
-  "js/hud-chrome.js"() {
-    init_state();
-    init_util();
-    HUD_CHROME_TAP_MS = 15e3;
-    _revealTimer = null;
-    _bound = false;
-  }
-});
-
-// js/hud-opts.js
-function loadHudOptsFromStorage() {
-  try {
-    const raw = localStorage.getItem(HUD_OPTS_KEY);
-    if (!raw) return;
-    const o = JSON.parse(raw);
-    if (typeof o.showFinishDist === "boolean") {
-      const el = $("opt-finish-dist");
-      if (el) el.checked = o.showFinishDist;
-    }
-    if (typeof o.showFinishTime === "boolean") {
-      const el = $("opt-finish-time");
-      if (el) el.checked = o.showFinishTime;
-    }
-    if (typeof o.showFinishEta === "boolean") {
-      const el = $("opt-finish-eta");
-      if (el) el.checked = o.showFinishEta;
-    }
-    if (typeof o.fuelPlannerCount === "number") {
-      S.fuelPlannerCount = clampFuelPlannerCount(o.fuelPlannerCount);
-      const el = $("opt-fuel-count");
-      if (el) el.value = String(S.fuelPlannerCount);
-    }
-    if (o.hudStatusMode) {
-      S.hudStatusMode = normalizeChromeMode(o.hudStatusMode);
-      const el = $("opt-hud-status-mode");
-      if (el) el.value = S.hudStatusMode;
-    }
-    if (o.hudFinishMode) {
-      S.hudFinishMode = normalizeChromeMode(o.hudFinishMode);
-      const el = $("opt-hud-finish-mode");
-      if (el) el.value = S.hudFinishMode;
-    }
-  } catch (e) {
-  }
-}
-function clampFuelPlannerCount(n) {
-  return Math.max(MIN_FUEL_PLANNER_COUNT, Math.min(
-    MAX_FUEL_PLANNER_COUNT,
-    parseInt(n, 10) || DEFAULT_FUEL_PLANNER_COUNT
-  ));
-}
-function saveHudOptsToStorage() {
-  try {
-    localStorage.setItem(HUD_OPTS_KEY, JSON.stringify({
-      showFinishDist: !!S.showFinishDist,
-      showFinishTime: !!S.showFinishTime,
-      showFinishEta: !!S.showFinishEta,
-      hudStatusMode: normalizeChromeMode(S.hudStatusMode),
-      hudFinishMode: normalizeChromeMode(S.hudFinishMode),
-      fuelPlannerCount: clampFuelPlannerCount(S.fuelPlannerCount)
-    }));
-  } catch (e) {
-  }
-}
-var init_hud_opts = __esm({
-  "js/hud-opts.js"() {
-    init_state();
-    init_hud_chrome();
-  }
-});
-
-// js/app-opts.js
-function loadAppOptsFromStorage() {
-  try {
-    const raw = localStorage.getItem(APP_OPTS_KEY);
-    if (!raw) return;
-    const o = JSON.parse(raw);
-    const setCheck = (id, v) => {
-      if (typeof v !== "boolean") return;
-      const el = $2(id);
-      if (el) el.checked = v;
-    };
-    const setVal = (id, v) => {
-      if (v == null) return;
-      const el = $2(id);
-      if (el) el.value = String(v);
-    };
-    setCheck("opt-voice", o.voice);
-    setCheck("opt-path", o.showPath);
-    setCheck("opt-crossings", o.showCrossingContext);
-    setCheck("opt-path-chevrons", o.showPathChevrons !== false);
-    setCheck("opt-chevron-labels", o.pathChevronLabels !== false);
-    setVal("opt-chevron-max", o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
-    setCheck("opt-heading", o.showCompass);
-    setCheck("opt-cams", o.cams);
-    setCheck("opt-back-only", o.backOnly);
-    setVal("opt-tol", o.tolerance);
-    setVal("opt-nodir", o.noDirPolicy);
-    setVal("opt-limit", o.limit);
-    setVal("opt-cam-speed-tol", o.camSpeedTol != null ? o.camSpeedTol : DEFAULT_CAM_SPEED_TOL);
-  } catch (e) {
-  }
-}
-function saveAppOptsToStorage() {
-  try {
-    localStorage.setItem(APP_OPTS_KEY, JSON.stringify({
-      voice: !!S.voice,
-      showPath: !!S.showPath,
-      showCrossingContext: S.showCrossingContext !== false,
-      showPathChevrons: S.showPathChevrons !== false,
-      pathChevronLabels: S.pathChevronLabels !== false,
-      pathChevronMax: S.pathChevronMax,
-      showCompass: !!S.showCompass,
-      cams: !!S.cams,
-      backOnly: !!S.backOnly,
-      tolerance: S.tolerance,
-      noDirPolicy: S.noDirPolicy,
-      limit: S.limit,
-      camSpeedTol: S.camSpeedTol
-    }));
-  } catch (e) {
-  }
-}
-var init_app_opts = __esm({
-  "js/app-opts.js"() {
-    init_state();
-    init_util();
   }
 });
 
@@ -16745,664 +17396,6 @@ var init_route_map = __esm({
   }
 });
 
-// js/settings-telemetry.js
-function logSettingsEvent(type, data) {
-  const rec = { ts: Date.now(), type, ...data || {} };
-  try {
-    const arr = JSON.parse(localStorage.getItem(RING_KEY) || "[]");
-    arr.push(rec);
-    if (arr.length > RING_MAX) arr.splice(0, arr.length - RING_MAX);
-    localStorage.setItem(RING_KEY, JSON.stringify(arr));
-  } catch (e) {
-  }
-  try {
-    if (telemetry_default.isActive?.()) telemetry_default.log("settings", { subtype: type, ...data });
-  } catch (e) {
-  }
-}
-var RING_KEY, RING_MAX;
-var init_settings_telemetry = __esm({
-  "js/settings-telemetry.js"() {
-    init_telemetry();
-    RING_KEY = "moto-hud-settings-events";
-    RING_MAX = 200;
-  }
-});
-
-// js/settings-presets.js
-function setOptDom(id, value) {
-  const el = $2(id);
-  if (!el) return;
-  if (el.type === "checkbox") el.checked = !!value;
-  else el.value = String(value);
-}
-function applyPresetToDom(presetId) {
-  const p = PRESETS2[presetId];
-  if (!p) return false;
-  for (const [id, val] of Object.entries(p.values)) setOptDom(id, val);
-  return true;
-}
-function getPresetLabel(presetId) {
-  return PRESETS2[presetId]?.label || presetId;
-}
-function initSettingsPresets(onApplied) {
-  document.querySelectorAll("[data-preset]").forEach((btn) => {
-    if (btn.dataset.bound) return;
-    btn.dataset.bound = "1";
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-preset");
-      const p = PRESETS2[id];
-      if (!p) return;
-      if (!confirm("\u0417\u0430\u043C\u0435\u043D\u0438\u0442\u044C \u0442\u0435\u043A\u0443\u0449\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043F\u0440\u0435\u0441\u0435\u0442\u043E\u043C \xAB" + p.label + "\xBB?")) return;
-      applyPresetToDom(id);
-      try {
-        localStorage.setItem("moto-hud-preset-applied", id);
-      } catch (e) {
-      }
-      logSettingsEvent("preset_apply", { preset: id });
-      if (typeof onApplied === "function") onApplied(id);
-    });
-  });
-}
-var PRESETS2;
-var init_settings_presets = __esm({
-  "js/settings-presets.js"() {
-    init_util();
-    init_settings_telemetry();
-    PRESETS2 = {
-      city: {
-        label: "\u0413\u043E\u0440\u043E\u0434",
-        values: {
-          "opt-voice": true,
-          "opt-cams": true,
-          "opt-back-only": true,
-          "opt-path": false,
-          "opt-crossings": true,
-          "opt-elev-profile": false,
-          "opt-curve-warn": true,
-          "opt-curve-strict": "strict",
-          "opt-limit": 60,
-          "opt-cam-speed-tol": 10,
-          "opt-hud-status-mode": "tap",
-          "opt-hud-finish-mode": "tap"
-        }
-      },
-      highway: {
-        label: "\u0422\u0440\u0430\u0441\u0441\u0430",
-        values: {
-          "opt-voice": true,
-          "opt-cams": true,
-          "opt-back-only": true,
-          "opt-path": true,
-          "opt-crossings": true,
-          "opt-elev-profile": false,
-          "opt-curve-warn": true,
-          "opt-curve-strict": "normal",
-          "opt-limit": 90,
-          "opt-cam-speed-tol": 15,
-          "opt-hud-status-mode": "tap",
-          "opt-hud-finish-mode": "always"
-        }
-      },
-      tour: {
-        label: "\u0422\u0443\u0440",
-        values: {
-          "opt-voice": true,
-          "opt-cams": true,
-          "opt-back-only": false,
-          "opt-path": true,
-          "opt-crossings": true,
-          "opt-elev-profile": true,
-          "opt-curve-warn": true,
-          "opt-curve-strict": "relaxed",
-          "opt-limit": 90,
-          "opt-cam-speed-tol": 20,
-          "opt-hud-status-mode": "tap",
-          "opt-hud-finish-mode": "tap"
-        }
-      }
-    };
-  }
-});
-
-// js/sun-mode.js
-function sunTimes(lat, lon, date = /* @__PURE__ */ new Date()) {
-  const zenith = 90.833;
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
-  const lngHour = lon / 15;
-  function calc(isSunrise) {
-    const t = isSunrise ? dayOfYear + (6 - lngHour) / 24 : dayOfYear + (18 - lngHour) / 24;
-    const M = 0.9856 * t - 3.289;
-    let L5 = M + 1.916 * Math.sin(M * Math.PI / 180) + 0.02 * Math.sin(2 * M * Math.PI / 180) + 282.634;
-    L5 = (L5 % 360 + 360) % 360;
-    let RA = Math.atan(0.91764 * Math.tan(L5 * Math.PI / 180)) * 180 / Math.PI;
-    RA = (RA % 360 + 360) % 360;
-    const Lq = Math.floor(L5 / 90) * 90;
-    const Rq = Math.floor(RA / 90) * 90;
-    RA = (RA + (Lq - Rq)) / 15;
-    const sinDec = 0.39782 * Math.sin(L5 * Math.PI / 180);
-    const cosDec = Math.cos(Math.asin(sinDec));
-    const cosH = (Math.cos(zenith * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
-    if (cosH > 1 || cosH < -1) {
-      return isSunrise ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0) : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 18, 0, 0);
-    }
-    let H = Math.acos(cosH) * 180 / Math.PI / 15;
-    if (!isSunrise) H = 24 - H;
-    const T = H + RA - 0.06571 * t - 6.622;
-    let ut = T - lngHour;
-    ut = (ut % 24 + 24) % 24;
-    const h = Math.floor(ut);
-    const m = Math.floor((ut - h) * 60);
-    const s2 = Math.floor(((ut - h) * 60 - m) * 60);
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, s2);
-  }
-  return { sunrise: calc(true), sunset: calc(false) };
-}
-function resolveDisplayMode(pref, pos, now = /* @__PURE__ */ new Date()) {
-  if (pref === "day") return "day";
-  if (pref === "night") return "night";
-  const lat = pos?.lat;
-  const lon = pos?.lon;
-  if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
-    const { sunrise, sunset } = sunTimes(lat, lon, now);
-    const dawn = sunrise.getTime() + HYST_MS;
-    const dusk = sunset.getTime() - HYST_MS;
-    const ts = now.getTime();
-    let target = ts >= dawn && ts < dusk ? "day" : "night";
-    if (target !== _lastResolved && ts - _lastSwitchTs < HYST_MS) {
-      return _lastResolved;
-    }
-    if (target !== _lastResolved) {
-      _lastResolved = target;
-      _lastSwitchTs = ts;
-    }
-    return target;
-  }
-  const h = now.getHours() + now.getMinutes() / 60;
-  return h >= 7 && h < 21 ? "day" : "night";
-}
-function resetModeHysteresis() {
-  _lastResolved = "night";
-  _lastSwitchTs = 0;
-}
-var HYST_MS, _lastResolved, _lastSwitchTs;
-var init_sun_mode = __esm({
-  "js/sun-mode.js"() {
-    HYST_MS = 20 * 60 * 1e3;
-    _lastResolved = "night";
-    _lastSwitchTs = 0;
-  }
-});
-
-// js/theme-manager.js
-function loadThemePrefs() {
-  try {
-    const raw = localStorage.getItem(THEME_STORAGE_KEY);
-    if (!raw) return { theme: "avionics", modePref: "night" };
-    const o = JSON.parse(raw);
-    return {
-      theme: THEME_IDS.includes(o.theme) ? o.theme : "avionics",
-      modePref: MODE_PREFS.includes(o.modePref) ? o.modePref : "night"
-    };
-  } catch (e) {
-    return { theme: "avionics", modePref: "night" };
-  }
-}
-function saveThemePrefs(prefs) {
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(prefs));
-  } catch (e) {
-  }
-}
-function applyTheme(theme, modePref, save = true) {
-  const html = document.documentElement;
-  THEME_IDS.forEach((id) => html.classList.remove("theme-" + id));
-  const tid = THEME_IDS.includes(theme) ? theme : "avionics";
-  html.classList.add("theme-" + tid);
-  const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
-  const mode = resolveDisplayMode(modePref, pos);
-  html.setAttribute("data-mode", mode);
-  if (save) saveThemePrefs({ theme: tid, modePref });
-  applyThemeCss();
-  syncThemeControls(tid, modePref);
-  updateModeButtonLabel(modePref, mode);
-  if ($3("hud")?.classList.contains("on")) renderVisualFrame();
-  syncVintageVfdDomClasses();
-}
-function $3(id) {
-  return document.getElementById(id);
-}
-function syncThemeControls(theme, modePref) {
-  const sel = $3("opt-theme");
-  if (sel) sel.value = theme;
-  const mDay = $3("opt-mode-day");
-  const mNight = $3("opt-mode-night");
-  const mAuto = $3("opt-mode-auto");
-  if (mDay) mDay.checked = modePref === "day";
-  if (mNight) mNight.checked = modePref === "night";
-  if (mAuto) mAuto.checked = modePref === "auto";
-}
-function updateModeButtonLabel(modePref, resolved) {
-  const btn = $3("btn-mode");
-  if (!btn) return;
-  const lbl = btn.querySelector(".cb-lbl");
-  if (!lbl) return;
-  if (modePref === "auto") {
-    lbl.textContent = resolved === "day" ? "\u0410\u0412\u0422\u041E\u2600" : "\u0410\u0412\u0422\u041E\u{1F319}";
-  } else if (modePref === "day") {
-    lbl.textContent = "\u0414\u0415\u041D\u042C";
-  } else {
-    lbl.textContent = "\u041D\u041E\u0427\u042C";
-  }
-}
-function tickAutoMode() {
-  const cur = loadThemePrefs();
-  if (cur.modePref !== "auto") return;
-  const now = Date.now();
-  if (now - _lastAutoCheck < 3e4) return;
-  _lastAutoCheck = now;
-  const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
-  const mode = resolveDisplayMode("auto", pos);
-  const html = document.documentElement;
-  if (html.getAttribute("data-mode") !== mode) {
-    html.setAttribute("data-mode", mode);
-    invalidateThemeTokens();
-    applyThemeCss();
-    updateModeButtonLabel("auto", mode);
-    if ($3("hud")?.classList.contains("on")) renderVisualFrame();
-  } else {
-    updateModeButtonLabel("auto", mode);
-  }
-}
-function themeLabel(id) {
-  return LABELS[id] || id;
-}
-function initThemeManager() {
-  const cur = loadThemePrefs();
-  applyTheme(cur.theme, cur.modePref, false);
-  $3("opt-theme")?.addEventListener("change", (e) => {
-    applyTheme(e.target.value, loadThemePrefs().modePref);
-  });
-  ["opt-mode-day", "opt-mode-night", "opt-mode-auto"].forEach((id) => {
-    $3(id)?.addEventListener("change", (e) => {
-      if (!e.target.checked) return;
-      const mode = id.replace("opt-mode-", "");
-      if (mode !== "auto") resetModeHysteresis();
-      applyTheme(loadThemePrefs().theme, mode);
-    });
-  });
-}
-var THEME_STORAGE_KEY, THEME_IDS, MODE_PREFS, LABELS, _lastAutoCheck;
-var init_theme_manager = __esm({
-  "js/theme-manager.js"() {
-    init_state();
-    init_theme();
-    init_sun_mode();
-    init_render();
-    init_vintage_vfd();
-    THEME_STORAGE_KEY = "moto-hud-theme";
-    THEME_IDS = ["avionics", "hitech", "space", "sport", "chopper", "vintage"];
-    MODE_PREFS = ["day", "night", "auto"];
-    LABELS = {
-      avionics: "\u0410\u0432\u0438\u043E\u043D\u0438\u043A\u0430",
-      hitech: "\u0425\u0430\u0439\u0442\u0435\u043A",
-      space: "\u041A\u043E\u0441\u043C\u043E\u0441",
-      sport: "\u0421\u043F\u043E\u0440\u0442",
-      chopper: "\u0427\u043E\u043F\u043F\u0435\u0440",
-      vintage: "\u0412\u0438\u043D\u0442\u0430\u0436"
-    };
-    _lastAutoCheck = 0;
-  }
-});
-
-// js/settings-export.js
-function collectSettingsBundle() {
-  const read = (key) => {
-    try {
-      return JSON.parse(localStorage.getItem(key) || "null");
-    } catch (e) {
-      return null;
-    }
-  };
-  return {
-    kind: SETTINGS_BUNDLE_KIND,
-    version: SETTINGS_BUNDLE_VERSION,
-    exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    appOpts: read(APP_OPTS_KEY),
-    hudOpts: read(HUD_OPTS_KEY),
-    elevOpts: read(ELEV_OPTS_KEY),
-    curveOpts: read(CURVE_OPTS_KEY),
-    theme: read(THEME_STORAGE_KEY),
-    fuelProxy: localStorage.getItem(FUEL_PROXY_LS_KEY) || ""
-  };
-}
-function applySettingsBundle(data) {
-  if (!data || data.kind !== SETTINGS_BUNDLE_KIND) throw new Error("\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u0430\u0439\u043B \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A");
-  const write = (key, val) => {
-    if (val == null) return;
-    localStorage.setItem(key, JSON.stringify(val));
-  };
-  write(APP_OPTS_KEY, data.appOpts);
-  write(HUD_OPTS_KEY, data.hudOpts);
-  write(ELEV_OPTS_KEY, data.elevOpts);
-  write(CURVE_OPTS_KEY, data.curveOpts);
-  write(THEME_STORAGE_KEY, data.theme);
-  if (data.fuelProxy != null && data.fuelProxy !== "") {
-    localStorage.setItem(FUEL_PROXY_LS_KEY, String(data.fuelProxy));
-  } else {
-    localStorage.removeItem(FUEL_PROXY_LS_KEY);
-  }
-}
-function clearAllSettings() {
-  [APP_OPTS_KEY, HUD_OPTS_KEY, ELEV_OPTS_KEY, CURVE_OPTS_KEY, THEME_STORAGE_KEY, FUEL_PROXY_LS_KEY].forEach((k) => {
-    try {
-      localStorage.removeItem(k);
-    } catch (e) {
-    }
-  });
-}
-function downloadSettingsJson() {
-  const blob = new Blob(
-    [JSON.stringify(collectSettingsBundle(), null, 2)],
-    { type: "application/json;charset=utf-8" }
-  );
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "moto-hud-settings.json";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-var SETTINGS_BUNDLE_KIND, SETTINGS_BUNDLE_VERSION;
-var init_settings_export = __esm({
-  "js/settings-export.js"() {
-    init_state();
-    init_theme_manager();
-    init_fuel_config();
-    SETTINGS_BUNDLE_KIND = "moto-hud-settings";
-    SETTINGS_BUNDLE_VERSION = 1;
-  }
-});
-
-// js/settings-ui.js
-function openSettingsPanel() {
-  const setup = $2("setup");
-  const drawer = $2("drawer-opts");
-  if (!setup || !drawer) return;
-  setup.style.display = "block";
-  setup.style.zIndex = "40";
-  drawer.open = true;
-  requestAnimationFrame(() => {
-    drawer.scrollIntoView({ behavior: "smooth", block: "start" });
-    const core = drawer.querySelector('[data-section="core"]');
-    if (core) core.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  });
-  logSettingsEvent("panel_open", { from: $2("hud")?.classList.contains("on") ? "hud" : "setup" });
-}
-function readSectionState() {
-  try {
-    const raw = localStorage.getItem(SECTIONS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) {
-    return {};
-  }
-}
-function saveSectionOpen(id, open) {
-  const o = readSectionState();
-  o[id] = !!open;
-  try {
-    localStorage.setItem(SECTIONS_KEY, JSON.stringify(o));
-  } catch (e) {
-  }
-}
-function applySectionState() {
-  const state = readSectionState();
-  document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
-    const id = det.getAttribute("data-section");
-    if (id && state[id] != null) det.open = !!state[id];
-  });
-}
-function bindSectionPersistence() {
-  document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
-    det.addEventListener("toggle", () => {
-      const id = det.getAttribute("data-section");
-      if (!id) return;
-      saveSectionOpen(id, det.open);
-      if (det.open) logSettingsEvent("section_open", { section: id });
-    });
-  });
-  const main = $2("drawer-opts");
-  main?.addEventListener("toggle", () => {
-    if (main.open) logSettingsEvent("drawer_open", {});
-  });
-}
-function updateDevSectionVisible() {
-  let on = false;
-  try {
-    on = localStorage.getItem(DEV_KEY) === "1";
-  } catch (e) {
-  }
-  if (new URLSearchParams(location.search).get("dev") === "1") on = true;
-  document.documentElement.classList.toggle("dev-mode", on);
-  const dev = $2("opts-dev-section");
-  if (dev) dev.classList.toggle("hidden", !on);
-}
-function bindDevModeEasterEgg() {
-  let taps = 0;
-  let lastTap = 0;
-  const el = $2(DEV_TAP_TARGET);
-  if (!el) return;
-  el.addEventListener("click", () => {
-    const now = Date.now();
-    if (now - lastTap > 2500) taps = 0;
-    lastTap = now;
-    taps++;
-    if (taps >= DEV_TAPS_NEEDED) {
-      taps = 0;
-      try {
-        localStorage.setItem(DEV_KEY, "1");
-      } catch (e) {
-      }
-      updateDevSectionVisible();
-      logSettingsEvent("dev_mode_on", {});
-    }
-  });
-}
-function bindOptChangeLogging() {
-  const root = $2("drawer-opts");
-  if (!root) return;
-  root.querySelectorAll("input, select").forEach((el) => {
-    if (!el.id || !el.id.startsWith("opt-")) return;
-    const ev = el.type === "checkbox" || el.type === "radio" ? "change" : "change";
-    el.addEventListener(ev, () => {
-      const val = el.type === "checkbox" ? el.checked : el.value;
-      logSettingsEvent("opt_change", { optId: el.id, value: val });
-    });
-  });
-}
-function initSettingsUi(reloadAllOpts, persistFromDom2) {
-  applySectionState();
-  bindSectionPersistence();
-  bindDevModeEasterEgg();
-  updateDevSectionVisible();
-  bindOptChangeLogging();
-  bindSettingsDataActions(reloadAllOpts);
-  initSettingsPresets(() => {
-    if (typeof persistFromDom2 === "function") persistFromDom2();
-  });
-}
-function bindSettingsDataActions(reloadAllOpts) {
-  $2("btn-settings-export")?.addEventListener("click", () => {
-    downloadSettingsJson();
-    logSettingsEvent("settings_export", {});
-  });
-  $2("btn-settings-import")?.addEventListener("click", () => $2("settings-import-file")?.click());
-  $2("settings-import-file")?.addEventListener("change", async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    try {
-      const text = await file.text();
-      applySettingsBundle(JSON.parse(text));
-      if (typeof reloadAllOpts === "function") reloadAllOpts();
-      logSettingsEvent("settings_import", {});
-      alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u044B");
-    } catch (err) {
-      alert("\u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043C\u043F\u043E\u0440\u0442\u0430: " + (err.message || err));
-    }
-  });
-  $2("btn-settings-reset")?.addEventListener("click", () => {
-    if (!confirm("\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u0441\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A \u0437\u0430\u0432\u043E\u0434\u0441\u043A\u0438\u043C?")) return;
-    clearAllSettings();
-    if (typeof reloadAllOpts === "function") reloadAllOpts();
-    logSettingsEvent("settings_reset", {});
-    alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B. \u041F\u0440\u0438 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E\u0441\u0442\u0438 \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443.");
-  });
-}
-var SECTIONS_KEY, DEV_KEY, DEV_TAP_TARGET, DEV_TAPS_NEEDED;
-var init_settings_ui = __esm({
-  "js/settings-ui.js"() {
-    init_util();
-    init_settings_telemetry();
-    init_settings_presets();
-    init_settings_export();
-    SECTIONS_KEY = "moto-hud-opts-sections";
-    DEV_KEY = "moto-hud-dev-mode";
-    DEV_TAP_TARGET = "help-app-version";
-    DEV_TAPS_NEEDED = 7;
-  }
-});
-
-// js/hud-settings-sheet.js
-function isStationary() {
-  return (S.dispSpeed || 0) <= STATIONARY_KMH;
-}
-function showHudToast(msg) {
-  let el = $2("hud-settings-toast");
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "hud-settings-toast";
-    el.className = "hud-settings-toast";
-    $2("hud")?.appendChild(el);
-  }
-  el.textContent = msg;
-  el.classList.add("on");
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.classList.remove("on"), 2800);
-}
-function closeSheet() {
-  $2("hud-settings-sheet")?.classList.remove("on");
-}
-function syncSheetFromDom() {
-  const voice = $2("hud-opt-voice");
-  const cams = $2("hud-opt-cams");
-  if (voice) voice.checked = !!$2("opt-voice")?.checked;
-  if (cams) cams.checked = !!$2("opt-cams")?.checked;
-  const cur = loadThemePrefs();
-  document.querySelectorAll(".hud-theme-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.theme === cur.theme);
-  });
-}
-function persistFromDom(syncOptionsFromDom2) {
-  if (typeof syncOptionsFromDom2 === "function") syncOptionsFromDom2();
-  saveAppOptsToStorage();
-  saveHudOptsToStorage();
-  saveElevOptsToStorage();
-  saveCurveOptsToStorage();
-  applyHudChrome();
-}
-function openSheet() {
-  const sheet = $2("hud-settings-sheet");
-  if (!sheet) return;
-  syncSheetFromDom();
-  sheet.classList.add("on");
-  logSettingsEvent("hud_sheet_open", {});
-}
-function handleHudGearClick(syncOptionsFromDom2) {
-  if (!isStationary()) {
-    showHudToast("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u2014 \u043D\u0430 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0435");
-    logSettingsEvent("hud_sheet_blocked", { speed: Math.round(S.dispSpeed || 0) });
-    return;
-  }
-  openSheet();
-  $2("hud-settings-sheet")._sync = syncOptionsFromDom2;
-}
-function bindHudThemeRow() {
-  const row = $2("hud-theme-row");
-  if (!row || row.dataset.bound) return;
-  row.dataset.bound = "1";
-  const cur = loadThemePrefs();
-  row.innerHTML = THEME_IDS.map(
-    (id) => '<button type="button" class="secondary hud-theme-btn' + (id === cur.theme ? " active" : "") + '" data-theme="' + id + '">' + themeLabel(id) + "</button>"
-  ).join("");
-  row.querySelectorAll(".hud-theme-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const theme = btn.getAttribute("data-theme");
-      if (!THEME_IDS.includes(theme)) return;
-      applyTheme(theme, loadThemePrefs().modePref);
-      row.querySelectorAll(".hud-theme-btn").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      logSettingsEvent("hud_sheet_change", { optId: "opt-theme", value: theme });
-    });
-  });
-}
-function initHudSettingsSheet(syncOptionsFromDom2) {
-  const sheet = $2("hud-settings-sheet");
-  if (!sheet || sheet.dataset.bound) return;
-  sheet.dataset.bound = "1";
-  bindHudThemeRow();
-  $2("hud-settings-backdrop")?.addEventListener("click", closeSheet);
-  $2("hud-settings-close")?.addEventListener("click", closeSheet);
-  $2("hud-opt-voice")?.addEventListener("change", (e) => {
-    const main = $2("opt-voice");
-    if (main) main.checked = e.target.checked;
-    S.voice = e.target.checked;
-    saveAppOptsToStorage();
-    logSettingsEvent("hud_sheet_change", { optId: "opt-voice", value: S.voice });
-  });
-  $2("hud-opt-cams")?.addEventListener("change", (e) => {
-    const main = $2("opt-cams");
-    if (main) main.checked = e.target.checked;
-    S.cams = e.target.checked;
-    saveAppOptsToStorage();
-    logSettingsEvent("hud_sheet_change", { optId: "opt-cams", value: S.cams });
-  });
-  sheet.querySelectorAll(".hud-preset-btn[data-preset]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-preset");
-      if (!confirm("\u041F\u0440\u0435\u0441\u0435\u0442 \xAB" + getPresetLabel(id) + "\xBB?")) return;
-      applyPresetToDom(id);
-      persistFromDom(syncOptionsFromDom2);
-      syncSheetFromDom();
-      logSettingsEvent("hud_sheet_preset", { preset: id });
-    });
-  });
-  $2("hud-settings-full")?.addEventListener("click", () => {
-    closeSheet();
-    openSettingsPanel();
-  });
-}
-var STATIONARY_KMH, _toastTimer;
-var init_hud_settings_sheet = __esm({
-  "js/hud-settings-sheet.js"() {
-    init_state();
-    init_util();
-    init_settings_ui();
-    init_settings_presets();
-    init_app_opts();
-    init_hud_opts();
-    init_elevation();
-    init_curve_speed();
-    init_hud_chrome();
-    init_settings_telemetry();
-    init_theme_manager();
-    STATIONARY_KMH = 15;
-    _toastTimer = null;
-  }
-});
-
 // js/tts-health.js
 async function auditTtsHealth() {
   if (!S.voice) {
@@ -17658,7 +17651,10 @@ async function doAddressSearch() {
       box.appendChild(d);
     });
     box.style.display = "block";
-    box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    try {
+      box.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
+    } catch (e) {
+    }
     $2("s-finish").textContent = "\u{1F50E} \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430";
     $2("s-finish").className = "status";
   } catch (e) {
@@ -17723,7 +17719,10 @@ async function doFuelSearch() {
       box.appendChild(row);
     });
     box.style.display = "block";
-    box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    try {
+      box.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
+    } catch (e) {
+    }
     $2("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")" + fuelStatusHint();
     $2("s-finish").className = "status";
   } catch (e) {
@@ -18944,7 +18943,17 @@ var init_nav_map = __esm({
 // js/view-mode.js
 function isExcludedTarget(el) {
   if (!el || !(el instanceof Element)) return true;
-  return !!el.closest(".corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal");
+  return !!el.closest(
+    ".corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #hud-settings-sheet, .hud-settings-sheet"
+  );
+}
+function isChromeTapTarget(el) {
+  if (!el || !(el instanceof Element)) return false;
+  if (isExcludedTarget(el)) return false;
+  if (window.matchMedia("(pointer: fine)").matches && el.closest(".speed-stack, .mdist, .block-path, .block-arrow")) {
+    return false;
+  }
+  return true;
 }
 function applyViewLayout(mode) {
   const hud = $2("hud");
@@ -18967,27 +18976,39 @@ function cycleViewMode() {
   const i = VIEW_ORDER.indexOf(S.viewMode || "hud");
   setViewMode(VIEW_ORDER[(i + 1) % VIEW_ORDER.length]);
 }
-function onTouchEnd(e) {
-  if (!document.getElementById("hud")?.classList.contains("on")) return;
-  const t = e.changedTouches?.[0];
-  if (!t || isExcludedTarget(t.target)) return;
+function registerTap(clientX, clientY, target, preventDefault) {
+  if (!document.getElementById("hud")?.classList.contains("on")) return false;
+  if (isExcludedTarget(target)) return false;
   const now = Date.now();
   const dt = now - _lastTap.t;
-  const dist = Math.hypot(t.clientX - _lastTap.x, t.clientY - _lastTap.y);
+  const dist = Math.hypot(clientX - _lastTap.x, clientY - _lastTap.y);
   if (dt < DBL_TAP_MS && dist < DBL_TAP_MAX_PX) {
     cycleViewMode();
     _lastTap.t = 0;
-    e.preventDefault();
-    return;
+    if (preventDefault) preventDefault();
+    return true;
   }
-  _lastTap = { t: now, x: t.clientX, y: t.clientY };
-  onHudTap();
+  _lastTap = { t: now, x: clientX, y: clientY };
+  if (isChromeTapTarget(target)) onHudTap();
+  return false;
+}
+function onTouchEnd(e) {
+  const t = e.changedTouches?.[0];
+  if (!t) return;
+  _lastTouchEnd = Date.now();
+  if (registerTap(t.clientX, t.clientY, t.target, () => e.preventDefault())) return;
+}
+function onClick(e) {
+  if (e.button !== 0) return;
+  if (Date.now() - _lastTouchEnd < 500) return;
+  registerTap(e.clientX, e.clientY, e.target, null);
 }
 function initViewMode() {
   if (_bound2) return;
   const hud = $2("hud");
   if (!hud) return;
   hud.addEventListener("touchend", onTouchEnd, { passive: false });
+  hud.addEventListener("click", onClick);
   _bound2 = true;
   S.viewMode = "hud";
 }
@@ -18995,7 +19016,7 @@ function resetViewMode() {
   setViewMode("hud");
   destroyNavMap();
 }
-var DBL_TAP_MS, DBL_TAP_MAX_PX, VIEW_ORDER, _lastTap, _bound2;
+var DBL_TAP_MS, DBL_TAP_MAX_PX, VIEW_ORDER, _lastTap, _lastTouchEnd, _bound2;
 var init_view_mode = __esm({
   "js/view-mode.js"() {
     init_state();
@@ -19006,6 +19027,7 @@ var init_view_mode = __esm({
     DBL_TAP_MAX_PX = 40;
     VIEW_ORDER = ["hud", "map_overview", "map_zoom"];
     _lastTap = { t: 0, x: 0, y: 0 };
+    _lastTouchEnd = 0;
     _bound2 = false;
   }
 });
@@ -20262,7 +20284,7 @@ function onTick() {
         $2("v-mdist").textContent = (nm.dist / 1e3).toFixed(1);
         $2("v-mdist-u").textContent = "\u043A\u043C";
       }
-      $2("street").textContent = (nm.step.name || "").toUpperCase() || "\u2014";
+      $2("street").textContent = formatStreetLabel(nm.step.name);
       const stIdx = S.route.steps.indexOf(nm.step);
       const kFar = "st_" + stIdx + "_far";
       const kNear = "st_" + stIdx + "_near";
@@ -20345,6 +20367,7 @@ async function startHud() {
   $2("setup").style.zIndex = "30";
   $2("hud").classList.add("on");
   $2("hud").classList.toggle("show-compass", !!S.showCompass);
+  closeHudSettingsSheet();
   resetVintageVfd();
   syncVintageVfdDomClasses();
   updateCamStatusUI();
@@ -20600,6 +20623,7 @@ var init_hud = __esm({
     init_voice();
     init_render();
     init_vintage_vfd();
+    init_hud_settings_sheet();
     init_gps();
     init_fuel();
     init_fuel_crowd();

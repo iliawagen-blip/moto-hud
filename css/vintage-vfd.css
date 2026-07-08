@@ -1,8 +1,7 @@
 /**
  * Винтаж: VFD/LCD приборная панель 1980-х (только html.theme-vintage).
+ * Типографика как у finish-info: VT323 — подписи, DSEG7 — цифры.
  */
-@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
-
 html.theme-vintage {
   --vfd-ghost-cyan: rgba(0, 255, 200, 0.04);
   --vfd-ghost-red: rgba(255, 0, 0, 0.04);
@@ -27,17 +26,34 @@ html.theme-vintage #vfd-scanlines{
 }
 html.theme-vintage #hud.on #vfd-scanlines{display:block}
 
-/* Статусбар и улица — моноширинный матричный шрифт */
+/* Подписи — как .fi-k */
 html.theme-vintage .statusbar,
 html.theme-vintage .statusbar #mid-info,
 html.theme-vintage .statusbar #clock,
 html.theme-vintage .statusbar #gps-txt,
 html.theme-vintage .statusbar #cam-txt,
-html.theme-vintage .street{
-  font-family:"Share Tech Mono","VT323",Consolas,monospace;
+html.theme-vintage .street,
+html.theme-vintage .speed-unit,
+html.theme-vintage .cb-lbl,
+html.theme-vintage .fi-k,
+html.theme-vintage .fi-line::before{
+  font-family:var(--font-label);
   font-weight:400;
   letter-spacing:.14em;
   text-transform:uppercase;
+}
+
+/* Цифры — как .fi-v */
+html.theme-vintage .speed-val,
+html.theme-vintage .mdist,
+html.theme-vintage .mdist .u,
+html.theme-vintage .fi-v,
+html.theme-vintage .rb-exit-label,
+html.theme-vintage .fi-line{
+  font-family:var(--font-num);
+  font-feature-settings:normal;
+  font-variant-numeric:normal;
+  letter-spacing:.06em;
 }
 
 /* LED-индикаторы 5 mm */
@@ -60,7 +76,7 @@ html.theme-vintage .speed-ghost,
 html.theme-vintage .mdist-ghost{
   display:flex;align-items:center;justify-content:center;
   position:absolute;inset:0;pointer-events:none;z-index:0;
-  font-family:"DSEG7 Classic",monospace;
+  font-family:var(--font-num);
   font-feature-settings:normal;font-variant-numeric:normal;
   color:var(--vfd-ghost-cyan);
   opacity:1;
@@ -79,31 +95,29 @@ html.theme-vintage #arrow-box svg.arrow-vintage{
 }
 
 /* Эмissive VFD + glow filter */
-html.theme-vintage .vfd-emissive-cyan{
+html.theme-vintage .speed-val,
+html.theme-vintage .mdist-inner,
+html.theme-vintage .fi-v{
   filter:url(#vfd-glow-cyan);
   color:var(--accent);
   position:relative;z-index:2;
 }
-html.theme-vintage .speed-val.vfd-emissive-cyan.over{
+html.theme-vintage .speed-val.over{
   filter:url(#vfd-glow-red);
   color:var(--vfd-emissive-red);
 }
 html.theme-vintage .mdist-inner{
-  position:relative;z-index:2;display:inline-flex;align-items:baseline;justify-content:center;
-  filter:url(#vfd-glow-cyan);
-  color:var(--accent);
+  display:inline-flex;align-items:baseline;justify-content:center;
 }
 html.theme-vintage .mdist-inner .u{
   color:var(--accent);
 }
 
-html.theme-vintage .street,
-html.theme-vintage .speed-unit,
 html.theme-vintage .fi-k,
-html.theme-vintage .fi-v,
-html.theme-vintage .cb-lbl{
-  letter-spacing:.1em;
+html.theme-vintage .street{
+  color:var(--fg-label);
 }
 html.theme-vintage .fi-v{
-  font-family:"DSEG7 Classic",monospace;
+  color:var(--fg);
+  font-weight:400;
 }

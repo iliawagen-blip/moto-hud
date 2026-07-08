@@ -22,6 +22,25 @@
   input[type=range]{width:min(160px,42vw)}
   .val{color:var(--accent);font-weight:800}
   .frame-wrap{display:flex;align-items:center;justify-content:center;flex:1;width:100%}
+  .sim-stage{display:flex;flex-direction:column;align-items:center;width:100%;flex:1;min-height:0}
+  body.is-desktop .sim-stage{
+    flex-direction:row;align-items:stretch;justify-content:center;gap:16px;
+    max-width:min(96vw,1440px);padding:0 12px 12px
+  }
+  body.is-desktop .frame-wrap{flex:0 0 auto;align-items:center}
+  .sim-map-panel{
+    display:none;flex:1 1 380px;min-width:280px;max-width:620px;
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    overflow:hidden;flex-direction:column
+  }
+  body.is-desktop .sim-map-panel{display:flex}
+  .sim-map-head{
+    font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;
+    color:var(--dim);padding:10px 12px;border-bottom:1px solid var(--border)
+  }
+  #sim-map{flex:1;min-height:360px;background:#0a0f16}
+  #sim-map .leaflet-container{background:#0a0f16;font-family:inherit}
+  #sim-map .leaflet-control-attribution{font-size:9px;background:rgba(10,15,22,.9)!important;color:var(--dim)!important}
   .phone{
     position:relative;background:#000;border:14px solid #1c1c1e;border-radius:44px;
     box-shadow:0 20px 60px rgba(0,0,0,.6), inset 0 0 0 2px #333;
@@ -213,15 +232,22 @@
       <div id="tel-event-panel"></div>
     </div>
 
-    <div class="frame-wrap">
-      <div class="phone" id="phone">
-        <iframe id="frame" allow="fullscreen; geolocation" title="Мото ИЛС"></iframe>
+    <div class="sim-stage" id="sim-stage">
+      <div class="frame-wrap">
+        <div class="phone" id="phone">
+          <iframe id="frame" allow="fullscreen; geolocation" title="Мото ИЛС"></iframe>
+        </div>
       </div>
+      <aside class="sim-map-panel" id="sim-map-panel" aria-label="Карта маршрута">
+        <div class="sim-map-head">🗺 Карта · маршрут и GPS</div>
+        <div id="sim-map"></div>
+      </aside>
     </div>
 
     <div class="hint">
       Порядок: настройки симулятора → меню (финиш, маршрут) → <strong>▶ ПОЕХАЛИ</strong> в приложении.
       Движение GPS начинается только после «ПОЕХАЛИ»; пауза/скорость — в панели выше (на ПК — в любой момент).
+      <strong>На ПК</strong> справа от телефона — карта маршрута, позиции и сим-трека.
       <strong>Адрес:</strong> «НАСТР.» → очистите поле финиша → «🔎 Найти».
       URL с авто-HUD: <code>?autohud=1</code> · GPX: <code>?gpx=fixtures/serpentine-demo.gpx</code>.
       Ссылка: <code id="share-link">…</code>
@@ -375,16 +401,22 @@
 
   function applySize(){
     if(isMobile) return;
+    const mapEl = document.getElementById('sim-map');
+    const stageH = Math.min(window.innerHeight - 360, 760);
+    if(mapEl) mapEl.style.height = Math.max(360, stageH) + 'px';
+    window.SimMap?.invalidateSize?.();
+
     const [w, h] = selDevice.value.split('x').map(Number);
     let pw = portrait ? w : h;
     let ph = portrait ? h : w;
-    const maxH = window.innerHeight - 420;
-    const maxW = window.innerWidth - 40;
+    const maxH = stageH;
+    const maxW = Math.min(window.innerWidth * 0.42, 520);
     let scale = Math.min(1, maxH / ph, maxW / pw);
     phone.style.width = Math.round(pw * scale) + 'px';
     phone.style.height = Math.round(ph * scale) + 'px';
     setTimeout(() => {
       try{ frame.contentWindow?.__motoHUD?.onTick?.(); }catch(e){}
+      window.SimMap?.invalidateSize?.();
     }, 300);
   }
 
@@ -562,11 +594,13 @@
     const theme = simTheme?.value || setupTheme?.value || 'avionics';
     const mode = simMode?.value || setupMode?.value || 'night';
     applyThemeInFrame(theme, mode);
+    window.SimMap?.resetFit?.();
     setTimeout(updateThemeStatus, 300);
     setTimeout(updateOffRouteDebug, 300);
     setTimeout(() => {
       applySpeedToSim();
       syncPlayButton();
+      applySize();
     }, 800);
     await applyPendingGpx();
   });
@@ -591,6 +625,9 @@
     updateOffRouteDebug();
     updateLiveSpeed();
     syncPlayButton();
+    if(!isMobile && frameLoaded){
+      try{ window.SimMap?.update?.(frame.contentWindow); }catch(e){}
+    }
   }, 500);
 
   if(new URLSearchParams(location.search).get('autohud') === '1' && chkAutohud){
@@ -603,6 +640,15 @@
   }
   const share = document.getElementById('share-link');
   if(share) share.textContent = location.origin + location.pathname;
+</script>
+<link rel="stylesheet" href="css/leaflet.css">
+<script src="js/leaflet.js"></script>
+<script src="js/sim-map.js"></script>
+<script>
+  (function(){
+    const mapBox = document.getElementById('sim-map');
+    if(mapBox && window.SimMap) window.SimMap.init(mapBox);
+  })();
 </script>
 <script src="js/sim-replay.js"></script>
 </body>

@@ -37,8 +37,13 @@ function showHudToast(msg){
 }
 
 function closeSheet(){
-  $('hud-settings-sheet')?.classList.remove('on');
+  const sheet = $('hud-settings-sheet');
+  sheet?.classList.remove('on');
+  if(sheet) sheet.setAttribute('aria-hidden', 'true');
 }
+
+/** @deprecated закрытие при старте навигации */
+export function closeHudSettingsSheet(){ closeSheet(); }
 
 function syncSheetFromDom(){
   const voice = $('hud-opt-voice');
@@ -65,6 +70,7 @@ function openSheet(){
   if(!sheet) return;
   syncSheetFromDom();
   sheet.classList.add('on');
+  sheet.setAttribute('aria-hidden', 'false');
   logSettingsEvent('hud_sheet_open', {});
 }
 
@@ -105,6 +111,7 @@ export function initHudSettingsSheet(syncOptionsFromDom){
   const sheet = $('hud-settings-sheet');
   if(!sheet || sheet.dataset.bound) return;
   sheet.dataset.bound = '1';
+  sheet.setAttribute('aria-hidden', 'true');
 
   bindHudThemeRow();
 

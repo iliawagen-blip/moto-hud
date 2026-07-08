@@ -12,7 +12,7 @@ import {
 import {
   SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD,
   SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT,
-  SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S,
+  SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS,
   SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES,
   SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M,
   SNAP_QUALITY_JUMP_DS_M, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT
@@ -335,6 +335,7 @@ function headingDot(tangentDeg, gpsHdg){
 function computeSnapWindow(spd, dt, acc){
   const v = Math.max(spd || 0, 0);
   const a = Math.max(acc || 8, 8);
+  if(v < SNAP_STATIONARY_SPD_MPS) return Math.max(8, a * 0.5);
   if(v < 1) return Math.max(25, SNAP_WINDOW_ACC_MULT * a);
   return v * Math.min(dt, SNAP_WINDOW_DT_CAP_S) + SNAP_WINDOW_ACC_MULT * a + SNAP_WINDOW_BASE_M;
 }
@@ -463,7 +464,11 @@ export function snapToRoute(gps, geom, gpsHeadingDeg, meta){
     best = { ...best, s: prev.s, segIdx: prev.segIdx, confidence: 0.4 };
   }
 
-  if(prev && best.lateral < 35){
+  if(prev && spd < SNAP_STATIONARY_SPD_MPS && best.s > prev.s){
+    best = { ...best, s: prev.s, segIdx: prev.segIdx };
+  }
+
+  if(prev && best.lateral < 35 && spd >= SNAP_STATIONARY_SPD_MPS){
     const ds = best.s - prev.s;
     if(ds > 0 && ds < 30) best.s = prev.s + ds * 0.65;
   }

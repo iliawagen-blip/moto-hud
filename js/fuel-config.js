@@ -1,5 +1,5 @@
 /**
- * URL прокси ГдеБЕНЗ (Cloudflare Worker или /api/fuel на своём домене).
+ * URL прокси статуса топлива на АЗС (Cloudflare Worker или /api/fuel на своём домене).
  */
 export const FUEL_PROXY_LS_KEY = 'moto-hud-fuel-proxy-url';
 

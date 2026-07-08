@@ -28,6 +28,15 @@ export function escapeHtml(s){
   }[c]));
 }
 
+/** Подпись улицы на HUD: без «улица»/«ул.», верхний регистр через CSS. */
+export function formatStreetLabel(name){
+  if(name == null || name === '') return '—';
+  let s = String(name).trim();
+  s = s.replace(/\bул\.?\b/giu, ' ').replace(/\bулица\b/giu, ' ');
+  s = s.replace(/\s{2,}/g, ' ').replace(/^[\s,.·-]+|[\s,.·-]+$/g, '').trim();
+  return s || String(name).trim();
+}
+
 /** ID без secure context (file:// не поддерживает crypto.randomUUID). */
 export function newId(){
   try{
