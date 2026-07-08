@@ -203,6 +203,11 @@
       </div>
       <div class="toggle" style="margin-top:8px">📷 Камеры (OSM) <input type="checkbox" id="opt-cams" checked></div>
       <div class="toggle" style="margin-top:8px">⛽ Заправок в списке <input type="number" id="opt-fuel-count" value="5" min="1" max="10" step="1"></div>
+      <div class="toggle" style="margin-top:8px;flex-wrap:wrap;gap:8px">
+        ⛽ URL прокси ГдеБЕНЗ
+        <input type="url" id="opt-fuel-proxy" placeholder="https://….workers.dev" style="flex:1;min-width:180px;min-height:auto;padding:8px;font-size:14px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px">
+      </div>
+      <div class="hint" style="margin-top:4px;font-size:12px">Cloudflare Worker из <code>workers/gdebenz-proxy</code>. Пусто — попытка <code>/api/fuel</code> на этом домене, затем публичные CORS-прокси.</div>
       <div class="toggle" style="margin-top:8px">🎯 Только камеры в спину <input type="checkbox" id="opt-back-only" checked></div>
       <div class="toggle" style="margin-top:8px">⚙ Допуск направления (°) <input type="number" id="opt-tol" value="45" min="10" max="90"></div>
       <div class="toggle" style="margin-top:8px">
@@ -481,6 +486,15 @@
     <div class="fp-dist"><span id="fp-dist">–</span><span class="fp-u" id="fp-u">км</span></div>
     <div class="fp-sub" id="fp-sub"></div>
     <div class="fp-hint" id="fp-hint">⛽ ещё раз — ближайшая · 3-й раз — отмена</div>
+    <div class="fp-report hidden" id="fuel-report-row">
+      <div class="fp-report-lbl">Отметить на АЗС:</div>
+      <div class="fp-report-btns">
+        <button type="button" class="fp-report-btn st-yes" data-fuel-st="yes">есть</button>
+        <button type="button" class="fp-report-btn st-queue" data-fuel-st="queue">очередь</button>
+        <button type="button" class="fp-report-btn st-low" data-fuel-st="low">мало</button>
+        <button type="button" class="fp-report-btn st-no" data-fuel-st="no">нет</button>
+      </div>
+    </div>
   </div>
 
   <div id="quickFinish">

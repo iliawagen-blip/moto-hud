@@ -5,7 +5,7 @@
   "description": "Мото ИЛС — HUD-навигатор для мотоцикла",
   "scripts": {
     "dev": "node scripts/build-web.mjs && npx --yes serve -l 3456 -c serve.json .",
-    "spike:routers": "node scripts/spike-routers.mjs",
+    "fuel:spike": "node scripts/fuel-gdzapravka-spike.mjs",
     "build": "node scripts/build-web.mjs",
     "nav:replay": "node scripts/nav-replay.mjs --baseline fixtures/baseline_v1.json",
     "nav:baseline": "node scripts/nav-replay.mjs --capture --baseline fixtures/baseline_v1.json",

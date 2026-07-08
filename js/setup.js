@@ -28,6 +28,7 @@ import {
 } from './route-map.js';
 
 import { prefetchFuelForMap, searchNearestFuelStations, formatFuelDist, fuelStatusText, fuelStatusHint } from './fuel.js';
+import { getFuelProxyBase, setFuelProxyBase } from './fuel-config.js';
 import { refreshTtsBanner } from './tts-health.js';
 import {
   startCompassCalibration, requestHeadingPermission, isCalibrating
@@ -312,6 +313,7 @@ function fuelStationMetaLine(st){
     escapeHtml(fuelStatusText(st.status)) + '</span>'];
   if(st.confirmations) parts.push('отчётов: ' + st.confirmations);
   if(st.lastAt) parts.push('данные: ' + escapeHtml(String(st.lastAt).split(' ')[0]));
+  if(st.statusSource === 'crowd') parts.push('ваш отчёт');
   return parts.join(' · ');
 }
 
@@ -638,6 +640,13 @@ export function bindSetupUI(){
     saveHudOptsToStorage();
   });
 
+  $('opt-fuel-proxy')?.addEventListener('change', e => {
+    setFuelProxyBase(e.target.value.trim());
+  });
+  $('opt-fuel-proxy')?.addEventListener('blur', e => {
+    setFuelProxyBase(e.target.value.trim());
+  });
+
   function syncElevInputs(){
     const on = S.showElevProfile;
     const exag = $('opt-elev-exag');
@@ -854,6 +863,8 @@ export function syncOptionsFromDom(){
 
   S.fuelPlannerCount = clampFuelPlannerCount($('opt-fuel-count')?.value);
   if($('opt-fuel-count')) $('opt-fuel-count').value = String(S.fuelPlannerCount);
+  const proxyEl = $('opt-fuel-proxy');
+  if(proxyEl) proxyEl.value = getFuelProxyBase();
 
   S.showElevProfile = $('opt-elev-profile').checked;
 
