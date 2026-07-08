@@ -356,6 +356,22 @@ function parseInput(raw) {
   if (at) return { lat: parseFloat(at[1]), lon: parseFloat(at[2]), label: "Google" };
   return null;
 }
+function parseTripPoint(raw, fallbackLabel) {
+  const s2 = String(raw || "").trim();
+  if (!s2) return null;
+  const coord = s2.match(/^(-?\d{1,3}(?:\.\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:\.\d+)?)(?:\s+(.+))?$/);
+  if (coord) {
+    const lat = parseFloat(coord[1]);
+    const lon = parseFloat(coord[2]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    const label = (coord[3] || "").trim() || fallbackLabel || "\u0422\u043E\u0447\u043A\u0430";
+    return { lat, lon, label };
+  }
+  const p = parseInput(s2);
+  if (!p) return null;
+  const generic = !p.label || p.label === "\u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B" || p.label.startsWith("\u042F\u043D\u0434\u0435\u043A\u0441");
+  return { lat: p.lat, lon: p.lon, label: generic ? fallbackLabel || p.label || "\u0422\u043E\u0447\u043A\u0430" : p.label };
+}
 var init_geo = __esm({
   "js/geo.js"() {
   }
@@ -387,6 +403,15 @@ function escapeHtml(s2) {
     '"': "&quot;",
     "'": "&#39;"
   })[c]);
+}
+function newId() {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch (e) {
+  }
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
 var $;
 var init_util = __esm({
@@ -1351,7 +1376,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1418,6 +1443,11 @@ var init_nav_constants = __esm({
     PATH_SKIP_FRAMES = 2;
     GPS_INVALIDATE_ACC_M = 50;
     GPS_LOST_RECONVERGE_MS = 6e4;
+    GPS_SPEED_MAX_MPS = 55;
+    GPS_SPEED_ACC_TRUST_M = 25;
+    GPS_SPEED_STATIONARY_DIST_M = 12;
+    GPS_SPEED_MEAS_MIN_DIST_M = 1.5;
+    GPS_SPEED_DEVICE_MEAS_RATIO = 2.5;
   }
 });
 
@@ -3188,13 +3218,39 @@ function updateRenderPos() {
 function easeSpeed() {
   const el = $("v-speed");
   if (!el || !S.gps) return;
-  const target = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const raw = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const target = Math.min(raw, GPS_SPEED_MAX_MPS * 3.6);
   S.dispSpeed += (target - S.dispSpeed) * 0.22;
   if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
   const shown = Math.round(S.dispSpeed);
   el.textContent = shown;
   el.classList.toggle("over", S.limit > 0 && target > S.limit + 3);
   el.classList.toggle("speed-3", shown >= 100);
+}
+function resolveGpsSpeed(next, prev) {
+  const acc = next.acc ?? 999;
+  const device = next.speed != null && !isNaN(next.speed) && next.speed >= 0 ? next.speed : null;
+  let meas = 0;
+  let dist = 0;
+  if (prev) {
+    const dt = (next.ts - prev.ts) / 1e3;
+    if (dt > 0.15 && dt < 12) {
+      dist = haversine(prev, next);
+      if (dist >= GPS_SPEED_MEAS_MIN_DIST_M && dist < 500) meas = dist / dt;
+    }
+  }
+  const noiseRadius = Math.max(GPS_SPEED_STATIONARY_DIST_M, acc * 0.55);
+  if (prev && dist < noiseRadius) return 0;
+  if (device != null && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
+    if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
+      return device;
+    }
+  }
+  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
+  if (meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)) {
+    return S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+  }
+  return 0;
 }
 function initGps(callbacks) {
   _onTick = callbacks.onTick || _onTick;
@@ -3249,12 +3305,10 @@ function applyGpsFix(next) {
     if ((next.heading == null || isNaN(next.heading)) && d > 3) {
       next.heading = bearing(S.lastPos, next);
     }
-    if (next.speed == null && dt > 0.2 && dt < 10) {
-      const meas = d > 2.5 && d < 500 ? d / dt : 0;
-      S.measSpeed = S.measSpeed == null ? meas : S.measSpeed * 0.6 + meas * 0.4;
-      next.speed = S.measSpeed;
-    }
   }
+  const resolved = resolveGpsSpeed(next, S.lastPos);
+  S.measSpeed = resolved;
+  next.speed = resolved;
   updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
   const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
   if (fused != null && !isNaN(fused)) next.heading = fused;
@@ -3368,7 +3422,6 @@ var init_gps = __esm({
     init_route_geometry();
     init_nav_constants();
     init_gps_converge();
-    init_nav_constants();
     init_snap_quality();
     init_nav_constants();
     RENDER_POS = null;
@@ -4800,6 +4853,9 @@ function clearVoiceQueue() {
     }
   }
 }
+function isTurnStep(step) {
+  return isNavManeuverType(step);
+}
 function maneuverText(step) {
   if (!isTurnStep(step)) return "";
   const m = step.modifier || "";
@@ -4819,8 +4875,8 @@ var init_voice = __esm({
     init_geo();
     init_platform();
     init_tts_ru();
-    init_telemetry();
     init_maneuver_filter();
+    init_telemetry();
     _queue = [];
     _busy = false;
     _phraseId = 0;
@@ -18142,7 +18198,7 @@ function validateTrip(trip) {
 }
 function buildTripFromNights({ id, title, start: start2, finish, nights, startDate }) {
   const trip = {
-    id: id || crypto.randomUUID(),
+    id: id || newId(),
     version: TRIP_MODEL_REV,
     title,
     startDate: startDate || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
@@ -18190,12 +18246,14 @@ var TRIP_MODEL_REV;
 var init_trip_model = __esm({
   "js/trip-model.js"() {
     init_geo();
+    init_util();
     TRIP_MODEL_REV = 1;
   }
 });
 
 // js/trip-storage.js
 function openDb3() {
+  if (_useLocal) return Promise.reject(new Error("localStorage mode"));
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME3, DB_VER3);
     req.onupgradeneeded = () => {
@@ -18208,9 +18266,20 @@ function openDb3() {
     req.onerror = () => reject(req.error);
   });
 }
-async function saveTrip(trip) {
-  validateTrip(trip);
-  const rec = { ...trip, version: trip.version || TRIP_MODEL_REV, updatedAt: Date.now() };
+function readLsTrips() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) {
+    return [];
+  }
+}
+function writeLsTrips(trips) {
+  localStorage.setItem(LS_KEY, JSON.stringify(trips.slice(0, MAX_TRIPS)));
+}
+async function saveTripIdb(rec) {
   const db = await openDb3();
   await new Promise((resolve, reject) => {
     const tx2 = db.transaction("trips", "readwrite");
@@ -18218,16 +18287,15 @@ async function saveTrip(trip) {
     tx2.oncomplete = () => resolve();
     tx2.onerror = () => reject(tx2.error);
   });
-  const all = await listTrips(db);
+  const all = await listTripsIdb(db);
   if (all.length > MAX_TRIPS) {
     const drop = all.sort((a, b) => (a.updatedAt || 0) - (b.updatedAt || 0)).slice(0, all.length - MAX_TRIPS);
     const tx2 = db.transaction("trips", "readwrite");
     drop.forEach((t) => tx2.objectStore("trips").delete(t.id));
   }
   db.close();
-  return rec;
 }
-async function listTrips(db) {
+async function listTripsIdb(db) {
   db = db || await openDb3();
   return new Promise((resolve, reject) => {
     const tx2 = db.transaction("trips", "readonly");
@@ -18236,45 +18304,96 @@ async function listTrips(db) {
     req.onerror = () => reject(req.error);
   });
 }
+async function saveTrip(trip) {
+  validateTrip(trip);
+  const rec = { ...trip, version: trip.version || TRIP_MODEL_REV, updatedAt: Date.now() };
+  if (_useLocal || location.protocol === "file:") {
+    _useLocal = true;
+    const all = readLsTrips().filter((t) => t.id !== rec.id);
+    all.unshift(rec);
+    writeLsTrips(all);
+    return rec;
+  }
+  try {
+    await saveTripIdb(rec);
+    return rec;
+  } catch (e) {
+    console.warn("trip IDB \u2192 localStorage", e);
+    _useLocal = true;
+    const all = readLsTrips().filter((t) => t.id !== rec.id);
+    all.unshift(rec);
+    writeLsTrips(all);
+    return rec;
+  }
+}
 async function loadAllTrips() {
-  const db = await openDb3();
-  const rows = await listTrips(db);
-  db.close();
-  return rows.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  if (_useLocal || location.protocol === "file:") {
+    _useLocal = true;
+    return readLsTrips().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  }
+  try {
+    const db = await openDb3();
+    const rows = await listTripsIdb(db);
+    db.close();
+    return rows.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  } catch (e) {
+    console.warn("trip load IDB \u2192 localStorage", e);
+    _useLocal = true;
+    return readLsTrips().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  }
 }
 async function loadTrip(id) {
-  const db = await openDb3();
-  const row = await new Promise((resolve, reject) => {
-    const tx2 = db.transaction("trips", "readonly");
-    const req = tx2.objectStore("trips").get(id);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-  db.close();
-  return row || null;
+  if (_useLocal || location.protocol === "file:") {
+    return readLsTrips().find((t) => t.id === id) || null;
+  }
+  try {
+    const db = await openDb3();
+    const row = await new Promise((resolve, reject) => {
+      const tx2 = db.transaction("trips", "readonly");
+      const req = tx2.objectStore("trips").get(id);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    db.close();
+    return row || null;
+  } catch (e) {
+    _useLocal = true;
+    return readLsTrips().find((t) => t.id === id) || null;
+  }
 }
 async function deleteTrip(id) {
-  const db = await openDb3();
-  await new Promise((resolve, reject) => {
-    const tx2 = db.transaction("trips", "readwrite");
-    tx2.objectStore("trips").delete(id);
-    tx2.oncomplete = () => resolve();
-    tx2.onerror = () => reject(tx2.error);
-  });
-  db.close();
+  if (_useLocal || location.protocol === "file:") {
+    writeLsTrips(readLsTrips().filter((t) => t.id !== id));
+    return;
+  }
+  try {
+    const db = await openDb3();
+    await new Promise((resolve, reject) => {
+      const tx2 = db.transaction("trips", "readwrite");
+      tx2.objectStore("trips").delete(id);
+      tx2.oncomplete = () => resolve();
+      tx2.onerror = () => reject(tx2.error);
+    });
+    db.close();
+  } catch (e) {
+    _useLocal = true;
+    writeLsTrips(readLsTrips().filter((t) => t.id !== id));
+  }
 }
 async function loadDemoTrip() {
   const r = await fetch("fixtures/trip-jul2026.json");
-  if (!r.ok) throw new Error("\u0414\u0435\u043C\u043E-\u043F\u043B\u0430\u043D \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+  if (!r.ok) throw new Error("\u0414\u0435\u043C\u043E-\u043F\u043B\u0430\u043D \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D (\u043D\u0443\u0436\u0435\u043D http:// \u0438\u043B\u0438 npm run dev, \u043D\u0435 file://)");
   return validateTrip(await r.json());
 }
-var DB_NAME3, DB_VER3, MAX_TRIPS;
+var DB_NAME3, DB_VER3, MAX_TRIPS, LS_KEY, _useLocal;
 var init_trip_storage = __esm({
   "js/trip-storage.js"() {
     init_trip_model();
     DB_NAME3 = "moto-hud-trips";
     DB_VER3 = 1;
     MAX_TRIPS = 12;
+    LS_KEY = "moto-hud-trips-v1";
+    _useLocal = false;
   }
 });
 
@@ -18432,7 +18551,174 @@ var init_trip_planner = __esm({
   }
 });
 
+// js/trip-share.js
+function base64UrlEncode(bytes) {
+  let bin = "";
+  const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function base64UrlDecode(str) {
+  const pad = str.length % 4 ? "=".repeat(4 - str.length % 4) : "";
+  const b64 = str.replace(/-/g, "+").replace(/_/g, "/") + pad;
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+async function gzipBytes(text) {
+  if (typeof CompressionStream === "undefined") {
+    return null;
+  }
+  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function gunzipBytes(bytes) {
+  if (typeof DecompressionStream === "undefined") {
+    throw new Error("\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u0440\u0430\u0441\u043F\u0430\u043A\u043E\u0432\u043A\u0443 (\u043D\u0443\u0436\u0435\u043D Chrome 80+ / Safari 16.4+)");
+  }
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return await new Response(stream).text();
+}
+function parseTripJson(raw) {
+  const data = typeof raw === "string" ? JSON.parse(raw) : raw;
+  if (!data || typeof data !== "object") throw new Error("\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0439 JSON");
+  if (Array.isArray(data.days)) {
+    data.version = data.version || TRIP_MODEL_REV;
+    return validateTrip(data);
+  }
+  if (data.trip && Array.isArray(data.trip.days)) {
+    data.trip.version = data.trip.version || TRIP_MODEL_REV;
+    return validateTrip(data.trip);
+  }
+  throw new Error("\u0412 \u0444\u0430\u0439\u043B\u0435 \u043D\u0435\u0442 \u043F\u043B\u0430\u043D\u0430 \u043F\u043E\u0435\u0437\u0434\u043A\u0438 (\u043E\u0436\u0438\u0434\u0430\u0435\u0442\u0441\u044F trip \u0441 days[])");
+}
+function tripJsonString(trip, pretty) {
+  const payload = {
+    kind: "moto-hud-trip",
+    version: TRIP_MODEL_REV,
+    exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    trip: validateTrip({ ...trip })
+  };
+  return pretty ? JSON.stringify(payload, null, 2) : JSON.stringify(payload);
+}
+function tripDownloadFilename(trip) {
+  const slug = String(trip.title || "plan").replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "plan";
+  return `moto-hud-${slug}.json`;
+}
+function downloadTripJson(trip) {
+  const blob = new Blob([tripJsonString(trip, true)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = tripDownloadFilename(trip);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1e3);
+}
+async function encodeTripPack(trip) {
+  const json = tripJsonString(trip, false);
+  const gz = await gzipBytes(json);
+  if (!gz) return { pack: null, reason: "no-compression" };
+  return { pack: base64UrlEncode(gz), bytes: gz.length, jsonLen: json.length };
+}
+async function decodeTripPack(pack) {
+  if (!pack?.trim()) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
+  const bytes = base64UrlDecode(pack.trim());
+  const json = await gunzipBytes(bytes);
+  return parseTripJson(json);
+}
+async function buildPortableShareUrl(trip, origin) {
+  const base = origin || (typeof location !== "undefined" ? location.origin + location.pathname : "");
+  const { pack, reason } = await encodeTripPack(trip);
+  if (!pack) {
+    return { url: null, tooLong: true, reason };
+  }
+  const url = new URL(base, base);
+  url.searchParams.set(TRIP_PACK_PARAM, pack);
+  url.searchParams.set(TRIP_PLANNER_PARAM, "1");
+  url.hash = "";
+  const href = url.href;
+  return {
+    url: href,
+    tooLong: href.length > MAX_SHARE_URL_LEN,
+    length: href.length
+  };
+}
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try {
+    ok = document.execCommand("copy");
+  } catch (e) {
+  }
+  document.body.removeChild(ta);
+  if (!ok) throw new Error("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u2014 \u0441\u043A\u043E\u043F\u0438\u0440\u0443\u0439\u0442\u0435 \u0432\u0440\u0443\u0447\u043D\u0443\u044E");
+  return ok;
+}
+async function shareTripFile(trip) {
+  const json = tripJsonString(trip, true);
+  const file = new File([json], tripDownloadFilename(trip), { type: "application/json" });
+  if (navigator.share) {
+    const payload = { title: trip.title, text: "\u041F\u043B\u0430\u043D \u043F\u043E\u0435\u0437\u0434\u043A\u0438 Moto HUD", files: [file] };
+    if (!navigator.canShare || navigator.canShare(payload)) {
+      await navigator.share(payload);
+      return "share";
+    }
+    await navigator.share({ title: trip.title, text: json.slice(0, 500) + "\u2026\n\n\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 moto-hud \u0438 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u0443\u0439\u0442\u0435 JSON." });
+    return "share-text";
+  }
+  downloadTripJson(trip);
+  return "download";
+}
+function readTripDeepLink() {
+  if (typeof location === "undefined") return {};
+  const params = new URLSearchParams(location.search);
+  return {
+    localId: params.get(TRIP_LOCAL_PARAM),
+    pack: params.get(TRIP_PACK_PARAM),
+    openPlanner: params.get(TRIP_PLANNER_PARAM) === "1"
+  };
+}
+function replaceTripLocalUrl(tripId, openPlanner) {
+  if (typeof history === "undefined" || typeof location === "undefined") return;
+  const url = new URL(location.href);
+  url.searchParams.delete(TRIP_PACK_PARAM);
+  if (tripId) url.searchParams.set(TRIP_LOCAL_PARAM, tripId);
+  else url.searchParams.delete(TRIP_LOCAL_PARAM);
+  if (openPlanner) url.searchParams.set(TRIP_PLANNER_PARAM, "1");
+  url.hash = "";
+  history.replaceState(null, "", url.pathname + url.search);
+}
+var TRIP_PACK_PARAM, TRIP_LOCAL_PARAM, TRIP_PLANNER_PARAM, MAX_SHARE_URL_LEN;
+var init_trip_share = __esm({
+  "js/trip-share.js"() {
+    init_trip_model();
+    TRIP_PACK_PARAM = "trip_pack";
+    TRIP_LOCAL_PARAM = "trip";
+    TRIP_PLANNER_PARAM = "planner";
+    MAX_SHARE_URL_LEN = 7500;
+  }
+});
+
 // js/trip-ui.js
+function setTripNewError(msg) {
+  const el = $("trip-new-error");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.classList.toggle("hidden", !msg);
+}
 function variantForTrip(tripId) {
   return _variantMode[tripId] || "calm";
 }
@@ -18514,13 +18800,62 @@ async function refreshTripList() {
   const trips = await loadAllTrips();
   renderTripList(trips);
 }
-async function openTrip(id) {
-  const trip = await loadTrip(id);
+async function importTripFromFile(file) {
+  const text = await file.text();
+  const trip = parseTripJson(text);
+  trip.updatedAt = Date.now();
+  await saveTrip(trip);
+  await openTrip(trip.id);
+  $("drawer-trip")?.setAttribute("open", "");
+  setStatus("\u2713 \u0418\u043C\u043F\u043E\u0440\u0442: \xAB" + trip.title + "\xBB");
+}
+async function shareTripLink() {
+  const trip = S.activeTrip;
   if (!trip) return;
+  const { url, tooLong, length } = await buildPortableShareUrl(trip);
+  if (!url || tooLong) {
+    await shareTripFile(trip);
+    setStatus("\u041F\u043B\u0430\u043D \u0431\u043E\u043B\u044C\u0448\u043E\u0439 \u0434\u043B\u044F \u0441\u0441\u044B\u043B\u043A\u0438 (" + (length || 0) + " \u0441\u0438\u043C\u0432.) \u2014 \u043E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 JSON-\u0444\u0430\u0439\u043B");
+    return;
+  }
+  await copyText(url);
+  setStatus("\u2713 \u0421\u0441\u044B\u043B\u043A\u0430 \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u0430 \u2014 \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435 \u0432 \u0442\u043E\u043C \u0436\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435");
+}
+async function handleTripDeepLink() {
+  const { localId, pack, openPlanner } = readTripDeepLink();
+  if (openPlanner) $("drawer-trip")?.setAttribute("open", "");
+  if (pack) {
+    try {
+      setStatus("\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043F\u043B\u0430\u043D\u0430 \u0438\u0437 \u0441\u0441\u044B\u043B\u043A\u0438\u2026");
+      const trip = await decodeTripPack(pack);
+      trip.updatedAt = Date.now();
+      await saveTrip(trip);
+      await openTrip(trip.id, { syncUrl: true });
+      setStatus("\u2713 \u041F\u043B\u0430\u043D \u0438\u0437 \u0441\u0441\u044B\u043B\u043A\u0438: \xAB" + trip.title + "\xBB");
+      return;
+    } catch (e) {
+      setStatus("\u274C \u0421\u0441\u044B\u043B\u043A\u0430 \u0441 \u043F\u043B\u0430\u043D\u043E\u043C: " + (e.message || e), true);
+    }
+  }
+  if (localId) {
+    const ok = await openTrip(localId, { syncUrl: true });
+    if (ok) {
+      $("drawer-trip")?.setAttribute("open", "");
+      setStatus("");
+    } else if (openPlanner) {
+      setStatus("\u041F\u043B\u0430\u043D \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435 \u2014 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u0443\u0439\u0442\u0435 JSON \u0438\u043B\u0438 \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0443 \u0441 \u0443\u043F\u0430\u043A\u043E\u0432\u0430\u043D\u043D\u044B\u043C \u043F\u043B\u0430\u043D\u043E\u043C", true);
+    }
+  }
+}
+async function openTrip(id, opts) {
+  const trip = await loadTrip(id);
+  if (!trip) return false;
   S.activeTrip = trip;
   setStatus("");
   renderActiveTrip();
   await refreshTripList();
+  if (opts?.syncUrl !== false) replaceTripLocalUrl(trip.id, true);
+  return true;
 }
 async function onApplySegment(dayN, segIdx, mode) {
   if (_busy2) return;
@@ -18578,6 +18913,7 @@ async function loadDemo() {
     S.activeTrip = trip;
     renderActiveTrip();
     await refreshTripList();
+    replaceTripLocalUrl(trip.id, true);
     setStatus("\u2713 \u041A\u0430\u0432\u043A\u0430\u0437 \u0438\u044E\u043B\u044C 2026");
   } catch (e) {
     setStatus("\u274C " + (e.message || e), true);
@@ -18585,30 +18921,42 @@ async function loadDemo() {
 }
 function showNewTripModal(on) {
   $("tripNewModal")?.classList.toggle("on", !!on);
+  if (on) {
+    setTripNewError("");
+    const startEl = $("trip-new-start");
+    if (startEl && !startEl.value.trim() && Number.isFinite(S.gps?.lat) && Number.isFinite(S.gps?.lon)) {
+      startEl.value = `${S.gps.lat.toFixed(6)}, ${S.gps.lon.toFixed(6)}`;
+    }
+  }
 }
 async function createTripFromForm() {
+  setTripNewError("");
   const title = $("trip-new-title")?.value?.trim() || "\u041D\u043E\u0432\u0430\u044F \u043F\u043E\u0435\u0437\u0434\u043A\u0430";
   const startRaw = $("trip-new-start")?.value?.trim();
   const finishRaw = $("trip-new-finish")?.value?.trim();
   const nightsRaw = $("trip-new-nights")?.value?.trim();
   if (!startRaw || !finishRaw) {
-    setStatus("\u274C \u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0441\u0442\u0430\u0440\u0442 \u0438 \u0444\u0438\u043D\u0438\u0448", true);
+    setTripNewError("\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0441\u0442\u0430\u0440\u0442 \u0438 \u0444\u0438\u043D\u0438\u0448");
     return;
   }
-  const start2 = parseInput(startRaw);
-  const finish = parseInput(finishRaw);
+  const start2 = parseTripPoint(startRaw, "\u0421\u0442\u0430\u0440\u0442");
+  const finish = parseTripPoint(finishRaw, "\u0424\u0438\u043D\u0438\u0448");
   if (!start2 || !finish) {
-    setStatus("\u274C \u041D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D\u044B \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B \u0441\u0442\u0430\u0440\u0442\u0430/\u0444\u0438\u043D\u0438\u0448\u0430", true);
+    setTripNewError("\u041D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D\u044B \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B \u0441\u0442\u0430\u0440\u0442\u0430 \u0438\u043B\u0438 \u0444\u0438\u043D\u0438\u0448\u0430. \u0424\u043E\u0440\u043C\u0430\u0442: 55.59, 37.53 \u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435");
     return;
   }
-  start2.label = start2.label || "\u0421\u0442\u0430\u0440\u0442";
-  finish.label = finish.label || "\u0424\u0438\u043D\u0438\u0448";
   const nights = [];
+  const badLines = [];
   for (const line of (nightsRaw || "").split(/\n/)) {
     const t = line.trim();
     if (!t) continue;
-    const p = parseInput(t);
-    if (p) nights.push({ ...p, label: p.label || t.split(/\s+/).slice(2).join(" ") || "\u041D\u043E\u0447\u0451\u0432\u043A\u0430" });
+    const p = parseTripPoint(t, "\u041D\u043E\u0447\u0451\u0432\u043A\u0430");
+    if (p) nights.push(p);
+    else badLines.push(t);
+  }
+  if (badLines.length) {
+    setTripNewError("\u041D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D\u044B \u0441\u0442\u0440\u043E\u043A\u0438 \u043D\u043E\u0447\u0451\u0432\u043E\u043A: " + badLines.slice(0, 3).join("; "));
+    return;
   }
   const trip = buildTripFromNights({
     title,
@@ -18620,9 +18968,11 @@ async function createTripFromForm() {
   await saveTrip(trip);
   S.activeTrip = trip;
   showNewTripModal(false);
+  $("drawer-trip")?.setAttribute("open", "");
   renderActiveTrip();
   await refreshTripList();
-  setStatus("\u2713 \u041F\u043B\u0430\u043D \u0441\u043E\u0437\u0434\u0430\u043D \u2014 \u0443\u0442\u043E\u0447\u043D\u0438\u0442\u0435 \u0441\u0435\u0433\u043C\u0435\u043D\u0442\u044B \u0438 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 OSRM");
+  replaceTripLocalUrl(trip.id, true);
+  setStatus("\u2713 \u041F\u043B\u0430\u043D \u0441\u043E\u0437\u0434\u0430\u043D \u2014 \xAB\u{1F517} \u0421\u0441\u044B\u043B\u043A\u0430\xBB \u0438\u043B\u0438 \xAB\u{1F4E4} JSON\xBB \u0434\u043B\u044F \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430");
 }
 function exportTripText() {
   const trip = S.activeTrip;
@@ -18639,12 +18989,36 @@ function initTripPlannerUi() {
   $("btn-trip-demo")?.addEventListener("click", loadDemo);
   $("btn-trip-new")?.addEventListener("click", () => showNewTripModal(true));
   $("trip-new-cancel")?.addEventListener("click", () => showNewTripModal(false));
-  $("trip-new-save")?.addEventListener("click", () => createTripFromForm().catch((e) => setStatus("\u274C " + e.message, true)));
+  $("trip-new-save")?.addEventListener("click", () => createTripFromForm().catch((e) => setTripNewError(e.message || String(e))));
   $("btn-trip-export")?.addEventListener("click", exportTripText);
+  $("btn-trip-json")?.addEventListener("click", () => {
+    const trip = S.activeTrip;
+    if (!trip) return;
+    downloadTripJson(trip);
+    setStatus("\u2713 JSON \u0441\u043A\u0430\u0447\u0430\u043D \u2014 \u043E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 \u0432 Telegram / iCloud / Drive");
+  });
+  $("btn-trip-share")?.addEventListener("click", () => shareTripLink().catch((e) => setStatus("\u274C " + e.message, true)));
+  $("btn-trip-send")?.addEventListener("click", () => {
+    const trip = S.activeTrip;
+    if (!trip) return;
+    shareTripFile(trip).then((mode) => {
+      if (mode === "share") setStatus("\u2713 \u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E \u0447\u0435\u0440\u0435\u0437 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB");
+      else if (mode === "download") setStatus("\u2713 JSON \u0441\u043A\u0430\u0447\u0430\u043D");
+      else setStatus("\u2713 \u0422\u0435\u043A\u0441\u0442 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u2014 \u043B\u0443\u0447\u0448\u0435 JSON-\u0444\u0430\u0439\u043B");
+    }).catch((e) => setStatus("\u274C " + e.message, true));
+  });
+  $("btn-trip-import")?.addEventListener("click", () => $("trip-file")?.click());
+  $("trip-file")?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    importTripFromFile(file).catch((err) => setStatus("\u274C " + (err.message || err), true));
+  });
   $("btn-trip-clear")?.addEventListener("click", () => {
     S.activeTrip = null;
     clearTripContext();
     renderActiveTrip();
+    replaceTripLocalUrl(null, false);
     setStatus("");
   });
   $("btn-trip-delete")?.addEventListener("click", async () => {
@@ -18654,6 +19028,7 @@ function initTripPlannerUi() {
     S.activeTrip = null;
     clearTripContext();
     renderActiveTrip();
+    replaceTripLocalUrl(null, false);
     await refreshTripList();
     setStatus("");
   });
@@ -18668,7 +19043,7 @@ function initTripPlannerUi() {
       renderActiveTrip();
     });
   });
-  refreshTripList().catch(() => {
+  refreshTripList().then(() => handleTripDeepLink()).catch(() => {
   });
   renderActiveTrip();
 }
@@ -18696,6 +19071,7 @@ var init_trip_ui = __esm({
     init_trip_storage();
     init_trip_planner();
     init_geo();
+    init_trip_share();
     _variantMode = {};
     _busy2 = false;
   }
@@ -19035,18 +19411,22 @@ function onTick() {
       const stIdx = S.route.steps.indexOf(nm.step);
       const kFar = "st_" + stIdx + "_far";
       const kNear = "st_" + stIdx + "_near";
-      if (isNavManeuverType(nm.step)) {
-        const txt = maneuverText(nm.step);
-        const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
-        if (nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt) {
-          S.camWarned.add(kFar);
-          telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "far" });
-          speak(formatManeuverLead(nm.dist, mps) + " " + txt);
-        }
-        if (nm.dist <= nearM && !S.camWarned.has(kNear) && txt) {
-          S.camWarned.add(kNear);
-          telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "near" });
-          speak(txt);
+      if (isTurnStep(nm.step)) {
+        try {
+          const txt = maneuverText(nm.step);
+          const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
+          if (nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt) {
+            S.camWarned.add(kFar);
+            telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "far" });
+            speak(formatManeuverLead(nm.dist, mps) + " " + txt);
+          }
+          if (nm.dist <= nearM && !S.camWarned.has(kNear) && txt) {
+            S.camWarned.add(kNear);
+            telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "near" });
+            speak(txt);
+          }
+        } catch (e) {
+          console.warn("maneuver voice:", e);
         }
       }
     }
@@ -19098,6 +19478,7 @@ async function startHud() {
   if (isTrackRecordEnabled()) startTrackRecorder();
   S.startTs = Date.now();
   S.distDone = 0;
+  S.measSpeed = null;
   S.camWarned.clear();
   resetOffRouteMachine();
   resetRouteSnap();
@@ -19125,7 +19506,7 @@ async function startHud() {
     }
   }
   speak("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D. \u0412 \u043F\u0443\u0442\u0438 " + Math.round(S.route.duration / 60) + " \u043C\u0438\u043D\u0443\u0442");
-  S.dispSpeed = S.gps && S.gps.speed > 0 ? S.gps.speed * 3.6 : 0;
+  S.dispSpeed = S.gps?.speed > 0 ? Math.min(S.gps.speed * 3.6, 198) : 0;
   onTick();
   startVisualLoop();
 }

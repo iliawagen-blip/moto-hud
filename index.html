@@ -218,11 +218,13 @@
   <details class="setup-details" id="drawer-trip">
     <summary>🗓 Планировщик поездки</summary>
     <div class="drawer-body">
-      <p class="hint" style="margin-bottom:8px">Многодневный план: сегменты как в <code>route-jul2026</code> — waypoints, радиалки, спокойно/интенсив.</p>
+      <p class="hint" style="margin-bottom:8px">Один URL на всех устройствах: спланируйте на ПК → <strong>🔗 Ссылка</strong> или <strong>📤 JSON</strong> → откройте на телефоне. Тот же UI, удобнее на большом экране.</p>
       <div class="btnrow c2" style="margin-bottom:8px">
         <button type="button" class="secondary" id="btn-trip-demo">📥 Кавказ 2026</button>
         <button type="button" class="secondary" id="btn-trip-new">➕ Новый план</button>
+        <button type="button" class="secondary" id="btn-trip-import">📥 JSON</button>
       </div>
+      <input type="file" id="trip-file" accept=".json,application/json" hidden>
       <div id="trip-list"></div>
       <div id="trip-variant-bar" class="trip-variant-bar hidden" role="tablist">
         <button type="button" class="mode-btn active" data-mode="calm">🌄 Спокойно</button>
@@ -231,9 +233,12 @@
       <div id="trip-days" class="trip-days"></div>
       <div class="status" id="trip-status" style="margin-top:8px"></div>
       <div class="btnrow c2 hidden" id="trip-export-row" style="margin-top:8px">
-        <button type="button" class="secondary" id="btn-trip-export">📤 Текст</button>
-        <button type="button" class="secondary" id="btn-trip-clear">✕ Сброс</button>
+        <button type="button" class="secondary" id="btn-trip-share">🔗 Ссылка</button>
+        <button type="button" class="secondary" id="btn-trip-json">📤 JSON</button>
+        <button type="button" class="secondary" id="btn-trip-send">📲 Отправить</button>
+        <button type="button" class="secondary" id="btn-trip-export">📄 Текст</button>
       </div>
+      <button type="button" class="secondary" id="btn-trip-clear" style="margin-top:8px;width:100%">✕ Сбросить выбор</button>
       <button type="button" class="secondary" id="btn-trip-delete" style="margin-top:8px;width:100%">🗑 Удалить план</button>
     </div>
   </details>
@@ -385,6 +390,7 @@
     <label class="toggle" style="margin-top:8px;display:block">Старт<input type="text" id="trip-new-start" placeholder="55.591477, 37.538641 Дом" style="width:100%;margin-top:4px"></label>
     <label class="toggle" style="margin-top:8px;display:block">Ночёвки (необяз.)<textarea id="trip-new-nights" rows="4" placeholder="52.612211, 38.527587 Елец&#10;51.720490, 39.142984 Воронеж" style="width:100%;margin-top:4px;font:inherit"></textarea></label>
     <label class="toggle" style="margin-top:8px;display:block">Финиш<input type="text" id="trip-new-finish" placeholder="55.591477, 37.538641 Дом" style="width:100%;margin-top:4px"></label>
+    <p class="status err hidden" id="trip-new-error" role="alert"></p>
     <div class="btnrow c2" style="margin-top:12px">
       <button type="button" id="trip-new-cancel">Отмена</button>
       <button type="button" class="ok" id="trip-new-save">Создать</button>
@@ -471,9 +477,28 @@
   <div id="vfd-scanlines" aria-hidden="true"></div>
 </div>
 
-<script>window.__BUILD_ID__='mra785ev';</script>
-<script src="js/sim.js?v=mra785ev"></script>
-<script type="module" src="js/app.js?v=mra785ev"></script>
+<div id="file-protocol-tip" class="file-protocol-tip" role="alert">
+  ⚠ Не удалось загрузить JS. Для полной работы запустите <strong>preview.bat</strong> или <code>npm run dev</code> — откроется <code>http://localhost:3456</code>.
+</div>
+
+<script>window.__BUILD_ID__='mratm0k3';</script>
+<script src="js/sim.js?v=mratm0k3"></script>
+<script>
+(function(){
+  var v = window.__BUILD_ID__ || '';
+  var isFile = location.protocol === 'file:';
+  var s = document.createElement('script');
+  s.src = 'js/' + (isFile ? 'app-iife.js' : 'app.js') + '?v=' + v;
+  if(!isFile) s.type = 'module';
+  s.onerror = function(){
+    document.getElementById('file-protocol-tip')?.classList.add('on');
+  };
+  document.currentScript.after(s);
+  if(isFile){
+    document.documentElement.setAttribute('data-file-protocol', '1');
+  }
+})();
+</script>
 
 </body>
 </html>

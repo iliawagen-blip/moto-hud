@@ -3,6 +3,7 @@
  * @module trip-model
  */
 import { haversine } from './geo.js';
+import { newId } from './util.js';
 
 export const TRIP_MODEL_REV = 1;
 
@@ -85,7 +86,7 @@ export function validateTrip(trip){
 export function buildTripFromNights({ id, title, start, finish, nights, startDate }){
   /** @type {TripPlan} */
   const trip = {
-    id: id || crypto.randomUUID(),
+    id: id || newId(),
     version: TRIP_MODEL_REV,
     title,
     startDate: startDate || new Date().toISOString().slice(0, 10),

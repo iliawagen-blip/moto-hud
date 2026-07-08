@@ -13,10 +13,21 @@ import {
   applyTripSegment, setTripContext, clearTripContext,
   openSegmentInYandex, downloadSegmentGpx, formatSegmentAudit
 } from './trip-planner.js';
-import { parseInput } from './geo.js';
+import { parseTripPoint } from './geo.js';
+import {
+  downloadTripJson, parseTripJson, buildPortableShareUrl, copyText,
+  shareTripFile, readTripDeepLink, replaceTripLocalUrl, decodeTripPack
+} from './trip-share.js';
 
 let _variantMode = {}; // tripId -> 'calm' | 'intense'
 let _busy = false;
+
+function setTripNewError(msg){
+  const el = $('trip-new-error');
+  if(!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hidden', !msg);
+}
 
 function variantForTrip(tripId){
   return _variantMode[tripId] || 'calm';
@@ -106,13 +117,66 @@ async function refreshTripList(){
   renderTripList(trips);
 }
 
-async function openTrip(id){
-  const trip = await loadTrip(id);
+async function importTripFromFile(file){
+  const text = await file.text();
+  const trip = parseTripJson(text);
+  trip.updatedAt = Date.now();
+  await saveTrip(trip);
+  await openTrip(trip.id);
+  $('drawer-trip')?.setAttribute('open', '');
+  setStatus('✓ Импорт: «' + trip.title + '»');
+}
+
+async function shareTripLink(){
+  const trip = S.activeTrip;
   if(!trip) return;
+  const { url, tooLong, length } = await buildPortableShareUrl(trip);
+  if(!url || tooLong){
+    await shareTripFile(trip);
+    setStatus('План большой для ссылки (' + (length || 0) + ' симв.) — отправьте JSON-файл');
+    return;
+  }
+  await copyText(url);
+  setStatus('✓ Ссылка скопирована — откройте на телефоне в том же браузере');
+}
+
+async function handleTripDeepLink(){
+  const { localId, pack, openPlanner } = readTripDeepLink();
+  if(openPlanner) $('drawer-trip')?.setAttribute('open', '');
+
+  if(pack){
+    try{
+      setStatus('Загрузка плана из ссылки…');
+      const trip = await decodeTripPack(pack);
+      trip.updatedAt = Date.now();
+      await saveTrip(trip);
+      await openTrip(trip.id, { syncUrl: true });
+      setStatus('✓ План из ссылки: «' + trip.title + '»');
+      return;
+    }catch(e){
+      setStatus('❌ Ссылка с планом: ' + (e.message || e), true);
+    }
+  }
+
+  if(localId){
+    const ok = await openTrip(localId, { syncUrl: true });
+    if(ok){
+      $('drawer-trip')?.setAttribute('open', '');
+      setStatus('');
+    }else if(openPlanner){
+      setStatus('План не найден на этом устройстве — импортируйте JSON или откройте ссылку с упакованным планом', true);
+    }
+  }
+}
+async function openTrip(id, opts){
+  const trip = await loadTrip(id);
+  if(!trip) return false;
   S.activeTrip = trip;
   setStatus('');
   renderActiveTrip();
   await refreshTripList();
+  if(opts?.syncUrl !== false) replaceTripLocalUrl(trip.id, true);
+  return true;
 }
 
 async function onApplySegment(dayN, segIdx, mode){
@@ -170,6 +234,7 @@ async function loadDemo(){
     S.activeTrip = trip;
     renderActiveTrip();
     await refreshTripList();
+    replaceTripLocalUrl(trip.id, true);
     setStatus('✓ Кавказ июль 2026');
   }catch(e){
     setStatus('❌ ' + (e.message || e), true);
@@ -178,31 +243,43 @@ async function loadDemo(){
 
 function showNewTripModal(on){
   $('tripNewModal')?.classList.toggle('on', !!on);
+  if(on){
+    setTripNewError('');
+    const startEl = $('trip-new-start');
+    if(startEl && !startEl.value.trim() && Number.isFinite(S.gps?.lat) && Number.isFinite(S.gps?.lon)){
+      startEl.value = `${S.gps.lat.toFixed(6)}, ${S.gps.lon.toFixed(6)}`;
+    }
+  }
 }
 
 async function createTripFromForm(){
+  setTripNewError('');
   const title = $('trip-new-title')?.value?.trim() || 'Новая поездка';
   const startRaw = $('trip-new-start')?.value?.trim();
   const finishRaw = $('trip-new-finish')?.value?.trim();
   const nightsRaw = $('trip-new-nights')?.value?.trim();
   if(!startRaw || !finishRaw){
-    setStatus('❌ Укажите старт и финиш', true);
+    setTripNewError('Укажите старт и финиш');
     return;
   }
-  const start = parseInput(startRaw);
-  const finish = parseInput(finishRaw);
+  const start = parseTripPoint(startRaw, 'Старт');
+  const finish = parseTripPoint(finishRaw, 'Финиш');
   if(!start || !finish){
-    setStatus('❌ Не разобраны координаты старта/финиша', true);
+    setTripNewError('Не разобраны координаты старта или финиша. Формат: 55.59, 37.53 Название');
     return;
   }
-  start.label = start.label || 'Старт';
-  finish.label = finish.label || 'Финиш';
   const nights = [];
+  const badLines = [];
   for(const line of (nightsRaw || '').split(/\n/)){
     const t = line.trim();
     if(!t) continue;
-    const p = parseInput(t);
-    if(p) nights.push({ ...p, label: p.label || t.split(/\s+/).slice(2).join(' ') || 'Ночёвка' });
+    const p = parseTripPoint(t, 'Ночёвка');
+    if(p) nights.push(p);
+    else badLines.push(t);
+  }
+  if(badLines.length){
+    setTripNewError('Не разобраны строки ночёвок: ' + badLines.slice(0, 3).join('; '));
+    return;
   }
   const trip = buildTripFromNights({
     title,
@@ -214,9 +291,11 @@ async function createTripFromForm(){
   await saveTrip(trip);
   S.activeTrip = trip;
   showNewTripModal(false);
+  $('drawer-trip')?.setAttribute('open', '');
   renderActiveTrip();
   await refreshTripList();
-  setStatus('✓ План создан — уточните сегменты и постройте OSRM');
+  replaceTripLocalUrl(trip.id, true);
+  setStatus('✓ План создан — «🔗 Ссылка» или «📤 JSON» для телефона');
 }
 
 function exportTripText(){
@@ -235,12 +314,36 @@ export function initTripPlannerUi(){
   $('btn-trip-demo')?.addEventListener('click', loadDemo);
   $('btn-trip-new')?.addEventListener('click', () => showNewTripModal(true));
   $('trip-new-cancel')?.addEventListener('click', () => showNewTripModal(false));
-  $('trip-new-save')?.addEventListener('click', () => createTripFromForm().catch(e => setStatus('❌ ' + e.message, true)));
+  $('trip-new-save')?.addEventListener('click', () => createTripFromForm().catch(e => setTripNewError(e.message || String(e))));
   $('btn-trip-export')?.addEventListener('click', exportTripText);
+  $('btn-trip-json')?.addEventListener('click', () => {
+    const trip = S.activeTrip;
+    if(!trip) return;
+    downloadTripJson(trip);
+    setStatus('✓ JSON скачан — отправьте в Telegram / iCloud / Drive');
+  });
+  $('btn-trip-share')?.addEventListener('click', () => shareTripLink().catch(e => setStatus('❌ ' + e.message, true)));
+  $('btn-trip-send')?.addEventListener('click', () => {
+    const trip = S.activeTrip;
+    if(!trip) return;
+    shareTripFile(trip).then(mode => {
+      if(mode === 'share') setStatus('✓ Отправлено через «Поделиться»');
+      else if(mode === 'download') setStatus('✓ JSON скачан');
+      else setStatus('✓ Текст отправлен — лучше JSON-файл');
+    }).catch(e => setStatus('❌ ' + e.message, true));
+  });
+  $('btn-trip-import')?.addEventListener('click', () => $('trip-file')?.click());
+  $('trip-file')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if(!file) return;
+    importTripFromFile(file).catch(err => setStatus('❌ ' + (err.message || err), true));
+  });
   $('btn-trip-clear')?.addEventListener('click', () => {
     S.activeTrip = null;
     clearTripContext();
     renderActiveTrip();
+    replaceTripLocalUrl(null, false);
     setStatus('');
   });
   $('btn-trip-delete')?.addEventListener('click', async () => {
@@ -250,6 +353,7 @@ export function initTripPlannerUi(){
     S.activeTrip = null;
     clearTripContext();
     renderActiveTrip();
+    replaceTripLocalUrl(null, false);
     await refreshTripList();
     setStatus('');
   });
@@ -266,7 +370,7 @@ export function initTripPlannerUi(){
     });
   });
 
-  refreshTripList().catch(() => {});
+  refreshTripList().then(() => handleTripDeepLink()).catch(() => {});
   renderActiveTrip();
 }
 

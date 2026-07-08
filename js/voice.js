@@ -2,6 +2,7 @@ import { S } from './state.js';
 import { angleDiff } from './geo.js';
 import { isNative } from './platform.js';
 import { getNativeRuVoiceIdx, getWebRuVoice, refreshRuVoice } from './tts-ru.js';
+import { isNavManeuverType } from './maneuver-filter.js';
 import telemetry from './telemetry.js';
 
 const _queue = [];
@@ -97,7 +98,9 @@ export function clearVoiceQueue(){
 }
 
 /** Манёвр с реальным поворотом (не «прямо» / continue / new name) */
-export { isNavManeuverType as isTurnStep } from './maneuver-filter.js';
+export function isTurnStep(step){
+  return isNavManeuverType(step);
+}
 
 export function maneuverText(step){
   if(!isTurnStep(step)) return '';

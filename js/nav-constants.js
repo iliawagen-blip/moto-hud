@@ -86,3 +86,15 @@ export const PATH_SKIP_DS_M = 2;
 export const PATH_SKIP_FRAMES = 2;
 export const GPS_INVALIDATE_ACC_M = 50;
 export const GPS_LOST_RECONVERGE_MS = 60000;
+
+/** --- GPS speed sanity (отображение и навигация) --- */
+/** Макс. правдоподобная скорость, м/с (~198 км/ч) */
+export const GPS_SPEED_MAX_MPS = 55;
+/** Доверять speed от чипа только при acc ≤ этого порога, м */
+export const GPS_SPEED_ACC_TRUST_M = 25;
+/** Движение меньше этого при плохом acc — считаем стоянку, м */
+export const GPS_SPEED_STATIONARY_DIST_M = 12;
+/** Мин. смещение для расчёта meas speed, м */
+export const GPS_SPEED_MEAS_MIN_DIST_M = 1.5;
+/** Device speed > meas * ratio — отбрасываем показания чипа */
+export const GPS_SPEED_DEVICE_MEAS_RATIO = 2.5;

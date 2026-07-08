@@ -60,3 +60,25 @@ export function parseInput(raw){
   if(at) return { lat: parseFloat(at[1]), lon: parseFloat(at[2]), label: 'Google' };
   return null;
 }
+
+/**
+ * Разбор строки планировщика: «lat, lon Название» или ссылка Яндекс.
+ * @param {string} raw
+ * @param {string} [fallbackLabel]
+ */
+export function parseTripPoint(raw, fallbackLabel){
+  const s = String(raw || '').trim();
+  if(!s) return null;
+  const coord = s.match(/^(-?\d{1,3}(?:\.\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:\.\d+)?)(?:\s+(.+))?$/);
+  if(coord){
+    const lat = parseFloat(coord[1]);
+    const lon = parseFloat(coord[2]);
+    if(!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    const label = (coord[3] || '').trim() || fallbackLabel || 'Точка';
+    return { lat, lon, label };
+  }
+  const p = parseInput(s);
+  if(!p) return null;
+  const generic = !p.label || p.label === 'Координаты' || p.label.startsWith('Яндекс');
+  return { lat: p.lat, lon: p.lon, label: generic ? (fallbackLabel || p.label || 'Точка') : p.label };
+}

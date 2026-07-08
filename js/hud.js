@@ -308,17 +308,21 @@ export function onTick(){
       const kFar = 'st_' + stIdx + '_far';
       const kNear = 'st_' + stIdx + '_near';
       if(isTurnStep(nm.step)){
-        const txt = maneuverText(nm.step);
-        const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
-        if(nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt){
-          S.camWarned.add(kFar);
-          telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'far' });
-          speak(formatManeuverLead(nm.dist, mps) + ' ' + txt);
-        }
-        if(nm.dist <= nearM && !S.camWarned.has(kNear) && txt){
-          S.camWarned.add(kNear);
-          telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'near' });
-          speak(txt);
+        try{
+          const txt = maneuverText(nm.step);
+          const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
+          if(nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt){
+            S.camWarned.add(kFar);
+            telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'far' });
+            speak(formatManeuverLead(nm.dist, mps) + ' ' + txt);
+          }
+          if(nm.dist <= nearM && !S.camWarned.has(kNear) && txt){
+            S.camWarned.add(kNear);
+            telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'near' });
+            speak(txt);
+          }
+        }catch(e){
+          console.warn('maneuver voice:', e);
         }
       }
     }
@@ -372,6 +376,7 @@ export async function startHud(){
   if(isTrackRecordEnabled()) startTrackRecorder();
   S.startTs = Date.now();
   S.distDone = 0;
+  S.measSpeed = null;
   S.camWarned.clear();
   resetOffRouteMachine();
   resetRouteSnap();
@@ -392,7 +397,7 @@ export async function startHud(){
     try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){}
   }
   speak('Маршрут построен. В пути ' + Math.round(S.route.duration / 60) + ' минут');
-  S.dispSpeed = S.gps && S.gps.speed > 0 ? S.gps.speed * 3.6 : 0;
+  S.dispSpeed = S.gps?.speed > 0 ? Math.min(S.gps.speed * 3.6, 198) : 0;
   onTick();
   startVisualLoop();
 }
