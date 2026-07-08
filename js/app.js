@@ -22917,7 +22917,7 @@ async function selectQuickFinish(id, loadFavs2, buildAndLoad) {
     $2("mid-info").textContent = "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430";
   }
 }
-var _fuelBusy, _fuelPanelShownAt, FUEL_PANEL_MS;
+var _lastMarkCtx, _fuelBusy, _fuelPanelShownAt, FUEL_PANEL_MS;
 var init_hud = __esm({
   "js/hud.js"() {
     init_state();
@@ -22955,6 +22955,7 @@ var init_hud = __esm({
     init_speed_limit();
     init_roundabout();
     init_converge_telemetry();
+    _lastMarkCtx = null;
     _fuelBusy = false;
     _fuelPanelShownAt = 0;
     FUEL_PANEL_MS = 9e3;

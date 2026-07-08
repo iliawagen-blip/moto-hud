@@ -48,6 +48,9 @@ import {
 } from './roundabout.js';
 import { resetConvergeTelemetryRide, flushConvergeSummary } from './converge-telemetry.js';
 
+/** @type {object|null} */
+let _lastMarkCtx = null;
+
 /** Контекст для телеметрической метки (phantom_turn и др.) */
 export function getLastMarkContext(){ return _lastMarkCtx; }
 
