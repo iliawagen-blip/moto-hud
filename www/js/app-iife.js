@@ -2405,7 +2405,10 @@
     }
     if (next === SnapQuality.DEGRADED && prev !== SnapQuality.DEGRADED) _degradedSince = now;
     if (next === SnapQuality.GOOD) _degradedSince = 0;
-    if (next === SnapQuality.LOST && prev !== SnapQuality.LOST) _lostSince = now;
+    if (next === SnapQuality.LOST && prev !== SnapQuality.LOST) {
+      _lostSince = now;
+      _forceReeval = true;
+    }
     if (next !== SnapQuality.LOST) _lostSince = 0;
     if (prev === SnapQuality.DEGRADED && _degradedSince && now - _degradedSince > SNAP_QUALITY_DEGRADED_TIMEOUT_MS) {
       _forceReeval = true;
@@ -4760,18 +4763,24 @@ out geom;`;
     resetFuelRouteBinding();
     loadRouteHighwayTypes(route).catch((e) => console.warn("highway types:", e));
   }
-  function seedSnapAfterReroute() {
+  function seedSnapFromGps(opts = {}) {
     const geom = S.route?.geometry;
     const gps = S.gps;
-    if (!geom || !gps) return;
+    if (!geom || !gps) return false;
     const s0 = findSForLatLon(geom, gps.lat, gps.lon);
     const p = interpolateAtS(geom, s0);
     const lat = haversine(gps, p);
-    const tan = avgTangentDeg(geom, s0, 25);
-    const hdg = S.smoothedHeading;
-    if (lat > REROUTE_SEED_MAX_LATERAL_M) return;
-    if (hdg != null && angleDiff(hdg, tan) > REROUTE_SEED_MAX_ANGLE_DEG) return;
+    if (!opts.relaxed) {
+      const tan = avgTangentDeg(geom, s0, 25);
+      const hdg = S.smoothedHeading;
+      if (lat > REROUTE_SEED_MAX_LATERAL_M) return false;
+      if (hdg != null && angleDiff(hdg, tan) > REROUTE_SEED_MAX_ANGLE_DEG) return false;
+    }
     resetRouteSnap({ seedS: s0, lateral: lat });
+    return true;
+  }
+  function seedSnapAfterReroute() {
+    seedSnapFromGps({ relaxed: false });
   }
   function scheduleGeometryBuild(routes, onDone) {
     if (!routes?.length) {
@@ -6001,33 +6010,36 @@ out geom;`;
     if (!gps || !geom || geom.n < 2) return null;
     const prev = _snap;
     const total = geom.s[geom.n - 1];
-    const prevS = prev ? prev.s : 0;
     const now = gps.ts || Date.now();
     const dt = _prevFixTs ? Math.min(SNAP_WINDOW_DT_CAP_S, (now - _prevFixTs) / 1e3) : 1;
     const spd = gps.speed != null && gps.speed >= 0 ? gps.speed : 0;
     const acc = gps.acc || 8;
     const headingAgeMs = meta?.headingAgeMs ?? 0;
     _fixesSinceReset++;
-    const sWin = prevS > 0 ? computeSnapWindow(spd, dt, acc) : Math.min(200, total * 0.05);
-    const sMin = Math.max(0, prevS - sWin);
-    const sMax = Math.min(total, prevS + sWin);
+    const globalHint = projectPointToRoute(geom, gps);
+    const snapLost = S.snapQuality === SnapQuality.LOST;
+    const forceWide = takeForceReeval() || snapLost || prev && prev.lateral > SNAP_QUALITY_LOST_LATERAL_M;
+    const anchorS = prev ? prev.s : globalHint?.s ?? 0;
+    const sWin = anchorS > 0 && prev ? computeSnapWindow(spd, dt, acc) : Math.max(300, Math.min(600, total * 0.1));
+    const sMin = Math.max(0, anchorS - sWin);
+    const sMax = Math.min(total, anchorS + sWin);
     const ctx = {
       spd,
       acc,
       headingAgeMs,
-      prevS,
+      prevS: anchorS,
       dt,
-      skipJumpPenalty: prevS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES,
+      skipJumpPenalty: anchorS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES,
       prevPos: _prevFixPos
     };
     let best = null;
-    if (takeForceReeval() && prevS > 0) {
-      const wide = 3 * acc + 100;
+    if ((forceWide || !prev) && globalHint) {
+      const wide = Math.max(220, 3 * acc + 120, sWin * 1.5);
       best = scanSnap(
         gps,
         geom,
-        Math.max(0, prevS - wide),
-        Math.min(total, prevS + wide),
+        Math.max(0, globalHint.s - wide),
+        Math.min(total, globalHint.s + wide),
         gpsHeadingDeg,
         false,
         ctx
@@ -6040,8 +6052,19 @@ out geom;`;
       best = scanSnap(
         gps,
         geom,
-        Math.max(0, prevS - SNAP_FALLBACK_BACK_M),
-        Math.min(total, prevS + SNAP_FALLBACK_FWD_M),
+        Math.max(0, anchorS - SNAP_FALLBACK_BACK_M),
+        Math.min(total, anchorS + SNAP_FALLBACK_FWD_M),
+        gpsHeadingDeg,
+        false,
+        ctx
+      );
+    }
+    if (!best && globalHint) {
+      best = scanSnap(
+        gps,
+        geom,
+        Math.max(0, globalHint.s - 400),
+        Math.min(total, globalHint.s + 400),
         gpsHeadingDeg,
         false,
         ctx
@@ -6049,8 +6072,21 @@ out geom;`;
     }
     if (!best) {
       if (prev) return prev;
-      best = scanSnap(gps, geom, 0, Math.min(total, 200), gpsHeadingDeg, false, ctx);
-      if (!best) return null;
+      if (globalHint) {
+        const p = interpolateAtS(geom, globalHint.s);
+        best = {
+          s: globalHint.s,
+          segIdx: globalHint.segIdx,
+          lat: globalHint.lat,
+          lon: globalHint.lon,
+          lateral: globalHint.lateral,
+          tangent: segmentBearing(geom, Math.min(globalHint.segIdx, geom.n - 2)),
+          confidence: 0.35
+        };
+      } else {
+        best = scanSnap(gps, geom, 0, Math.min(total, 400), gpsHeadingDeg, false, ctx);
+        if (!best) return null;
+      }
     }
     const jump = prev && Math.abs(best.s - prev.s) > SNAP_QUALITY_JUMP_DS_M;
     if (prev && best.lateral < 40 && best.s < prev.s - SNAP_REVERSE_EPS) {
@@ -6700,14 +6736,15 @@ out geom;`;
     const accLim = re ? GPS_CONVERGE_RE_ACC_M : GPS_CONVERGE_ACC_M;
     const bufStats = getConvergeBufferStats(re);
     const snap = telCtx?.snap;
+    const snapBlocksConverge = snap?.quality === "LOST" || snap?.lateral != null && snap.lateral > SNAP_QUALITY_LOST_LATERAL_M;
     const ev = evaluateBuffer(minFixes, accLim);
-    if (ev.ok) {
+    if (ev.ok && !snapBlocksConverge) {
       S.gpsConverged = true;
       _everConverged = true;
       if (prev !== true) {
         noteConvergeTransition(prev, true, "converged", {}, fix, bufStats, snap);
       }
-    } else if (!re && _buf.length < minFixes) {
+    } else if (snapBlocksConverge || !re && _buf.length < minFixes) {
       S.gpsConverged = false;
     }
     return S.gpsConverged;
@@ -6894,7 +6931,7 @@ out geom;`;
     const telCtx = { fix: next, snap: telSnap };
     feedGpsConverge(next, telCtx);
     if (next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge("invalidate_acc", telCtx);
-    if ($2("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge("invalidate_lost", telCtx);
+    if ($2("hud").classList.contains("on") && S.gpsConverged && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge("invalidate_lost", telCtx);
     updateGpsConvergeUI();
     tickConvergeBlocked(next, telSnap);
     if ($2("hud").classList.contains("on")) _onTick();
@@ -24081,6 +24118,16 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       if (el) el.textContent = fmtClock(new Date(now.getTime() + remainSec * 1e3));
     } else $2("fi-eta-line")?.classList.add("hidden");
   }
+  function lateralForOffRoute(snap) {
+    const gps = S.gps;
+    const geom = S.route?.geometry;
+    if (geom && gps) {
+      const global2 = projectPointToRoute(geom, gps);
+      if (global2?.lateral != null) return global2.lateral;
+    }
+    if (snap?.lateral != null) return snap.lateral;
+    return findNearestOnRoute()?.dist ?? null;
+  }
   function onTick() {
     if (!S.gps) return;
     if ($2("hud").classList.contains("on")) {
@@ -24112,23 +24159,34 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       return;
     }
     const gpsOk = S.gpsConverged !== false;
-    const snap = gpsOk ? getNavSnap(S.smoothedHeading) : null;
+    const hudOn2 = $2("hud").classList.contains("on");
+    const snap = hudOn2 ? getNavSnap(S.smoothedHeading) : gpsOk ? getNavSnap(S.smoothedHeading) : null;
     const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
-    if ($2("hud").classList.contains("on") && !gpsOk) {
+    if (hudOn2) {
+      tickOffRouteMachine({
+        lateral: lateralForOffRoute(snap),
+        acc: S.gps.acc || 0,
+        spdMps,
+        spdKmh: kmh,
+        heading: S.smoothedHeading,
+        tangent: snap?.tangent ?? null
+      });
+    }
+    if (hudOn2 && !gpsOk) {
       $2("street").textContent = "GPS \u0421\u0425\u041E\u0414\u0418\u0422\u0421\u042F";
       $2("v-mdist").textContent = "\u2014";
       $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
       updateFinishInfo(getRemainingDistance(), kmh, now);
     }
     if (isSnapLost()) {
-      $2("street").textContent = "GPS \u041F\u041E\u0422\u0415\u0420\u042F\u041D";
+      $2("street").textContent = "\u041D\u0415\u0422 \u041F\u0420\u0418\u0412\u042F\u0417\u041A\u0418";
       $2("v-mdist").textContent = "\u2014";
       $2("v-mdist-u").textContent = "";
       $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
       $2("rb-exit-label")?.classList.add("hidden");
       updateFinishInfo(getRemainingDistance(), kmh, now);
       $2("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
-      return;
+      if (hudOn2) return;
     }
     const remaining = getRemainingDistance();
     const near = findNearestOnRoute();
@@ -24160,14 +24218,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       return;
     }
     if (!gpsOk) return;
-    tickOffRouteMachine({
-      lateral: near?.dist,
-      acc: S.gps.acc || 0,
-      spdMps,
-      spdKmh: kmh,
-      heading: S.smoothedHeading,
-      tangent: snap?.tangent ?? null
-    });
+    if (isSnapLost()) return;
     if (isOfflineGuide() && snap && S.gps) {
       const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
       const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
@@ -24330,6 +24381,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     resetSpeedLimitState();
     resetRoundaboutState();
     ensureRouteGeometry(S.route);
+    seedSnapFromGps({ relaxed: true });
     $2("setup").style.display = "none";
     $2("setup").style.zIndex = "30";
     $2("hud").classList.add("on");

@@ -16,6 +16,7 @@ import {
   SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES,
   SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M,
   SNAP_QUALITY_JUMP_DS_M, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT,
+  SNAP_QUALITY_LOST_LATERAL_M,
   ROUNDABOUT_HEADING_GATE_DEG
 } from './nav-constants.js';
 import { isSegIdxOnRoundabout, getRoundaboutSnapFlags } from './roundabout.js';
@@ -422,7 +423,6 @@ export function snapToRoute(gps, geom, gpsHeadingDeg, meta){
 
   const prev = _snap;
   const total = geom.s[geom.n - 1];
-  const prevS = prev ? prev.s : 0;
   const now = gps.ts || Date.now();
   const dt = _prevFixTs ? Math.min(SNAP_WINDOW_DT_CAP_S, (now - _prevFixTs) / 1000) : 1;
   const spd = gps.speed != null && gps.speed >= 0 ? gps.speed : 0;
@@ -431,21 +431,30 @@ export function snapToRoute(gps, geom, gpsHeadingDeg, meta){
 
   _fixesSinceReset++;
 
-  const sWin = prevS > 0 ? computeSnapWindow(spd, dt, acc) : Math.min(200, total * 0.05);
-  const sMin = Math.max(0, prevS - sWin);
-  const sMax = Math.min(total, prevS + sWin);
+  const globalHint = projectPointToRoute(geom, gps);
+  const snapLost = S.snapQuality === SnapQuality.LOST;
+  const forceWide = takeForceReeval() || snapLost ||
+    (prev && prev.lateral > SNAP_QUALITY_LOST_LATERAL_M);
+  const anchorS = prev ? prev.s : (globalHint?.s ?? 0);
+
+  const sWin = anchorS > 0 && prev
+    ? computeSnapWindow(spd, dt, acc)
+    : Math.max(300, Math.min(600, total * 0.1));
+  const sMin = Math.max(0, anchorS - sWin);
+  const sMax = Math.min(total, anchorS + sWin);
 
   const ctx = {
-    spd, acc, headingAgeMs, prevS, dt,
-    skipJumpPenalty: prevS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES,
+    spd, acc, headingAgeMs, prevS: anchorS, dt,
+    skipJumpPenalty: anchorS <= 0 || _fixesSinceReset <= SNAP_COLD_START_SKIP_FIXES,
     prevPos: _prevFixPos
   };
 
   let best = null;
-  if(takeForceReeval() && prevS > 0){
-    const wide = 3 * acc + 100;
-    best = scanSnap(gps, geom, Math.max(0, prevS - wide),
-      Math.min(total, prevS + wide), gpsHeadingDeg, false, ctx);
+
+  if((forceWide || !prev) && globalHint){
+    const wide = Math.max(220, 3 * acc + 120, sWin * 1.5);
+    best = scanSnap(gps, geom, Math.max(0, globalHint.s - wide),
+      Math.min(total, globalHint.s + wide), gpsHeadingDeg, false, ctx);
   }
 
   if(!best){
@@ -453,14 +462,32 @@ export function snapToRoute(gps, geom, gpsHeadingDeg, meta){
   }
 
   if(!best){
-    best = scanSnap(gps, geom, Math.max(0, prevS - SNAP_FALLBACK_BACK_M),
-      Math.min(total, prevS + SNAP_FALLBACK_FWD_M), gpsHeadingDeg, false, ctx);
+    best = scanSnap(gps, geom, Math.max(0, anchorS - SNAP_FALLBACK_BACK_M),
+      Math.min(total, anchorS + SNAP_FALLBACK_FWD_M), gpsHeadingDeg, false, ctx);
+  }
+
+  if(!best && globalHint){
+    best = scanSnap(gps, geom, Math.max(0, globalHint.s - 400),
+      Math.min(total, globalHint.s + 400), gpsHeadingDeg, false, ctx);
   }
 
   if(!best){
     if(prev) return prev;
-    best = scanSnap(gps, geom, 0, Math.min(total, 200), gpsHeadingDeg, false, ctx);
-    if(!best) return null;
+    if(globalHint){
+      const p = interpolateAtS(geom, globalHint.s);
+      best = {
+        s: globalHint.s,
+        segIdx: globalHint.segIdx,
+        lat: globalHint.lat,
+        lon: globalHint.lon,
+        lateral: globalHint.lateral,
+        tangent: segmentBearing(geom, Math.min(globalHint.segIdx, geom.n - 2)),
+        confidence: 0.35
+      };
+    } else {
+      best = scanSnap(gps, geom, 0, Math.min(total, 400), gpsHeadingDeg, false, ctx);
+      if(!best) return null;
+    }
   }
 
   const jump = prev && Math.abs(best.s - prev.s) > SNAP_QUALITY_JUMP_DS_M;

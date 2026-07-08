@@ -4,7 +4,7 @@ import { haversine, bearing, angleDiff } from './geo.js';
 import { curPos } from './gps.js';
 import {
   buildRoute, loadCameras, saveLastRun, findNearestOnRoute,
-  findNextManeuver, getRemainingDistance
+  findNextManeuver, getRemainingDistance, seedSnapFromGps
 } from './route.js';
 import { speak, maneuverText, isTurnStep, isCameraBehind } from './voice.js';
 import { buildArrowSVG, buildTurnArrowSVG } from './render.js';
@@ -19,7 +19,7 @@ import {
   saveCrowdReport, nearestStationForReport, applyCrowdReports
 } from './fuel-crowd.js';
 import { updateCamStatusUI } from './cam-status.js';
-import { resetRouteSnap, getNavSnap } from './route-geometry.js';
+import { resetRouteSnap, getNavSnap, projectPointToRoute } from './route-geometry.js';
 import { isSnapLost, isSnapDegraded, getCachedManeuver, cacheLastManeuver, resetSnapQuality } from './snap-quality.js';
 import { RouteQuality } from './route-quality.js';
 import { stepTurnAngleDeg } from './maneuver-filter.js';
@@ -177,6 +177,18 @@ function updateFinishInfo(remaining, kmh, now){
   } else $('fi-eta-line')?.classList.add('hidden');
 }
 
+/** Поперечное смещение от маршрута для off-route (глобально, не только окно snap). */
+function lateralForOffRoute(snap){
+  const gps = S.gps;
+  const geom = S.route?.geometry;
+  if(geom && gps){
+    const global = projectPointToRoute(geom, gps);
+    if(global?.lateral != null) return global.lateral;
+  }
+  if(snap?.lateral != null) return snap.lateral;
+  return findNearestOnRoute()?.dist ?? null;
+}
+
 export function onTick(){
   if(!S.gps) return;
   if($('hud').classList.contains('on')){
@@ -210,10 +222,22 @@ export function onTick(){
   }
 
   const gpsOk = S.gpsConverged !== false;
-  const snap = gpsOk ? getNavSnap(S.smoothedHeading) : null;
+  const hudOn = $('hud').classList.contains('on');
+  const snap = hudOn ? getNavSnap(S.smoothedHeading) : (gpsOk ? getNavSnap(S.smoothedHeading) : null);
   const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
 
-  if($('hud').classList.contains('on') && !gpsOk){
+  if(hudOn){
+    tickOffRouteMachine({
+      lateral: lateralForOffRoute(snap),
+      acc: S.gps.acc || 0,
+      spdMps,
+      spdKmh: kmh,
+      heading: S.smoothedHeading,
+      tangent: snap?.tangent ?? null
+    });
+  }
+
+  if(hudOn && !gpsOk){
     $('street').textContent = 'GPS СХОДИТСЯ';
     $('v-mdist').textContent = '—';
     $('arrow-box').innerHTML = buildTurnArrowSVG(0);
@@ -221,14 +245,14 @@ export function onTick(){
   }
 
   if(isSnapLost()){
-    $('street').textContent = 'GPS ПОТЕРЯН';
+    $('street').textContent = 'НЕТ ПРИВЯЗКИ';
     $('v-mdist').textContent = '—';
     $('v-mdist-u').textContent = '';
     $('arrow-box').innerHTML = buildTurnArrowSVG(0);
     $('rb-exit-label')?.classList.add('hidden');
     updateFinishInfo(getRemainingDistance(), kmh, now);
     $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
-    return;
+    if(hudOn) return;
   }
 
   const remaining = getRemainingDistance();
@@ -265,14 +289,7 @@ export function onTick(){
 
   if(!gpsOk) return;
 
-  tickOffRouteMachine({
-    lateral: near?.dist,
-    acc: S.gps.acc || 0,
-    spdMps,
-    spdKmh: kmh,
-    heading: S.smoothedHeading,
-    tangent: snap?.tangent ?? null
-  });
+  if(isSnapLost()) return;
 
   if(isOfflineGuide() && snap && S.gps){
     const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
@@ -442,6 +459,7 @@ export async function startHud(){
   resetSpeedLimitState();
   resetRoundaboutState();
   ensureRouteGeometry(S.route);
+  seedSnapFromGps({ relaxed: true });
   $('setup').style.display = 'none';
   $('setup').style.zIndex = '30';
   $('hud').classList.add('on');

@@ -196,7 +196,7 @@ export function applyGpsFix(next){
 
   feedGpsConverge(next, telCtx);
   if(next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge('invalidate_acc', telCtx);
-  if($('hud').classList.contains('on') && isSnapLost() &&
+  if($('hud').classList.contains('on') && S.gpsConverged && isSnapLost() &&
      lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge('invalidate_lost', telCtx);
   updateGpsConvergeUI();
   tickConvergeBlocked(next, telSnap);
