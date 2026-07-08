@@ -57,7 +57,17 @@ export const S = {
   backOnly: true,
   tolerance: 45,
   noDirPolicy: 'skip',
-  limit: 60,
+  /** Fallback-лимит из настроек (opt-limit), км/ч */
+  userDefaultLimit: 60,
+  /** Актуальный лимит на текущем сегменте маршрута */
+  currentLimit: null,
+  currentLimitSource: 'default',
+  /** Динамический лимит по OSM (opt-speed-limit-dynamic) */
+  speedLimitDynamic: true,
+  /** hide | user-default — при отсутствии данных OSM */
+  speedLimitFallback: 'user-default',
+  /** SVG-схема кругового (opt-roundabout-schema) */
+  roundaboutSchema: true,
   /** Допуск над лимитом камеры перед тревогой, км/ч */
   camSpeedTol: DEFAULT_CAM_SPEED_TOL,
   lastVoiceTs: 0,

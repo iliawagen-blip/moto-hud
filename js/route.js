@@ -24,6 +24,7 @@ import {
 import { buildRouteRequestUrl, parseRouteResponse } from './router.js';
 import { HIGHWAY_CLASSES } from './maneuver-filter.js';
 import { assessRouteQuality, RouteQuality } from './route-quality.js';
+import { parseMaxspeedsFromRoute, parseSegmentSpeedsFromRoute, loadRouteHighwayTypes } from './speed-limit.js';
 
 export { isSignificantManeuver, MANEUVER_MIN_ANGLE, MANEUVER_BEND_ANGLE, MANEUVER_PASSED_M };
 
@@ -80,6 +81,7 @@ function attachRouteGeometry(route){
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
+  loadRouteHighwayTypes(route).catch(e => console.warn('highway types:', e));
 }
 
 function seedSnapAfterReroute(){
@@ -181,7 +183,19 @@ function parseOsrmRoute(rt){
       });
     });
   });
-  return { coords, steps, distance: rt.distance, duration: rt.duration };
+  const maxspeeds = parseMaxspeedsFromRoute(rt);
+  const need = Math.max(0, coords.length - 1);
+  while(maxspeeds.length < need) maxspeeds.push({ unknown: true });
+  if(maxspeeds.length > need) maxspeeds.length = need;
+  const segmentSpeeds = parseSegmentSpeedsFromRoute(rt);
+  while(segmentSpeeds.length < need) segmentSpeeds.push(0);
+  if(segmentSpeeds.length > need) segmentSpeeds.length = need;
+  return {
+    coords, steps, distance: rt.distance, duration: rt.duration,
+    maxspeeds,
+    segmentSpeeds,
+    highwayTypes: null
+  };
 }
 
 /** Запрос нескольких вариантов маршрута (для экрана настройки с картой) */
@@ -248,6 +262,7 @@ export function selectRouteIndex(idx){
   S.route = S.routeAlternatives[S.selectedRouteIdx];
   resetRouteSnap();
   resetFuelRouteBinding();
+  loadRouteHighwayTypes(S.route).catch(e => console.warn('highway types:', e));
 }
 
 export async function buildRoute(opts = {}){

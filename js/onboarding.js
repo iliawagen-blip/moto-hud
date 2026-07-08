@@ -16,6 +16,9 @@ function markDone(){
   try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e){}
   document.body.classList.remove(FIRST_RUN_CLASS);
   $('onboarding-modal')?.classList.remove('on');
+  import('./telemetry-ask.js').then(m => {
+    setTimeout(() => m.maybeShowTelemetryAsk(), 450);
+  }).catch(() => {});
 }
 
 function applyFirstRunLayout(){

@@ -4,6 +4,7 @@
 import telemetry from './telemetry.js';
 import { getLastMarkContext } from './hud.js';
 import { $ } from './util.js';
+import { logFunnel } from './telemetry-funnel.js';
 
 let _tapCount = 0;
 let _tapTimer = null;
@@ -26,16 +27,19 @@ function bindMarkButton(){
           note: 'phantom_turn',
           ...(ctx || {})
         });
+        logFunnel('mark_placed', { kind: 'phantom_turn' });
         btn.classList.add('critical-flash');
         setTimeout(() => btn.classList.remove('critical-flash'), 400);
         try{ navigator.vibrate?.([30, 40, 30, 40, 30]); }catch(e){}
       } else if(n >= 2){
         telemetry.mark('critical');
+        logFunnel('mark_placed', { kind: 'critical' });
         btn.classList.add('critical-flash');
         setTimeout(() => btn.classList.remove('critical-flash'), 400);
         try{ navigator.vibrate?.([30, 40, 30]); }catch(e){}
       } else {
         telemetry.mark(ctx ? { note: 'mark', ...ctx } : undefined);
+        logFunnel('mark_placed', { kind: 'mark' });
         try{ navigator.vibrate?.(25); }catch(e){}
       }
       btn.classList.add('flash');
@@ -79,9 +83,15 @@ async function refreshSessionsList(){
     }
     list.innerHTML = sessions.map(s => {
       const dirty = s.dirty ? ' <span class="tel-dirty">dirty</span>' : '';
+      let shareBadge = '';
+      if(s.sharePendingConfirm){
+        shareBadge = ' <span class="tel-share-pending">Share ?</span>';
+      }else if((s.shareAttempts || 0) > 0){
+        shareBadge = ' <span class="tel-share-done">передано</span>';
+      }
       return '<div class="tel-row" data-id="' + s.id + '">' +
         '<div class="tel-main">' +
-        '<strong>' + fmtDate(s.startedAt) + '</strong>' + dirty +
+        '<strong>' + fmtDate(s.startedAt) + '</strong>' + dirty + shareBadge +
         '<span class="tel-meta">' + fmtDur(s.durationMs) + ' · ' +
         s.eventCount + ' соб. · меток ' + s.markCount + '</span>' +
         '</div>' +
@@ -129,6 +139,7 @@ export function initTelemetryUI(){
     toggle.checked = telemetry.isEnabled();
     toggle.addEventListener('change', async () => {
       await telemetry.setEnabled(toggle.checked);
+      logFunnel(toggle.checked ? 'telemetry_opt_in' : 'telemetry_opt_out', { source: 'settings' });
       telemetry.updateMarkButtonVisibility();
       await refreshSessionsList();
     });

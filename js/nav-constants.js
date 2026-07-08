@@ -100,3 +100,29 @@ export const GPS_SPEED_STATIONARY_DIST_M = 12;
 export const GPS_SPEED_MEAS_MIN_DIST_M = 1.5;
 /** Device speed > meas * ratio — отбрасываем показания чипа */
 export const GPS_SPEED_DEVICE_MEAS_RATIO = 2.5;
+
+/** --- Динамический лимит скорости (OSM maxspeed) --- */
+/** Дистанция lookahead при поиске смены лимита, м */
+export const SPEED_LIMIT_LOOKAHEAD_M = 300;
+/** Grace после смены зоны: не алертить превышение, мс */
+export const SPEED_LIMIT_GRACE_MS = 3000;
+/** Допуск над лимитом перед красной скоростью, км/ч */
+export const SPEED_LIMIT_OVERSPEED_KMH = 3;
+/** Голос «впереди ограничение» — не ближе, м */
+export const SPEED_LIMIT_VOICE_MIN_M = 150;
+/** Голос «впереди ограничение» — не дальше, м */
+export const SPEED_LIMIT_VOICE_MAX_M = 250;
+/** Радиус эвристики «населённый пункт» для implicit (вечер 3), м */
+export const SPEED_LIMIT_URBAN_PLACE_RADIUS_M = 500;
+
+/** --- Круговое движение --- */
+/** Множитель порога lateral snap на кольце */
+export const ROUNDABOUT_LATERAL_MULTIPLIER = 2.0;
+/** Heading-gate на кольце, ° */
+export const ROUNDABOUT_HEADING_GATE_DEG = 90;
+/** Интервал обновления HUD на кольце, мс */
+export const ROUNDABOUT_TICK_MS = 250;
+/** Мини-круг: радиус polyline < этого — обычная стрелка */
+export const ROUNDABOUT_MIN_RADIUS_M = 15;
+/** Клевер/развязка: радиус > этого — обычная стрелка */
+export const ROUNDABOUT_MAX_RADIUS_M = 200;

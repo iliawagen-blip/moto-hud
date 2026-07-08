@@ -15,8 +15,10 @@ import {
   SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS,
   SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES,
   SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M,
-  SNAP_QUALITY_JUMP_DS_M, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT
+  SNAP_QUALITY_JUMP_DS_M, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT,
+  ROUNDABOUT_HEADING_GATE_DEG
 } from './nav-constants.js';
+import { isSegIdxOnRoundabout, getRoundaboutSnapFlags } from './roundabout.js';
 
 /** Шаг уплотнения polyline, м */
 export const DENSE_STEP = 3;
@@ -340,13 +342,16 @@ function computeSnapWindow(spd, dt, acc){
   return v * Math.min(dt, SNAP_WINDOW_DT_CAP_S) + SNAP_WINDOW_ACC_MULT * a + SNAP_WINDOW_BASE_M;
 }
 
-function headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs){
+function headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, segIdx){
   if(gpsHdg == null || isNaN(gpsHdg)) return false;
+  const onRb = segIdx != null && isSegIdxOnRoundabout(segIdx, S.route);
+  const acceptDeg = onRb ? ROUNDABOUT_HEADING_GATE_DEG : SNAP_HEADING_ACCEPT_DEG;
+  const rejectDeg = onRb ? ROUNDABOUT_HEADING_GATE_DEG + 20 : SNAP_HEADING_REJECT_DEG;
   const diff = angleDiff(tangent, gpsHdg);
-  if(diff > SNAP_HEADING_REJECT_DEG) return true;
+  if(diff > rejectDeg) return true;
   const softGate = acc > SNAP_HEADING_GATE_ACC_MAX_M || headingAgeMs > SNAP_HEADING_MAX_AGE_MS;
   if(softGate) return false;
-  if(spd >= SNAP_HEADING_GATE_MIN_SPD && diff > SNAP_HEADING_ACCEPT_DEG) return true;
+  if(spd >= SNAP_HEADING_GATE_MIN_SPD && diff > acceptDeg) return true;
   if(spd >= SNAP_HEADING_GATE_MIN_SPD){
     const dot = headingDot(tangent, gpsHdg);
     if(dot < SNAP_MIN_DOT) return true;
@@ -375,7 +380,7 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx){
     const tangent = segmentBearing(geom, i);
     const dot = headingDot(tangent, gpsHdg);
 
-    if(requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs)) continue;
+    if(requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, i)) continue;
     if(requireDir && dot < SNAP_MIN_DOT) continue;
 
     if(requireDir && spd > 1 && ctx?.prevPos){
@@ -477,7 +482,8 @@ export function snapToRoute(gps, geom, gpsHeadingDeg, meta){
 
   const { R } = radiusAtS(geom, best.s);
   const curvMult = (!isFinite(R) || R >= SNAP_CURVATURE_RADIUS_M) ? 1 : SNAP_CURVATURE_THRESHOLD_MULT;
-  updateSnapQuality(best, gps, geom, { jump, curvMult });
+  const rbFlags = getRoundaboutSnapFlags(best.segIdx, S.route);
+  updateSnapQuality(best, gps, geom, { jump, curvMult, roundabout: rbFlags });
 
   _snap = best;
   _prevFixTs = now;

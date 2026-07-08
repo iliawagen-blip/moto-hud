@@ -10,6 +10,8 @@
     "nav:replay": "node scripts/nav-replay.mjs --baseline fixtures/baseline_v1.json",
     "nav:baseline": "node scripts/nav-replay.mjs --capture --baseline fixtures/baseline_v1.json",
     "nav:test": "node scripts/nav-replay.mjs --self-test",
+    "converge:report": "node scripts/converge-report.mjs",
+    "funnel:report": "node scripts/telemetry-funnel-report.mjs",
     "yandex:test": "node scripts/yandex-link-test.mjs",
     "yandex:export:test": "node scripts/yandex-export-test.mjs",
     "trip:extract": "node scripts/extract-trip-jul2026.mjs",
