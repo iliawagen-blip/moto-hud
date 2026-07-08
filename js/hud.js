@@ -37,6 +37,8 @@ import telemetry from './telemetry.js';
 import { logFunnel } from './telemetry-funnel.js';
 import { tickNavMap, resetViewMode } from './view-mode.js';
 import { syncTripHudBadge } from './trip-ui.js';
+import { formatTripHudExtraLine } from './trip-hud-context.js';
+import { syncTripRefuelHud } from './trip-refuel-hud.js';
 import {
   startTrackRecorder, stopTrackRecorder, isTrackRecordEnabled, rememberLastRide,
   tickTrackRecorder
@@ -251,7 +253,8 @@ export function onTick(){
     $('rb-exit-label')?.classList.add('hidden');
     const mid = $('mid-info');
     const tStr = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
-    mid.textContent = tStr + ' · КОМПАС';
+    const tripX = formatTripHudExtraLine();
+    mid.textContent = tripX ? tStr + ' · ' + tripX : tStr + ' · КОМПАС';
     updateFinishInfo(remaining, kmh, now);
     tickAutoMode();
     checkCamerasILS();
@@ -376,10 +379,12 @@ export function onTick(){
   }
   updateFinishInfo(remaining, kmh, now);
   const midLine = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
+  const tripX = formatTripHudExtraLine();
+  const fullMid = tripX ? midLine + ' · ' + tripX : midLine;
   if(S.routeQuality === RouteQuality.LOW && !S.compassMode){
-    $('mid-info').textContent = midLine + ' · НИЗК. OSM';
+    $('mid-info').textContent = fullMid + ' · НИЗК. OSM';
   } else {
-    $('mid-info').textContent = midLine;
+    $('mid-info').textContent = fullMid;
   }
 
   if(remaining < 30 && !S.camWarned.has('arrived')){
@@ -391,6 +396,7 @@ export function onTick(){
   checkCurveSpeedWarn(kmh);
   if(snap) tickSpeedLimit(snap);
   refreshFuelPanel();
+  syncTripRefuelHud();
   tickNavMap();
   syncTripHudBadge();
 }

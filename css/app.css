@@ -841,7 +841,13 @@ body.legal-blocked #hud{display:none!important}
 .trip-map-lbl{font-size:11px;font-weight:700;background:rgba(0,0,0,.72);color:#fff;border:none;padding:2px 6px;border-radius:4px}
 .trip-hud-badge{text-align:center;font-size:13px;font-weight:800;color:var(--accent2);
   padding:4px 8px;background:rgba(77,171,247,.12);border-bottom:1px solid var(--border)}
-.trip-hud-badge.hidden{display:none}
+.trip-hud-extra{text-align:center;font-size:11px;font-weight:600;color:var(--dim);
+  padding:2px 8px 6px;background:rgba(77,171,247,.08);border-bottom:1px solid var(--border);line-height:1.35}
+.trip-hud-extra.hidden,.trip-hud-badge.hidden{display:none}
+.trip-rebuild-preview{font-size:13px;max-height:200px;overflow-y:auto;margin-top:8px;padding:8px 12px;background:var(--panel);border-radius:8px;border:1px solid var(--border)}
+.trip-rebuild-preview ul{margin:0;padding-left:18px}
+.fp-trip-refuel{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15)}
+.fp-trip-refuel.hidden{display:none!important}
 
 /* file:// — подсказка если JS не загрузился */
 .file-protocol-tip{display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:200;

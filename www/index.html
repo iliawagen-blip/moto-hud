@@ -366,6 +366,8 @@
         <button type="button" class="secondary" id="btn-trip-send">📲 Отправить</button>
         <button type="button" class="secondary" id="btn-trip-export">📄 Текст</button>
         <button type="button" class="secondary" id="btn-trip-fuel-all">⛽ Все заправки</button>
+        <button type="button" class="secondary" id="btn-trip-markdown">📝 Markdown</button>
+        <button type="button" class="secondary" id="btn-trip-rebuild">↻ Остаток дней</button>
       </div>
       <button type="button" class="secondary" id="btn-trip-clear" style="margin-top:8px;width:100%">✕ Сбросить выбор</button>
       <button type="button" class="secondary" id="btn-trip-delete" style="margin-top:8px;width:100%">🗑 Удалить план</button>
@@ -441,7 +443,7 @@
       <span class="help-section">
         <b>Планировщик поездки</b>
         Многодневные планы: «🗓 Планировщик» → демо или свой план (укажите <strong>дату старта</strong> для «▶ Сегодня»).
-        Выберите <strong>⛽ профиль мото</strong> — оценка литров и «⛽ Заправки» по OSM. Правка: «✎ Текст» или «📍 Карта». При импорте — экран конфликта, если план уже есть.
+        Выберите <strong>⛽ профиль мото</strong> — оценка литров и «⛽ Заправки» по OSM. Правка: «✎ Текст» или «📍 Карта». Экспорт <strong>📝 Markdown</strong>. В дороге: HUD показывает км до ночёвки/заправки; в панели ⛽ — «Заправился»; <strong>↻ Остаток дней</strong> — пересборка от GPS.
         На телефоне: «▶ Сегодня» → OSRM → «▶ ПОЕХАЛИ». Перенос: «🔗 Ссылка» (trip_pack) или JSON.
         В HUD — бейдж дня. Сегменты можно отметить «готово» вручную.
       </span>
@@ -742,6 +744,19 @@
   </div>
 </div>
 
+<!-- пересборка оставшихся дней -->
+<div class="modal" id="trip-rebuild-modal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <h3>Пересобрать оставшиеся дни</h3>
+    <p class="hint">От текущей GPS-позиции до прежних ночёвок. Вариант «Интенсив» не меняется — проверьте вручную.</p>
+    <div class="trip-rebuild-preview" id="trip-rebuild-preview"></div>
+    <div class="btnrow c2" style="margin-top:12px">
+      <button type="button" id="trip-rebuild-cancel">Отмена</button>
+      <button type="button" class="ok" id="trip-rebuild-ok">Пересобрать</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ HUD (grid) ============ -->
 <div id="hud">
   <div class="statusbar">
@@ -751,6 +766,7 @@
     <span id="clock">--:--</span>
   </div>
   <div id="trip-hud-badge" class="trip-hud-badge hidden" aria-live="polite"></div>
+  <div id="trip-hud-extra" class="trip-hud-extra hidden" aria-live="polite"></div>
 
   <div id="nav-map-pane" class="nav-map-pane" aria-hidden="true"></div>
 
@@ -825,6 +841,15 @@
         <button type="button" class="fp-report-btn st-queue" data-fuel-st="queue">очередь</button>
         <button type="button" class="fp-report-btn st-low" data-fuel-st="low">мало</button>
         <button type="button" class="fp-report-btn st-no" data-fuel-st="no">нет</button>
+      </div>
+    </div>
+    <div class="fp-trip-refuel hidden" id="fp-trip-refuel">
+      <div class="fp-report-lbl">Заправился (л):</div>
+      <div class="fp-report-btns">
+        <button type="button" class="fp-report-btn" data-refuel-l="10">10</button>
+        <button type="button" class="fp-report-btn" data-refuel-l="15">15</button>
+        <button type="button" class="fp-report-btn" data-refuel-l="20">20</button>
+        <button type="button" class="fp-report-btn" id="btn-refuel-custom">…</button>
       </div>
     </div>
   </div>

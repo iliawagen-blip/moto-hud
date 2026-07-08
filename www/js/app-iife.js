@@ -22074,6 +22074,365 @@ ${trkpts}
     }
   });
 
+  // js/trip-markdown.js
+  function tripMarkdownText(trip, variantId = "calm", profile) {
+    const lines = [];
+    lines.push("# " + (trip.title || "\u041F\u043B\u0430\u043D \u043F\u043E\u0435\u0437\u0434\u043A\u0438"));
+    lines.push("");
+    if (trip.startDate) {
+      lines.push("**\u0421\u0442\u0430\u0440\u0442:** " + trip.startDate + (trip.endDate ? " \u2192 **\u0424\u0438\u043D\u0438\u0448:** " + trip.endDate : ""));
+    }
+    if (trip.start?.label) {
+      lines.push("**\u041E\u0442\u043A\u0443\u0434\u0430:** " + trip.start.label + " (`" + trip.start.lat + ", " + trip.start.lon + "`)");
+    }
+    if (trip.finish?.label) {
+      lines.push("**\u041A\u0443\u0434\u0430:** " + trip.finish.label + " (`" + trip.finish.lat + ", " + trip.finish.lon + "`)");
+    }
+    const snap = profile || trip.meta?.bikeProfileSnapshot;
+    if (snap?.name) {
+      lines.push("**\u041C\u043E\u0442\u043E:** " + snap.name + " \xB7 " + snap.tankLiters + " \u043B \xB7 \u0410\u0418-" + (snap.fuelType || "95"));
+    }
+    if (trip.meta?.revision) lines.push("**Revision:** " + trip.meta.revision);
+    lines.push("");
+    lines.push("---");
+    lines.push("");
+    for (const day of trip.days || []) {
+      const v = getDayVariant(day, variantId);
+      const cal = calendarDateForDay(trip, day.n);
+      const dateLbl = day.date || (cal ? formatTripDayDate(cal) : "");
+      lines.push("## \u0414\u0435\u043D\u044C " + day.n + (dateLbl ? " " + dateLbl : "") + (day.badge ? " \xB7 *" + day.badge + "*" : ""));
+      lines.push("");
+      if (v?.schedule) lines.push("> " + v.schedule);
+      if (v?.summary) lines.push("**\u041C\u0430\u0440\u0448\u0440\u0443\u0442:** " + v.summary);
+      if (v?.stats) lines.push("**\u041A\u043C:** " + v.stats);
+      if (v?.lunch) lines.push(v.lunch);
+      if (v?.night) lines.push("**" + v.night + "**");
+      lines.push("");
+      for (const seg of v?.segments || []) {
+        const a = auditSegment(seg.rtext);
+        lines.push("- **" + seg.label + "** \u2014 ~" + a.km + " \u043A\u043C");
+        if (seg.fuelPlan?.stops?.length) {
+          lines.push("  - \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 (\u043E\u0446\u0435\u043D\u043A\u0430):");
+          for (const st of seg.fuelPlan.stops) {
+            lines.push("    - " + (st.brand || st.name) + " \xB7 ~" + st.routeKm + " \u043A\u043C");
+          }
+        }
+        if (seg.fuelPlan?.warnings?.length) {
+          lines.push("  - \u26A0 " + seg.fuelPlan.warnings.join("; "));
+        }
+      }
+      lines.push("");
+    }
+    lines.push("---");
+    lines.push("");
+    lines.push("*\u042D\u043A\u0441\u043F\u043E\u0440\u0442 Moto \u0418\u041B\u0421 \xB7 \u043E\u0446\u0435\u043D\u043A\u0430 \u0442\u043E\u043F\u043B\u0438\u0432\u0430 \xB120\u201330%*");
+    return lines.join("\n").trim();
+  }
+  function tripMarkdownFilename(trip) {
+    const slug = String(trip.title || "plan").replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "plan";
+    return `moto-hud-${slug}.md`;
+  }
+  function downloadTripMarkdown(trip, variantId, profile) {
+    const blob = new Blob([tripMarkdownText(trip, variantId, profile)], { type: "text/markdown;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = tripMarkdownFilename(trip);
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  var init_trip_markdown = __esm({
+    "js/trip-markdown.js"() {
+      init_trip_model();
+    }
+  });
+
+  // js/trip-rebuild.js
+  function getDayEndPoint(day, variantId = "calm") {
+    const v = getDayVariant(day, variantId);
+    const segs = v?.segments || [];
+    if (!segs.length) return null;
+    const pts = parseRtext(segs[segs.length - 1].rtext);
+    return pts.length ? pts[pts.length - 1] : null;
+  }
+  function proposeRebuildRemaining(trip, fromDayN, startPoint, variantId = "calm") {
+    if (!trip?.days?.length || !startPoint || fromDayN < 1) throw new Error("\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u0435\u0440\u0435\u0441\u0431\u043E\u0440\u043A\u0438");
+    const kept = trip.days.filter((d) => d.n < fromDayN);
+    const rest = trip.days.filter((d) => d.n >= fromDayN);
+    if (!rest.length) throw new Error("\u041D\u0435\u0442 \u0434\u043D\u0435\u0439 \u0434\u043B\u044F \u043F\u0435\u0440\u0435\u0441\u0431\u043E\u0440\u043A\u0438");
+    const targets = [];
+    for (const day of rest) {
+      const pt = getDayEndPoint(day, variantId);
+      if (pt) targets.push({ ...pt, dayN: day.n, night: getDayVariant(day, variantId)?.night });
+    }
+    const lastTarget = targets[targets.length - 1];
+    const fin = trip.finish;
+    if (fin && (!lastTarget || haversineApprox(lastTarget, fin) > 2)) {
+      targets.push({ ...fin, dayN: rest[rest.length - 1].n, night: "\u{1F3C1} \u0424\u0438\u043D\u0438\u0448" });
+    }
+    let cur = { lat: startPoint.lat, lon: startPoint.lon, label: startPoint.label || "\u0421\u0435\u0439\u0447\u0430\u0441" };
+    const newDays = [];
+    const previewLines = [`\u0421\u0442\u0430\u0440\u0442 \u043F\u0435\u0440\u0435\u0441\u0431\u043E\u0440\u043A\u0438: ${cur.label}`, `\u0414\u043D\u0435\u0439 \u0437\u0430\u0442\u0440\u043E\u043D\u0443\u0442\u043E: ${rest.length}`];
+    for (let i = 0; i < targets.length; i++) {
+      const t = targets[i];
+      const oldDay = rest[i] || rest[rest.length - 1];
+      const dayN = fromDayN + i;
+      const cal = calendarDateForDay(trip, dayN);
+      const rtext = rtextFromPoints([cur, t]);
+      previewLines.push(`\u0414\u0435\u043D\u044C ${dayN}: ${cur.label} \u2192 ${t.label}`);
+      const oldCalm = getDayVariant(oldDay, "calm") || oldDay?.variants?.[0];
+      const variants = [{
+        id: "calm",
+        label: oldCalm?.label || "\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439",
+        schedule: oldCalm?.schedule,
+        summary: `${cur.label} \u2192 ${t.label}`,
+        night: t.night || oldCalm?.night || (t.label ? `\u{1F319} ${t.label}` : ""),
+        segments: [{ label: "\u041F\u0435\u0440\u0435\u0433\u043E\u043D", rtext, type: "transfer" }]
+      }];
+      newDays.push({
+        n: dayN,
+        date: oldDay?.date || (cal ? formatTripDayDate(cal) : ""),
+        badge: oldDay?.badge || (i === targets.length - 1 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D"),
+        variants
+      });
+      cur = t;
+    }
+    return { kept, newDays, previewLines };
+  }
+  function haversineApprox(a, b) {
+    const R = 6371e3, r = Math.PI / 180;
+    const dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r;
+    const s2 = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(s2), Math.sqrt(1 - s2)) / 1e3;
+  }
+  function applyRebuildRemaining(trip, fromDayN, startPoint, variantId = "calm") {
+    const { kept, newDays } = proposeRebuildRemaining(trip, fromDayN, startPoint, variantId);
+    trip.days = [...kept, ...newDays];
+    if (trip.startDate && trip.days.length) {
+      const last = trip.days[trip.days.length - 1];
+      const end = calendarDateForDay(trip, last.n);
+      if (end && !isNaN(end.getTime())) trip.endDate = end.toISOString().slice(0, 10);
+    }
+    touchTripRevision(trip);
+    return trip;
+  }
+  var init_trip_rebuild = __esm({
+    "js/trip-rebuild.js"() {
+      init_trip_model();
+    }
+  });
+
+  // js/trip-hud-context.js
+  function fmtDist(m) {
+    if (m == null || !isFinite(m)) return "\u2014";
+    if (m < 1e3) return Math.round(m / 10) * 10 + " \u043C";
+    return (m / 1e3).toFixed(1).replace(".", ",") + " \u043A\u043C";
+  }
+  function findSegment(day, label) {
+    for (const v of day?.variants || []) {
+      const seg = v.segments?.find((s2) => s2.label === label);
+      if (seg) return { seg, variantId: v.id };
+    }
+    return null;
+  }
+  function nextPlannedFuelStop(seg, pos) {
+    const plan = seg?.fuelPlan;
+    if (!plan?.stops?.length || !pos) return null;
+    const poly = buildRoutePolyline(seg.rtext);
+    const here = projectToPolyline(poly, pos);
+    const ahead = plan.stops.filter((st2) => st2.routeKm * 1e3 > here.routeM + 500).sort((a, b) => a.routeKm - b.routeKm);
+    const st = ahead[0];
+    if (!st) return null;
+    const stPos = { lat: st.lat, lon: st.lon };
+    return {
+      label: st.brand || st.name || "\u0410\u0417\u0421",
+      distM: haversine(pos, stPos),
+      routeKm: st.routeKm,
+      source: "plan"
+    };
+  }
+  function getTripHudDistances() {
+    const ctx = S.tripContext;
+    const trip = S.activeTrip;
+    const pos = curPos() || S.gps;
+    if (!ctx || !trip || !pos) return null;
+    const day = trip.days.find((d) => d.n === ctx.dayN);
+    if (!day) return null;
+    const vid = ctx.variantId || "calm";
+    const nightPt = getDayEndPoint(day, vid);
+    let night = null;
+    if (nightPt) {
+      night = {
+        label: (getDayVariant(day, vid)?.night || nightPt.label || "\u043D\u043E\u0447\u0451\u0432\u043A\u0430").replace(/^🌙\s*/, ""),
+        distM: haversine(pos, nightPt)
+      };
+    }
+    let fuel = null;
+    const found = ctx.segmentLabel ? findSegment(day, ctx.segmentLabel) : null;
+    const seg = found?.seg || getDayVariant(day, vid)?.segments?.[0];
+    fuel = nextPlannedFuelStop(seg, pos);
+    if (!fuel && S.fuelSel && S.fuelMode > 0) {
+      const d = S.fuelMode === 2 ? S.route ? null : S.fuelSel.distGps : S.fuelSel.distAhead ?? S.fuelSel.distGps;
+      if (d != null) {
+        fuel = {
+          label: S.fuelSel.brand || "\u0410\u0417\u0421",
+          distM: d,
+          source: S.fuelSel.statusSource === "crowd" || S.fuelSel.statusSource === "gdebenz" ? "live" : "osm"
+        };
+      }
+    }
+    return { night, fuel };
+  }
+  function formatTripHudExtraLine() {
+    const d = getTripHudDistances();
+    if (!d) return "";
+    const parts = [];
+    if (d.night) parts.push("\u{1F319} " + d.night.label + " " + fmtDist(d.night.distM));
+    if (d.fuel) {
+      const tag = d.fuel.source === "plan" ? "\u043F\u043B\u0430\u043D" : d.fuel.source === "live" ? "\u0444\u0430\u043A\u0442" : "OSM";
+      parts.push("\u26FD " + d.fuel.label + " " + fmtDist(d.fuel.distM) + " (" + tag + ")");
+    }
+    return parts.join(" \xB7 ");
+  }
+  var init_trip_hud_context = __esm({
+    "js/trip-hud-context.js"() {
+      init_state();
+      init_trip_model();
+      init_geo();
+      init_trip_fuel();
+      init_trip_rebuild();
+      init_gps();
+    }
+  });
+
+  // js/trip-refuel.js
+  function readAll() {
+    try {
+      return JSON.parse(localStorage.getItem(REFUEL_KEY) || "{}");
+    } catch (e) {
+      return {};
+    }
+  }
+  function writeAll(o) {
+    try {
+      localStorage.setItem(REFUEL_KEY, JSON.stringify(o));
+    } catch (e) {
+    }
+  }
+  function getRefuelEvents(tripId) {
+    return readAll()[tripId] || [];
+  }
+  function recordRefuel(tripId, { liters, odometerKm, rideKm, lat, lon }) {
+    if (!tripId || !Number.isFinite(liters) || liters <= 0) throw new Error("\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u043B\u0438\u0442\u0440\u044B");
+    const all = readAll();
+    const list = all[tripId] || [];
+    const ev = {
+      liters: Math.round(liters * 10) / 10,
+      odometerKm: Number.isFinite(odometerKm) ? odometerKm : null,
+      rideKm: Number.isFinite(rideKm) ? rideKm : null,
+      lat: lat ?? null,
+      lon: lon ?? null,
+      at: Date.now()
+    };
+    list.push(ev);
+    all[tripId] = list.slice(-24);
+    writeAll(all);
+    return ev;
+  }
+  function suggestConsumptionCalibration(tripId) {
+    const events = getRefuelEvents(tripId);
+    if (events.length < 2) return null;
+    const a = events[events.length - 2];
+    const b = events[events.length - 1];
+    let km = null;
+    if (a.odometerKm != null && b.odometerKm != null) km = b.odometerKm - a.odometerKm;
+    else if (a.rideKm != null && b.rideKm != null) km = b.rideKm - a.rideKm;
+    if (km == null || km < 20) return null;
+    const liters = b.liters;
+    const suggested = Math.round(liters / km * 100 * 10) / 10;
+    const profile = getActiveBikeProfile();
+    const prev = profile?.consumptionL100?.default ?? 5.5;
+    if (Math.abs(suggested - prev) / prev > 0.4) return null;
+    return { suggested, prev, km: Math.round(km), liters: Math.round(liters * 10) / 10 };
+  }
+  function applyConsumptionCalibration(suggested) {
+    const base = getBikeProfile("bike_custom") || getActiveBikeProfile();
+    if (!base) return false;
+    saveCustomBikeProfile({
+      ...base,
+      id: "bike_custom",
+      name: "\u0421\u0432\u043E\u0439 \u043F\u0440\u043E\u0444\u0438\u043B\u044C",
+      custom: true,
+      consumptionL100: { ...base.consumptionL100 || {}, default: suggested }
+    });
+    setActiveBikeId("bike_custom");
+    return true;
+  }
+  var REFUEL_KEY;
+  var init_trip_refuel = __esm({
+    "js/trip-refuel.js"() {
+      init_bike_profile();
+      REFUEL_KEY = "moto-hud-trip-refuel-v1";
+    }
+  });
+
+  // js/trip-refuel-hud.js
+  function syncRefuelRowVisible() {
+    const row = $2("fp-trip-refuel");
+    if (!row) return;
+    row.classList.toggle("hidden", !S.tripContext?.tripId);
+  }
+  async function onRefuelLiters(liters) {
+    const tripId = S.tripContext?.tripId;
+    if (!tripId) return;
+    const pos = curPos() || S.gps;
+    recordRefuel(tripId, {
+      liters,
+      rideKm: S.distDone || 0,
+      lat: pos?.lat,
+      lon: pos?.lon
+    });
+    speak("\u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0430 " + liters + " \u043B\u0438\u0442\u0440\u043E\u0432");
+    const cal = suggestConsumptionCalibration(tripId);
+    if (cal && confirm(`\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0440\u0430\u0441\u0445\u043E\u0434 \u0432 \u043F\u0440\u043E\u0444\u0438\u043B\u0435?
+${cal.prev} \u2192 ${cal.suggested} \u043B/100
+(${cal.liters} \u043B \u0437\u0430 ${cal.km} \u043A\u043C)`)) {
+      applyConsumptionCalibration(cal.suggested);
+      speak("\u0420\u0430\u0441\u0445\u043E\u0434 \u043E\u0431\u043D\u043E\u0432\u043B\u0451\u043D");
+    }
+  }
+  function initTripRefuelHud() {
+    const row = $2("fp-trip-refuel");
+    if (!row || row.dataset.bound) return;
+    row.dataset.bound = "1";
+    row.querySelectorAll("[data-refuel-l]").forEach((btn) => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const l = parseFloat(btn.getAttribute("data-refuel-l"));
+        if (Number.isFinite(l)) onRefuelLiters(l);
+      });
+    });
+    $2("btn-refuel-custom")?.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const raw = prompt("\u0421\u043A\u043E\u043B\u044C\u043A\u043E \u043B\u0438\u0442\u0440\u043E\u0432?", "15");
+      if (raw == null) return;
+      const l = parseFloat(String(raw).replace(",", "."));
+      if (!Number.isFinite(l) || l <= 0) return;
+      onRefuelLiters(l);
+    });
+  }
+  function syncTripRefuelHud() {
+    syncRefuelRowVisible();
+  }
+  var init_trip_refuel_hud = __esm({
+    "js/trip-refuel-hud.js"() {
+      init_state();
+      init_util();
+      init_voice();
+      init_gps();
+      init_trip_refuel();
+    }
+  });
+
   // js/trip-ui.js
   function setTripNewError(msg) {
     const el = $2("trip-new-error");
@@ -22611,6 +22970,49 @@ ${trkpts}
     a.click();
     URL.revokeObjectURL(a.href);
   }
+  function exportTripMd() {
+    const trip = S.activeTrip;
+    if (!trip) return;
+    downloadTripMarkdown(trip, variantForTrip(trip.id), getTripBikeProfile(trip));
+    setStatus("\u2713 Markdown \u0441\u043A\u0430\u0447\u0430\u043D");
+  }
+  function showRebuildModal() {
+    const trip = S.activeTrip;
+    if (!trip) return;
+    const fromDayN = getTodayDayNumber(trip) || getLastApplied(trip.id)?.dayN || trip.days[0]?.n;
+    const pos = S.gps;
+    if (!pos?.lat) {
+      setStatus("\u274C \u041D\u0443\u0436\u0435\u043D GPS \u0434\u043B\u044F \u043F\u0435\u0440\u0435\u0441\u0431\u043E\u0440\u043A\u0438", true);
+      return;
+    }
+    const start2 = { lat: pos.lat, lon: pos.lon, label: "\u0421\u0435\u0439\u0447\u0430\u0441" };
+    try {
+      const { previewLines } = proposeRebuildRemaining(trip, fromDayN, start2, variantForTrip(trip.id));
+      const pre = $2("trip-rebuild-preview");
+      if (pre) pre.innerHTML = "<ul>" + previewLines.map((l) => "<li>" + escapeHtml(l) + "</li>").join("") + "</ul>";
+      $2("trip-rebuild-modal")?.classList.add("on");
+      $2("trip-rebuild-modal").dataset.fromDay = String(fromDayN);
+    } catch (e) {
+      setStatus("\u274C " + (e.message || e), true);
+    }
+  }
+  async function confirmRebuild() {
+    const trip = S.activeTrip;
+    const modal = $2("trip-rebuild-modal");
+    if (!trip || !modal) return;
+    const fromDayN = +modal.dataset.fromDay || 1;
+    const pos = S.gps;
+    if (!pos) return;
+    try {
+      applyRebuildRemaining(trip, fromDayN, { lat: pos.lat, lon: pos.lon, label: "\u0421\u0435\u0439\u0447\u0430\u0441" }, variantForTrip(trip.id));
+      await persistTrip(trip, { bump: true });
+      modal.classList.remove("on");
+      renderActiveTrip();
+      setStatus(`\u2713 \u041F\u0435\u0440\u0435\u0441\u043E\u0431\u0440\u0430\u043D\u044B \u0434\u043D\u0438 \u0441 ${fromDayN}`);
+    } catch (e) {
+      setStatus("\u274C " + (e.message || e), true);
+    }
+  }
   function initTripPlannerUi() {
     initSegmentEditor();
     initSegmentMapEditor();
@@ -22648,6 +23050,10 @@ ${trkpts}
     $2("trip-new-cancel")?.addEventListener("click", () => showNewTripModal(false));
     $2("trip-new-save")?.addEventListener("click", () => createTripFromForm().catch((e) => setTripNewError(e.message || String(e))));
     $2("btn-trip-export")?.addEventListener("click", exportTripText);
+    $2("btn-trip-markdown")?.addEventListener("click", exportTripMd);
+    $2("btn-trip-rebuild")?.addEventListener("click", showRebuildModal);
+    $2("trip-rebuild-cancel")?.addEventListener("click", () => $2("trip-rebuild-modal")?.classList.remove("on"));
+    $2("trip-rebuild-ok")?.addEventListener("click", () => confirmRebuild().catch((e) => setStatus("\u274C " + e.message, true)));
     $2("btn-trip-json")?.addEventListener("click", () => {
       const trip = S.activeTrip;
       if (!trip) return;
@@ -22710,13 +23116,23 @@ ${trkpts}
     if (ctx.segmentLabel) s2 += " \xB7 " + ctx.segmentLabel.replace(/\s*→\s*$/, "");
     return s2;
   }
+  function getTripHudSubLabel() {
+    return formatTripHudExtraLine();
+  }
   function syncTripHudBadge() {
     const el = $2("trip-hud-badge");
+    const sub = $2("trip-hud-extra");
     if (!el) return;
     const on = $2("hud")?.classList.contains("on");
     const label = getTripHudLabel();
+    const extra = getTripHudSubLabel();
     el.textContent = label;
     el.classList.toggle("hidden", !on || !label);
+    if (sub) {
+      sub.textContent = extra;
+      sub.classList.toggle("hidden", !on || !extra);
+    }
+    syncTripRefuelHud();
   }
   var _busy2;
   var init_trip_ui = __esm({
@@ -22734,6 +23150,10 @@ ${trkpts}
       init_trip_segment_editor();
       init_trip_segment_map();
       init_trip_import_conflict();
+      init_trip_markdown();
+      init_trip_rebuild();
+      init_trip_hud_context();
+      init_trip_refuel_hud();
       _busy2 = false;
     }
   });
@@ -23730,7 +24150,8 @@ ${trkpts}
       $2("rb-exit-label")?.classList.add("hidden");
       const mid = $2("mid-info");
       const tStr = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
-      mid.textContent = tStr + " \xB7 \u041A\u041E\u041C\u041F\u0410\u0421";
+      const tripX2 = formatTripHudExtraLine();
+      mid.textContent = tripX2 ? tStr + " \xB7 " + tripX2 : tStr + " \xB7 \u041A\u041E\u041C\u041F\u0410\u0421";
       updateFinishInfo(remaining, kmh, now);
       tickAutoMode();
       checkCamerasILS();
@@ -23848,10 +24269,12 @@ ${trkpts}
     }
     updateFinishInfo(remaining, kmh, now);
     const midLine = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
+    const tripX = formatTripHudExtraLine();
+    const fullMid = tripX ? midLine + " \xB7 " + tripX : midLine;
     if (S.routeQuality === RouteQuality.LOW && !S.compassMode) {
-      $2("mid-info").textContent = midLine + " \xB7 \u041D\u0418\u0417\u041A. OSM";
+      $2("mid-info").textContent = fullMid + " \xB7 \u041D\u0418\u0417\u041A. OSM";
     } else {
-      $2("mid-info").textContent = midLine;
+      $2("mid-info").textContent = fullMid;
     }
     if (remaining < 30 && !S.camWarned.has("arrived")) {
       S.camWarned.add("arrived");
@@ -23862,6 +24285,7 @@ ${trkpts}
     checkCurveSpeedWarn(kmh);
     if (snap) tickSpeedLimit(snap);
     refreshFuelPanel();
+    syncTripRefuelHud();
     tickNavMap();
     syncTripHudBadge();
   }
@@ -24200,6 +24624,8 @@ ${trkpts}
       init_telemetry_funnel();
       init_view_mode();
       init_trip_ui();
+      init_trip_hud_context();
+      init_trip_refuel_hud();
       init_track_recorder();
       init_speed_limit();
       init_roundabout();
@@ -24547,6 +24973,7 @@ ${trkpts}
   init_yandex_export();
   init_track_recorder();
   init_trip_ui();
+  init_trip_refuel_hud();
   init_hud_chrome();
   init_settings_ui();
   init_hud_settings_sheet();
@@ -24584,6 +25011,7 @@ ${trkpts}
   initHudSettingsSheet(syncOptionsFromDom);
   initOptControls();
   initFuelReportUi();
+  initTripRefuelHud();
   initThemeManager();
   initVintageVfd();
   initTelemetry().then(() => {
