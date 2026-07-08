@@ -114,7 +114,10 @@ export function updateSnapQuality(snap, gps, geom, opts){
 
   if(next === SnapQuality.DEGRADED && prev !== SnapQuality.DEGRADED) _degradedSince = now;
   if(next === SnapQuality.GOOD) _degradedSince = 0;
-  if(next === SnapQuality.LOST && prev !== SnapQuality.LOST) _lostSince = now;
+  if(next === SnapQuality.LOST && prev !== SnapQuality.LOST){
+    _lostSince = now;
+    _forceReeval = true;
+  }
   if(next !== SnapQuality.LOST) _lostSince = 0;
 
   if(prev === SnapQuality.DEGRADED && _degradedSince &&

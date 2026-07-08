@@ -84,18 +84,30 @@ function attachRouteGeometry(route){
   loadRouteHighwayTypes(route).catch(e => console.warn('highway types:', e));
 }
 
-function seedSnapAfterReroute(){
+/**
+ * Привязка snap к ближайшей точке маршрута по GPS (глобальный поиск по polyline).
+ * @param {{ relaxed?: boolean }} [opts] — relaxed: без порогов lateral/heading (старт поездки).
+ * @returns {boolean}
+ */
+export function seedSnapFromGps(opts = {}){
   const geom = S.route?.geometry;
   const gps = S.gps;
-  if(!geom || !gps) return;
+  if(!geom || !gps) return false;
   const s0 = findSForLatLon(geom, gps.lat, gps.lon);
   const p = interpolateAtS(geom, s0);
   const lat = haversine(gps, p);
-  const tan = avgTangentDeg(geom, s0, 25);
-  const hdg = S.smoothedHeading;
-  if(lat > REROUTE_SEED_MAX_LATERAL_M) return;
-  if(hdg != null && angleDiff(hdg, tan) > REROUTE_SEED_MAX_ANGLE_DEG) return;
+  if(!opts.relaxed){
+    const tan = avgTangentDeg(geom, s0, 25);
+    const hdg = S.smoothedHeading;
+    if(lat > REROUTE_SEED_MAX_LATERAL_M) return false;
+    if(hdg != null && angleDiff(hdg, tan) > REROUTE_SEED_MAX_ANGLE_DEG) return false;
+  }
   resetRouteSnap({ seedS: s0, lateral: lat });
+  return true;
+}
+
+function seedSnapAfterReroute(){
+  seedSnapFromGps({ relaxed: false });
 }
 
 /** Фоновая сборка geometry для всех вариантов после открытия карты */

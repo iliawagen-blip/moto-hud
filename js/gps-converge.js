@@ -7,7 +7,8 @@ import { haversine } from './geo.js';
 import { isSim } from './platform.js';
 import {
   GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M,
-  GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M
+  GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M,
+  SNAP_QUALITY_LOST_LATERAL_M
 } from './nav-constants.js';
 import { noteConvergeTransition } from './converge-telemetry.js';
 
@@ -102,15 +103,17 @@ export function feedGpsConverge(fix, telCtx){
   const accLim = re ? GPS_CONVERGE_RE_ACC_M : GPS_CONVERGE_ACC_M;
   const bufStats = getConvergeBufferStats(re);
   const snap = telCtx?.snap;
+  const snapBlocksConverge = snap?.quality === 'LOST' ||
+    (snap?.lateral != null && snap.lateral > SNAP_QUALITY_LOST_LATERAL_M);
 
   const ev = evaluateBuffer(minFixes, accLim);
-  if(ev.ok){
+  if(ev.ok && !snapBlocksConverge){
     S.gpsConverged = true;
     _everConverged = true;
     if(prev !== true){
       noteConvergeTransition(prev, true, 'converged', {}, fix, bufStats, snap);
     }
-  } else if(!re && _buf.length < minFixes){
+  } else if(snapBlocksConverge || (!re && _buf.length < minFixes)){
     S.gpsConverged = false;
   }
 
