@@ -4,7 +4,7 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
   const params = new URLSearchParams(location.search);
   if(params.get('sim') !== '1') return;
 
-  const START = [55.75700, 37.61600];
+  let START = [55.75700, 37.61600];
   const DEMO_FINISH = [55.827099, 37.632066];
   const TURN_LEGS = [
     { turn: 0,    len: 380 },
@@ -32,7 +32,8 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     enu.push([0, 0]);
     return enu.map(p => [start[0] + p[1] / kLat, start[1] + p[0] / kLon]);
   }
-  const WP = legsToWaypoints(START, TURN_LEGS);
+  let WP = legsToWaypoints(START, TURN_LEGS);
+  let usingSyntheticPath = true;
 
   function densify(pts, stepM){
     const R = 6371000, r = Math.PI / 180;
@@ -59,6 +60,7 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
 
   function setPathFromCoords(coords, loop, segSpeed, gpxTimed){
     if(!coords || coords.length < 2) return;
+    usingSyntheticPath = false;
     PATH = coords.length > 80 ? coords : densify(coords, 25);
     if(segSpeed && segSpeed.length === PATH.length - 1){
       SEG_SPEED = segSpeed;
@@ -77,12 +79,56 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     const p = PATH[Math.max(0, Math.min(PATH.length - 1, Math.floor(PATH.length * fr)))];
     return p || START;
   };
-  const SIM_FUEL = [
-    { id: 'sim_f1', lat: _fp(0.20)[0] + 0.0006, lon: _fp(0.20)[1] + 0.0004, brand: 'Лукойл',        status: 'yes' },
-    { id: 'sim_f2', lat: _fp(0.55)[0] + 0.0005, lon: _fp(0.55)[1] - 0.0004, brand: 'Газпромнефть',  status: 'low' },
-    { id: 'sim_f3', lat: START[0] + 0.0045,     lon: START[1] + 0.0060,     brand: 'Роснефть',      status: 'queue' },
-    { id: 'sim_f4', lat: START[0] - 0.0050,     lon: START[1] + 0.0030,     brand: 'Татнефть',      status: 'no' }
-  ];
+
+  function buildSimFuel(){
+    return [
+      { id: 'sim_f1', lat: _fp(0.20)[0] + 0.0006, lon: _fp(0.20)[1] + 0.0004, brand: 'Лукойл',       status: 'yes' },
+      { id: 'sim_f2', lat: _fp(0.55)[0] + 0.0005, lon: _fp(0.55)[1] - 0.0004, brand: 'Газпромнефть', status: 'low' },
+      { id: 'sim_f3', lat: START[0] + 0.0045,     lon: START[1] + 0.0060,     brand: 'Роснефть',     status: 'queue' },
+      { id: 'sim_f4', lat: START[0] - 0.0050,     lon: START[1] + 0.0030,     brand: 'Татнефть',     status: 'no' }
+    ];
+  }
+  let SIM_FUEL = buildSimFuel();
+
+  function rebuildSyntheticPath(){
+    WP = legsToWaypoints(START, TURN_LEGS);
+    PATH = densify(WP, 25);
+    usingSyntheticPath = true;
+    SIM_FUEL = buildSimFuel();
+    sim.idx = 0;
+    sim.frac = 0;
+    sim.running = false;
+    rebuildSegSpeed();
+    emit();
+  }
+
+  function applyStartToHud(lat, lon, hdg){
+    const hud = window.__motoHUD;
+    if(hud?.S){
+      hud.S.gps = { lat, lon };
+      if(hdg != null) hud.S.heading = hdg;
+    }
+    injectFix({ lat, lon, heading: hdg ?? 0, speed: 0 });
+  }
+
+  function setStartPoint(lat, lon, opts){
+    if(!isFinite(lat) || !isFinite(lon)) return false;
+    START = [lat, lon];
+    try{ localStorage.setItem('moto-hud-sim-start', JSON.stringify({ lat, lon })); }catch(e){}
+    if(usingSyntheticPath || opts?.forceSynthetic) rebuildSyntheticPath();
+    else {
+      sim.idx = 0;
+      sim.frac = 0;
+      sim.running = false;
+      emit();
+    }
+    const hdg = PATH.length > 1 ? bearingLL(PATH[0], PATH[1]) : 0;
+    applyStartToHud(lat, lon, hdg);
+    if(opts?.rebuildRoute && window.__motoHUD?.doBuildRoute && window.__motoHUD?.S?.finish){
+      void window.__motoHUD.doBuildRoute();
+    }
+    return true;
+  }
 
   function bearingLL(a, b){
     const r = Math.PI / 180, d = 180 / Math.PI;
@@ -233,6 +279,7 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     gpxMeta = { name: track.name, hasTime: replay.hasTime, points: track.points.length };
     sim.useGpxSpeed = opts?.useTimestamps !== false && replay.hasTime;
     sim.speedScale = opts?.speedScale || 1;
+    usingSyntheticPath = false;
     setPathFromCoords(replay.coords, !!opts?.loop, replay.segSpeed, sim.useGpxSpeed);
     applyGpxToFinish(track);
     return gpxMeta;
@@ -293,10 +340,23 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
     return realFetch ? realFetch(url, opts) : Promise.reject(new Error('no fetch'));
   };
 
+  try{
+    const savedStart = JSON.parse(localStorage.getItem('moto-hud-sim-start') || 'null');
+    if(savedStart?.lat != null && savedStart?.lon != null){
+      START = [savedStart.lat, savedStart.lon];
+      WP = legsToWaypoints(START, TURN_LEGS);
+      PATH = densify(WP, 25);
+      SIM_FUEL = buildSimFuel();
+    }
+  }catch(e){}
+
   window.__SIM__ = {
     get path(){ return PATH; },
+    get start(){ return [START[0], START[1]]; },
     get gpxMeta(){ return gpxMeta; },
     get speedKmh(){ return Math.round(segSpeedNow() * 3.6); },
+    get usingSyntheticPath(){ return usingSyntheticPath; },
+    setStartPoint,
     setSpeed(v){
       sim.maxCruise = Math.max(0, v);
       rebuildSegSpeed();

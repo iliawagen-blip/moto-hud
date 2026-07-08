@@ -52,6 +52,22 @@ html,body{height:100%;overflow:hidden;overflow-x:hidden}
 .search-results .fuel-meta .fuel-st.low{color:var(--warn)}
 #setup .fuel-search-btn{width:100%;margin-bottom:8px;min-height:48px}
 
+/* setup: двухколоночный layout на широком / альбомном экране */
+@media (min-width:720px),(orientation:landscape) and (min-height:480px){
+  #setup{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-content:start;
+    padding-left:max(16px,env(safe-area-inset-left));
+    padding-right:max(16px,env(safe-area-inset-right))
+  }
+  #setup>.headrow,#setup>.opts-migration-banner,#setup>.lbl-in,#setup>.row,
+  #setup>.btnrow,#setup>.fuel-search-btn,#setup>.status,#setup>#search-results,
+  #setup>.favs-headrow,#setup>.favs-list,#setup>.map-provider-row,
+  #setup>#btn-build-route,#setup>#yandex-banner,#setup>#route-section,
+  #setup>#tts-banner,#setup>.setup-details,#setup>.go-bar,
+  #setup>#setup-trip-teaser{grid-column:1/-1}
+  #setup .go-bar{position:fixed;left:0;right:0;bottom:0}
+}
+
 /* ---------- Компактный UI ---------- */
 #setup .headrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 #setup .head-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
@@ -140,6 +156,51 @@ html.dev-mode .opts-fold--dev.hidden{display:block}
 .opts-fold[open]>summary::after{transform:rotate(180deg)}
 .opts-fold-body{padding:4px 10px 10px}
 .opts-fold-body .opt-row{margin-bottom:8px}
+.opts-subheading{
+  font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;
+  color:var(--dim);margin:14px 0 8px;padding:0 4px
+}
+.opt-hint--short{margin-top:4px;font-size:11px}
+.opts-migration-banner{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px;padding:10px 12px;
+  background:var(--panel2);border:1px solid var(--accent);border-radius:12px;font-size:13px;line-height:1.4
+}
+.opts-migration-banner.hidden{display:none}
+.opts-migration-banner .secondary{min-height:40px;padding:6px 12px;font-size:12px;flex-shrink:0}
+.opts-migration-dismiss{
+  margin-left:auto;min-width:40px;min-height:40px;border:none;background:transparent;
+  color:var(--dim);font-size:22px;cursor:pointer;line-height:1
+}
+.opt-stepper{display:inline-flex;align-items:center;gap:4px;flex-shrink:0}
+.opt-stepper-btn{
+  min-width:44px;min-height:44px;border:1px solid var(--border);border-radius:10px;
+  background:var(--panel);color:var(--fg);font-size:20px;font-weight:800;cursor:pointer;padding:0
+}
+.opt-stepper-val{
+  width:56px!important;min-height:auto!important;text-align:center;padding:6px 4px!important;
+  font-size:16px!important;font-weight:800
+}
+.opt-help-btn{
+  min-width:36px;min-height:36px;border-radius:50%;border:1px solid var(--border);
+  background:var(--panel);color:var(--dim);font-size:14px;font-weight:800;cursor:pointer;
+  margin-left:8px;flex-shrink:0
+}
+.opt-tooltip-pop{
+  position:fixed;z-index:100;max-width:min(300px,calc(100vw - 16px));padding:10px 12px;
+  background:var(--panel);border:1px solid var(--accent);border-radius:10px;
+  box-shadow:0 8px 28px rgba(0,0,0,.45);font-size:12px;line-height:1.45;color:var(--fg)
+}
+.opt-tooltip-pop p{margin:0 0 6px}
+.opt-tooltip-more{color:var(--accent);font-weight:700;text-decoration:none;font-size:12px}
+.onboarding-modal .onboarding-card{max-width:400px}
+.onboard-block{margin-top:14px}
+.onboard-label{font-size:14px;font-weight:700;color:var(--fg);display:block;margin-bottom:8px}
+.onboard-choice-row{display:flex;gap:8px}
+.onboard-choice{flex:1;min-height:52px}
+.onboard-choice.active{background:var(--accent);color:var(--accent-on);border-color:var(--accent)}
+body.setup-first-run #drawer-trip,
+body.setup-first-run #drawer-support{display:none}
+body.setup-first-run #opts-migration-banner{display:none!important}
 .opt-preset-row{
   display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-height:56px;padding:8px 4px
 }
@@ -150,21 +211,43 @@ html.dev-mode .opts-fold--dev.hidden{display:block}
   display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--border)
 }
 .opts-data-row button{flex:1;min-width:96px;min-height:48px}
-.favs-headrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
-.favs-manage-btn{min-height:44px;padding:8px 14px;font-size:13px;font-weight:800;flex-shrink:0}
+.favs-headrow{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-bottom:6px;min-width:0;width:100%
+}
+.favs-headrow .lbl-in{flex:1;min-width:0;margin:0}
+.favs-manage-btn{
+  width:auto!important;flex-shrink:0;
+  min-height:48px;padding:10px 16px;font-size:14px;font-weight:800;
+  white-space:nowrap;margin:0
+}
 .favs-more{padding:6px 4px;font-size:12px}
-.favs-manage-modal{background:transparent;padding:0;align-items:stretch;justify-content:stretch}
+.favs-manage-modal{background:transparent;padding:0;align-items:stretch;justify-content:stretch;z-index:45}
 .favs-manage-modal.on{display:flex}
 .favs-manage-modal .favs-manage-backdrop{
-  position:absolute;inset:0;background:rgba(0,0,0,.5)
+  position:absolute;inset:0;background:rgba(0,0,0,.72)
 }
 .favs-manage-panel{
   position:relative;z-index:1;flex:1;display:flex;flex-direction:column;
-  background:var(--bg);padding:12px 14px 24px;overflow-y:auto;max-height:100vh;width:100%
+  background:var(--bg-panel);padding:12px 14px calc(20px + env(safe-area-inset-bottom,0px));
+  overflow-y:auto;min-height:100dvh;max-height:100dvh;width:100%;box-sizing:border-box
 }
-.favs-manage-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-.favs-manage-head h3{margin:0;font-size:18px;flex:1}
-.favs-manage-back{min-height:48px;padding:8px 12px}
+.favs-manage-head{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-shrink:0}
+.favs-manage-head h3{margin:0;font-size:18px;flex:1;min-width:0}
+.favs-manage-back{width:auto!important;min-height:48px;padding:8px 14px;flex-shrink:0;margin:0}
+.favs-manage-panel .hint{flex-shrink:0}
+.favs-manage-panel .favs-edit-list{flex:1;min-height:0;overflow-y:auto;margin-bottom:8px}
+.favs-manage-panel .favs-actions{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:auto;padding-top:12px;
+  border-top:1px solid var(--border);flex-shrink:0
+}
+.favs-manage-panel .favs-actions button{
+  width:100%;min-height:56px;padding:12px 10px;border-radius:12px;margin:0;
+  border:1px solid var(--accent);background:var(--panel2);color:var(--accent);
+  font-size:14px;font-weight:800;cursor:pointer;line-height:1.2;
+  font-family:var(--font-label);touch-action:manipulation
+}
+.favs-manage-panel .favs-actions button:active{opacity:.88;background:var(--panel)}
 .hud-settings-sheet{
   position:fixed;inset:0;z-index:80;pointer-events:none;opacity:0;visibility:hidden;
   transition:opacity .2s ease,visibility .2s ease
@@ -242,8 +325,8 @@ html.dev-mode .opts-fold--dev.hidden{display:block}
 .route-map{width:100%;min-height:200px;height:min(42vh,320px);border:1px solid var(--line);
   border-radius:var(--radius);overflow:hidden;background:var(--map-bg);z-index:0}
 .route-map .leaflet-container{background:var(--map-bg);font-family:inherit}
-.route-map .leaflet-control-attribution{font-size:9px;background:rgba(10,15,22,.85)!important;color:var(--dim)!important}
-.route-map .leaflet-control-attribution a{color:var(--dim)}
+.route-map .leaflet-control-attribution,
+.nav-map-pane .leaflet-control-attribution{display:none!important}
 .route-alts{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .route-alt{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:10px 12px;
   border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--fg);
@@ -563,7 +646,7 @@ body.legal-blocked #hud{display:none!important}
 @keyframes blink{50%{opacity:.4}}
 
 /* ---------- Избранное ---------- */
-.favs-empty{font-size:13px;color:var(--dim);padding:6px 2px;line-height:1.4;width:100%}
+.favs-empty{font-size:13px;color:var(--dim);padding:8px 2px;line-height:1.45;width:100%;overflow-wrap:break-word}
 .favs-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;align-items:flex-start}
 .fav-item{display:inline-flex;max-width:100%}
 .fav-apply{

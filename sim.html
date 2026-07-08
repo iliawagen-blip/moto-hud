@@ -36,11 +36,19 @@
   body.is-desktop .sim-map-panel{display:flex}
   .sim-map-head{
     font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;
-    color:var(--dim);padding:10px 12px;border-bottom:1px solid var(--border)
+    color:var(--dim);padding:10px 12px;border-bottom:1px solid var(--border);
+    display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between
   }
+  .sim-map-head-title{flex:1;min-width:120px}
+  .sim-map-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%}
+  .sim-map-controls label{font-size:11px;color:var(--dim);display:flex;flex-direction:column;gap:3px;flex:1;min-width:120px}
+  .sim-map-controls select{min-height:36px;font-size:12px;padding:6px 8px}
+  .sim-map-controls button{min-height:36px;font-size:12px;padding:6px 10px}
+  .sim-map-controls button.pick-on{background:#238636;border-color:#238636;color:#fff}
+  .sim-start-coords{font-size:11px;color:var(--ok);font-weight:700;flex:1 1 100%}
   #sim-map{flex:1;min-height:360px;background:#0a0f16}
   #sim-map .leaflet-container{background:#0a0f16;font-family:inherit}
-  #sim-map .leaflet-control-attribution{font-size:9px;background:rgba(10,15,22,.9)!important;color:var(--dim)!important}
+  #sim-map .leaflet-control-attribution{display:none!important}
   .phone{
     position:relative;background:#000;border:14px solid #1c1c1e;border-radius:44px;
     box-shadow:0 20px 60px rgba(0,0,0,.6), inset 0 0 0 2px #333;
@@ -119,6 +127,8 @@
   .sim-check input{transform:scale(1.2)}
   body.is-desktop .sim-phase-setup{display:none}
   body.is-mobile .desktop-only{display:none!important}
+  body.is-mobile .mobile-only{display:flex!important}
+  body.is-desktop .mobile-only{display:none!important}
   body.is-desktop .sim-controls-dock{position:relative;width:100%;max-width:900px}
 </style>
 </head>
@@ -146,6 +156,14 @@
             <option value="day">День</option>
             <option value="night" selected>Ночь</option>
             <option value="auto">Авто</option>
+          </select>
+        </label>
+        <label>Старт маршрута (GPS)
+          <select id="setup-start-preset">
+            <option value="kremlin">Кремль (демо)</option>
+            <option value="vdnh">ВДНХ</option>
+            <option value="sokolniki">Сокольники</option>
+            <option value="tverskaya">Тверская</option>
           </select>
         </label>
         <button type="button" id="setup-gpx-demo">📍 GPX демо-трек</button>
@@ -184,6 +202,14 @@
         <button id="btn-gpx-demo" class="desktop-only" title="Демо-трек с timestamps">📍 GPX демо</button>
         <label class="desktop-only">GPX файл
           <input type="file" id="gpx-file" accept=".gpx,application/gpx+xml" style="max-width:180px;font-size:11px">
+        </label>
+        <label class="mobile-only">Старт GPS
+          <select id="mobile-start-preset" style="min-height:auto;padding:6px 8px">
+            <option value="kremlin">Кремль</option>
+            <option value="vdnh">ВДНХ</option>
+            <option value="sokolniki">Сокольники</option>
+            <option value="tverskaya">Тверская</option>
+          </select>
         </label>
         <label class="sim-check desktop-only" title="Только для быстрого регресса на ПК">
           <input type="checkbox" id="chk-autohud"> Авто-HUD
@@ -239,7 +265,26 @@
         </div>
       </div>
       <aside class="sim-map-panel" id="sim-map-panel" aria-label="Карта маршрута">
-        <div class="sim-map-head">🗺 Карта · маршрут и GPS</div>
+        <div class="sim-map-head">
+          <span class="sim-map-head-title">🗺 Карта · маршрут и GPS</span>
+          <div class="sim-map-controls">
+            <label>Подложка
+              <select id="sim-map-provider" aria-label="Провайдер карты"></select>
+            </label>
+            <label>Старт маршрута
+              <select id="sim-start-preset" aria-label="Точка старта">
+                <option value="kremlin">Кремль (демо)</option>
+                <option value="vdnh">ВДНХ</option>
+                <option value="sokolniki">Сокольники</option>
+                <option value="tverskaya">Тверская / Пушкинская</option>
+                <option value="custom">Своя (клик на карте)</option>
+              </select>
+            </label>
+            <button type="button" id="btn-sim-pick-start" title="Клик по карте — новая точка старта">📍 На карте</button>
+            <button type="button" id="btn-sim-rebuild-route" class="secondary" title="Перестроить маршрут от нового старта">↻ Маршрут</button>
+            <span class="sim-start-coords" id="sim-start-coords">Старт: 55.75700, 37.61600</span>
+          </div>
+        </div>
         <div id="sim-map"></div>
       </aside>
     </div>
@@ -286,6 +331,122 @@
   const setupGpxDemo = document.getElementById('setup-gpx-demo');
   const setupGpxFile = document.getElementById('setup-gpx-file');
   const setupGpxNote = document.getElementById('setup-gpx-note');
+
+  const START_PRESETS = {
+    kremlin:   { lat: 55.75700, lon: 37.61600, label: 'Кремль' },
+    vdnh:      { lat: 55.829430, lon: 37.632140, label: 'ВДНХ' },
+    sokolniki: { lat: 55.803200, lon: 37.672500, label: 'Сокольники' },
+    tverskaya: { lat: 55.765200, lon: 37.605600, label: 'Тверская' }
+  };
+
+  const simMapProvider = document.getElementById('sim-map-provider');
+  const simStartPreset = document.getElementById('sim-start-preset');
+  const btnSimPickStart = document.getElementById('btn-sim-pick-start');
+  const btnSimRebuildRoute = document.getElementById('btn-sim-rebuild-route');
+  const simStartCoords = document.getElementById('sim-start-coords');
+  let pickStartActive = false;
+
+  function updateStartCoordsLabel(lat, lon){
+    if(!simStartCoords || lat == null) return;
+    simStartCoords.textContent = 'Старт: ' + lat.toFixed(5) + ', ' + lon.toFixed(5);
+  }
+
+  function applySimStart(lat, lon, opts){
+    const s = sim();
+    if(s?.setStartPoint){
+      s.setStartPoint(lat, lon, opts);
+      updateStartCoordsLabel(lat, lon);
+      window.SimMap?.setStartMarker?.(lat, lon);
+      return true;
+    }
+    try{
+      const win = frame.contentWindow;
+      if(win?.__SIM__?.setStartPoint){
+        win.__SIM__.setStartPoint(lat, lon, opts);
+        updateStartCoordsLabel(lat, lon);
+        window.SimMap?.setStartMarker?.(lat, lon);
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
+  function initSimMapControls(){
+    if(simMapProvider && window.SimMap?.buildProviderSelectHtml){
+      simMapProvider.innerHTML = window.SimMap.buildProviderSelectHtml();
+      const cur = window.SimMap.getCurrentProviderId?.() || 'carto-voyager';
+      simMapProvider.value = cur;
+      simMapProvider.addEventListener('change', () => {
+        window.SimMap?.setMapProvider?.(simMapProvider.value);
+      });
+    }
+
+    try{
+      const saved = JSON.parse(localStorage.getItem('moto-hud-sim-start') || 'null');
+      if(saved?.lat != null){
+        updateStartCoordsLabel(saved.lat, saved.lon);
+        window.SimMap?.setStartMarker?.(saved.lat, saved.lon);
+      }
+    }catch(e){}
+
+    simStartPreset?.addEventListener('change', () => {
+      const key = simStartPreset.value;
+      syncStartPresetSelects(key);
+      if(key === 'custom') return;
+      onStartPresetChange(key);
+    });
+
+    btnSimPickStart?.addEventListener('click', () => {
+      pickStartActive = !pickStartActive;
+      btnSimPickStart.classList.toggle('pick-on', pickStartActive);
+      btnSimPickStart.textContent = pickStartActive ? '✓ Кликните…' : '📍 На карте';
+      if(simStartPreset && pickStartActive) simStartPreset.value = 'custom';
+      window.SimMap?.setPickStartMode?.(pickStartActive, (lat, lon) => {
+        applySimStart(lat, lon, { rebuildRoute: false });
+        pickStartActive = false;
+        btnSimPickStart.classList.remove('pick-on');
+        btnSimPickStart.textContent = '📍 На карте';
+        window.SimMap?.setPickStartMode?.(false);
+      });
+    });
+
+    btnSimRebuildRoute?.addEventListener('click', async () => {
+      try{
+        const win = frame.contentWindow;
+        const api = win?.__SIM__;
+        const start = api?.start;
+        if(start) applySimStart(start[0], start[1], { rebuildRoute: true, forceSynthetic: false });
+        else if(win?.__motoHUD?.doBuildRoute) await win.__motoHUD.doBuildRoute();
+      }catch(e){ alert('Маршрут: ' + (e.message || e)); }
+    });
+  }
+
+  const setupStartPreset = document.getElementById('setup-start-preset');
+  const mobileStartPreset = document.getElementById('mobile-start-preset');
+
+  function syncStartPresetSelects(key){
+    if(simStartPreset && key !== 'custom') simStartPreset.value = key;
+    if(setupStartPreset) setupStartPreset.value = key;
+    if(mobileStartPreset) mobileStartPreset.value = key;
+  }
+
+  function onStartPresetChange(key){
+    if(key === 'custom') return;
+    const p = START_PRESETS[key];
+    if(!p) return;
+    syncStartPresetSelects(key);
+    try{ localStorage.setItem('moto-hud-sim-start-preset', key); }catch(e){}
+    if(frameLoaded) applySimStart(p.lat, p.lon, { rebuildRoute: false });
+    else try{ localStorage.setItem('moto-hud-sim-start', JSON.stringify({ lat: p.lat, lon: p.lon })); }catch(e){}
+  }
+
+  setupStartPreset?.addEventListener('change', () => onStartPresetChange(setupStartPreset.value));
+  mobileStartPreset?.addEventListener('change', () => onStartPresetChange(mobileStartPreset.value));
+
+  try{
+    const savedPreset = localStorage.getItem('moto-hud-sim-start-preset');
+    if(savedPreset && START_PRESETS[savedPreset]) syncStartPresetSelects(savedPreset);
+  }catch(e){}
 
   let portrait = true;
   let playing = false;
@@ -601,6 +762,10 @@
       applySpeedToSim();
       syncPlayButton();
       applySize();
+      try{
+        const api = frame.contentWindow?.__SIM__;
+        if(api?.start) updateStartCoordsLabel(api.start[0], api.start[1]);
+      }catch(e){}
     }, 800);
     await applyPendingGpx();
   });
@@ -611,6 +776,8 @@
       spd.value = setupSpd.value;
       spdVal.textContent = setupSpd.value;
     }
+    const startKey = setupStartPreset?.value || mobileStartPreset?.value || 'kremlin';
+    onStartPresetChange(startKey);
     document.body.classList.remove('phase-setup');
     document.body.classList.add('phase-app');
     if(!frameLoaded){
@@ -648,6 +815,7 @@
   (function(){
     const mapBox = document.getElementById('sim-map');
     if(mapBox && window.SimMap) window.SimMap.init(mapBox);
+    initSimMapControls();
   })();
 </script>
 <script src="js/sim-replay.js"></script>

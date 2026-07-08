@@ -6877,19 +6877,30 @@ function applySectionState() {
     if (id && state[id] != null) det.open = !!state[id];
   });
 }
+function syncAriaExpanded(el) {
+  if (!el) return;
+  const open = el.tagName === "DETAILS" ? el.open : el.classList.contains("open");
+  el.setAttribute("aria-expanded", open ? "true" : "false");
+}
 function bindSectionPersistence() {
   document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
+    syncAriaExpanded(det);
     det.addEventListener("toggle", () => {
       const id = det.getAttribute("data-section");
       if (!id) return;
       saveSectionOpen(id, det.open);
+      syncAriaExpanded(det);
       if (det.open) logSettingsEvent("section_open", { section: id });
     });
   });
   const main = $2("drawer-opts");
-  main?.addEventListener("toggle", () => {
-    if (main.open) logSettingsEvent("drawer_open", {});
-  });
+  if (main) {
+    syncAriaExpanded(main);
+    main.addEventListener("toggle", () => {
+      syncAriaExpanded(main);
+      if (main.open) logSettingsEvent("drawer_open", {});
+    });
+  }
 }
 function updateDevSectionVisible() {
   let on = false;
@@ -6935,6 +6946,31 @@ function bindOptChangeLogging() {
     });
   });
 }
+function bindMigrationBanner() {
+  const banner = $2("opts-migration-banner");
+  if (!banner) return;
+  let seen = false;
+  try {
+    seen = localStorage.getItem(MIGRATION_KEY) === "1";
+  } catch (e) {
+  }
+  if (!seen) banner.classList.remove("hidden");
+  $2("opts-migration-dismiss")?.addEventListener("click", () => {
+    banner.classList.add("hidden");
+    try {
+      localStorage.setItem(MIGRATION_KEY, "1");
+    } catch (e) {
+    }
+  });
+  $2("opts-migration-show")?.addEventListener("click", () => {
+    openSettingsPanel();
+    banner.classList.add("hidden");
+    try {
+      localStorage.setItem(MIGRATION_KEY, "1");
+    } catch (e) {
+    }
+  });
+}
 function initSettingsUi(reloadAllOpts, persistFromDom2) {
   applySectionState();
   bindSectionPersistence();
@@ -6942,6 +6978,11 @@ function initSettingsUi(reloadAllOpts, persistFromDom2) {
   updateDevSectionVisible();
   bindOptChangeLogging();
   bindSettingsDataActions(reloadAllOpts);
+  bindMigrationBanner();
+  document.querySelectorAll(".setup-details").forEach((det) => {
+    syncAriaExpanded(det);
+    det.addEventListener("toggle", () => syncAriaExpanded(det));
+  });
   initSettingsPresets(() => {
     if (typeof persistFromDom2 === "function") persistFromDom2();
   });
@@ -6974,7 +7015,7 @@ function bindSettingsDataActions(reloadAllOpts) {
     alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B. \u041F\u0440\u0438 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E\u0441\u0442\u0438 \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443.");
   });
 }
-var SECTIONS_KEY, DEV_KEY, DEV_TAP_TARGET, DEV_TAPS_NEEDED;
+var SECTIONS_KEY, DEV_KEY, MIGRATION_KEY, DEV_TAP_TARGET, DEV_TAPS_NEEDED;
 var init_settings_ui = __esm({
   "js/settings-ui.js"() {
     init_util();
@@ -6983,6 +7024,7 @@ var init_settings_ui = __esm({
     init_settings_export();
     SECTIONS_KEY = "moto-hud-opts-sections";
     DEV_KEY = "moto-hud-dev-mode";
+    MIGRATION_KEY = "moto-hud-opts-migration-seen";
     DEV_TAP_TARGET = "help-app-version";
     DEV_TAPS_NEEDED = 7;
   }
@@ -17094,14 +17136,64 @@ function saveMapProviderId(id) {
 function getMapProvider(id) {
   return MAP_PROVIDERS[id || getMapProviderId()] || MAP_PROVIDERS[DEFAULT_MAP_PROVIDER];
 }
-var MAP_PROVIDER_KEY, MAP_PROVIDERS, DEFAULT_MAP_PROVIDER;
+function resolveMapLayers(providerId) {
+  const prov = getMapProvider(providerId);
+  if (prov.overlayUrl) {
+    const base = getMapProvider(prov.baseId || DEFAULT_MAP_PROVIDER);
+    return {
+      base: { url: base.url, opts: base.opts },
+      overlay: { url: prov.overlayUrl, opts: prov.overlayOpts || {} }
+    };
+  }
+  return {
+    base: { url: prov.url, opts: prov.opts || {} },
+    overlay: null
+  };
+}
+function buildMapProviderSelectHtml(selectedId) {
+  const sel = selectedId || getMapProviderId();
+  const parts = [];
+  for (const g of MAP_PROVIDER_GROUPS) {
+    const items = Object.values(MAP_PROVIDERS).filter((p) => p.group === g.id);
+    if (!items.length) continue;
+    parts.push('<optgroup label="' + g.label + '">');
+    for (const p of items) {
+      parts.push(
+        '<option value="' + p.id + '"' + (p.id === sel ? " selected" : "") + ">" + p.name + "</option>"
+      );
+    }
+    parts.push("</optgroup>");
+  }
+  const grouped = new Set(MAP_PROVIDER_GROUPS.flatMap(
+    (g) => Object.values(MAP_PROVIDERS).filter((p) => p.group === g.id).map((p) => p.id)
+  ));
+  const rest = Object.values(MAP_PROVIDERS).filter((p) => !grouped.has(p.id));
+  if (rest.length) {
+    parts.push('<optgroup label="\u041F\u0440\u043E\u0447\u0438\u0435">');
+    for (const p of rest) {
+      parts.push(
+        '<option value="' + p.id + '"' + (p.id === sel ? " selected" : "") + ">" + p.name + "</option>"
+      );
+    }
+    parts.push("</optgroup>");
+  }
+  return parts.join("");
+}
+var MAP_PROVIDER_KEY, WAYMARKED_ATTRIBUTION, WAYMARKED_OVERLAY_OPTS, MAP_PROVIDERS, MAP_PROVIDER_GROUPS, DEFAULT_MAP_PROVIDER;
 var init_map_providers = __esm({
   "js/map-providers.js"() {
     MAP_PROVIDER_KEY = "moto-hud-map-provider";
+    WAYMARKED_ATTRIBUTION = 'Trails &copy; <a href="https://waymarkedtrails.org">waymarkedtrails.org</a> (CC-BY-SA) | &copy; OSM';
+    WAYMARKED_OVERLAY_OPTS = {
+      maxZoom: 18,
+      opacity: 0.92,
+      attribution: WAYMARKED_ATTRIBUTION
+    };
     MAP_PROVIDERS = {
       "carto-voyager": {
         id: "carto-voyager",
         name: "CARTO Voyager",
+        group: "base",
         url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
         opts: {
           subdomains: "abcd",
@@ -17109,18 +17201,21 @@ var init_map_providers = __esm({
           attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OSM'
         }
       },
-      osm: {
-        id: "osm",
-        name: "OpenStreetMap",
-        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "carto-voyager-nl": {
+        id: "carto-voyager-nl",
+        name: "CARTO Voyager (\u0431\u0435\u0437 \u043F\u043E\u0434\u043F\u0438\u0441\u0435\u0439)",
+        group: "base",
+        url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png",
         opts: {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+          subdomains: "abcd",
+          maxZoom: 20,
+          attribution: "&copy; CARTO &copy; OSM"
         }
       },
       "carto-light": {
         id: "carto-light",
         name: "CARTO Positron (\u0441\u0432\u0435\u0442\u043B\u0430\u044F)",
+        group: "base",
         url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
         opts: {
           subdomains: "abcd",
@@ -17131,6 +17226,7 @@ var init_map_providers = __esm({
       "carto-dark": {
         id: "carto-dark",
         name: "CARTO Dark (\u0442\u0451\u043C\u043D\u0430\u044F)",
+        group: "base",
         url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
         opts: {
           subdomains: "abcd",
@@ -17138,16 +17234,118 @@ var init_map_providers = __esm({
           attribution: "&copy; CARTO &copy; OSM"
         }
       },
+      osm: {
+        id: "osm",
+        name: "OpenStreetMap",
+        group: "osm",
+        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        opts: {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+        }
+      },
+      "osm-hot": {
+        id: "osm-hot",
+        name: "OSM Humanitarian (HOT)",
+        group: "osm",
+        url: "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+        opts: {
+          subdomains: "abc",
+          maxZoom: 19,
+          attribution: "&copy; OSM HOT &copy; OSM"
+        }
+      },
+      cyclosm: {
+        id: "cyclosm",
+        name: "CyclOSM (\u043C\u043E\u0442\u043E/\u0432\u0435\u043B)",
+        group: "osm",
+        url: "https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",
+        opts: {
+          subdomains: "abc",
+          maxZoom: 20,
+          attribution: '&copy; <a href="https://www.cyclosm.org/">CyclOSM</a> &copy; OSM'
+        }
+      },
+      wikimedia: {
+        id: "wikimedia",
+        name: "Wikimedia OSM",
+        group: "osm",
+        url: "https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png",
+        opts: {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://wikimediafoundation.org/">Wikimedia</a> &copy; OSM'
+        }
+      },
       topo: {
         id: "topo",
         name: "OpenTopoMap (\u0440\u0435\u043B\u044C\u0435\u0444)",
+        group: "terrain",
         url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
         opts: {
           maxZoom: 17,
-          attribution: "&copy; OpenTopoMap &copy; OSM"
+          attribution: '&copy; <a href="https://opentopomap.org/">OpenTopoMap</a> &copy; OSM'
         }
+      },
+      "esri-topo": {
+        id: "esri-topo",
+        name: "Esri World Topo",
+        group: "terrain",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+        opts: {
+          maxZoom: 19,
+          attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>'
+        }
+      },
+      "esri-imagery": {
+        id: "esri-imagery",
+        name: "\u0421\u043F\u0443\u0442\u043D\u0438\u043A (Esri)",
+        group: "satellite",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        opts: {
+          maxZoom: 19,
+          attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>'
+        }
+      },
+      "waymarked-hiking": {
+        id: "waymarked-hiking",
+        name: "Waymarked \u2014 \u043F\u0435\u0448\u0438\u0435 \u0442\u0440\u043E\u043F\u044B",
+        group: "trails",
+        baseId: "carto-voyager",
+        overlayUrl: "https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png",
+        overlayOpts: { ...WAYMARKED_OVERLAY_OPTS }
+      },
+      "waymarked-mtb": {
+        id: "waymarked-mtb",
+        name: "Waymarked \u2014 MTB",
+        group: "trails",
+        baseId: "carto-voyager",
+        overlayUrl: "https://tile.waymarkedtrails.org/mtb/{z}/{x}/{y}.png",
+        overlayOpts: { ...WAYMARKED_OVERLAY_OPTS }
+      },
+      "waymarked-cycling": {
+        id: "waymarked-cycling",
+        name: "Waymarked \u2014 \u0432\u0435\u043B\u043E\u043C\u0430\u0440\u0448\u0440\u0443\u0442\u044B",
+        group: "trails",
+        baseId: "carto-voyager",
+        overlayUrl: "https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png",
+        overlayOpts: { ...WAYMARKED_OVERLAY_OPTS }
+      },
+      "waymarked-riding": {
+        id: "waymarked-riding",
+        name: "Waymarked \u2014 \u043A\u043E\u043D\u043D\u044B\u0435",
+        group: "trails",
+        baseId: "carto-voyager",
+        overlayUrl: "https://tile.waymarkedtrails.org/riding/{z}/{x}/{y}.png",
+        overlayOpts: { ...WAYMARKED_OVERLAY_OPTS }
       }
     };
+    MAP_PROVIDER_GROUPS = [
+      { id: "base", label: "\u0411\u0430\u0437\u043E\u0432\u044B\u0435" },
+      { id: "osm", label: "OpenStreetMap" },
+      { id: "terrain", label: "\u0420\u0435\u043B\u044C\u0435\u0444" },
+      { id: "satellite", label: "\u0421\u043F\u0443\u0442\u043D\u0438\u043A" },
+      { id: "trails", label: "\u0422\u0440\u043E\u043F\u044B (Waymarked)" }
+    ];
     DEFAULT_MAP_PROVIDER = "carto-voyager";
   }
 });
@@ -17192,11 +17390,17 @@ function latLngsForDistance(route, maxM, startS) {
   return out;
 }
 function applyTileLayer(id) {
-  const prov = getMapProvider(id);
   if (!_map) return;
+  const layers = resolveMapLayers(id);
   if (_tileLayer) _map.removeLayer(_tileLayer);
-  _tileLayer = import_leaflet.default.tileLayer(prov.url, prov.opts);
-  _tileLayer.addTo(_map);
+  if (_overlayLayer) {
+    _map.removeLayer(_overlayLayer);
+    _overlayLayer = null;
+  }
+  _tileLayer = import_leaflet.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map);
+  if (layers.overlay) {
+    _overlayLayer = import_leaflet.default.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map);
+  }
 }
 function ensureMap() {
   const box = $2("route-map");
@@ -17205,7 +17409,7 @@ function ensureMap() {
     box.innerHTML = "";
     _map = import_leaflet.default.map(box, {
       zoomControl: true,
-      attributionControl: true,
+      attributionControl: false,
       preferCanvas: true
     });
     applyTileLayer(getMapProviderId());
@@ -17215,10 +17419,7 @@ function ensureMap() {
 function initMapProviderSelect(onChange) {
   const sel = $2("opt-map");
   if (!sel) return;
-  sel.innerHTML = Object.values(MAP_PROVIDERS).map(
-    (p) => '<option value="' + p.id + '">' + p.name + "</option>"
-  ).join("");
-  sel.value = getMapProviderId();
+  sel.innerHTML = buildMapProviderSelectHtml(getMapProviderId());
   sel.addEventListener("change", () => {
     saveMapProviderId(sel.value);
     applyTileLayer(sel.value);
@@ -17374,7 +17575,7 @@ function clearRouteMap() {
 function invalidateRouteMapSize() {
   if (_map) setTimeout(() => _map.invalidateSize(), 150);
 }
-var import_leaflet, _onSelect, _map, _tileLayer, _routeLayers, _hudWindowLayers, _markers, _lastRender, ROUTE_COLORS;
+var import_leaflet, _onSelect, _map, _tileLayer, _overlayLayer, _routeLayers, _hudWindowLayers, _markers, _lastRender, ROUTE_COLORS;
 var init_route_map = __esm({
   "js/route-map.js"() {
     import_leaflet = __toESM(require_leaflet_src());
@@ -17388,6 +17589,7 @@ var init_route_map = __esm({
     _onSelect = null;
     _map = null;
     _tileLayer = null;
+    _overlayLayer = null;
     _routeLayers = [];
     _hudWindowLayers = [];
     _markers = [];
@@ -18814,17 +19016,23 @@ function routeLatLngs() {
 }
 function applyTiles() {
   if (!_map2) return;
-  const prov = getMapProvider(getMapProviderId());
+  const layers = resolveMapLayers(getMapProviderId());
   if (_tileLayer2) _map2.removeLayer(_tileLayer2);
-  _tileLayer2 = import_leaflet2.default.tileLayer(prov.url, prov.opts);
-  _tileLayer2.addTo(_map2);
+  if (_overlayLayer2) {
+    _map2.removeLayer(_overlayLayer2);
+    _overlayLayer2 = null;
+  }
+  _tileLayer2 = import_leaflet2.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map2);
+  if (layers.overlay) {
+    _overlayLayer2 = import_leaflet2.default.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map2);
+  }
 }
 function ensureMap2() {
   const box = $2("nav-map-pane");
   if (!box) return null;
   if (!_map2) {
     box.innerHTML = "";
-    _map2 = import_leaflet2.default.map(box, { zoomControl: false, attributionControl: true, preferCanvas: true });
+    _map2 = import_leaflet2.default.map(box, { zoomControl: false, attributionControl: false, preferCanvas: true });
     applyTiles();
     _routeLayer = import_leaflet2.default.polyline([], { color: "#ffd400", weight: 6 }).addTo(_map2);
     _posMarker = import_leaflet2.default.circleMarker([0, 0], {
@@ -18919,7 +19127,7 @@ function tickNavMap() {
   if (S.viewMode === "hud" || !S.route) return;
   syncNavMap(S.viewMode);
 }
-var import_leaflet2, _map2, _tileLayer2, _routeLayer, _posMarker, _finishMarker, _maneuverMarker, _overviewFit, _lastZoomPan;
+var import_leaflet2, _map2, _tileLayer2, _overlayLayer2, _routeLayer, _posMarker, _finishMarker, _maneuverMarker, _overviewFit, _lastZoomPan;
 var init_nav_map = __esm({
   "js/nav-map.js"() {
     import_leaflet2 = __toESM(require_leaflet_src());
@@ -18931,6 +19139,7 @@ var init_nav_map = __esm({
     init_route();
     _map2 = null;
     _tileLayer2 = null;
+    _overlayLayer2 = null;
     _routeLayer = null;
     _posMarker = null;
     _finishMarker = null;
@@ -20951,9 +21160,12 @@ async function onDecline() {
   }
   showBlockedScreen();
 }
-function initLegalConsent() {
+function initLegalConsent(opts) {
   applyStoreLegalUi();
-  if (hasValidLegalConsent()) return;
+  if (hasValidLegalConsent()) {
+    opts?.onAccepted?.();
+    return;
+  }
   const modal = document.getElementById("legalModal");
   if (!modal) return;
   modal.classList.add("on");
@@ -20962,10 +21174,216 @@ function initLegalConsent() {
     saveConsent();
     modal.classList.remove("on");
     document.body.classList.remove("legal-gate");
+    opts?.onAccepted?.();
   }, { once: true });
   document.getElementById("legal-decline")?.addEventListener("click", () => {
     void onDecline();
   }, { once: true });
+}
+
+// js/onboarding.js
+init_util();
+init_app_opts();
+var ONBOARD_KEY = "moto-hud-onboarding-v1";
+var FIRST_RUN_CLASS = "setup-first-run";
+function isDone() {
+  try {
+    return localStorage.getItem(ONBOARD_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
+}
+function markDone() {
+  try {
+    localStorage.setItem(ONBOARD_KEY, "1");
+  } catch (e) {
+  }
+  document.body.classList.remove(FIRST_RUN_CLASS);
+  $2("onboarding-modal")?.classList.remove("on");
+}
+function applyFirstRunLayout() {
+  document.body.classList.add(FIRST_RUN_CLASS);
+  document.querySelectorAll("#setup .setup-details").forEach((det) => {
+    det.open = false;
+  });
+}
+function bindCamOnboarding(persistFromDom2) {
+  const modal = $2("onboarding-modal");
+  if (!modal) return;
+  const backYes = $2("onboard-back-yes");
+  const backNo = $2("onboard-back-no");
+  const limit = $2("onboard-limit");
+  const limitVal = $2("onboard-limit-val");
+  limit?.addEventListener("input", () => {
+    if (limitVal) limitVal.textContent = limit.value;
+  });
+  $2("onboarding-skip")?.addEventListener("click", () => markDone());
+  $2("onboarding-save")?.addEventListener("click", () => {
+    const backOnly = $2("opt-back-only");
+    const limitEl = $2("opt-limit");
+    if (backOnly) backOnly.checked = backYes?.classList.contains("active") ?? true;
+    if (limitEl && limit) limitEl.value = limit.value;
+    if (typeof persistFromDom2 === "function") persistFromDom2();
+    else saveAppOptsToStorage();
+    markDone();
+  });
+  backYes?.addEventListener("click", () => {
+    backYes.classList.add("active");
+    backNo?.classList.remove("active");
+  });
+  backNo?.addEventListener("click", () => {
+    backNo.classList.add("active");
+    backYes?.classList.remove("active");
+  });
+  backYes?.classList.add("active");
+}
+function initOnboarding(persistFromDom2) {
+  if (!hasValidLegalConsent()) return;
+  if (isDone()) return;
+  applyFirstRunLayout();
+  const modal = $2("onboarding-modal");
+  if (modal) {
+    modal.classList.add("on");
+    bindCamOnboarding(persistFromDom2);
+  }
+}
+
+// js/opt-controls.js
+init_util();
+var STEPPER_IDS = [
+  "opt-limit",
+  "opt-cam-speed-tol",
+  "opt-tol",
+  "opt-elev-profile-h",
+  "opt-elev-profile-len",
+  "opt-elev-exag",
+  "opt-fuel-count",
+  "opt-chevron-max"
+];
+var HELP_TEXTS = {
+  "opt-voice": "\u0413\u043E\u043B\u043E\u0441\u043E\u0432\u044B\u0435 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u0430\u043D\u0451\u0432\u0440\u043E\u0432 \u0438 \u043A\u0430\u043C\u0435\u0440. \u0420\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0447\u0435\u0440\u0435\u0437 \u0441\u0438\u043D\u0442\u0435\u0437 \u0440\u0435\u0447\u0438 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430.",
+  "opt-path": "\u041F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430 \u043D\u0430 HUD: \u0440\u0435\u043B\u044C\u0435\u0444, \u0448\u0435\u0432\u0440\u043E\u043D\u044B, \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u043F\u0435\u0440\u0435\u043A\u0440\u0451\u0441\u0442\u043A\u043E\u0432.",
+  "opt-limit": "\u041B\u0438\u043C\u0438\u0442 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u0438 \u0434\u043B\u044F \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u0439 \u043A\u0430\u043C\u0435\u0440. \u041F\u043E\u0434\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043F\u043E\u0434 \u0441\u0432\u043E\u0439 \u043C\u043E\u0442\u043E\u0446\u0438\u043A\u043B \u0438 \u0441\u0442\u0438\u043B\u044C.",
+  "opt-back-only": "\u041F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0430\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u043E \u043A\u0430\u043C\u0435\u0440\u0430\u0445 \xAB\u0432 \u0441\u043F\u0438\u043D\u0443\xBB \u2014 \u0432\u0441\u0442\u0440\u0435\u0447\u043D\u044B\u0439 \u043F\u043E\u0442\u043E\u043A.",
+  "opt-cam-speed-tol": "\u0414\u043E\u043F\u0443\u0441\u043A \u043F\u0440\u0435\u0432\u044B\u0448\u0435\u043D\u0438\u044F \u043B\u0438\u043C\u0438\u0442\u0430 (\u043A\u043C/\u0447) \u043F\u0435\u0440\u0435\u0434 \u0441\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u043D\u0438\u0435\u043C \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u044F.",
+  "opt-tol": "\u0414\u043E\u043F\u0443\u0441\u043A \u0443\u0433\u043B\u0430 \u043D\u0430\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044F \u043A\u0430\u043C\u0435\u0440\u044B \u043E\u0442\u043D\u043E\u0441\u0438\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u0430\u0448\u0435\u0433\u043E \u043A\u0443\u0440\u0441\u0430 (\u0433\u0440\u0430\u0434\u0443\u0441\u044B).",
+  "opt-fuel-proxy": "\u041F\u0440\u043E\u043A\u0441\u0438 Cloudflare Workers \u0434\u043B\u044F \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u0442\u043E\u043F\u043B\u0438\u0432\u0430 \u0441 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430.",
+  "opt-hud-status-mode": "\u0421\u0442\u0440\u043E\u043A\u0430 GPS/CAM/T+ \u043D\u0430 HUD: \u0432\u0441\u0435\u0433\u0434\u0430, \u043F\u043E \u0442\u0430\u043F\u0443 15 \u0441 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u0430.",
+  "opt-hud-finish-mode": "\u041D\u0438\u0436\u043D\u044F\u044F \u0441\u0442\u0440\u043E\u043A\u0430 \xAB\u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C/ETA\xBB: \u0432\u0441\u0435\u0433\u0434\u0430, \u043F\u043E \u0442\u0430\u043F\u0443 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u0430."
+};
+var activeTip = null;
+function closeTip() {
+  activeTip?.remove();
+  activeTip = null;
+}
+function showTip(anchor, text) {
+  closeTip();
+  const tip = document.createElement("div");
+  tip.className = "opt-tooltip-pop";
+  tip.innerHTML = "<p>" + text + '</p><a href="#drawer-help" class="opt-tooltip-more">\u041F\u043E\u0434\u0440\u043E\u0431\u043D\u0435\u0435 \u2192</a>';
+  document.body.appendChild(tip);
+  const r = anchor.getBoundingClientRect();
+  tip.style.left = Math.max(8, Math.min(r.left, window.innerWidth - tip.offsetWidth - 8)) + "px";
+  tip.style.top = r.bottom + 6 + "px";
+  activeTip = tip;
+  tip.querySelector(".opt-tooltip-more")?.addEventListener("click", () => {
+    closeTip();
+    $2("drawer-help").open = true;
+    $2("drawer-help")?.scrollIntoView({ behavior: "smooth" });
+  });
+}
+function wrapStepper(input) {
+  if (!input || input.dataset.stepper) return;
+  input.dataset.stepper = "1";
+  input.type = "text";
+  input.inputMode = "numeric";
+  input.readOnly = true;
+  input.classList.add("opt-stepper-val");
+  const wrap = document.createElement("div");
+  wrap.className = "opt-stepper";
+  const minus = document.createElement("button");
+  minus.type = "button";
+  minus.className = "opt-stepper-btn";
+  minus.textContent = "\u2212";
+  minus.setAttribute("aria-label", "\u0423\u043C\u0435\u043D\u044C\u0448\u0438\u0442\u044C");
+  const plus = document.createElement("button");
+  plus.type = "button";
+  plus.className = "opt-stepper-btn";
+  plus.textContent = "+";
+  plus.setAttribute("aria-label", "\u0423\u0432\u0435\u043B\u0438\u0447\u0438\u0442\u044C");
+  const parent = input.parentNode;
+  parent.insertBefore(wrap, input);
+  wrap.append(minus, input, plus);
+  const step = parseFloat(input.getAttribute("step")) || 1;
+  const min = parseFloat(input.getAttribute("min"));
+  const max = parseFloat(input.getAttribute("max"));
+  function bump(dir) {
+    let v = parseFloat(input.value);
+    if (!isFinite(v)) v = 0;
+    v += dir * step;
+    if (isFinite(min)) v = Math.max(min, v);
+    if (isFinite(max)) v = Math.min(max, v);
+    if (step >= 1) v = Math.round(v);
+    else v = Math.round(v * 10) / 10;
+    input.value = String(v);
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  let repeatTimer = null;
+  function startRepeat(dir) {
+    bump(dir);
+    repeatTimer = setInterval(() => bump(dir), 120);
+  }
+  function stopRepeat() {
+    if (repeatTimer) {
+      clearInterval(repeatTimer);
+      repeatTimer = null;
+    }
+  }
+  minus.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    startRepeat(-1);
+  });
+  plus.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    startRepeat(1);
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => {
+    minus.addEventListener(ev, stopRepeat);
+    plus.addEventListener(ev, stopRepeat);
+  });
+  minus.addEventListener("click", (e) => e.preventDefault());
+  plus.addEventListener("click", (e) => e.preventDefault());
+}
+function addHelpButtons() {
+  Object.entries(HELP_TEXTS).forEach(([id, text]) => {
+    const el = $2(id);
+    if (!el) return;
+    const row = el.closest(".opt-row");
+    if (!row || row.querySelector(".opt-help-btn")) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "opt-help-btn";
+    btn.textContent = "?";
+    btn.setAttribute("aria-label", "\u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430");
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeTip?.dataset.for === id) {
+        closeTip();
+        return;
+      }
+      showTip(btn, text);
+      if (activeTip) activeTip.dataset.for = id;
+    });
+    row.appendChild(btn);
+  });
+}
+function initOptControls() {
+  STEPPER_IDS.forEach((id) => wrapStepper($2(id)));
+  addHelpButtons();
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".opt-help-btn") && !e.target.closest(".opt-tooltip-pop")) closeTip();
+  });
 }
 
 // js/main.js
@@ -21047,7 +21465,6 @@ init_hud_chrome();
 init_settings_ui();
 init_hud_settings_sheet();
 applyThemeCss();
-initLegalConsent();
 initYandexImportUi();
 initYandexClipboard();
 initYandexShare();
@@ -21074,8 +21491,12 @@ function reloadAllSettingsFromStorage() {
   syncOptionsFromDom();
   updateCamStatusUI();
 }
+initLegalConsent({
+  onAccepted: () => initOnboarding(persistSettingsFromDom)
+});
 initSettingsUi(reloadAllSettingsFromStorage, persistSettingsFromDom);
 initHudSettingsSheet(syncOptionsFromDom);
+initOptControls();
 initFuelReportUi();
 initThemeManager();
 initVintageVfd();

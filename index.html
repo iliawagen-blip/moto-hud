@@ -82,6 +82,11 @@
 
 <!-- ============ SETUP ============ -->
 <div id="setup">
+  <div class="opts-migration-banner hidden" id="opts-migration-banner" role="status">
+    <span>Настройки сгруппированы по секциям — основное наверху.</span>
+    <button type="button" class="secondary" id="opts-migration-show">Показать где</button>
+    <button type="button" class="opts-migration-dismiss" id="opts-migration-dismiss" aria-label="Закрыть">×</button>
+  </div>
   <div class="headrow">
     <h1>🏍 Мото ИЛС</h1>
     <div class="head-chips">
@@ -194,7 +199,7 @@
               <option value="off">откл.</option>
             </select>
           </div>
-          <p class="opt-hint">Кнопки HUD — по тапу 15 с. Двойной тап по экрану — карта.</p>
+          <p class="opt-hint opt-hint--short">Кнопки HUD — по тапу 15 с. Двойной тап — карта.</p>
           <div class="opt-finish-group">
             <div class="toggle opt-row">📍 Расстояние <input type="checkbox" id="opt-finish-dist" checked></div>
             <div class="toggle opt-row">⏱ Оставшееся время <input type="checkbox" id="opt-finish-time" checked></div>
@@ -203,7 +208,7 @@
           <div class="toggle opt-row">🔀 Контекст перекрёстков <input type="checkbox" id="opt-crossings" checked></div>
           <div class="toggle opt-row">🧭 Компас N/E/S/W <input type="checkbox" id="opt-heading"></div>
           <button type="button" id="btn-compass-cal" class="secondary opt-full-btn">🧭 Калибровка компаса</button>
-          <p class="opt-hint">На стоянке: «восьмёрка» телефоном 15 с.</p>
+          <p class="opt-hint opt-hint--short">Калибровка: «восьмёрка» телефоном 15 с на стоянке.</p>
           <div class="toggle opt-row">⛰ Профиль высот <input type="checkbox" id="opt-elev-profile" checked></div>
           <div class="opt-elev-advanced">
             <div class="toggle opt-row">⛰ Высота полоски (px) <input type="number" id="opt-elev-profile-h" value="72" min="36" max="160" step="4"></div>
@@ -227,19 +232,15 @@
             </select>
           </div>
           <div class="toggle opt-row">📷 Допуск превышения (км/ч) <input type="number" id="opt-cam-speed-tol" value="15" min="0" max="50" step="1"></div>
-          <details class="opts-fold opts-fold--inner" data-section="cams-adv">
-            <summary class="opts-fold-summary opts-fold-summary--sub">Расширенные</summary>
-            <div class="opts-fold-body">
-              <div class="toggle opt-row">⚙ Допуск направления (°) <input type="number" id="opt-tol" value="45" min="10" max="90"></div>
-              <div class="toggle opt-row">
-                ❓ Камеры без direction
-                <select id="opt-nodir" class="opt-select">
-                  <option value="skip">пропускать</option>
-                  <option value="warn">предупреждать</option>
-                </select>
-              </div>
-            </div>
-          </details>
+          <h4 class="opts-subheading">Расширенные</h4>
+          <div class="toggle opt-row">⚙ Допуск направления (°) <input type="number" id="opt-tol" value="45" min="10" max="90"></div>
+          <div class="toggle opt-row">
+            ❓ Камеры без direction
+            <select id="opt-nodir" class="opt-select">
+              <option value="skip">пропускать</option>
+              <option value="warn">предупреждать</option>
+            </select>
+          </div>
         </div>
       </details>
 
@@ -420,6 +421,31 @@
   </div>
 </div>
 
+<!-- онбординг: камеры и лимит после legal -->
+<div class="modal onboarding-modal" id="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+  <div class="modal-card onboarding-card">
+    <h3 id="onboarding-title">Быстрая настройка</h3>
+    <p class="sub">Два шага — потом можно ехать. Подробности в «⚙ Настройки».</p>
+    <div class="onboard-block">
+      <div class="onboard-label">Предупреждать только камеры в спину?</div>
+      <div class="onboard-choice-row">
+        <button type="button" class="secondary onboard-choice active" id="onboard-back-yes">Да</button>
+        <button type="button" class="secondary onboard-choice" id="onboard-back-no">Все камеры</button>
+      </div>
+    </div>
+    <div class="onboard-block">
+      <label class="onboard-label">Лимит скорости (км/ч): <span class="val" id="onboard-limit-val">60</span>
+        <input type="range" id="onboard-limit" min="40" max="130" value="60" step="5">
+      </label>
+    </div>
+    <p class="hint" style="margin-top:8px">1. Укажите финиш → 2. «Построить маршрут» → 3. «▶ ПОЕХАЛИ»</p>
+    <div class="btnrow c2" style="margin-top:14px">
+      <button type="button" id="onboarding-skip">Пропустить</button>
+      <button type="button" class="ok" id="onboarding-save">Готово</button>
+    </div>
+  </div>
+</div>
+
 <!-- модалка импорта Яндекс.Карт -->
 <div class="modal" id="yandexImportModal">
   <div class="modal-card">
@@ -447,11 +473,11 @@
     </div>
     <p class="hint" style="margin-bottom:10px">Сохранение, удаление, импорт и экспорт.</p>
     <div class="favs-list favs-edit-list" id="favs-edit-list"></div>
-    <div class="btnrow c4" style="margin-top:8px">
-      <button type="button" class="ic-lbl" id="btn-fav-save-finish" title="Сохранить текущий финиш"><span class="ic">💾</span><span class="lbl">Финиш</span></button>
-      <button type="button" class="ic-lbl" id="btn-fav-save-gps" title="Сохранить точку GPS"><span class="ic">📍</span><span class="lbl">GPS</span></button>
-      <button type="button" class="ic-lbl" id="btn-fav-export" title="Экспорт в файл"><span class="ic">📤</span><span class="lbl">Экспорт</span></button>
-      <button type="button" class="ic-lbl" id="btn-fav-import" title="Импорт из файла"><span class="ic">📥</span><span class="lbl">Импорт</span></button>
+    <div class="favs-actions">
+      <button type="button" class="secondary" id="btn-fav-save-finish">💾 Сохранить финиш</button>
+      <button type="button" class="secondary" id="btn-fav-save-gps">📍 Точка GPS</button>
+      <button type="button" class="secondary" id="btn-fav-export">📤 Экспорт</button>
+      <button type="button" class="secondary" id="btn-fav-import">📥 Импорт</button>
     </div>
     <input type="file" id="fav-file" accept="application/json,.json" hidden>
   </div>

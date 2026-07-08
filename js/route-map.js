@@ -4,7 +4,8 @@ import { haversine } from './geo.js';
 import { getElevProfileLenM } from './elevation.js';
 import { geometryToLatLngs, latLngsSliceByS } from './route-geometry.js';
 import {
-  MAP_PROVIDERS, getMapProviderId, saveMapProviderId, getMapProvider
+  MAP_PROVIDERS, getMapProviderId, saveMapProviderId, getMapProvider,
+  buildMapProviderSelectHtml, resolveMapLayers
 } from './map-providers.js';
 import { fuelStationsForMap, fuelColor } from './fuel.js';
 import { THEME } from './theme.js';
@@ -12,6 +13,7 @@ import { THEME } from './theme.js';
 let _onSelect = null;
 let _map = null;
 let _tileLayer = null;
+let _overlayLayer = null;
 let _routeLayers = [];
 let _hudWindowLayers = [];
 let _markers = [];
@@ -62,11 +64,14 @@ function latLngsForDistance(route, maxM, startS){
 }
 
 function applyTileLayer(id){
-  const prov = getMapProvider(id);
   if(!_map) return;
+  const layers = resolveMapLayers(id);
   if(_tileLayer) _map.removeLayer(_tileLayer);
-  _tileLayer = L.tileLayer(prov.url, prov.opts);
-  _tileLayer.addTo(_map);
+  if(_overlayLayer){ _map.removeLayer(_overlayLayer); _overlayLayer = null; }
+  _tileLayer = L.tileLayer(layers.base.url, layers.base.opts).addTo(_map);
+  if(layers.overlay){
+    _overlayLayer = L.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map);
+  }
 }
 
 function ensureMap(){
@@ -76,7 +81,7 @@ function ensureMap(){
     box.innerHTML = '';
     _map = L.map(box, {
       zoomControl: true,
-      attributionControl: true,
+      attributionControl: false,
       preferCanvas: true
     });
     applyTileLayer(getMapProviderId());
@@ -88,10 +93,7 @@ function ensureMap(){
 export function initMapProviderSelect(onChange){
   const sel = $('opt-map');
   if(!sel) return;
-  sel.innerHTML = Object.values(MAP_PROVIDERS).map(p =>
-    '<option value="' + p.id + '">' + p.name + '</option>'
-  ).join('');
-  sel.value = getMapProviderId();
+  sel.innerHTML = buildMapProviderSelectHtml(getMapProviderId());
   sel.addEventListener('change', () => {
     saveMapProviderId(sel.value);
     applyTileLayer(sel.value);
