@@ -10,6 +10,7 @@ import {
 
 const SECTIONS_KEY = 'moto-hud-opts-sections';
 const DEV_KEY = 'moto-hud-dev-mode';
+const MIGRATION_KEY = 'moto-hud-opts-migration-seen';
 const DEV_TAP_TARGET = 'help-app-version';
 const DEV_TAPS_NEEDED = 7;
 
@@ -52,19 +53,31 @@ function applySectionState(){
   });
 }
 
+function syncAriaExpanded(el){
+  if(!el) return;
+  const open = el.tagName === 'DETAILS' ? el.open : el.classList.contains('open');
+  el.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
 function bindSectionPersistence(){
   document.querySelectorAll('.opts-fold[data-section]').forEach(det => {
+    syncAriaExpanded(det);
     det.addEventListener('toggle', () => {
       const id = det.getAttribute('data-section');
       if(!id) return;
       saveSectionOpen(id, det.open);
+      syncAriaExpanded(det);
       if(det.open) logSettingsEvent('section_open', { section: id });
     });
   });
   const main = $('drawer-opts');
-  main?.addEventListener('toggle', () => {
-    if(main.open) logSettingsEvent('drawer_open', {});
-  });
+  if(main){
+    syncAriaExpanded(main);
+    main.addEventListener('toggle', () => {
+      syncAriaExpanded(main);
+      if(main.open) logSettingsEvent('drawer_open', {});
+    });
+  }
 }
 
 function updateDevSectionVisible(){
@@ -108,6 +121,23 @@ function bindOptChangeLogging(){
   });
 }
 
+function bindMigrationBanner(){
+  const banner = $('opts-migration-banner');
+  if(!banner) return;
+  let seen = false;
+  try{ seen = localStorage.getItem(MIGRATION_KEY) === '1'; }catch(e){}
+  if(!seen) banner.classList.remove('hidden');
+  $('opts-migration-dismiss')?.addEventListener('click', () => {
+    banner.classList.add('hidden');
+    try{ localStorage.setItem(MIGRATION_KEY, '1'); }catch(e){}
+  });
+  $('opts-migration-show')?.addEventListener('click', () => {
+    openSettingsPanel();
+    banner.classList.add('hidden');
+    try{ localStorage.setItem(MIGRATION_KEY, '1'); }catch(e){}
+  });
+}
+
 export function initSettingsUi(reloadAllOpts, persistFromDom){
   applySectionState();
   bindSectionPersistence();
@@ -115,6 +145,11 @@ export function initSettingsUi(reloadAllOpts, persistFromDom){
   updateDevSectionVisible();
   bindOptChangeLogging();
   bindSettingsDataActions(reloadAllOpts);
+  bindMigrationBanner();
+  document.querySelectorAll('.setup-details').forEach(det => {
+    syncAriaExpanded(det);
+    det.addEventListener('toggle', () => syncAriaExpanded(det));
+  });
   initSettingsPresets(() => {
     if(typeof persistFromDom === 'function') persistFromDom();
   });

@@ -7,11 +7,12 @@ import { S } from './state.js';
 import { $ } from './util.js';
 import { curPos } from './gps.js';
 import { geometryToLatLngs, latLngsSliceByS, getNavSnap } from './route-geometry.js';
-import { getMapProviderId, getMapProvider } from './map-providers.js';
+import { getMapProviderId, resolveMapLayers } from './map-providers.js';
 import { findNextManeuver } from './route.js';
 
 let _map = null;
 let _tileLayer = null;
+let _overlayLayer = null;
 let _routeLayer = null;
 let _posMarker = null;
 let _finishMarker = null;
@@ -28,10 +29,13 @@ function routeLatLngs(){
 
 function applyTiles(){
   if(!_map) return;
-  const prov = getMapProvider(getMapProviderId());
+  const layers = resolveMapLayers(getMapProviderId());
   if(_tileLayer) _map.removeLayer(_tileLayer);
-  _tileLayer = L.tileLayer(prov.url, prov.opts);
-  _tileLayer.addTo(_map);
+  if(_overlayLayer){ _map.removeLayer(_overlayLayer); _overlayLayer = null; }
+  _tileLayer = L.tileLayer(layers.base.url, layers.base.opts).addTo(_map);
+  if(layers.overlay){
+    _overlayLayer = L.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map);
+  }
 }
 
 function ensureMap(){
@@ -39,7 +43,7 @@ function ensureMap(){
   if(!box) return null;
   if(!_map){
     box.innerHTML = '';
-    _map = L.map(box, { zoomControl: false, attributionControl: true, preferCanvas: true });
+    _map = L.map(box, { zoomControl: false, attributionControl: false, preferCanvas: true });
     applyTiles();
     _routeLayer = L.polyline([], { color: '#ffd400', weight: 6 }).addTo(_map);
     _posMarker = L.circleMarker([0, 0], {

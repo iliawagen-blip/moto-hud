@@ -69,6 +69,16 @@ await esbuild.build({
   logLevel: 'info'
 });
 
+await esbuild.build({
+  entryPoints: [path.join(ROOT, 'js', 'sim-map-module.js')],
+  outfile: path.join(ROOT, 'js', 'sim-map.js'),
+  bundle: true,
+  format: 'iife',
+  platform: 'browser',
+  target: ['es2020'],
+  logLevel: 'info'
+});
+
 const leafletSrc = path.join(ROOT, 'node_modules', 'leaflet', 'dist', 'leaflet.js');
 const leafletDst = path.join(ROOT, 'js', 'leaflet.js');
 if(fs.existsSync(leafletSrc)) cp(leafletSrc, leafletDst);
@@ -89,7 +99,7 @@ STATIC_DIRS.forEach(d => {
   if(d === 'js'){
     cpDir(path.join(ROOT, 'js'), path.join(WWW, 'js'), n =>
       n === 'sim.js' || n === 'app.js' || n === 'app-iife.js' || n === 'app.js.map' ||
-      n === 'sim-replay.js' || n === 'sim-map.js' || n === 'leaflet.js');
+      n === 'sim-replay.js' || n === 'sim-map.js' || n === 'sim-map-module.js' || n === 'leaflet.js');
   } else {
     cpDir(path.join(ROOT, d), path.join(WWW, d));
   }

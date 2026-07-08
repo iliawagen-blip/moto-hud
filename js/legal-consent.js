@@ -58,10 +58,13 @@ async function onDecline(){
 }
 
 /** Блокирующий экран при первом запуске до согласия с отказом от ответственности. */
-export function initLegalConsent(){
+export function initLegalConsent(opts){
   applyStoreLegalUi();
 
-  if(hasValidLegalConsent()) return;
+  if(hasValidLegalConsent()){
+    opts?.onAccepted?.();
+    return;
+  }
 
   const modal = document.getElementById('legalModal');
   if(!modal) return;
@@ -73,6 +76,7 @@ export function initLegalConsent(){
     saveConsent();
     modal.classList.remove('on');
     document.body.classList.remove('legal-gate');
+    opts?.onAccepted?.();
   }, { once: true });
 
   document.getElementById('legal-decline')?.addEventListener('click', () => {
