@@ -4,7 +4,6 @@
  */
 import { chromium } from 'playwright';
 import { spawn } from 'child_process';
-import http from 'http';
 
 const PORT = 3457;
 const BASE = process.argv[2] || `http://127.0.0.1:${PORT}`;
@@ -20,11 +19,10 @@ async function waitHttp(url, ms = 30000){
   const t0 = Date.now();
   while(Date.now() - t0 < ms){
     try{
-      await new Promise((res, rej) => {
-        http.get(url, r => { r.resume(); res(r.statusCode); }).on('error', rej);
-      });
-      return true;
-    }catch(e){ await new Promise(r => setTimeout(r, 400)); }
+      const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+      if(res.ok || (res.status >= 200 && res.status < 500)) return true;
+    }catch(e){ /* retry */ }
+    await new Promise(r => setTimeout(r, 400));
   }
   return false;
 }
@@ -312,7 +310,7 @@ async function main(){
       console.log(`Запуск serve на :${PORT}…`);
       serverProc = await startServer();
     } else {
-      const up = await waitHttp(`${BASE}/sim.html`, 5000);
+      const up = await waitHttp(`${BASE}/sim.html`, 45000);
       if(!up) throw new Error(`Недоступен ${BASE}/sim.html`);
     }
 
