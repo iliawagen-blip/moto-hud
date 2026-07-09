@@ -1305,8 +1305,8 @@ function mapBgLocation(loc) {
 function tagFixQuality(fix) {
   const acc = fix.acc;
   if (acc == null) return fix;
-  if (acc > 80 || fix.provider === "network") fix.provider = "network";
-  else if (acc > 40) fix.lowAccuracy = true;
+  if (fix.provider === "network" || fix.provider === "passive") return fix;
+  if (acc > 200) fix.provider = "network";
   return fix;
 }
 async function ensureNativePermissions(forNavigation) {
@@ -16717,19 +16717,71 @@ var init_converge_telemetry = __esm({
   }
 });
 
+// js/gps-accuracy.js
+function measuredSpreadM(fixes) {
+  if (!fixes?.length || fixes.length < 3) return null;
+  const n = fixes.length;
+  let lat = 0;
+  let lon = 0;
+  for (const f2 of fixes) {
+    lat += f2.lat;
+    lon += f2.lon;
+  }
+  const center = { lat: lat / n, lon: lon / n };
+  let maxD = 0;
+  for (const f2 of fixes) {
+    const d = haversine(f2, center);
+    if (d > maxD) maxD = d;
+  }
+  return maxD;
+}
+function effectiveAccM(reportedAcc, recentFixes) {
+  const spread = measuredSpreadM(recentFixes);
+  if (spread == null) {
+    return reportedAcc != null && Number.isFinite(reportedAcc) ? reportedAcc : null;
+  }
+  const measured = spread + 8;
+  if (reportedAcc == null || !Number.isFinite(reportedAcc)) return measured;
+  if (reportedAcc > 35 && spread <= 22) return Math.min(reportedAcc, measured);
+  if (reportedAcc > spread * 2.5 && spread <= 30) return Math.min(reportedAcc, measured);
+  return reportedAcc;
+}
+var CONVERGE_FAIL_LABELS;
+var init_gps_accuracy = __esm({
+  "js/gps-accuracy.js"() {
+    init_geo();
+    CONVERGE_FAIL_LABELS = {
+      buffer_short: "\u043C\u0430\u043B\u043E \u0444\u0438\u043A\u0441\u043E\u0432",
+      network_fix: "\u0441\u0435\u0442\u0435\u0432\u043E\u0439 fix (\u043D\u0435 GPS)",
+      acc_over_limit: "accuracy \u0432\u044B\u0448\u0435 \u043F\u043E\u0440\u043E\u0433\u0430",
+      gps_streak_low: "\u043C\u0430\u043B\u043E \u043F\u043E\u0434\u0440\u044F\u0434 GPS-\u0444\u0438\u043A\u0441\u043E\u0432",
+      jump_reject: "\u0441\u043A\u0430\u0447\u043E\u043A \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442",
+      last3_acc: "\u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 3 fix \u043D\u0435\u0442\u043E\u0447\u043D\u044B\u0435"
+    };
+  }
+});
+
 // js/gps-converge.js
+function getConvergeFailLabel() {
+  return _lastFailDetail ? CONVERGE_FAIL_LABELS[_lastFailDetail] || _lastFailDetail : null;
+}
 function hasEverConverged() {
   return _everConverged;
 }
 function isNetworkFix(fix) {
-  return fix.provider === "network" || fix.lowAccuracy === true;
+  return fix.provider === "network";
+}
+function fixWithEffectiveAcc(f2) {
+  const recent = _buf.slice(-5);
+  const eff = effectiveAccM(f2.acc, recent.length ? recent : [f2]);
+  return { ...f2, acc: eff, reportedAcc: f2.acc };
 }
 function maxJump(v, dt, acc) {
   return (v || 0) * dt + (acc || GPS_CONVERGE_ACC_M) + GPS_CONVERGE_JUMP_PAD_M;
 }
 function evaluateBuffer(minFixes, accLimit) {
   if (_buf.length < minFixes) return { ok: false, fail_detail: "buffer_short" };
-  const recent = _buf.slice(-minFixes);
+  const recent = _buf.slice(-minFixes).map(fixWithEffectiveAcc);
   if (recent.some((f2) => isNetworkFix(f2))) return { ok: false, fail_detail: "network_fix" };
   if (recent.some((f2) => f2.acc != null && f2.acc > accLimit)) return { ok: false, fail_detail: "acc_over_limit" };
   let gpsStreak = 0;
@@ -16751,7 +16803,7 @@ function evaluateBuffer(minFixes, accLimit) {
     }
   }
   if (minFixes >= GPS_CONVERGE_MIN_FIXES) {
-    const last3 = _buf.slice(-3);
+    const last3 = _buf.slice(-3).map(fixWithEffectiveAcc);
     if (last3.length < 3 || last3.some((f2) => f2.acc != null && f2.acc > GPS_CONVERGE_LAST3_ACC_M)) {
       return { ok: false, fail_detail: "last3_acc" };
     }
@@ -16795,6 +16847,7 @@ function feedGpsConverge(fix, telCtx) {
   const accLim = re ? GPS_CONVERGE_RE_ACC_M : GPS_CONVERGE_ACC_M;
   const bufStats = getConvergeBufferStats(re);
   const ev = evaluateBuffer(minFixes, accLim);
+  _lastFailDetail = ev.ok ? null : ev.fail_detail;
   if (ev.ok) {
     S.gpsConverged = true;
     _everConverged = true;
@@ -16813,7 +16866,7 @@ function invalidateGpsConverge(reason = "invalidate_unknown", telCtx) {
     noteConvergeTransition(prev, false, reason, {}, telCtx?.fix ?? S.gps, getConvergeBufferStats(_everConverged), telCtx?.snap);
   }
 }
-var _buf, _gpsFixCount, _everConverged;
+var _buf, _gpsFixCount, _everConverged, _lastFailDetail;
 var init_gps_converge = __esm({
   "js/gps-converge.js"() {
     init_state();
@@ -16821,9 +16874,11 @@ var init_gps_converge = __esm({
     init_platform();
     init_nav_constants();
     init_converge_telemetry();
+    init_gps_accuracy();
     _buf = [];
     _gpsFixCount = 0;
     _everConverged = false;
+    _lastFailDetail = null;
   }
 });
 
@@ -16919,18 +16974,31 @@ function updateGpsConvergeUI() {
   if (el) {
     el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
   }
+  const reported = S.gps?.acc != null ? Math.round(S.gps.acc) : null;
+  const spread = S.gps ? measuredSpreadM(S._gpsSpreadBuf || []) : null;
+  const failHint = getConvergeFailLabel();
+  let title = "\u0422\u0430\u043F \u2014 \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C GPS";
+  if (S.gps && !S.gpsConverged) {
+    const parts = [];
+    if (reported != null) parts.push("\u043E\u0442\u0447\u0451\u0442 \xB1" + reported + " \u043C");
+    if (spread != null) parts.push("\u0440\u0430\u0437\u0431\u0440\u043E\u0441 ~" + Math.round(spread) + " \u043C");
+    if (failHint) parts.push("\u0436\u0434\u0451\u043C: " + failHint);
+    if (parts.length) title = parts.join(" \xB7 ");
+  } else if (S.gpsConverged && reported != null) {
+    title = "GPS \u0441\u0445\u043E\u0434\u0438\u0442\u0441\u044F \xB7 \u043E\u0442\u0447\u0451\u0442 \xB1" + reported + " \u043C" + (spread != null ? " \xB7 \u0440\u0430\u0437\u0431\u0440\u043E\u0441 ~" + Math.round(spread) + " \u043C" : "");
+  }
   if (S.gpsConverged) {
     const tag = isSim() ? " \u0441\u0438\u043C" : "";
-    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + Math.round(S.gps?.acc || 0) + "\u043C";
+    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + (reported ?? "\u2014") + "\u043C";
     $2("s-gps").className = "chip ok";
   } else if (S.gps) {
-    const acc = S.gps.acc != null ? Math.round(S.gps.acc) + "\u043C" : "\u2026";
-    $2("s-gps").textContent = "\u23F3 GPS \xB1" + acc;
+    $2("s-gps").textContent = "\u23F3 GPS \xB1" + (reported ?? "\u2026") + "\u043C";
     $2("s-gps").className = "chip";
   } else {
     $2("s-gps").textContent = "\u23F3 GPS\u2026";
     $2("s-gps").className = "chip";
   }
+  $2("s-gps").title = title;
   checkStartReady();
 }
 function checkStartReady() {
@@ -16978,6 +17046,9 @@ function applyGpsFix(next) {
   }
   S.lastPos = next;
   S.gps = next;
+  if (!S._gpsSpreadBuf) S._gpsSpreadBuf = [];
+  S._gpsSpreadBuf.push({ lat: next.lat, lon: next.lon, acc: next.acc });
+  while (S._gpsSpreadBuf.length > 8) S._gpsSpreadBuf.shift();
   S.fixPos = { lat: next.lat, lon: next.lon };
   S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
   let telSnap = null;
@@ -16988,7 +17059,8 @@ function applyGpsFix(next) {
   }
   const telCtx = { fix: next, snap: telSnap };
   feedGpsConverge(next, telCtx);
-  if (next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge("invalidate_acc", telCtx);
+  const effAcc = effectiveAccM(next.acc, S._gpsSpreadBuf);
+  if (effAcc != null && effAcc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge("invalidate_acc", telCtx);
   if ($2("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) {
     telemetry_default.log("nav", {
       sub: "snap_lost_long",
@@ -17099,6 +17171,7 @@ var init_gps = __esm({
     init_roundabout();
     init_nav_map();
     init_gps_converge();
+    init_gps_accuracy();
     init_snap_quality();
     init_converge_telemetry();
     init_nav_constants();

@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://iliawagen-blip.github.io/moto-hud/regression/schemas/fixture.schema.json",
+  "title": "MotoHUD Regression Fixture",
+  "type": "object",
+  "required": [
+    "fixture_id", "corpus_version", "created_at", "source", "category", "region",
+    "tags", "waypoints", "constraints", "references", "motohud", "metadata", "status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "fixture_id": { "type": "string", "format": "uuid" },
+    "corpus_version": { "type": "integer", "minimum": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "last_verified_at": { "type": ["string", "null"], "format": "date-time" },
+    "source": { "enum": ["auto_generator", "real_trace", "manual"] },
+    "category": {
+      "enum": ["city", "highway", "roundabouts", "many_waypoints", "mountain", "mixed"]
+    },
+    "region": { "type": "string", "minLength": 1 },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "waypoints": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["lat", "lon", "label"],
+        "properties": {
+          "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+          "lon": { "type": "number", "minimum": -180, "maximum": 180 },
+          "label": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": ["distance_km_min", "distance_km_max", "sim_speed_kmh"],
+      "properties": {
+        "distance_km_min": { "type": "number", "minimum": 0 },
+        "distance_km_max": { "type": "number", "minimum": 0 },
+        "sim_speed_kmh": { "type": "number", "minimum": 1, "maximum": 200 }
+      },
+      "additionalProperties": false
+    },
+    "references": {
+      "type": "object",
+      "required": ["graphhopper", "openrouteservice", "yandex_web"],
+      "properties": {
+        "graphhopper": { "$ref": "#/$defs/referenceAggregate" },
+        "openrouteservice": { "$ref": "#/$defs/referenceAggregate" },
+        "yandex_web": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "allOf": [
+                { "$ref": "#/$defs/referenceAggregate" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "fetch_method": {
+                      "enum": ["network_intercept", "ymaps", "canvas_fallback", null]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "motohud": {
+      "type": "object",
+      "required": ["distance_m", "duration_s", "step_count", "router", "fetched_at", "fetch_error"],
+      "properties": {
+        "distance_m": { "type": ["number", "null"] },
+        "duration_s": { "type": ["number", "null"] },
+        "step_count": { "type": ["integer", "null"] },
+        "router": { "enum": ["osrm", "valhalla"] },
+        "fetched_at": { "type": ["string", "null"], "format": "date-time" },
+        "fetch_error": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/metrics" }]
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["author", "notes", "known_issues", "compare_interpretation", "priority"],
+      "properties": {
+        "author": { "type": "string" },
+        "notes": { "type": "string" },
+        "known_issues": { "type": "array", "items": { "type": "string" } },
+        "compare_interpretation": {
+          "enum": ["router_diff", "data_gap", "suspected_bug", "unknown", null]
+        },
+        "priority": {
+          "enum": ["normal", "worst_case_candidate", "yandex_validated"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "enum": ["valid", "parse_failed", "route_failed", "stale"]
+    }
+  },
+  "$defs": {
+    "referenceAggregate": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["distance_m", "duration_s", "maneuver_count", "roundabout_count", "fetched_at", "fetch_error"],
+          "properties": {
+            "distance_m": { "type": ["number", "null"] },
+            "duration_s": { "type": ["number", "null"] },
+            "maneuver_count": { "type": ["integer", "null"] },
+            "roundabout_count": { "type": ["integer", "null"] },
+            "fetched_at": { "type": ["string", "null"], "format": "date-time" },
+            "fetch_error": { "type": ["string", "null"] },
+            "provider_meta": { "type": "object" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "pairMetrics": {
+      "type": "object",
+      "properties": {
+        "hausdorff_m": { "type": ["number", "null"] },
+        "avg_lateral_m": { "type": ["number", "null"] },
+        "p50_lateral_m": { "type": ["number", "null"] },
+        "p95_lateral_m": { "type": ["number", "null"] },
+        "max_lateral_m": { "type": ["number", "null"] },
+        "length_diff_pct": { "type": ["number", "null"] },
+        "duration_diff_pct": { "type": ["number", "null"] },
+        "maneuver_count_diff": { "type": ["integer", "null"] },
+        "roundabout_count_diff": { "type": ["integer", "null"] },
+        "direction_mismatch_ratio": { "type": ["number", "null"] },
+        "waypoint_deviations_m": {
+          "type": ["array", "null"],
+          "items": { "type": "number" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["coverage"],
+      "properties": {
+        "graphhopper_vs_motohud": { "$ref": "#/$defs/pairMetrics" },
+        "ors_vs_motohud": { "$ref": "#/$defs/pairMetrics" },
+        "yandex_vs_motohud": { "$ref": "#/$defs/pairMetrics" },
+        "graphhopper_vs_ors": { "$ref": "#/$defs/pairMetrics" },
+        "graphhopper_vs_yandex": { "$ref": "#/$defs/pairMetrics" },
+        "ors_vs_yandex": { "$ref": "#/$defs/pairMetrics" },
+        "consensus_deviation": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["refs_agree", "motohud_vs_consensus_p95_m", "motohud_vs_consensus_avg_m", "signal"],
+              "properties": {
+                "refs_agree": { "type": "boolean" },
+                "motohud_vs_consensus_p95_m": { "type": ["number", "null"] },
+                "motohud_vs_consensus_avg_m": { "type": ["number", "null"] },
+                "signal": { "enum": ["ok", "warn", "fail", "insufficient_refs"] }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "coverage": {
+          "type": "object",
+          "required": ["references_available"],
+          "properties": {
+            "references_available": {
+              "type": "array",
+              "items": { "enum": ["graphhopper", "openrouteservice", "yandex_web"] }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

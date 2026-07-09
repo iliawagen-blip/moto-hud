@@ -19,7 +19,19 @@
     "trip:rebuild:test": "node scripts/trip-rebuild-test.mjs",
     "trip:extract": "node scripts/extract-trip-jul2026.mjs",
     "cap:sync": "npm run build && npx cap sync",
-    "cap:android": "npm run cap:sync && npx cap open android"
+    "cap:android": "npm run cap:sync && npx cap open android",
+    "regression:validate-schema": "node regression/scripts/validate-schema.mjs",
+    "regression:generate": "node regression/scripts/generate-waypoints.mjs",
+    "regression:fetch:motohud": "node regression/scripts/fetch-motohud-routes.mjs",
+    "regression:fetch:gh": "node regression/scripts/fetch-graphhopper.mjs",
+    "regression:fetch:ors": "node regression/scripts/fetch-openrouteservice.mjs",
+    "regression:fetch:yandex": "node regression/scripts/fetch-yandex-web.mjs",
+    "regression:metrics": "node regression/scripts/compute-metrics.mjs",
+    "regression:sim": "node regression/scripts/run-sim.mjs",
+    "regression:report": "node regression/scripts/generate-report.mjs",
+    "regression:review": "node regression/scripts/review-worst.mjs",
+    "regression:nightly": "node regression/scripts/run-nightly.mjs",
+    "regression:smoke": "node regression/scripts/run-nightly.mjs --fixtures 5 --skip-yandex"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",
@@ -34,6 +46,12 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^7.2.0",
-    "esbuild": "^0.28.1"
+    "@turf/turf": "^7.2.0",
+    "dotenv": "^16.4.7",
+    "esbuild": "^0.28.1",
+    "p-queue": "^8.1.0",
+    "playwright": "^1.52.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.2"
   }
 }

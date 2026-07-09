@@ -1,0 +1,12 @@
+{
+  "_comment": "Симуляция Playwright: ускоренное время 10x через window.SIM_TIME_SCALE в коде Мото ИЛС.",
+  "time_scale": 10,
+  "gps_hz": 1,
+  "noise_sigma_m": 8,
+  "noise_stress_sigma_m": 50,
+  "noise_stress_acc_min_m": 100,
+  "noise_stress_acc_max_m": 200,
+  "arrival_radius_m": 20,
+  "max_duration_factor": 1.2,
+  "modes": ["on_route", "deviation", "noise_stress"]
+}

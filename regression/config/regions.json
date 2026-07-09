@@ -1,0 +1,136 @@
+{
+  "version": 1,
+  "categories": {
+    "city": { "weight": 0.25, "distance_km": [5, 45] },
+    "highway": { "weight": 0.25, "distance_km": [40, 300] },
+    "roundabouts": { "weight": 0.2, "distance_km": [5, 80] },
+    "many_waypoints": { "weight": 0.15, "distance_km": [30, 200] },
+    "mountain": { "weight": 0.15, "distance_km": [15, 120] }
+  },
+  "default_constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 60
+  },
+  "category_speed_kmh": {
+    "city": 45,
+    "highway": 90,
+    "roundabouts": 45,
+    "many_waypoints": 70,
+    "mountain": 55
+  },
+  "regions": [
+    {
+      "id": "moscow_center",
+      "label": "Москва — центр",
+      "bbox": { "south": 55.72, "west": 37.55, "north": 55.78, "east": 37.68 },
+      "tags": ["urban", "capital"]
+    },
+    {
+      "id": "moscow_outer",
+      "label": "Москва — спальные районы",
+      "bbox": { "south": 55.60, "west": 37.35, "north": 55.92, "east": 37.85 },
+      "tags": ["urban", "capital"]
+    },
+    {
+      "id": "mkad_ring",
+      "label": "МКАД и ТТК",
+      "bbox": { "south": 55.57, "west": 37.35, "north": 55.91, "east": 37.85 },
+      "tags": ["ring", "capital"]
+    },
+    {
+      "id": "spb_center",
+      "label": "СПб — центр",
+      "bbox": { "south": 59.90, "west": 30.25, "north": 60.00, "east": 30.40 },
+      "tags": ["urban"]
+    },
+    {
+      "id": "spb_suburbs",
+      "label": "СПб — пригороды",
+      "bbox": { "south": 59.75, "west": 29.70, "north": 60.15, "east": 30.80 },
+      "tags": ["suburban"]
+    },
+    {
+      "id": "m4_don_north",
+      "label": "М4 Дон — северный участок",
+      "bbox": { "south": 55.40, "west": 37.50, "north": 55.95, "east": 38.20 },
+      "tags": ["highway", "m4"]
+    },
+    {
+      "id": "m4_don_mid",
+      "label": "М4 Дон — средний участок",
+      "bbox": { "south": 52.50, "west": 38.00, "north": 54.50, "east": 39.50 },
+      "tags": ["highway", "m4"]
+    },
+    {
+      "id": "m4_don_south",
+      "label": "М4 Дон — южный участок",
+      "bbox": { "south": 47.00, "west": 39.50, "north": 52.00, "east": 41.00 },
+      "tags": ["highway", "m4"]
+    },
+    {
+      "id": "m11_neva",
+      "label": "М11 Нева",
+      "bbox": { "south": 55.50, "west": 30.50, "north": 59.95, "east": 37.80 },
+      "tags": ["highway", "m11"]
+    },
+    {
+      "id": "krasnodar",
+      "label": "Краснодар",
+      "bbox": { "south": 45.00, "west": 38.85, "north": 45.15, "east": 39.15 },
+      "tags": ["urban", "south"]
+    },
+    {
+      "id": "sochi_adler",
+      "label": "Сочи — Адлер",
+      "bbox": { "south": 43.40, "west": 39.90, "north": 43.65, "east": 40.10 },
+      "tags": ["mountain", "south", "coast"]
+    },
+    {
+      "id": "kazan",
+      "label": "Казань",
+      "bbox": { "south": 55.72, "west": 48.95, "north": 55.88, "east": 49.30 },
+      "tags": ["urban", "volga"]
+    },
+    {
+      "id": "yekaterinburg",
+      "label": "Екатеринбург",
+      "bbox": { "south": 56.78, "west": 60.45, "north": 56.92, "east": 60.75 },
+      "tags": ["urban", "ural"]
+    },
+    {
+      "id": "novosibirsk",
+      "label": "Новосибирск",
+      "bbox": { "south": 54.95, "west": 82.85, "north": 55.10, "east": 83.15 },
+      "tags": ["urban", "siberia"]
+    },
+    {
+      "id": "caucasus_serpentines",
+      "label": "Кавказ — серпантины",
+      "bbox": { "south": 43.20, "west": 41.50, "north": 44.20, "east": 42.80 },
+      "tags": ["mountain", "serpentine"]
+    }
+  ],
+  "roundabouts": [
+    { "id": "ttk_kutuzovsky", "label": "ТТК × Кутузовский", "lat": 55.7405, "lon": 37.5340, "radius_m": 400 },
+    { "id": "ttk_leningradsky", "label": "ТТК × Ленинградский", "lat": 55.7920, "lon": 37.5280, "radius_m": 400 },
+    { "id": "sadovoe_arbat", "label": "Садовое × Арбат", "lat": 55.7520, "lon": 37.5920, "radius_m": 350 },
+    { "id": "mkad_kievskoye", "label": "МКАД × Киевское", "lat": 55.6590, "lon": 37.4070, "radius_m": 500 },
+    { "id": "mkad_kashirskoye", "label": "МКАД × Каширское", "lat": 55.6550, "lon": 37.6280, "radius_m": 500 },
+    { "id": "mkad_altufyevo", "label": "МКАД × Алтуфьево", "lat": 55.9090, "lon": 37.5860, "radius_m": 500 },
+    { "id": "spb_moskovsky", "label": "СПб Московский пр. кольцо", "lat": 59.8690, "lon": 30.3190, "radius_m": 400 },
+    { "id": "spb_veteranov", "label": "СПб пр. Ветеранов", "lat": 59.8420, "lon": 30.2540, "radius_m": 350 },
+    { "id": "kazan_millennium", "label": "Казань — мостовой развязка", "lat": 55.7900, "lon": 49.1150, "radius_m": 450 },
+    { "id": "krasnodar_adygeya", "label": "Краснодар — развязка Адыгея", "lat": 45.0450, "lon": 38.9800, "radius_m": 400 },
+    { "id": "sochi_airport", "label": "Сочи — аэропорт", "lat": 43.4500, "lon": 39.9560, "radius_m": 500 },
+    { "id": "m11_zelenograd", "label": "М11 × Зеленоград", "lat": 55.9850, "lon": 37.1800, "radius_m": 600 },
+    { "id": "m4_vidnoye", "label": "М4 × Видное", "lat": 55.5480, "lon": 37.7080, "radius_m": 500 },
+    { "id": "ekb_ploschad", "label": "Екатеринбург — пл. 1905", "lat": 56.8380, "lon": 60.5970, "radius_m": 300 },
+    { "id": "nsk_ploschad_lenina", "label": "Новосибирск — пл. Ленина", "lat": 55.0300, "lon": 82.9200, "radius_m": 350 },
+    { "id": "caucasus_lago_naki", "label": "Лаго-Наки", "lat": 43.9500, "lon": 40.0200, "radius_m": 800 },
+    { "id": "moscow_garden_ring_triumph", "label": "Садовое × Триумфальная", "lat": 55.7700, "lon": 37.5950, "radius_m": 300 },
+    { "id": "moscow_kutuzovsky_park", "label": "Кутузовский × Парк Победы", "lat": 55.7360, "lon": 37.5180, "radius_m": 350 },
+    { "id": "spb_nevsky_vosstaniya", "label": "СПб Невский × Восстания", "lat": 59.9310, "lon": 30.3600, "radius_m": 300 },
+    { "id": "kazan_kremlin", "label": "Казань — Кремлёвская", "lat": 55.7980, "lon": 49.1060, "radius_m": 350 }
+  ]
+}

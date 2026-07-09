@@ -34,12 +34,12 @@ function mapBgLocation(loc){
   return tagFixQuality(fix);
 }
 
-/** Сетевой/грубый fix — для cold-start фильтра */
+/** Сетевой/грубый fix — только явный provider от ОС */
 function tagFixQuality(fix){
   const acc = fix.acc;
   if(acc == null) return fix;
-  if(acc > 80 || fix.provider === 'network') fix.provider = 'network';
-  else if(acc > 40) fix.lowAccuracy = true;
+  if(fix.provider === 'network' || fix.provider === 'passive') return fix;
+  if(acc > 200) fix.provider = 'network';
   return fix;
 }
 

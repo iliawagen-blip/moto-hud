@@ -19,7 +19,8 @@ import {
 import { isSpeedOverLimit } from './speed-limit.js';
 import { tickRoundaboutHudRefresh } from './roundabout.js';
 import { tickNavMap } from './nav-map.js';
-import { feedGpsConverge, invalidateGpsConverge, hasEverConverged } from './gps-converge.js';
+import { feedGpsConverge, invalidateGpsConverge, hasEverConverged, getConvergeFailLabel } from './gps-converge.js';
+import { effectiveAccM, measuredSpreadM } from './gps-accuracy.js';
 import { isSnapLost, lostDurationMs } from './snap-quality.js';
 import { tickConvergeBlocked } from './converge-telemetry.js';
 import { SNAP_HEADING_MAX_AGE_MS } from './nav-constants.js';
@@ -122,18 +123,33 @@ function updateGpsConvergeUI(){
   if(el){
     el.classList.toggle('on', $('hud').classList.contains('on') && !S.gpsConverged);
   }
+  const reported = S.gps?.acc != null ? Math.round(S.gps.acc) : null;
+  const spread = S.gps ? measuredSpreadM(S._gpsSpreadBuf || []) : null;
+  const failHint = getConvergeFailLabel();
+  let title = 'Тап — включить GPS';
+  if(S.gps && !S.gpsConverged){
+    const parts = [];
+    if(reported != null) parts.push('отчёт ±' + reported + ' м');
+    if(spread != null) parts.push('разброс ~' + Math.round(spread) + ' м');
+    if(failHint) parts.push('ждём: ' + failHint);
+    if(parts.length) title = parts.join(' · ');
+  } else if(S.gpsConverged && reported != null){
+    title = 'GPS сходится · отчёт ±' + reported + ' м' +
+      (spread != null ? ' · разброс ~' + Math.round(spread) + ' м' : '');
+  }
+
   if(S.gpsConverged){
     const tag = isSim() ? ' сим' : '';
-    $('s-gps').textContent = '✅ GPS' + tag + ' ±' + Math.round(S.gps?.acc || 0) + 'м';
+    $('s-gps').textContent = '✅ GPS' + tag + ' ±' + (reported ?? '—') + 'м';
     $('s-gps').className = 'chip ok';
   } else if(S.gps){
-    const acc = S.gps.acc != null ? Math.round(S.gps.acc) + 'м' : '…';
-    $('s-gps').textContent = '⏳ GPS ±' + acc;
+    $('s-gps').textContent = '⏳ GPS ±' + (reported ?? '…') + 'м';
     $('s-gps').className = 'chip';
   } else {
     $('s-gps').textContent = '⏳ GPS…';
     $('s-gps').className = 'chip';
   }
+  $('s-gps').title = title;
   checkStartReady();
 }
 
@@ -185,6 +201,10 @@ export function applyGpsFix(next){
   }
   S.lastPos = next;
   S.gps = next;
+  if(!S._gpsSpreadBuf) S._gpsSpreadBuf = [];
+  S._gpsSpreadBuf.push({ lat: next.lat, lon: next.lon, acc: next.acc });
+  while(S._gpsSpreadBuf.length > 8) S._gpsSpreadBuf.shift();
+
   S.fixPos = { lat: next.lat, lon: next.lon };
   S.fixAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -197,7 +217,8 @@ export function applyGpsFix(next){
   const telCtx = { fix: next, snap: telSnap };
 
   feedGpsConverge(next, telCtx);
-  if(next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge('invalidate_acc', telCtx);
+  const effAcc = effectiveAccM(next.acc, S._gpsSpreadBuf);
+  if(effAcc != null && effAcc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge('invalidate_acc', telCtx);
   if($('hud').classList.contains('on') && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS){
     telemetry.log('nav', {
       sub: 'snap_lost_long',
