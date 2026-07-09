@@ -49,6 +49,7 @@ import {
   roundaboutManeuverText, logRoundaboutTelemetry, resetRoundaboutState
 } from './roundabout.js';
 import { resetConvergeTelemetryRide, flushConvergeSummary } from './converge-telemetry.js';
+import { OFF_ROUTE_ENTER_M } from './nav-constants.js';
 
 /** @type {object|null} */
 let _lastMarkCtx = null;
@@ -189,6 +190,13 @@ function lateralForOffRoute(snap){
   return findNearestOnRoute()?.dist ?? null;
 }
 
+/** LOST snap не блокирует HUD, если GPS всё ещё у маршрута. */
+function snapLostBlocksNav(snap){
+  if(!isSnapLost()) return false;
+  const lat = lateralForOffRoute(snap);
+  return lat == null || lat > OFF_ROUTE_ENTER_M;
+}
+
 export function onTick(){
   if(!S.gps) return;
   if($('hud').classList.contains('on')){
@@ -244,7 +252,7 @@ export function onTick(){
     updateFinishInfo(getRemainingDistance(), kmh, now);
   }
 
-  if(isSnapLost()){
+  if(snapLostBlocksNav(snap)){
     $('street').textContent = 'НЕТ ПРИВЯЗКИ';
     $('v-mdist').textContent = '—';
     $('v-mdist-u').textContent = '';
@@ -289,7 +297,7 @@ export function onTick(){
 
   if(!gpsOk) return;
 
-  if(isSnapLost()) return;
+  if(snapLostBlocksNav(snap)) return;
 
   if(isOfflineGuide() && snap && S.gps){
     const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
