@@ -4,6 +4,12 @@ www/
 *.log
 .commitmsg.tmp
 
+# Regression: секреты и кэш (fixtures/auto — в git)
+regression/.env
+regression/cache/
+regression/results/
+regression/reports/
+
 # Android build artifacts (проект android/ в репозитории)
 android/.gradle/
 android/build/

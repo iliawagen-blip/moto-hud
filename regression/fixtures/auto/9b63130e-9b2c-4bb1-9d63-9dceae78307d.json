@@ -1,0 +1,114 @@
+{
+  "fixture_id": "9b63130e-9b2c-4bb1-9d63-9dceae78307d",
+  "corpus_version": 1,
+  "created_at": "2026-07-09T07:33:59.359Z",
+  "last_verified_at": "2026-07-09T07:50:56.027Z",
+  "source": "auto_generator",
+  "category": "many_waypoints",
+  "region": "moscow_outer",
+  "tags": [
+    "auto_v1",
+    "many_waypoints",
+    "moscow_outer"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.652975051030516,
+      "lon": 37.63032472787891,
+      "label": "start"
+    },
+    {
+      "lat": 55.76007532216609,
+      "lon": 37.803819350339474,
+      "label": "via_1"
+    },
+    {
+      "lat": 55.846633857414126,
+      "lon": 37.48783870555926,
+      "label": "via_2"
+    },
+    {
+      "lat": 55.608379745110874,
+      "lon": 37.40587588925846,
+      "label": "via_3"
+    },
+    {
+      "lat": 55.795184840038424,
+      "lon": 37.75704101591837,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 70
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 128629,
+      "duration_s": 9463,
+      "maneuver_count": 60,
+      "roundabout_count": 3,
+      "fetched_at": "2026-07-09T07:37:54.972Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car"
+      }
+    },
+    "openrouteservice": null,
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 133390,
+    "duration_s": 8537,
+    "step_count": 118,
+    "router": "osrm",
+    "fetched_at": "2026-07-09T07:37:46.481Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 1923.4663364135545,
+      "avg_lateral_m": 74.69607168725877,
+      "p50_lateral_m": 1.3138059995809153,
+      "p95_lateral_m": 675.970147984957,
+      "max_lateral_m": 1923.4663364135545,
+      "length_diff_pct": 3.5692330759427247,
+      "duration_diff_pct": 10.846901721916364,
+      "maneuver_count_diff": 58,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.2259709690074539,
+      "waypoint_deviations_m": [
+        29.946901276792847,
+        30.622516416701064,
+        29.03056988566209,
+        42.393394062980654,
+        22.415253211338197
+      ]
+    },
+    "ors_vs_motohud": null,
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": null,
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 675.970147984957,
+      "motohud_vs_consensus_avg_m": 74.69607168725877,
+      "signal": "insufficient_refs"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Москва — спальные районы · many_waypoints · OSRM 133.4 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

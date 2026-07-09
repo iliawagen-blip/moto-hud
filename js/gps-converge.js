@@ -10,10 +10,21 @@ import {
   GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M
 } from './nav-constants.js';
 import { noteConvergeTransition } from './converge-telemetry.js';
+import { effectiveAccM, CONVERGE_FAIL_LABELS } from './gps-accuracy.js';
 
 const _buf = [];
 let _gpsFixCount = 0;
 let _everConverged = false;
+let _lastFailDetail = null;
+
+/** Причина последнего отказа converge (для отладки / title чипа). */
+export function getConvergeFailDetail(){
+  return _lastFailDetail;
+}
+
+export function getConvergeFailLabel(){
+  return _lastFailDetail ? (CONVERGE_FAIL_LABELS[_lastFailDetail] || _lastFailDetail) : null;
+}
 
 /** Был ли хотя бы один успешный converge в этой сессии навигации */
 export function hasEverConverged(){
@@ -29,7 +40,13 @@ export function resetGpsConverge(){
 }
 
 function isNetworkFix(fix){
-  return fix.provider === 'network' || fix.lowAccuracy === true;
+  return fix.provider === 'network';
+}
+
+function fixWithEffectiveAcc(f){
+  const recent = _buf.slice(-5);
+  const eff = effectiveAccM(f.acc, recent.length ? recent : [f]);
+  return { ...f, acc: eff, reportedAcc: f.acc };
 }
 
 function maxJump(v, dt, acc){
@@ -38,7 +55,7 @@ function maxJump(v, dt, acc){
 
 function evaluateBuffer(minFixes, accLimit){
   if(_buf.length < minFixes) return { ok: false, fail_detail: 'buffer_short' };
-  const recent = _buf.slice(-minFixes);
+  const recent = _buf.slice(-minFixes).map(fixWithEffectiveAcc);
   if(recent.some(f => isNetworkFix(f))) return { ok: false, fail_detail: 'network_fix' };
   if(recent.some(f => f.acc != null && f.acc > accLimit)) return { ok: false, fail_detail: 'acc_over_limit' };
   let gpsStreak = 0;
@@ -60,7 +77,7 @@ function evaluateBuffer(minFixes, accLimit){
     }
   }
   if(minFixes >= GPS_CONVERGE_MIN_FIXES){
-    const last3 = _buf.slice(-3);
+    const last3 = _buf.slice(-3).map(fixWithEffectiveAcc);
     if(last3.length < 3 || last3.some(f => f.acc != null && f.acc > GPS_CONVERGE_LAST3_ACC_M)){
       return { ok: false, fail_detail: 'last3_acc' };
     }
@@ -110,6 +127,7 @@ export function feedGpsConverge(fix, telCtx){
   const bufStats = getConvergeBufferStats(re);
 
   const ev = evaluateBuffer(minFixes, accLim);
+  _lastFailDetail = ev.ok ? null : ev.fail_detail;
   if(ev.ok){
     S.gpsConverged = true;
     _everConverged = true;

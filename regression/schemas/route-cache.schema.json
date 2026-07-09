@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Route cache entry (motohud or reference provider)",
+  "type": "object",
+  "required": ["fixture_id", "provider", "fetched_at", "polyline", "distance_m", "duration_s"],
+  "properties": {
+    "fixture_id": { "type": "string", "format": "uuid" },
+    "provider": {
+      "enum": ["motohud", "graphhopper", "openrouteservice", "yandex_web"]
+    },
+    "fetched_at": { "type": "string", "format": "date-time" },
+    "polyline": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": { "type": "number" }
+      },
+      "description": "Массив [lat, lon]"
+    },
+    "distance_m": { "type": "number" },
+    "duration_s": { "type": "number" },
+    "maneuvers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number" },
+          "lon": { "type": "number" },
+          "type": { "type": "string" },
+          "angle_deg": { "type": ["number", "null"] },
+          "text": { "type": ["string", "null"] },
+          "distance_from_prev_m": { "type": ["number", "null"] }
+        }
+      }
+    },
+    "steps": { "type": "array", "description": "OSRM steps — только motohud cache" },
+    "maxspeeds": { "type": "array", "description": "OSRM annotations — только motohud cache" },
+    "fetch_method": {
+      "enum": ["network_intercept", "ymaps", "canvas_fallback", null]
+    }
+  }
+}

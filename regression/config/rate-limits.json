@@ -1,0 +1,23 @@
+{
+  "graphhopper": {
+    "daily": 500,
+    "safety_margin_pct": 10,
+    "safety_stop_at": 450,
+    "delay_between_req_ms": 2000,
+    "counter_file": "cache/graphhopper-counter.json"
+  },
+  "ors": {
+    "daily": 2000,
+    "per_minute": 40,
+    "delay_between_req_ms": 2000
+  },
+  "osrm": {
+    "delay_between_req_ms": 2000
+  },
+  "yandex_web": {
+    "max_per_run": 25,
+    "delay_between_req_ms_min": 120000,
+    "delay_between_req_ms_max": 180000,
+    "enabled": false
+  }
+}
