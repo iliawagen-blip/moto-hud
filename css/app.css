@@ -36,6 +36,13 @@ html,body{height:100%;overflow:hidden;overflow-x:hidden}
   background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;min-height:56px;font-size:15px}
 #setup .toggle input[type="checkbox"]{width:auto;min-height:auto;transform:scale(1.5);margin-left:12px}
 #setup .toggle input[type="number"]{width:80px;min-height:auto;padding:6px 8px;font-size:16px}
+#setup .toggle.opt-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 10px
+}
+#setup .toggle.opt-row:has(.opt-help-btn){grid-template-columns:minmax(0,1fr) auto auto}
+#setup .toggle.opt-row--mode{display:flex;flex-wrap:wrap}
+#setup .toggle.opt-row .opt-select{max-width:min(46vw,200px);justify-self:end}
+#setup .toggle.opt-row .opt-help-btn{justify-self:end;margin-left:0}
 .search-results{background:var(--panel2);border:1px solid var(--border);border-radius:12px;
   margin-top:8px;max-width:100%;overflow:visible}
 .search-results div{padding:12px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;cursor:pointer;
@@ -417,44 +424,51 @@ body.legal-blocked #hud{display:none!important}
 
 /* ---------- HUD (grid, крупно и читаемо) ---------- */
 #hud{
-  --hud-statusbar-h:48px;
-  --hud-status-font:24px;
+  --hud-safe-top:env(safe-area-inset-top,0px);
+  --hud-statusbar-h:56px;
+  --hud-status-font:20px;
   --hud-finish-font:clamp(14px,4.2vw,22px);
-  --hud-btns-col:88px;
+  --hud-btns-col:80px;
   position:fixed;inset:0;display:none;background:var(--bg);overflow:hidden;
-  font-family:var(--font-label);color:var(--fg)
+  font-family:var(--font-label);color:var(--fg);
+  padding-top:var(--hud-safe-top);
+  container-type:size;
+  container-name:hud
 }
 #hud.on{display:grid}
 
 .statusbar{
   grid-area:st;display:none;justify-content:space-between;align-items:center;
-  padding:2px 12px;font-size:var(--hud-status-font);color:var(--fg-dim);letter-spacing:1px;
-  padding-top:calc(env(safe-area-inset-top) + 2px);
-  min-height:var(--hud-statusbar-h);
-  background:var(--bg);border-bottom:1px solid var(--line)
+  gap:8px;padding:6px 12px 8px;font-size:var(--hud-status-font);color:var(--fg-dim);letter-spacing:.5px;
+  min-height:var(--hud-statusbar-h);line-height:1.15;
+  background:var(--bg);border-bottom:1px solid var(--line);box-sizing:border-box;overflow:hidden
 }
 #hud.chrome-status-on .statusbar{display:flex}
 .statusbar .dot{width:18px;height:18px;border-radius:50%;background:var(--sem-warn);
   display:inline-block;margin-right:8px;vertical-align:middle}
 .statusbar .dot.ok{background:var(--sem-ok)}
 .statusbar .dot.err{background:var(--sem-warn)}
-.statusbar .status-pair{display:inline-flex;align-items:center;white-space:nowrap;font-size:var(--hud-status-font)}
+.statusbar .status-pair{display:inline-flex;align-items:center;white-space:nowrap;font-size:var(--hud-status-font);flex-shrink:0}
+.statusbar #mid-info{flex:1 1 auto;min-width:0;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.statusbar #clock{flex-shrink:0}
 .statusbar #mid-info,.statusbar #clock{font-size:var(--hud-status-font);font-family:var(--font-label)}
 .statusbar .status-pair.hidden{display:none}
 .hidden{display:none!important}
 
 /* компас — лента (fixed) или роза в блоке стрелки (chopper) */
 .compass-slot{
-  position:fixed;left:0;right:0;top:env(safe-area-inset-top);
+  position:fixed;left:0;right:0;top:var(--hud-safe-top, env(safe-area-inset-top, 0px));
   height:36px;z-index:3;display:none;background:color-mix(in srgb, var(--bg) 55%, transparent);overflow:hidden;
   border-bottom:1px solid var(--line)
 }
-#hud.chrome-status-on .compass-slot{top:calc(env(safe-area-inset-top) + var(--hud-statusbar-h))}
+#hud.chrome-status-on .compass-slot{top:calc(var(--hud-safe-top, env(safe-area-inset-top, 0px)) + var(--hud-statusbar-h))}
 #hud.show-compass .compass-slot{display:block}
+#hud.show-compass .block-arrow{padding-top:38px}
+#hud.show-compass.chrome-status-on .block-arrow{padding-top:38px}
 .compass-slot svg{width:100%;height:100%;display:block}
 .block-arrow .no-heading{
-  position:absolute;top:2px;left:50%;transform:translateX(-50%);
-  font-size:11px;color:var(--sem-warn);display:none;z-index:2;white-space:nowrap
+  position:absolute;top:40px;left:50%;transform:translateX(-50%);
+  font-size:11px;color:var(--sem-warn);display:none;z-index:2;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis
 }
 .block-arrow .no-heading.on{display:block}
 
@@ -464,29 +478,31 @@ body.legal-blocked #hud{display:none!important}
 .block-arrow{grid-area:ar;min-height:0;position:relative}
 .block-speed{
   grid-area:sp;overflow:hidden;padding:0 0 calc(env(safe-area-inset-bottom) + 2px);z-index:1;min-height:0;
-  display:grid;grid-template-columns:1fr;grid-template-rows:1fr auto;
+  display:grid;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;
   grid-template-areas:"stack" "info"
 }
 #hud.chrome-btns-on .block-speed{
   grid-template-columns:var(--hud-btns-col) 1fr;
-  grid-template-areas:"btns stack" "info info"
+  grid-template-areas:"btns stack" "info info";
+  grid-template-rows:minmax(0,1fr) auto
 }
 .speed-btns{
-  grid-area:btns;display:none;flex-direction:column;align-items:center;justify-content:center;
-  gap:6px;border-right:1px solid var(--line);padding:6px 4px;min-height:0
+  grid-area:btns;display:none;flex-direction:column;align-items:stretch;justify-content:flex-start;
+  gap:4px;border-right:1px solid var(--line);padding:8px 4px 6px;min-height:0;max-height:100%;
+  overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain
 }
 #hud.chrome-btns-on .speed-btns{display:flex}
 .speed-btns .corner-btn{
-  position:relative;bottom:auto;left:auto;right:auto;
+  position:relative;bottom:auto;left:auto;right:auto;flex-shrink:0;
   background:transparent;border:none;border-radius:0;box-shadow:none;
-  min-width:80px;min-height:68px;padding:6px 4px;touch-action:manipulation;
+  min-width:0;width:100%;min-height:58px;padding:4px 2px;touch-action:manipulation;
   -webkit-tap-highlight-color:transparent
 }
 .speed-btns .cb-icon{font-size:36px}
 .speed-btns .cb-lbl{font-size:14px;letter-spacing:.5px}
 .speed-stack{
   grid-area:stack;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:0;position:relative;padding:2px 6px
+  min-height:0;position:relative;padding:8px 6px 4px;overflow:visible
 }
 .finish-info{
   grid-area:info;width:100%;flex-shrink:0;text-align:center;
@@ -550,15 +566,15 @@ body.legal-blocked #hud{display:none!important}
   font-weight:var(--num-weight);letter-spacing:inherit;user-select:none;z-index:0}
 .speed-stack .speed-val,.speed-stack .speed-unit{position:relative;z-index:1;flex-shrink:0}
 
-/* Знак ограничения скорости */
+/* Знак ограничения скорости — правый верхний угол блока скорости */
 .speed-limit-sign{
-  position:absolute;z-index:2;pointer-events:none;
-  width:clamp(36px,min(9vw,8vh),72px);height:clamp(36px,min(9vw,8vh),72px);
-  bottom:calc(100% + 2px);left:50%;transform:translateX(-50%)
+  position:absolute;z-index:4;pointer-events:none;
+  width:clamp(34px,min(11vw,10vh),58px);height:clamp(34px,min(11vw,10vh),58px);
+  top:4px;right:4px;left:auto;bottom:auto;transform:none
 }
 .speed-limit-sign .sls-svg{width:100%;height:100%;display:block}
 .speed-limit-sign .sls-num{
-  font-family:var(--font-num);font-weight:900;font-size:38px;fill:#111;stroke:none
+  font-family:var(--font-num);font-weight:900;font-size:clamp(22px,5.5vw,34px);fill:#111;stroke:none
 }
 .speed-limit-sign .sls-tilde{fill:var(--fg-dim);font-weight:900}
 .speed-limit-sign .sls-none{font-family:var(--font-label);font-weight:800;fill:#111}
@@ -575,18 +591,11 @@ body.legal-blocked #hud{display:none!important}
   background:color-mix(in srgb,var(--bg) 80%,transparent);border-radius:4px;padding:1px 3px
 }
 .speed-limit-grace{
-  position:absolute;z-index:3;top:0;left:50%;transform:translateX(-50%);
+  position:absolute;z-index:5;top:4px;left:4px;right:auto;transform:none;
   font-size:clamp(10px,2.8vw,13px);font-weight:800;color:#1a1a1a;
   background:var(--sem-warn);border:1px solid color-mix(in srgb,var(--sem-warn) 70%,#000);
   padding:3px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;
-  box-shadow:0 2px 8px rgba(0,0,0,.25)
-}
-@media (orientation:landscape){
-  .speed-limit-sign{
-    bottom:auto;left:auto;right:calc(100% + 6px);top:50%;
-    transform:translateY(-50%)
-  }
-  .speed-limit-grace{top:auto;bottom:calc(100% + 2px)}
+  box-shadow:0 2px 8px rgba(0,0,0,.25);max-width:calc(100% - 70px);overflow:hidden;text-overflow:ellipsis
 }
 
 /* кнопки HUD (в .speed-btns и телеметрия) */
@@ -610,20 +619,36 @@ body.legal-blocked #hud{display:none!important}
 .btn-stop.armed .cb-icon{filter:drop-shadow(0 0 5px var(--sem-danger))}
 .btn-stop.armed .cb-lbl::after{content:' ×2'}
 
+/* Компактный HUD внутри короткого #hud (landscape телефон, симулятор) */
+@container hud (max-height: 280px){
+  .speed-btns{overflow-y:hidden;gap:2px;padding:4px 2px 4px}
+  .speed-btns .corner-btn{min-height:34px;padding:2px 1px}
+  .speed-btns .cb-icon{font-size:20px}
+  .speed-btns .cb-lbl{font-size:8px;letter-spacing:.3px}
+  .finish-info{padding:4px 6px calc(env(safe-area-inset-bottom) + 2px)}
+  .fi-line{font-size:clamp(12px,3.2vw,16px)}
+  .block-speed{min-height:64px}
+}
+@container hud (max-height: 280px) and (aspect-ratio < 1/1){
+  #hud.on.chrome-status-on:not(.no-path){grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,1fr) minmax(0,14vh) minmax(64px,1fr)}
+  #hud.on.chrome-status-on.no-path{grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,1fr) minmax(64px,1fr)}
+  #hud.on.view-map.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,1.35fr) minmax(64px,1fr)}
+}
+
 /* ---------- Компоновка: только grid-template (блоки ar/pa/sp — см. .cursor/rules/hud-grid-blocks.mdc) ---------- */
 @media (orientation:portrait){
   #hud.on{grid-template-areas:"st" "ar" "pa" "sp";grid-template-columns:1fr;
     grid-template-rows:0 minmax(0,1fr) minmax(0,30vh) minmax(0,1fr)}
-  #hud.on.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) minmax(0,1fr) minmax(0,30vh) minmax(0,1fr)}
+  #hud.on.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,1fr) minmax(0,30vh) minmax(0,1fr)}
   #hud.on.no-path{grid-template-areas:"st" "ar" "sp";grid-template-columns:1fr;
     grid-template-rows:0 minmax(0,1.2fr) minmax(0,1fr)}
-  #hud.on.no-path.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) minmax(0,1.2fr) minmax(0,1fr)}
+  #hud.on.no-path.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,1.2fr) minmax(0,1fr)}
 }
 @media (orientation:landscape){
   #hud.on{grid-template-areas:"st st st" "ar pa sp";grid-template-columns:0.82fr 1.42fr 0.76fr;grid-template-rows:0 1fr}
-  #hud.on.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) 1fr}
+  #hud.on.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) 1fr}
   #hud.on.no-path{grid-template-areas:"st st" "ar sp";grid-template-columns:1.05fr 0.95fr;grid-template-rows:0 1fr}
-  #hud.on.no-path.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) 1fr}
+  #hud.on.no-path.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) 1fr}
 }
 
 /* HUD ↔ карта (dbltap): карта ⅔, скорость ⅓ */
@@ -636,12 +661,12 @@ body.legal-blocked #hud{display:none!important}
 @media (orientation:portrait){
   #hud.on.view-map{grid-template-areas:"st" "mp" "sp";grid-template-columns:1fr;
     grid-template-rows:0 minmax(0,2fr) minmax(0,1fr)}
-  #hud.on.view-map.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) minmax(0,2fr) minmax(0,1fr)}
+  #hud.on.view-map.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,2fr) minmax(0,1fr)}
   #hud.on.view-map.no-path{grid-template-rows:24px minmax(0,2fr) minmax(0,1fr)}
 }
 @media (orientation:landscape){
   #hud.on.view-map{grid-template-areas:"st st" "mp sp";grid-template-columns:2fr 1fr;grid-template-rows:0 1fr}
-  #hud.on.view-map.chrome-status-on{grid-template-rows:var(--hud-statusbar-h) 1fr}
+  #hud.on.view-map.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) 1fr}
 }
 
 #camAlert{

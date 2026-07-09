@@ -18,7 +18,8 @@ import {
 } from './nav-constants.js';
 import { isSpeedOverLimit } from './speed-limit.js';
 import { tickRoundaboutHudRefresh } from './roundabout.js';
-import { feedGpsConverge, invalidateGpsConverge } from './gps-converge.js';
+import { tickNavMap } from './nav-map.js';
+import { feedGpsConverge, invalidateGpsConverge, hasEverConverged } from './gps-converge.js';
 import { isSnapLost, lostDurationMs } from './snap-quality.js';
 import { tickConvergeBlocked } from './converge-telemetry.js';
 import { SNAP_HEADING_MAX_AGE_MS } from './nav-constants.js';
@@ -102,6 +103,7 @@ export function visualLoop(){
   if(!$('hud').classList.contains('on')) return;
   telemetry.tickPerfFrame();
   updateRenderPos();
+  tickNavMap();
   easeSpeed();
   tickRoundaboutHudRefresh(_onTick);
   _onVisual();
@@ -196,11 +198,20 @@ export function applyGpsFix(next){
 
   feedGpsConverge(next, telCtx);
   if(next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge('invalidate_acc', telCtx);
-  if($('hud').classList.contains('on') && S.gpsConverged && isSnapLost() &&
-     lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge('invalidate_lost', telCtx);
+  if($('hud').classList.contains('on') && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS){
+    telemetry.log('nav', {
+      sub: 'snap_lost_long',
+      lat_off: telSnap?.lateral != null ? Math.round(telSnap.lateral) : null,
+      acc: next.acc != null ? Math.round(next.acc * 10) / 10 : null,
+      lost_ms: Math.round(lostDurationMs())
+    });
+  }
   updateGpsConvergeUI();
   tickConvergeBlocked(next, telSnap);
-  if($('hud').classList.contains('on')) _onTick();
+  if($('hud').classList.contains('on')){
+    _onTick();
+    if(S.viewMode !== 'hud') tickNavMap({ force: true });
+  }
 
   const rcv = Date.now();
   if(_gpsLost){
@@ -211,6 +222,10 @@ export function applyGpsFix(next){
     lat: next.lat, lon: next.lon, acc: next.acc,
     speed: next.speed, heading: next.heading, alt: next.alt,
     ts: next.ts, rcv
+  });
+  telemetry.logTrackPoint({
+    lat: next.lat, lon: next.lon, acc: next.acc,
+    speed: next.speed, heading: next.heading, ts: next.ts
   });
   if(navSnap) telemetry.logSnapFromResult(navSnap);
 }

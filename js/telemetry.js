@@ -29,6 +29,9 @@ let _batteryTimer = null;
 let _perfTimer = null;
 /** @type {number | null} */
 let _lastSnapS0 = null;
+/** @type {number} */
+let _lastTrackTs = 0;
+const TRACK_INTERVAL_MS = 1000;
 
 let _perfFrames = 0;
 let _perfSum = 0;
@@ -239,6 +242,21 @@ function tickPerfFrame(){
   _perfLastTs = now;
 }
 
+function logTrackPoint(fix){
+  if(!_active || !fix || fix.lat == null || fix.lon == null) return;
+  const ts = fix.ts || Date.now();
+  if(ts - _lastTrackTs < TRACK_INTERVAL_MS) return;
+  _lastTrackTs = ts;
+  log('track', {
+    lat: r6(fix.lat),
+    lon: r6(fix.lon),
+    spd: r2(fix.speed),
+    acc: r2(fix.acc),
+    hdg: r2(fix.heading),
+    ts
+  });
+}
+
 function logSnapFromResult(snap){
   if(!_active || !snap) return;
   const s0 = r2(snap.s);
@@ -260,9 +278,11 @@ function computeSessionAggregate(){
   if(!_buffer.length) return null;
   const snaps = _buffer.map(b => b.ev).filter(e => e.type === 'snap');
   const latOffs = snaps.map(s => s.lat_off).filter(v => v != null && Number.isFinite(v));
+  const tracks = _buffer.map(b => b.ev).filter(e => e.type === 'track');
   const marks = _buffer.map(b => b.ev).filter(e => e.type === 'mark');
   return {
     snap_count: snaps.length,
+    track_count: tracks.length,
     lat_off_p50: r2(pct(latOffs, 50)),
     lat_off_p95: r2(pct(latOffs, 95)),
     snap_jumps: snaps.filter(s => s.jump).length,
@@ -283,6 +303,7 @@ async function start(meta){
   _sessionId = uid();
   _sessionStart = Date.now();
   _lastSnapS0 = null;
+  _lastTrackTs = 0;
   _active = true;
   const rec = {
     id: _sessionId,
@@ -324,6 +345,7 @@ async function stop(){
   _sessionId = null;
   _sessionStart = 0;
   _lastSnapS0 = null;
+  _lastTrackTs = 0;
   document.documentElement.classList.remove('telemetry-on');
   stopTimers();
   updateMarkButtonVisibility();
@@ -573,6 +595,7 @@ export const telemetry = {
   setEnabled,
   tickPerfFrame,
   logSnapFromResult,
+  logTrackPoint,
   updateMarkButtonVisibility,
   getBuildId,
   /** @param {object} fix */

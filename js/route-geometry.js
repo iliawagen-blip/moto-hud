@@ -507,6 +507,32 @@ export function snapToRoute(gps, geom, gpsHeadingDeg, meta){
 
   if(best.lateral > 60) best.confidence = Math.min(best.confidence, 0.3);
 
+  if(best.lateral > SNAP_QUALITY_LOST_LATERAL_M * 0.5){
+    const nearS = findSForLatLon(geom, gps.lat, gps.lon);
+    const nearP = interpolateAtS(geom, nearS);
+    const nearLat = haversine(gps, nearP);
+    const maxBack = spd >= 1 ? 100 : 250;
+    const maxJump = Math.max(350, spd * dt + acc * 5);
+    const forwardOk = !prev || nearS >= prev.s - maxBack;
+    const jumpOk = !prev || Math.abs(nearS - prev.s) <= maxJump;
+    if(nearLat + 8 < best.lateral && forwardOk && jumpOk){
+      const segIdx = findSegAtS(geom, nearS);
+      const tangent = avgTangentDeg(geom, nearS, 20);
+      const dot = headingDot(tangent, gpsHeadingDeg);
+      best = {
+        s: nearS,
+        segIdx,
+        lat: nearP.lat,
+        lon: nearP.lon,
+        lateral: nearLat,
+        tangent,
+        dot,
+        score: nearLat,
+        confidence: 0.55
+      };
+    }
+  }
+
   const { R } = radiusAtS(geom, best.s);
   const curvMult = (!isFinite(R) || R >= SNAP_CURVATURE_RADIUS_M) ? 1 : SNAP_CURVATURE_THRESHOLD_MULT;
   const rbFlags = getRoundaboutSnapFlags(best.segIdx, S.route);

@@ -83,6 +83,8 @@ export const ROUTE_LOW_MANEUVER_PER_KM = 25;
 export const FUSION_GPS_WEIGHT_MIN = 0.02;
 export const FUSION_GPS_WEIGHT_SPAN = 25;
 
+/** Мин. скорость для отрисовки дорожки, км/ч */
+export const PATH_MIN_SPEED_KMH = 8;
 /** --- Battery / render (направление 12) --- */
 export const PATH_SKIP_DS_M = 2;
 export const PATH_SKIP_FRAMES = 2;

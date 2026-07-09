@@ -20,6 +20,7 @@ import {
 } from './fuel-crowd.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { resetRouteSnap, getNavSnap, projectPointToRoute } from './route-geometry.js';
+import { hasEverConverged } from './gps-converge.js';
 import { isSnapLost, isSnapDegraded, getCachedManeuver, cacheLastManeuver, resetSnapQuality } from './snap-quality.js';
 import { RouteQuality } from './route-quality.js';
 import { stepTurnAngleDeg } from './maneuver-filter.js';
@@ -229,10 +230,13 @@ export function onTick(){
     return;
   }
 
-  const gpsOk = S.gpsConverged !== false;
+  tickSpeedLimit(getNavSnap(S.smoothedHeading));
+
+  const gpsOk = hasEverConverged() || S.gpsConverged !== false;
   const hudOn = $('hud').classList.contains('on');
   const snap = hudOn ? getNavSnap(S.smoothedHeading) : (gpsOk ? getNavSnap(S.smoothedHeading) : null);
   const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
+  const snapLost = isSnapLost();
 
   if(hudOn){
     tickOffRouteMachine({
@@ -290,7 +294,6 @@ export function onTick(){
     updateFinishInfo(remaining, kmh, now);
     tickAutoMode();
     checkCamerasILS();
-    if(snap) tickSpeedLimit(snap);
     refreshFuelPanel();
     return;
   }
@@ -405,7 +408,8 @@ export function onTick(){
   updateFinishInfo(remaining, kmh, now);
   const midLine = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
   const tripX = formatTripHudExtraLine();
-  const fullMid = tripX ? midLine + ' · ' + tripX : midLine;
+  let fullMid = tripX ? midLine + ' · ' + tripX : midLine;
+  if(snapLost) fullMid += ' · SNAP?';
   if(S.routeQuality === RouteQuality.LOW && !S.compassMode){
     $('mid-info').textContent = fullMid + ' · НИЗК. OSM';
   } else {
@@ -419,10 +423,8 @@ export function onTick(){
   tickAutoMode();
   checkCamerasILS();
   checkCurveSpeedWarn(kmh);
-  if(snap) tickSpeedLimit(snap);
   refreshFuelPanel();
   syncTripRefuelHud();
-  tickNavMap();
   syncTripHudBadge();
 }
 
@@ -485,6 +487,7 @@ export async function startHud(){
   }
   speak('Маршрут построен. В пути ' + Math.round(S.route.duration / 60) + ' минут');
   S.dispSpeed = S.gps?.speed > 0 ? Math.min(S.gps.speed * 3.6, 198) : 0;
+  tickSpeedLimit(getNavSnap(S.smoothedHeading));
   onTick();
   startVisualLoop();
 }

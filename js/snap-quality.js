@@ -10,7 +10,7 @@ import {
   SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_HOLD_MS,
   SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_DEGRADED_TIMEOUT_MS,
   SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT,
-  ROUNDABOUT_LATERAL_MULTIPLIER
+  ROUNDABOUT_LATERAL_MULTIPLIER, SNAP_STATIONARY_SPD_MPS
 } from './nav-constants.js';
 
 export const SnapQuality = { GOOD: 'GOOD', DEGRADED: 'DEGRADED', LOST: 'LOST' };
@@ -139,7 +139,10 @@ export function updateSnapQuality(snap, gps, geom, opts){
 /** s для навигации с учётом заморозки */
 export function navSFromSnap(snap){
   if(!snap) return null;
-  if(S.snapQuality === SnapQuality.DEGRADED && _frozenS != null) return _frozenS;
+  const spd = S.gps?.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
+  if(S.snapQuality === SnapQuality.DEGRADED && _frozenS != null && spd < SNAP_STATIONARY_SPD_MPS){
+    return _frozenS;
+  }
   return snap.s;
 }
 

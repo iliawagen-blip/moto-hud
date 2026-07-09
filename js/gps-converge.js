@@ -15,6 +15,11 @@ const _buf = [];
 let _gpsFixCount = 0;
 let _everConverged = false;
 
+/** Был ли хотя бы один успешный converge в этой сессии навигации */
+export function hasEverConverged(){
+  return _everConverged;
+}
+
 export function resetGpsConverge(){
   _buf.length = 0;
   _gpsFixCount = 0;

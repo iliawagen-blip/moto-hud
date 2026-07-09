@@ -77,7 +77,7 @@ export function ensureRouteGeometry(route){
 function attachRouteGeometry(route){
   ensureRouteGeometry(route);
   S.routeQuality = assessRouteQuality(route);
-  S.compassMode = S.routeQuality === RouteQuality.LOW;
+  S.compassMode = false;
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
@@ -426,6 +426,21 @@ export async function loadCameras(){
 
 let _nearMemoPos = null, _nearMemoVal = null, _nearIdx = 0;
 
+/** Индекс сегмента sparse coords (OSRM), не dense geometry */
+export function sparseRouteSegIdx(pos){
+  const c = S.route?.coords;
+  if(!c || c.length < 2 || !pos) return 0;
+  let best = 0;
+  let bestD = Infinity;
+  for(let i = 0; i < c.length - 1; i++){
+    const d = distToSegment(pos,
+      { lat: c[i][0], lon: c[i][1] },
+      { lat: c[i + 1][0], lon: c[i + 1][1] });
+    if(d < bestD){ bestD = d; best = i; }
+  }
+  return best;
+}
+
 export function findNearestOnRoute(){
   if(!S.route) return null;
   const pos = curPos();
@@ -436,9 +451,10 @@ export function findNearestOnRoute(){
   if(geom){
     const snap = getRouteSnapForNav(S.smoothedHeading);
     if(snap){
-      _nearIdx = snap.segIdx;
+      const idx = sparseRouteSegIdx({ lat: snap.lat, lon: snap.lon });
+      _nearIdx = idx;
       _nearMemoPos = pos;
-      _nearMemoVal = { idx: snap.segIdx, dist: snap.lateral, s: snap.s };
+      _nearMemoVal = { idx, dist: snap.lateral, s: snap.s };
       return _nearMemoVal;
     }
   }
@@ -478,7 +494,9 @@ export function findNextManeuver(){
   const geom = S.route.geometry;
   const snap = geom ? getNavSnap(S.smoothedHeading) : null;
   const curS = snap ? snap.s : null;
-  const curIdx = snap ? snap.segIdx : (findNearestOnRoute()?.idx ?? 0);
+  const curIdx = snap
+    ? sparseRouteSegIdx({ lat: snap.lat, lon: snap.lon })
+    : (findNearestOnRoute()?.idx ?? 0);
 
   if(geom && curS != null){
     const sorted = geom.maneuvers

@@ -412,13 +412,44 @@ export function getCurrentSpeedLimit(snap, opts = {}){
     return fallbackResult(userDefault, 'user-default');
   }
 
-  const idx = snap?.segIdx ?? snap?.idx;
-  if(idx == null || !route?.maxspeeds?.length){
+  const seg = resolveSparseSegIdx(snap);
+  if(seg == null || !route?.maxspeeds?.length){
     return fallbackResult(userDefault, fallbackMode);
   }
 
-  const i = Math.max(0, Math.min(idx, route.maxspeeds.length - 1));
-  const entry = route.maxspeeds[i];
+  return lookupSpeedLimitAtSeg(seg, route, userDefault, fallbackMode, now);
+}
+
+function resolveSparseSegIdx(snap){
+  const pos = snap?.lat != null && snap?.lon != null
+    ? { lat: snap.lat, lon: snap.lon }
+    : S.gps;
+  if(pos && S.route?.coords?.length > 1){
+    let best = 0;
+    let bestD = Infinity;
+    const c = S.route.coords;
+    for(let i = 0; i < c.length - 1; i++){
+      const d = distToSegment(pos,
+        { lat: c[i][0], lon: c[i][1] },
+        { lat: c[i + 1][0], lon: c[i + 1][1] });
+      if(d < bestD){ bestD = d; best = i; }
+    }
+    return best;
+  }
+  const raw = snap?.segIdx ?? snap?.idx;
+  if(raw != null && S.route?.maxspeeds?.length){
+    return Math.max(0, Math.min(raw, S.route.maxspeeds.length - 1));
+  }
+  return null;
+}
+
+function nearestRouteSegIdx(){
+  return resolveSparseSegIdx(null);
+}
+
+function lookupSpeedLimitAtSeg(i, route, userDefault, fallbackMode, now){
+  const idx = Math.max(0, Math.min(i, route.maxspeeds.length - 1));
+  const entry = route.maxspeeds[idx];
 
   if(entry?.none) return { limit: null, source: 'none' };
 
@@ -426,12 +457,12 @@ export function getCurrentSpeedLimit(snap, opts = {}){
   if(kmh != null && kmh > 0) return { limit: kmh, source: 'osm' };
 
   if(entry?.unknown){
-    const fromWay = limitFromWayTags(route.wayTags?.[i], now);
+    const fromWay = limitFromWayTags(route.wayTags?.[idx], now);
     if(fromWay != null) return { limit: fromWay, source: 'osm' };
 
-    const hw = route.highwayTypes?.[i];
+    const hw = route.highwayTypes?.[idx];
     if(hw){
-      const urban = route.urbanSegments?.[i] ?? false;
+      const urban = route.urbanSegments?.[idx] ?? false;
       const implicit = resolveImplicitLimit(hw, urban);
       if(implicit != null) return { limit: implicit, source: 'implicit' };
     }
@@ -458,7 +489,7 @@ export function findNextLimitChange(snap, lookaheadM = SPEED_LIMIT_LOOKAHEAD_M){
   const route = S.route;
   if(!snap || !route?.maxspeeds?.length || !route.coords?.length) return null;
 
-  const startIdx = snap.segIdx ?? snap.idx ?? 0;
+  const startIdx = resolveSparseSegIdx(snap) ?? 0;
   const cur = getCurrentSpeedLimit(snap);
   const curVal = cur.source === 'none' ? null : cur.limit;
   const coords = route.coords;
@@ -498,8 +529,19 @@ export function renderSpeedLimitSign(info, preview){
   if(!el) return;
 
   if(S.speedLimitDynamic === false){
-    el.classList.add('hidden', 'sls-hidden');
-    el.setAttribute('aria-hidden', 'true');
+    const lim = S.userDefaultLimit;
+    if(lim > 0){
+      el.classList.remove('hidden', 'sls-hidden');
+      el.setAttribute('aria-hidden', 'false');
+      numEl?.classList.remove('hidden');
+      noneEl?.classList.add('hidden');
+      if(numEl) numEl.textContent = String(lim);
+      el.classList.add('sls-default');
+      if(tildeEl) tildeEl.classList.add('hidden');
+    } else {
+      el.classList.add('hidden', 'sls-hidden');
+      el.setAttribute('aria-hidden', 'true');
+    }
     return;
   }
 
@@ -560,7 +602,17 @@ export function tickSpeedLimit(snap){
     return;
   }
 
-  const info = getCurrentSpeedLimit(snap);
+  let eff = snap;
+  if(!eff && S.gps) eff = { lat: S.gps.lat, lon: S.gps.lon, s: null };
+  if(!eff && S.userDefaultLimit > 0){
+    renderSpeedLimitSign({ limit: S.userDefaultLimit, source: 'default' }, null);
+    S.currentLimit = S.userDefaultLimit;
+    S.currentLimitSource = 'default';
+    return;
+  }
+  if(!eff) return;
+
+  const info = getCurrentSpeedLimit(eff);
   const key = limitKey(info);
 
   if(key !== _lastLimitKey){
