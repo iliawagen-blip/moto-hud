@@ -17281,7 +17281,7 @@ out geom;`;
   function isExcludedTarget(el) {
     if (!el || !(el instanceof Element)) return true;
     return !!el.closest(
-      ".corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #hud-settings-sheet, .hud-settings-sheet"
+      ".hud-btn, .corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #hud-settings-sheet, .hud-settings-sheet"
     );
   }
   function isChromeTapTarget(el) {
@@ -19021,56 +19021,124 @@ out geom;`;
   __export(yandex_link_exports, {
     YANDEX_PARSER_REV: () => YANDEX_PARSER_REV,
     YANDEX_URL_RE: () => YANDEX_URL_RE,
+    buildYandexRouteUrl: () => buildYandexRouteUrl,
+    decodeQueryComponent: () => decodeQueryComponent,
+    extractRtextParam: () => extractRtextParam,
     extractYandexUrl: () => extractYandexUrl,
     isYandexMapsUrl: () => isYandexMapsUrl,
-    parseYandexRouteLink: () => parseYandexRouteLink
+    normalizePastedText: () => normalizePastedText,
+    parseRtextWaypoints: () => parseRtextWaypoints,
+    parseYandexRouteLink: () => parseYandexRouteLink,
+    resolveYandexShortLink: () => resolveYandexShortLink
   });
+  function decodeQueryComponent(raw) {
+    if (raw == null) return "";
+    let s2 = String(raw).trim();
+    if (!s2) return "";
+    try {
+      s2 = decodeURIComponent(s2.replace(/\+/g, "%20"));
+    } catch {
+      s2 = s2.replace(/\+/g, " ");
+    }
+    return s2;
+  }
+  function normalizePastedText(text) {
+    return String(text || "").replace(/&amp;/gi, "&").replace(/&#0*38;/g, "&").replace(/^[\s"'«»]+|[\s"'«»]+$/g, "").trim();
+  }
   function extractYandexUrl(text) {
-    const s2 = String(text || "").trim();
+    const s2 = normalizePastedText(text);
     if (!s2) return null;
-    if (YANDEX_URL_RE.test(s2)) return s2.match(YANDEX_URL_RE)[0];
+    if (/^https?:\/\//i.test(s2)) {
+      const one = s2.match(YANDEX_URL_RE);
+      if (one) return one[0];
+    }
     const m = s2.match(YANDEX_URL_RE);
     return m ? m[0] : null;
   }
-  function parseRtextPoint(part) {
+  function extractRtextParam(url) {
+    const m = String(url || "").match(RTEXT_RE);
+    return m ? decodeQueryComponent(m[1]) : null;
+  }
+  function parseRtextPoint(part, index, total) {
     const s2 = String(part || "").trim();
     if (!s2) return null;
-    const coord = s2.match(/^(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)$/);
+    const coord = s2.match(/^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
     if (coord) {
       const lat = parseFloat(coord[1]);
       const lon = parseFloat(coord[2]);
-      if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon, label: s2 };
+      if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+        return { lat, lon, label: DEFAULT_LABELS(index, total) };
+      }
     }
     return null;
   }
-  async function parseYandexRouteLink(rawUrl) {
-    let url = String(rawUrl || "").trim();
-    if (!url) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
-    if (!extractYandexUrl(url)) throw new Error("\u041D\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442");
-    if (SHORT_RE.test(url)) {
-      try {
-        const res = await fetch(url, { redirect: "follow", method: "HEAD", mode: "cors" });
-        if (res.url) url = res.url;
-      } catch {
-      }
+  function parseRtextWaypoints(rtext) {
+    const parts = String(rtext || "").split("~").map((p) => p.trim()).filter(Boolean);
+    const waypoints = parts.map((part, i) => parseRtextPoint(part, i, parts.length)).filter(Boolean);
+    if (waypoints.length < 2) {
+      throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652 \u0441 \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u0430\u043C\u0438 lat,lon)");
     }
-    const m = url.match(RTEXT_RE);
-    if (!m) throw new Error("\u0412 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (rtext). \u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB.");
-    const parts = decodeURIComponent(m[1]).split("~");
-    const waypoints = parts.map(parseRtextPoint).filter(Boolean);
-    if (waypoints.length < 2) throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652)");
     return waypoints;
   }
-  function isYandexMapsUrl(raw) {
-    return !!extractYandexUrl(raw);
+  async function resolveYandexShortLink(url, opts = {}) {
+    const fetchFn = opts.fetchFn || globalThis.fetch;
+    if (!fetchFn) return url;
+    if (!SHORT_RE.test(url)) return url;
+    const tryFetch = async (method) => {
+      const res = await fetchFn(url, {
+        redirect: "follow",
+        method,
+        signal: AbortSignal.timeout?.(15e3)
+      });
+      return res.url && res.url !== url ? res.url : url;
+    };
+    try {
+      return await tryFetch("HEAD");
+    } catch {
+      try {
+        return await tryFetch("GET");
+      } catch {
+        return url;
+      }
+    }
   }
-  var YANDEX_PARSER_REV, YANDEX_URL_RE, SHORT_RE, RTEXT_RE;
+  function buildYandexRouteUrl(waypoints, opts = {}) {
+    const rtext = waypoints.map((w) => `${w.lat},${w.lon}`).join("~");
+    const rtt = opts.rtt || "auto";
+    return `https://yandex.ru/maps/?rtext=${encodeURIComponent(rtext)}&rtt=${rtt}`;
+  }
+  async function parseYandexRouteLink(rawUrl, opts = {}) {
+    let url = normalizePastedText(rawUrl);
+    if (!url) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
+    const extracted = extractYandexUrl(url);
+    if (extracted) url = extracted;
+    else if (!/yandex\.|ya\.ru/i.test(url)) {
+      throw new Error("\u041D\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442");
+    }
+    url = await resolveYandexShortLink(url, opts);
+    const rtext = extractRtextParam(url);
+    if (!rtext) {
+      throw new Error(
+        "\u0412 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (rtext). \u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u2192 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB \u2192 \u0441\u043A\u043E\u043F\u0438\u0440\u0443\u0439\u0442\u0435 \u0434\u043B\u0438\u043D\u043D\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443."
+      );
+    }
+    return parseRtextWaypoints(rtext);
+  }
+  function isYandexMapsUrl(raw) {
+    return !!extractYandexUrl(raw) || /yandex\.(?:ru|com)|ya\.ru\/maps/i.test(normalizePastedText(raw));
+  }
+  var YANDEX_PARSER_REV, YANDEX_URL_RE, SHORT_RE, RTEXT_RE, DEFAULT_LABELS;
   var init_yandex_link = __esm({
     "js/yandex-link.js"() {
-      YANDEX_PARSER_REV = 1;
-      YANDEX_URL_RE = /https?:\/\/(?:yandex\.ru|ya\.ru)\/maps[^\s"'<>]*/i;
-      SHORT_RE = /^https?:\/\/(?:yandex\.ru|ya\.ru)\/maps\/-/i;
-      RTEXT_RE = /[?&]rtext=([^&]+)/i;
+      YANDEX_PARSER_REV = 2;
+      YANDEX_URL_RE = /https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/(?:maps|navi)[^\s"'<>]*/gi;
+      SHORT_RE = /^https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/maps\/-/i;
+      RTEXT_RE = /[?&#]rtext=([^&#]+)/i;
+      DEFAULT_LABELS = (i, total) => {
+        if (i === 0) return "\u0421\u0442\u0430\u0440\u0442";
+        if (i === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
+        return `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
+      };
     }
   });
 
@@ -20694,6 +20762,30 @@ out geom;`;
     }
   });
 
+  // js/sim-time-scale.js
+  function getSimTimeScale() {
+    if (typeof globalThis === "undefined") return DEFAULT_SCALE;
+    const w = globalThis;
+    const s2 = w.SIM_TIME_SCALE;
+    if (s2 == null || s2 === "" || Number(s2) <= 0) return DEFAULT_SCALE;
+    return Number(s2);
+  }
+  function simScaledDelta(realDeltaMs) {
+    return realDeltaMs * getSimTimeScale();
+  }
+  function resetSimTimeEpoch() {
+    _simEpochReal = null;
+    _simEpochSim = null;
+  }
+  var DEFAULT_SCALE, _simEpochReal, _simEpochSim;
+  var init_sim_time_scale = __esm({
+    "js/sim-time-scale.js"() {
+      DEFAULT_SCALE = 1;
+      _simEpochReal = null;
+      _simEpochSim = null;
+    }
+  });
+
   // js/offroute.js
   function clearOffRouteWarn() {
     const el = $2("offRouteWarn");
@@ -20772,7 +20864,7 @@ out geom;`;
     if (feed.tangent == null || isNaN(feed.tangent)) return false;
     if (angleDiff(feed.heading, feed.tangent) <= OFF_ROUTE_HEADING_DIVERGE_DEG) return false;
     if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
-    return now - _ctx.headingDivergeSince >= OFF_ROUTE_HEADING_DIVERGE_MS;
+    return simScaledDelta(now - _ctx.headingDivergeSince) >= OFF_ROUTE_HEADING_DIVERGE_MS;
   }
   function canTriggerReroute(feed, now) {
     const distNeed = confirmDistForSpeed(feed.spdMps);
@@ -20812,6 +20904,11 @@ out geom;`;
     }
   }
   function beginReroute(fromState, feed, trigger) {
+    if (globalThis.__REGRESSION_SIM__?.disableReroute) {
+      transition(fromState, OffRouteState.OFFLINE_GUIDE, { ...metaFromFeed(feed), trigger });
+      enterOfflineGuide(feed);
+      return;
+    }
     if (_ctx.rerouteBusy || S.offRouteState === OffRouteState.REROUTING) return;
     _ctx.rerouteBusy = true;
     transition(fromState, OffRouteState.REROUTING, { ...metaFromFeed(feed), trigger });
@@ -20860,7 +20957,7 @@ out geom;`;
   function tickOffRouteMachine(feed) {
     if (S.compassMode || feed.lateral == null || !S.route) return;
     const now = Date.now();
-    const dtMs = _ctx.lastFeedMs ? Math.min(3e3, now - _ctx.lastFeedMs) : 0;
+    const dtMs = _ctx.lastFeedMs ? Math.min(3e3, simScaledDelta(now - _ctx.lastFeedMs)) : 0;
     _ctx.lastFeedMs = now;
     feed = { ...feed, dtMs };
     if (S.offRouteState === OffRouteState.REROUTING || _ctx.rerouteBusy) return;
@@ -20899,6 +20996,7 @@ out geom;`;
       init_voice();
       init_telemetry();
       init_snap_quality();
+      init_sim_time_scale();
       init_nav_constants();
       OffRouteState = {
         ON_ROUTE: "ON_ROUTE",
@@ -25381,6 +25479,116 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
   init_hud_chrome();
   init_settings_ui();
   init_hud_settings_sheet();
+
+  // js/regression-sim-bridge.js
+  init_state();
+  init_geo();
+  init_route();
+  init_offroute();
+  init_route_geometry();
+  init_sim_time_scale();
+  function minimalSteps(waypoints, distanceM) {
+    const last = waypoints[waypoints.length - 1];
+    const first = waypoints[0];
+    return [
+      {
+        lat: first.lat,
+        lon: first.lon,
+        type: "depart",
+        modifier: "",
+        name: first.label || "",
+        distance: 0,
+        intersections: []
+      },
+      {
+        lat: last.lat,
+        lon: last.lon,
+        type: "arrive",
+        modifier: "",
+        name: last.label || "",
+        distance: distanceM,
+        intersections: []
+      }
+    ];
+  }
+  function routeFromCache(cache, waypoints) {
+    const coords = cache.polyline || [];
+    const n = Math.max(0, coords.length - 1);
+    return {
+      coords,
+      steps: minimalSteps(waypoints, cache.distance_m || 0),
+      distance: cache.distance_m || 0,
+      duration: cache.duration_s || 0,
+      maxspeeds: new Array(n).fill({ unknown: true }),
+      segmentSpeeds: new Array(n).fill(0)
+    };
+  }
+  function prepareRegressionHud(opts) {
+    const { waypoints, cache, timeScale = 1 } = opts || {};
+    if (!waypoints?.length || !cache?.polyline?.length) {
+      throw new Error("regression: \u043D\u0443\u0436\u043D\u044B waypoints \u0438 polyline");
+    }
+    if (typeof globalThis !== "undefined") {
+      globalThis.SIM_TIME_SCALE = timeScale;
+      globalThis.__REGRESSION_SIM__ = { active: true, disableReroute: true };
+    }
+    resetSimTimeEpoch();
+    const start2 = waypoints[0];
+    const route = routeFromCache(cache, waypoints);
+    attachRouteFromImport(route, waypoints);
+    const next = waypoints[1] || waypoints[0];
+    const hdg = bearing(start2, next);
+    S.gps = {
+      lat: start2.lat,
+      lon: start2.lon,
+      acc: 5,
+      speed: 0,
+      heading: hdg,
+      ts: Date.now()
+    };
+    S.fixPos = { lat: start2.lat, lon: start2.lon };
+    S.fixAt = Date.now();
+    S.smoothedHeading = hdg;
+    S.gpsConverged = true;
+    S.gpsFixCount = 12;
+    S.compassMode = false;
+    S.voice = false;
+    S.cams = false;
+    S.showElevProfile = false;
+    resetOffRouteMachine();
+    resetRouteSnap();
+    return { distance_m: route.distance, duration_s: route.duration };
+  }
+  function sampleRegressionState(extra = {}) {
+    let lateral = null;
+    let maneuverType = null;
+    if (S.route && S.gps) {
+      const snap = getNavSnap(S.smoothedHeading);
+      lateral = snap?.lateral ?? null;
+      if (lateral != null && (!Number.isFinite(lateral) || lateral > 300)) lateral = null;
+      const steps = S.route.steps || [];
+      for (let i = 1; i < steps.length; i++) {
+        const st = steps[i];
+        if (haversine(S.gps, st) < 120) {
+          maneuverType = st.type;
+          break;
+        }
+      }
+    }
+    return {
+      ts: Date.now(),
+      type: "regression_tick",
+      lateral_m: lateral != null ? Math.round(lateral * 10) / 10 : null,
+      snap_quality: S.snapQuality,
+      off_route_state: S.offRouteState,
+      maneuver_type: maneuverType,
+      gps_acc: S.gps?.acc ?? null,
+      ...extra
+    };
+  }
+
+  // js/main.js
+  init_route();
   applyThemeCss();
   initYandexImportUi();
   initYandexClipboard();
@@ -25443,6 +25651,9 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     doBuildRoute,
     doAddressSearch,
     onTick,
+    findNearestOnRoute,
+    prepareRegressionHud,
+    sampleRegressionState,
     _searchBusy: false,
     _finishFocused: false
   };
