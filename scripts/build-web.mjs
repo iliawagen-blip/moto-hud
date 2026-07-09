@@ -33,6 +33,7 @@ function stampBuildId(filePath){
   if(!fs.existsSync(filePath)) return;
   let text = fs.readFileSync(filePath, 'utf8');
   text = text.replace(/%%BUILD_ID%%/g, BUILD_ID);
+  text = text.replace(/window\.__BUILD_ID__='[^']*'/g, `window.__BUILD_ID__='${BUILD_ID}'`);
   fs.writeFileSync(filePath, text);
 }
 
