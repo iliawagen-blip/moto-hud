@@ -7,8 +7,7 @@ import { haversine } from './geo.js';
 import { isSim } from './platform.js';
 import {
   GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M,
-  GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M,
-  SNAP_QUALITY_LOST_LATERAL_M
+  GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M
 } from './nav-constants.js';
 import { noteConvergeTransition } from './converge-telemetry.js';
 
@@ -36,7 +35,7 @@ function evaluateBuffer(minFixes, accLimit){
   if(_buf.length < minFixes) return { ok: false, fail_detail: 'buffer_short' };
   const recent = _buf.slice(-minFixes);
   if(recent.some(f => isNetworkFix(f))) return { ok: false, fail_detail: 'network_fix' };
-  if(recent.some(f => f.acc > accLimit)) return { ok: false, fail_detail: 'acc_over_limit' };
+  if(recent.some(f => f.acc != null && f.acc > accLimit)) return { ok: false, fail_detail: 'acc_over_limit' };
   let gpsStreak = 0;
   for(const f of recent){
     if(isNetworkFix(f)) gpsStreak = 0;
@@ -49,13 +48,15 @@ function evaluateBuffer(minFixes, accLimit){
     const dt = Math.max(0.2, (b.ts - a.ts) / 1000);
     const v = Math.max(a.speed || 0, b.speed || 0);
     const d = haversine(a, b);
-    if(d > maxJump(v, dt, Math.max(a.acc, b.acc))){
+    const accA = a.acc != null ? a.acc : accLimit;
+    const accB = b.acc != null ? b.acc : accLimit;
+    if(d > maxJump(v, dt, Math.max(accA, accB))){
       return { ok: false, fail_detail: 'jump_reject' };
     }
   }
   if(minFixes >= GPS_CONVERGE_MIN_FIXES){
     const last3 = _buf.slice(-3);
-    if(last3.length < 3 || last3.some(f => f.acc > GPS_CONVERGE_LAST3_ACC_M)){
+    if(last3.length < 3 || last3.some(f => f.acc != null && f.acc > GPS_CONVERGE_LAST3_ACC_M)){
       return { ok: false, fail_detail: 'last3_acc' };
     }
   }
@@ -88,7 +89,7 @@ export function feedGpsConverge(fix, telCtx){
   }
 
   const prev = S.gpsConverged;
-  const acc = fix.acc != null && Number.isFinite(fix.acc) ? fix.acc : 50;
+  const acc = fix.acc != null && Number.isFinite(fix.acc) ? fix.acc : null;
   if(!isNetworkFix(fix)) _gpsFixCount++;
   S.gpsFixCount = _gpsFixCount;
 
@@ -102,18 +103,15 @@ export function feedGpsConverge(fix, telCtx){
   const minFixes = re ? GPS_CONVERGE_RE_MIN_FIXES : GPS_CONVERGE_MIN_FIXES;
   const accLim = re ? GPS_CONVERGE_RE_ACC_M : GPS_CONVERGE_ACC_M;
   const bufStats = getConvergeBufferStats(re);
-  const snap = telCtx?.snap;
-  const snapBlocksConverge = snap?.quality === 'LOST' ||
-    (snap?.lateral != null && snap.lateral > SNAP_QUALITY_LOST_LATERAL_M);
 
   const ev = evaluateBuffer(minFixes, accLim);
-  if(ev.ok && !snapBlocksConverge){
+  if(ev.ok){
     S.gpsConverged = true;
     _everConverged = true;
     if(prev !== true){
-      noteConvergeTransition(prev, true, 'converged', {}, fix, bufStats, snap);
+      noteConvergeTransition(prev, true, 'converged', {}, fix, bufStats, telCtx?.snap);
     }
-  } else if(snapBlocksConverge || (!re && _buf.length < minFixes)){
+  } else if(!re && _buf.length < minFixes){
     S.gpsConverged = false;
   }
 

@@ -6674,7 +6674,7 @@ out geom;`;
     if (_buf.length < minFixes) return { ok: false, fail_detail: "buffer_short" };
     const recent = _buf.slice(-minFixes);
     if (recent.some((f2) => isNetworkFix(f2))) return { ok: false, fail_detail: "network_fix" };
-    if (recent.some((f2) => f2.acc > accLimit)) return { ok: false, fail_detail: "acc_over_limit" };
+    if (recent.some((f2) => f2.acc != null && f2.acc > accLimit)) return { ok: false, fail_detail: "acc_over_limit" };
     let gpsStreak = 0;
     for (const f2 of recent) {
       if (isNetworkFix(f2)) gpsStreak = 0;
@@ -6687,13 +6687,15 @@ out geom;`;
       const dt = Math.max(0.2, (b.ts - a.ts) / 1e3);
       const v = Math.max(a.speed || 0, b.speed || 0);
       const d = haversine(a, b);
-      if (d > maxJump(v, dt, Math.max(a.acc, b.acc))) {
+      const accA = a.acc != null ? a.acc : accLimit;
+      const accB = b.acc != null ? b.acc : accLimit;
+      if (d > maxJump(v, dt, Math.max(accA, accB))) {
         return { ok: false, fail_detail: "jump_reject" };
       }
     }
     if (minFixes >= GPS_CONVERGE_MIN_FIXES) {
       const last3 = _buf.slice(-3);
-      if (last3.length < 3 || last3.some((f2) => f2.acc > GPS_CONVERGE_LAST3_ACC_M)) {
+      if (last3.length < 3 || last3.some((f2) => f2.acc != null && f2.acc > GPS_CONVERGE_LAST3_ACC_M)) {
         return { ok: false, fail_detail: "last3_acc" };
       }
     }
@@ -6719,7 +6721,7 @@ out geom;`;
       return true;
     }
     const prev = S.gpsConverged;
-    const acc = fix.acc != null && Number.isFinite(fix.acc) ? fix.acc : 50;
+    const acc = fix.acc != null && Number.isFinite(fix.acc) ? fix.acc : null;
     if (!isNetworkFix(fix)) _gpsFixCount++;
     S.gpsFixCount = _gpsFixCount;
     _buf.push({
@@ -6735,16 +6737,14 @@ out geom;`;
     const minFixes = re ? GPS_CONVERGE_RE_MIN_FIXES : GPS_CONVERGE_MIN_FIXES;
     const accLim = re ? GPS_CONVERGE_RE_ACC_M : GPS_CONVERGE_ACC_M;
     const bufStats = getConvergeBufferStats(re);
-    const snap = telCtx?.snap;
-    const snapBlocksConverge = snap?.quality === "LOST" || snap?.lateral != null && snap.lateral > SNAP_QUALITY_LOST_LATERAL_M;
     const ev = evaluateBuffer(minFixes, accLim);
-    if (ev.ok && !snapBlocksConverge) {
+    if (ev.ok) {
       S.gpsConverged = true;
       _everConverged = true;
       if (prev !== true) {
-        noteConvergeTransition(prev, true, "converged", {}, fix, bufStats, snap);
+        noteConvergeTransition(prev, true, "converged", {}, fix, bufStats, telCtx?.snap);
       }
-    } else if (snapBlocksConverge || !re && _buf.length < minFixes) {
+    } else if (!re && _buf.length < minFixes) {
       S.gpsConverged = false;
     }
     return S.gpsConverged;
@@ -24128,6 +24128,11 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     if (snap?.lateral != null) return snap.lateral;
     return findNearestOnRoute()?.dist ?? null;
   }
+  function snapLostBlocksNav(snap) {
+    if (!isSnapLost()) return false;
+    const lat = lateralForOffRoute(snap);
+    return lat == null || lat > OFF_ROUTE_ENTER_M;
+  }
   function onTick() {
     if (!S.gps) return;
     if ($2("hud").classList.contains("on")) {
@@ -24178,7 +24183,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
       updateFinishInfo(getRemainingDistance(), kmh, now);
     }
-    if (isSnapLost()) {
+    if (snapLostBlocksNav(snap)) {
       $2("street").textContent = "\u041D\u0415\u0422 \u041F\u0420\u0418\u0412\u042F\u0417\u041A\u0418";
       $2("v-mdist").textContent = "\u2014";
       $2("v-mdist-u").textContent = "";
@@ -24218,7 +24223,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       return;
     }
     if (!gpsOk) return;
-    if (isSnapLost()) return;
+    if (snapLostBlocksNav(snap)) return;
     if (isOfflineGuide() && snap && S.gps) {
       const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
       const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
@@ -24682,6 +24687,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       init_speed_limit();
       init_roundabout();
       init_converge_telemetry();
+      init_nav_constants();
       _lastMarkCtx = null;
       _fuelBusy = false;
       _fuelPanelShownAt = 0;
