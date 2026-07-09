@@ -43,19 +43,25 @@ function isNetworkFix(fix){
   return fix.provider === 'network';
 }
 
-function fixWithEffectiveAcc(f){
-  const recent = _buf.slice(-5);
-  const eff = effectiveAccM(f.acc, recent.length ? recent : [f]);
+function fixWithEffectiveAcc(f, ctx){
+  const buf = ctx?.length ? ctx : [f];
+  const eff = effectiveAccM(f.acc, buf);
   return { ...f, acc: eff, reportedAcc: f.acc };
 }
 
-function maxJump(v, dt, acc){
-  return (v || 0) * dt + (acc || GPS_CONVERGE_ACC_M) + GPS_CONVERGE_JUMP_PAD_M;
+function jumpLimitM(a, b, accA, accB){
+  const dt = Math.max(0.2, (b.ts - a.ts) / 1000);
+  const v = Math.max(a.speed || 0, b.speed || 0);
+  const acc = Math.max(accA ?? GPS_CONVERGE_ACC_M, accB ?? GPS_CONVERGE_ACC_M);
+  const stationary = v < 1.2;
+  if(stationary) return Math.max(75, acc * 0.5);
+  return (v || 0) * dt + acc + GPS_CONVERGE_JUMP_PAD_M;
 }
 
 function evaluateBuffer(minFixes, accLimit){
   if(_buf.length < minFixes) return { ok: false, fail_detail: 'buffer_short' };
-  const recent = _buf.slice(-minFixes).map(fixWithEffectiveAcc);
+  const ctx = _buf.slice(-Math.max(minFixes, 5));
+  const recent = _buf.slice(-minFixes).map(f => fixWithEffectiveAcc(f, ctx));
   if(recent.some(f => isNetworkFix(f))) return { ok: false, fail_detail: 'network_fix' };
   if(recent.some(f => f.acc != null && f.acc > accLimit)) return { ok: false, fail_detail: 'acc_over_limit' };
   let gpsStreak = 0;
@@ -67,17 +73,15 @@ function evaluateBuffer(minFixes, accLimit){
   for(let i = 1; i < recent.length; i++){
     const a = recent[i - 1];
     const b = recent[i];
-    const dt = Math.max(0.2, (b.ts - a.ts) / 1000);
-    const v = Math.max(a.speed || 0, b.speed || 0);
     const d = haversine(a, b);
     const accA = a.acc != null ? a.acc : accLimit;
     const accB = b.acc != null ? b.acc : accLimit;
-    if(d > maxJump(v, dt, Math.max(accA, accB))){
+    if(d > jumpLimitM(a, b, accA, accB)){
       return { ok: false, fail_detail: 'jump_reject' };
     }
   }
   if(minFixes >= GPS_CONVERGE_MIN_FIXES){
-    const last3 = _buf.slice(-3).map(fixWithEffectiveAcc);
+    const last3 = _buf.slice(-3).map(f => fixWithEffectiveAcc(f, ctx));
     if(last3.length < 3 || last3.some(f => f.acc != null && f.acc > GPS_CONVERGE_LAST3_ACC_M)){
       return { ok: false, fail_detail: 'last3_acc' };
     }

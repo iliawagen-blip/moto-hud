@@ -6071,8 +6071,8 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx) {
     }
     let score = proj.lateral + SNAP_ANGLE_PENALTY * (gpsHdg != null ? (1 - dot) * 50 : 0);
     if (!skipJump && prevS > 0) {
-      const maxJump2 = spd * dt + acc;
-      const jumpExcess = Math.max(0, Math.abs(s2 - prevS) - maxJump2);
+      const maxJump = spd * dt + acc;
+      const jumpExcess = Math.max(0, Math.abs(s2 - prevS) - maxJump);
       score += SNAP_JUMP_PENALTY * jumpExcess / 10;
     }
     if (!best || score < best.score) {
@@ -6196,9 +6196,9 @@ function snapToRoute(gps, geom, gpsHeadingDeg, meta) {
     const nearP = interpolateAtS(geom, nearS);
     const nearLat = haversine(gps, nearP);
     const maxBack = spd >= 1 ? 100 : 250;
-    const maxJump2 = Math.max(350, spd * dt + acc * 5);
+    const maxJump = Math.max(350, spd * dt + acc * 5);
     const forwardOk = !prev || nearS >= prev.s - maxBack;
-    const jumpOk = !prev || Math.abs(nearS - prev.s) <= maxJump2;
+    const jumpOk = !prev || Math.abs(nearS - prev.s) <= maxJump;
     if (nearLat + 8 < best.lateral && forwardOk && jumpOk) {
       const segIdx = findSegAtS(geom, nearS);
       const tangent = avgTangentDeg(geom, nearS, 20);
@@ -16742,9 +16742,13 @@ function effectiveAccM(reportedAcc, recentFixes) {
   }
   const measured = spread + 8;
   if (reportedAcc == null || !Number.isFinite(reportedAcc)) return measured;
-  if (reportedAcc > 35 && spread <= 22) return Math.min(reportedAcc, measured);
-  if (reportedAcc > spread * 2.5 && spread <= 30) return Math.min(reportedAcc, measured);
+  if (spread <= 55 && reportedAcc > measured) return measured;
   return reportedAcc;
+}
+function displayAccM(reportedAcc, recentFixes) {
+  const eff = effectiveAccM(reportedAcc, recentFixes);
+  if (eff == null) return null;
+  return Math.max(3, Math.round(eff));
 }
 var CONVERGE_FAIL_LABELS;
 var init_gps_accuracy = __esm({
@@ -16771,17 +16775,23 @@ function hasEverConverged() {
 function isNetworkFix(fix) {
   return fix.provider === "network";
 }
-function fixWithEffectiveAcc(f2) {
-  const recent = _buf.slice(-5);
-  const eff = effectiveAccM(f2.acc, recent.length ? recent : [f2]);
+function fixWithEffectiveAcc(f2, ctx) {
+  const buf = ctx?.length ? ctx : [f2];
+  const eff = effectiveAccM(f2.acc, buf);
   return { ...f2, acc: eff, reportedAcc: f2.acc };
 }
-function maxJump(v, dt, acc) {
-  return (v || 0) * dt + (acc || GPS_CONVERGE_ACC_M) + GPS_CONVERGE_JUMP_PAD_M;
+function jumpLimitM(a, b, accA, accB) {
+  const dt = Math.max(0.2, (b.ts - a.ts) / 1e3);
+  const v = Math.max(a.speed || 0, b.speed || 0);
+  const acc = Math.max(accA ?? GPS_CONVERGE_ACC_M, accB ?? GPS_CONVERGE_ACC_M);
+  const stationary = v < 1.2;
+  if (stationary) return Math.max(75, acc * 0.5);
+  return (v || 0) * dt + acc + GPS_CONVERGE_JUMP_PAD_M;
 }
 function evaluateBuffer(minFixes, accLimit) {
   if (_buf.length < minFixes) return { ok: false, fail_detail: "buffer_short" };
-  const recent = _buf.slice(-minFixes).map(fixWithEffectiveAcc);
+  const ctx = _buf.slice(-Math.max(minFixes, 5));
+  const recent = _buf.slice(-minFixes).map((f2) => fixWithEffectiveAcc(f2, ctx));
   if (recent.some((f2) => isNetworkFix(f2))) return { ok: false, fail_detail: "network_fix" };
   if (recent.some((f2) => f2.acc != null && f2.acc > accLimit)) return { ok: false, fail_detail: "acc_over_limit" };
   let gpsStreak = 0;
@@ -16793,17 +16803,15 @@ function evaluateBuffer(minFixes, accLimit) {
   for (let i = 1; i < recent.length; i++) {
     const a = recent[i - 1];
     const b = recent[i];
-    const dt = Math.max(0.2, (b.ts - a.ts) / 1e3);
-    const v = Math.max(a.speed || 0, b.speed || 0);
     const d = haversine(a, b);
     const accA = a.acc != null ? a.acc : accLimit;
     const accB = b.acc != null ? b.acc : accLimit;
-    if (d > maxJump(v, dt, Math.max(accA, accB))) {
+    if (d > jumpLimitM(a, b, accA, accB)) {
       return { ok: false, fail_detail: "jump_reject" };
     }
   }
   if (minFixes >= GPS_CONVERGE_MIN_FIXES) {
-    const last3 = _buf.slice(-3).map(fixWithEffectiveAcc);
+    const last3 = _buf.slice(-3).map((f2) => fixWithEffectiveAcc(f2, ctx));
     if (last3.length < 3 || last3.some((f2) => f2.acc != null && f2.acc > GPS_CONVERGE_LAST3_ACC_M)) {
       return { ok: false, fail_detail: "last3_acc" };
     }
@@ -16969,30 +16977,34 @@ function stopVisualLoop() {
     S.rafId = null;
   }
 }
+function getGpsDisplayAcc() {
+  if (!S.gps) return null;
+  return displayAccM(S.gps.acc, S._gpsSpreadBuf || []);
+}
 function updateGpsConvergeUI() {
   const el = $2("gps-converge");
   if (el) {
     el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
   }
   const reported = S.gps?.acc != null ? Math.round(S.gps.acc) : null;
+  const shown = getGpsDisplayAcc();
   const spread = S.gps ? measuredSpreadM(S._gpsSpreadBuf || []) : null;
   const failHint = getConvergeFailLabel();
   let title = "\u0422\u0430\u043F \u2014 \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C GPS";
-  if (S.gps && !S.gpsConverged) {
+  if (S.gps) {
     const parts = [];
-    if (reported != null) parts.push("\u043E\u0442\u0447\u0451\u0442 \xB1" + reported + " \u043C");
+    if (shown != null) parts.push("\u043E\u0446\u0435\u043D\u043A\u0430 \xB1" + shown + " \u043C");
+    if (reported != null && reported !== shown) parts.push("\u043E\u0442\u0447\u0451\u0442 \u041E\u0421 \xB1" + reported + " \u043C");
     if (spread != null) parts.push("\u0440\u0430\u0437\u0431\u0440\u043E\u0441 ~" + Math.round(spread) + " \u043C");
-    if (failHint) parts.push("\u0436\u0434\u0451\u043C: " + failHint);
+    if (!S.gpsConverged && failHint) parts.push("\u0436\u0434\u0451\u043C: " + failHint);
     if (parts.length) title = parts.join(" \xB7 ");
-  } else if (S.gpsConverged && reported != null) {
-    title = "GPS \u0441\u0445\u043E\u0434\u0438\u0442\u0441\u044F \xB7 \u043E\u0442\u0447\u0451\u0442 \xB1" + reported + " \u043C" + (spread != null ? " \xB7 \u0440\u0430\u0437\u0431\u0440\u043E\u0441 ~" + Math.round(spread) + " \u043C" : "");
   }
   if (S.gpsConverged) {
     const tag = isSim() ? " \u0441\u0438\u043C" : "";
-    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + (reported ?? "\u2014") + "\u043C";
+    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + (shown ?? "\u2014") + "\u043C";
     $2("s-gps").className = "chip ok";
   } else if (S.gps) {
-    $2("s-gps").textContent = "\u23F3 GPS \xB1" + (reported ?? "\u2026") + "\u043C";
+    $2("s-gps").textContent = "\u23F3 GPS \xB1" + (shown ?? "\u2026") + "\u043C";
     $2("s-gps").className = "chip";
   } else {
     $2("s-gps").textContent = "\u23F3 GPS\u2026";
@@ -24382,7 +24394,7 @@ function onTick() {
   if (dot) {
     dot.classList.toggle("ok", !!S.gps);
   }
-  $2("gps-txt").textContent = "GPS \xB1" + Math.round(S.gps.acc || 0) + "\u043C";
+  $2("gps-txt").textContent = "GPS \xB1" + (getGpsDisplayAcc() ?? Math.round(S.gps.acc || 0)) + "\u043C";
   const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
   const hh = getHeadingHealth();
   const hw = $2("heading-warn");

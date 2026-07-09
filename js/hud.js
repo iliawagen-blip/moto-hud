@@ -1,7 +1,7 @@
 import { S } from './state.js';
 import { $, fmtClock, fmtTime, fmtRemainDur, formatStreetLabel } from './util.js';
 import { haversine, bearing, angleDiff } from './geo.js';
-import { curPos } from './gps.js';
+import { curPos, getGpsDisplayAcc } from './gps.js';
 import {
   buildRoute, loadCameras, saveLastRun, findNearestOnRoute,
   findNextManeuver, getRemainingDistance, seedSnapFromGps
@@ -213,7 +213,7 @@ export function onTick(){
   $('clock').textContent = fmtClock(now);
   const dot = $('gps-dot');
   if(dot){ dot.classList.toggle('ok', !!S.gps); }
-  $('gps-txt').textContent = 'GPS ±' + Math.round(S.gps.acc || 0) + 'м';
+  $('gps-txt').textContent = 'GPS ±' + (getGpsDisplayAcc() ?? Math.round(S.gps.acc || 0)) + 'м';
   const kmh = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
   const hh = getHeadingHealth();
   const hw = $('heading-warn');
