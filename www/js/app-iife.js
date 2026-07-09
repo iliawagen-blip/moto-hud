@@ -168,7 +168,7 @@
   });
 
   // js/state.js
-  var DEFAULT_FUEL_PLANNER_COUNT, MIN_FUEL_PLANNER_COUNT, MAX_FUEL_PLANNER_COUNT, DEFAULT_CAM_SPEED_TOL, DEFAULT_PATH_CHEVRON_MAX, S, L2, CAM_H, CAM_B, CAM_PITCH, ROAD_MAX, ROAD_HALF, RUN_KEY, FAV_KEY, ELEV_OPTS_KEY, CURVE_OPTS_KEY, HUD_OPTS_KEY, APP_OPTS_KEY, DEFAULT_ELEV_EXAG, DEFAULT_ELEV_PROFILE_H, MIN_ELEV_PROFILE_H, MAX_ELEV_PROFILE_H, DEFAULT_ELEV_PROFILE_LEN_KM, MIN_ELEV_PROFILE_LEN_KM, MAX_ELEV_PROFILE_LEN_KM, FUEL_CORRIDOR;
+  var DEFAULT_FUEL_PLANNER_COUNT, MIN_FUEL_PLANNER_COUNT, MAX_FUEL_PLANNER_COUNT, DEFAULT_CAM_SPEED_TOL, DEFAULT_PATH_CHEVRON_MAX, DEFAULT_PATH_MIN_SPEED_KMH, MAX_PATH_MIN_SPEED_KMH, S, L2, CAM_H, CAM_B, CAM_PITCH, ROAD_MAX, ROAD_HALF, RUN_KEY, FAV_KEY, ELEV_OPTS_KEY, CURVE_OPTS_KEY, HUD_OPTS_KEY, APP_OPTS_KEY, DEFAULT_ELEV_EXAG, DEFAULT_ELEV_PROFILE_H, MIN_ELEV_PROFILE_H, MAX_ELEV_PROFILE_H, DEFAULT_ELEV_PROFILE_LEN_KM, MIN_ELEV_PROFILE_LEN_KM, MAX_ELEV_PROFILE_LEN_KM, FUEL_CORRIDOR;
   var init_state = __esm({
     "js/state.js"() {
       init_theme();
@@ -177,6 +177,8 @@
       MAX_FUEL_PLANNER_COUNT = 10;
       DEFAULT_CAM_SPEED_TOL = 15;
       DEFAULT_PATH_CHEVRON_MAX = 3;
+      DEFAULT_PATH_MIN_SPEED_KMH = 8;
+      MAX_PATH_MIN_SPEED_KMH = 30;
       S = {
         gps: null,
         finish: null,
@@ -218,6 +220,9 @@
         showPathChevrons: true,
         pathChevronLabels: true,
         pathChevronMax: DEFAULT_PATH_CHEVRON_MAX,
+        /** Мин. скорость для прогноз-дорожки (км/ч); ниже — карта во дворах */
+        pathMinSpeedKmh: DEFAULT_PATH_MIN_SPEED_KMH,
+        lowSpeedMap: true,
         showElevProfile: true,
         elevExag: 1.8,
         elevProfileH: 72,
@@ -1398,7 +1403,7 @@
   });
 
   // js/nav-constants.js
-  var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, PATH_MIN_SPEED_KMH, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+  var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, LOW_SPEED_MAP_EXIT_PAD_KMH, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
   var init_nav_constants = __esm({
     "js/nav-constants.js"() {
       SNAP_QUALITY_GOOD_OUT = 1;
@@ -1462,7 +1467,8 @@
       ROUTE_LOW_MANEUVER_PER_KM = 25;
       FUSION_GPS_WEIGHT_MIN = 0.02;
       FUSION_GPS_WEIGHT_SPAN = 25;
-      PATH_MIN_SPEED_KMH = 8;
+      LOW_SPEED_MAP_ZOOM = 18;
+      LOW_SPEED_MAP_EXIT_PAD_KMH = 2;
       PATH_SKIP_DS_M = 2;
       PATH_SKIP_FRAMES = 2;
       GPS_INVALIDATE_ACC_M = 50;
@@ -16472,11 +16478,13 @@ out geom;`;
       if (!_overviewFit) fitOverview();
     } else if (mode === "map_zoom" && pos) {
       const now = Date.now();
+      const zoom = LOW_SPEED_MAP_ZOOM;
       if (now - _lastZoomPan > 2e3) {
-        map.setView([pos.lat, pos.lon], Math.max(map.getZoom(), 16), { animate: false });
+        map.setView([pos.lat, pos.lon], zoom, { animate: false });
         _lastZoomPan = now;
       } else {
         map.panTo([pos.lat, pos.lon], { animate: false, noMoveStart: true });
+        if (map.getZoom() < zoom) map.setZoom(zoom, { animate: false });
       }
     }
   }
@@ -16516,6 +16524,7 @@ out geom;`;
       init_route_geometry();
       init_map_providers();
       init_route();
+      init_nav_constants();
       _map = null;
       _tileLayer = null;
       _overlayLayer = null;
@@ -17198,6 +17207,230 @@ out geom;`;
     }
   });
 
+  // js/hud-chrome.js
+  function normalizeChromeMode(v) {
+    return v === "always" || v === "off" ? v : "tap";
+  }
+  function chromeShown(mode) {
+    const m = normalizeChromeMode(mode);
+    if (m === "off") return false;
+    if (m === "always") return true;
+    return $2("hud")?.classList.contains("chrome-reveal");
+  }
+  function revealHudChrome() {
+    const hud = $2("hud");
+    if (!hud?.classList.contains("on")) return;
+    hud.classList.add("chrome-reveal");
+    applyHudChrome();
+    const btns = $2("hud-side-btns");
+    if (btns) btns.scrollTop = 0;
+    clearTimeout(_revealTimer);
+    _revealTimer = setTimeout(() => {
+      hud.classList.remove("chrome-reveal");
+      applyHudChrome();
+    }, HUD_CHROME_TAP_MS);
+  }
+  function onHudTap() {
+    revealHudChrome();
+  }
+  function clearHudChromeReveal() {
+    clearTimeout(_revealTimer);
+    _revealTimer = null;
+    $2("hud")?.classList.remove("chrome-reveal");
+    applyHudChrome();
+  }
+  function applyHudChrome() {
+    const hud = $2("hud");
+    if (!hud) return;
+    const reveal = hud.classList.contains("chrome-reveal");
+    const statusOn = chromeShown(S.hudStatusMode);
+    const finishFields = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
+    const finishOn = finishFields && chromeShown(S.hudFinishMode);
+    hud.classList.toggle("chrome-btns-on", reveal);
+    hud.classList.toggle("chrome-status-on", statusOn);
+    hud.classList.toggle("chrome-finish-on", finishOn);
+    if (reveal) {
+      const btns = $2("hud-side-btns");
+      if (btns) btns.scrollTop = 0;
+    }
+    const panel = $2("finish-info");
+    if (panel) {
+      panel.classList.toggle("hidden", !finishOn);
+      $2("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
+      $2("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
+      $2("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
+    }
+  }
+  function initHudChrome() {
+    if (_bound) return;
+    _bound = true;
+    applyHudChrome();
+  }
+  var HUD_CHROME_TAP_MS, _revealTimer, _bound;
+  var init_hud_chrome = __esm({
+    "js/hud-chrome.js"() {
+      init_state();
+      init_util();
+      HUD_CHROME_TAP_MS = 15e3;
+      _revealTimer = null;
+      _bound = false;
+    }
+  });
+
+  // js/view-mode.js
+  function isExcludedTarget(el) {
+    if (!el || !(el instanceof Element)) return true;
+    return !!el.closest(
+      ".corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #hud-settings-sheet, .hud-settings-sheet"
+    );
+  }
+  function isChromeTapTarget(el) {
+    if (!el || !(el instanceof Element)) return false;
+    if (isExcludedTarget(el)) return false;
+    if (window.matchMedia("(pointer: fine)").matches && el.closest(".speed-stack, .mdist, .block-path, .block-arrow")) {
+      return false;
+    }
+    return true;
+  }
+  function applyViewLayout(mode) {
+    const hud = $2("hud");
+    if (!hud) return;
+    hud.classList.remove("view-map", "view-map-overview", "view-map-zoom");
+    if (mode === "hud") {
+      pauseNavMap();
+      return;
+    }
+    hud.classList.add("view-map");
+    hud.classList.add(mode === "map_zoom" ? "view-map-zoom" : "view-map-overview");
+    syncNavMap(mode);
+  }
+  function setViewMode(mode) {
+    const m = VIEW_ORDER.includes(mode) ? mode : "hud";
+    S.viewMode = m;
+    applyViewLayout(m);
+  }
+  function cycleViewMode() {
+    onUserViewModeChange();
+    const i = VIEW_ORDER.indexOf(S.viewMode || "hud");
+    setViewMode(VIEW_ORDER[(i + 1) % VIEW_ORDER.length]);
+  }
+  function registerTap(clientX, clientY, target, preventDefault) {
+    if (!document.getElementById("hud")?.classList.contains("on")) return false;
+    if (isExcludedTarget(target)) return false;
+    const now = Date.now();
+    const dt = now - _lastTap.t;
+    const dist = Math.hypot(clientX - _lastTap.x, clientY - _lastTap.y);
+    if (dt < DBL_TAP_MS && dist < DBL_TAP_MAX_PX) {
+      cycleViewMode();
+      _lastTap.t = 0;
+      if (preventDefault) preventDefault();
+      return true;
+    }
+    _lastTap = { t: now, x: clientX, y: clientY };
+    if (isChromeTapTarget(target)) onHudTap();
+    return false;
+  }
+  function onTouchEnd(e) {
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    _lastTouchEnd = Date.now();
+    if (registerTap(t.clientX, t.clientY, t.target, () => e.preventDefault())) return;
+  }
+  function onClick(e) {
+    if (e.button !== 0) return;
+    if (Date.now() - _lastTouchEnd < 500) return;
+    registerTap(e.clientX, e.clientY, e.target, null);
+  }
+  function initViewMode() {
+    if (_bound2) return;
+    const hud = $2("hud");
+    if (!hud) return;
+    hud.addEventListener("touchend", onTouchEnd, { passive: false });
+    hud.addEventListener("click", onClick);
+    _bound2 = true;
+    S.viewMode = "hud";
+  }
+  function resetViewMode() {
+    resetLowSpeedMap();
+    setViewMode("hud");
+    destroyNavMap();
+  }
+  var DBL_TAP_MS, DBL_TAP_MAX_PX, VIEW_ORDER, _lastTap, _lastTouchEnd, _bound2;
+  var init_view_mode = __esm({
+    "js/view-mode.js"() {
+      init_state();
+      init_util();
+      init_hud_chrome();
+      init_nav_map();
+      init_low_speed_map();
+      DBL_TAP_MS = 400;
+      DBL_TAP_MAX_PX = 40;
+      VIEW_ORDER = ["hud", "map_overview", "map_zoom"];
+      _lastTap = { t: 0, x: 0, y: 0 };
+      _lastTouchEnd = 0;
+      _bound2 = false;
+    }
+  });
+
+  // js/low-speed-map.js
+  function clampPathMinSpeedKmh(n) {
+    const v = parseInt(n, 10);
+    if (!Number.isFinite(v)) return DEFAULT_PATH_MIN_SPEED_KMH;
+    return Math.max(0, Math.min(MAX_PATH_MIN_SPEED_KMH, v));
+  }
+  function getPathMinSpeedKmh() {
+    return clampPathMinSpeedKmh(S.pathMinSpeedKmh);
+  }
+  function canUseLowSpeedMap(waitConverge) {
+    return !!$2("hud")?.classList.contains("on") && !!S.route && !waitConverge && !S.compassMode;
+  }
+  function shouldEnterLowSpeedMap(kmh, waitConverge) {
+    return S.lowSpeedMap !== false && canUseLowSpeedMap(waitConverge) && kmh < getPathMinSpeedKmh();
+  }
+  function shouldExitLowSpeedMap(kmh) {
+    return kmh >= getPathMinSpeedKmh() + LOW_SPEED_MAP_EXIT_PAD_KMH;
+  }
+  function tickLowSpeedMap(kmh, waitConverge) {
+    if (!S.lowSpeedMap) {
+      if (_autoActive) {
+        _autoActive = false;
+        setViewMode("hud");
+      }
+      return;
+    }
+    if (shouldEnterLowSpeedMap(kmh, waitConverge) && !_userPinned) {
+      if (S.viewMode === "hud" || _autoActive) {
+        setViewMode("map_zoom");
+        _autoActive = true;
+      }
+    } else if (_autoActive && shouldExitLowSpeedMap(kmh)) {
+      setViewMode("hud");
+      _autoActive = false;
+      _userPinned = false;
+    }
+    if (S.viewMode !== "hud") tickNavMap();
+  }
+  function onUserViewModeChange() {
+    if (_autoActive) _userPinned = true;
+  }
+  function resetLowSpeedMap() {
+    _autoActive = false;
+    _userPinned = false;
+  }
+  var _autoActive, _userPinned;
+  var init_low_speed_map = __esm({
+    "js/low-speed-map.js"() {
+      init_state();
+      init_util();
+      init_state();
+      init_nav_constants();
+      init_view_mode();
+      init_nav_map();
+      _autoActive = false;
+      _userPinned = false;
+    }
+  });
+
   // js/render.js
   function computePathLayout(w, h) {
     const aspect = Math.max(0.2, w / Math.max(1, h));
@@ -17574,12 +17807,15 @@ out geom;`;
     const hud = $2("hud");
     const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
     const waitConverge = !hasEverConverged() && S.gpsConverged === false;
-    if (!S.showPath || kmh < PATH_MIN_SPEED_KMH || waitConverge || S.compassMode) {
+    const pathMinKmh = getPathMinSpeedKmh();
+    if (!S.showPath || kmh < pathMinKmh || waitConverge || S.compassMode) {
       block.classList.add("hidden");
       hud.classList.add("no-path");
       svg.innerHTML = "";
+      tickLowSpeedMap(kmh, waitConverge);
       return;
     }
+    tickLowSpeedMap(kmh, waitConverge);
     block.classList.remove("hidden");
     hud.classList.remove("no-path");
     const gpsHdg = S.smoothedHeading;
@@ -17901,6 +18137,7 @@ out geom;`;
       init_route_geometry();
       init_gps_converge();
       init_nav_constants();
+      init_low_speed_map();
       init_elevation();
       init_curve_speed();
       init_theme_tokens();
@@ -18527,6 +18764,8 @@ out geom;`;
       setCheck("opt-path-chevrons", o.showPathChevrons !== false);
       setCheck("opt-chevron-labels", o.pathChevronLabels !== false);
       setVal("opt-chevron-max", o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
+      setCheck("opt-low-speed-map", o.lowSpeedMap !== false);
+      setVal("opt-path-min-speed", o.pathMinSpeedKmh != null ? o.pathMinSpeedKmh : DEFAULT_PATH_MIN_SPEED_KMH);
       setCheck("opt-heading", o.showCompass);
       setCheck("opt-cams", o.cams);
       setCheck("opt-back-only", o.backOnly);
@@ -18555,6 +18794,8 @@ out geom;`;
         showPathChevrons: S.showPathChevrons !== false,
         pathChevronLabels: S.pathChevronLabels !== false,
         pathChevronMax: S.pathChevronMax,
+        lowSpeedMap: S.lowSpeedMap !== false,
+        pathMinSpeedKmh: clampPathMinSpeedKmh(S.pathMinSpeedKmh),
         showCompass: !!S.showCompass,
         cams: !!S.cams,
         backOnly: !!S.backOnly,
@@ -18574,76 +18815,7 @@ out geom;`;
     "js/app-opts.js"() {
       init_state();
       init_util();
-    }
-  });
-
-  // js/hud-chrome.js
-  function normalizeChromeMode(v) {
-    return v === "always" || v === "off" ? v : "tap";
-  }
-  function chromeShown(mode) {
-    const m = normalizeChromeMode(mode);
-    if (m === "off") return false;
-    if (m === "always") return true;
-    return $2("hud")?.classList.contains("chrome-reveal");
-  }
-  function revealHudChrome() {
-    const hud = $2("hud");
-    if (!hud?.classList.contains("on")) return;
-    hud.classList.add("chrome-reveal");
-    applyHudChrome();
-    const btns = $2("hud-side-btns");
-    if (btns) btns.scrollTop = 0;
-    clearTimeout(_revealTimer);
-    _revealTimer = setTimeout(() => {
-      hud.classList.remove("chrome-reveal");
-      applyHudChrome();
-    }, HUD_CHROME_TAP_MS);
-  }
-  function onHudTap() {
-    revealHudChrome();
-  }
-  function clearHudChromeReveal() {
-    clearTimeout(_revealTimer);
-    _revealTimer = null;
-    $2("hud")?.classList.remove("chrome-reveal");
-    applyHudChrome();
-  }
-  function applyHudChrome() {
-    const hud = $2("hud");
-    if (!hud) return;
-    const reveal = hud.classList.contains("chrome-reveal");
-    const statusOn = chromeShown(S.hudStatusMode);
-    const finishFields = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
-    const finishOn = finishFields && chromeShown(S.hudFinishMode);
-    hud.classList.toggle("chrome-btns-on", reveal);
-    hud.classList.toggle("chrome-status-on", statusOn);
-    hud.classList.toggle("chrome-finish-on", finishOn);
-    if (reveal) {
-      const btns = $2("hud-side-btns");
-      if (btns) btns.scrollTop = 0;
-    }
-    const panel = $2("finish-info");
-    if (panel) {
-      panel.classList.toggle("hidden", !finishOn);
-      $2("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
-      $2("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
-      $2("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
-    }
-  }
-  function initHudChrome() {
-    if (_bound) return;
-    _bound = true;
-    applyHudChrome();
-  }
-  var HUD_CHROME_TAP_MS, _revealTimer, _bound;
-  var init_hud_chrome = __esm({
-    "js/hud-chrome.js"() {
-      init_state();
-      init_util();
-      HUD_CHROME_TAP_MS = 15e3;
-      _revealTimer = null;
-      _bound = false;
+      init_low_speed_map();
     }
   });
 
@@ -19790,6 +19962,17 @@ out geom;`;
       syncChevronInputs();
       saveAppOptsToStorage();
     });
+    $2("opt-low-speed-map")?.addEventListener("change", (e) => {
+      S.lowSpeedMap = e.target.checked;
+      const spd = $2("opt-path-min-speed");
+      if (spd) spd.disabled = !S.lowSpeedMap;
+      saveAppOptsToStorage();
+    });
+    $2("opt-path-min-speed")?.addEventListener("change", (e) => {
+      S.pathMinSpeedKmh = clampPathMinSpeedKmh(e.target.value);
+      if ($2("opt-path-min-speed")) $2("opt-path-min-speed").value = String(S.pathMinSpeedKmh);
+      saveAppOptsToStorage();
+    });
     $2("opt-chevron-labels")?.addEventListener("change", (e) => {
       S.pathChevronLabels = e.target.checked;
       saveAppOptsToStorage();
@@ -19989,6 +20172,10 @@ out geom;`;
       3,
       parseInt($2("opt-chevron-max")?.value, 10) || DEFAULT_PATH_CHEVRON_MAX
     ));
+    S.lowSpeedMap = $2("opt-low-speed-map")?.checked !== false;
+    S.pathMinSpeedKmh = clampPathMinSpeedKmh($2("opt-path-min-speed")?.value);
+    if ($2("opt-path-min-speed")) $2("opt-path-min-speed").value = String(S.pathMinSpeedKmh);
+    if ($2("opt-path-min-speed")) $2("opt-path-min-speed").disabled = !S.lowSpeedMap;
     if ($2("opt-chevron-max")) $2("opt-chevron-max").value = String(S.pathChevronMax);
     if ($2("opt-chevron-labels")) $2("opt-chevron-labels").disabled = !S.showPathChevrons;
     if ($2("opt-chevron-max")) $2("opt-chevron-max").disabled = !S.showPathChevrons;
@@ -20069,6 +20256,7 @@ out geom;`;
       init_elevation();
       init_curve_speed();
       init_hud_opts();
+      init_low_speed_map();
       init_hud_chrome();
       init_app_opts();
       init_platform();
@@ -20762,98 +20950,6 @@ out geom;`;
     "js/telemetry-funnel.js"() {
       init_telemetry();
       FUNNEL_STORAGE_KEY = "moto-hud-telemetry-funnel-v1";
-    }
-  });
-
-  // js/view-mode.js
-  function isExcludedTarget(el) {
-    if (!el || !(el instanceof Element)) return true;
-    return !!el.closest(
-      ".corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #hud-settings-sheet, .hud-settings-sheet"
-    );
-  }
-  function isChromeTapTarget(el) {
-    if (!el || !(el instanceof Element)) return false;
-    if (isExcludedTarget(el)) return false;
-    if (window.matchMedia("(pointer: fine)").matches && el.closest(".speed-stack, .mdist, .block-path, .block-arrow")) {
-      return false;
-    }
-    return true;
-  }
-  function applyViewLayout(mode) {
-    const hud = $2("hud");
-    if (!hud) return;
-    hud.classList.remove("view-map", "view-map-overview", "view-map-zoom");
-    if (mode === "hud") {
-      pauseNavMap();
-      return;
-    }
-    hud.classList.add("view-map");
-    hud.classList.add(mode === "map_zoom" ? "view-map-zoom" : "view-map-overview");
-    syncNavMap(mode);
-  }
-  function setViewMode(mode) {
-    const m = VIEW_ORDER.includes(mode) ? mode : "hud";
-    S.viewMode = m;
-    applyViewLayout(m);
-  }
-  function cycleViewMode() {
-    const i = VIEW_ORDER.indexOf(S.viewMode || "hud");
-    setViewMode(VIEW_ORDER[(i + 1) % VIEW_ORDER.length]);
-  }
-  function registerTap(clientX, clientY, target, preventDefault) {
-    if (!document.getElementById("hud")?.classList.contains("on")) return false;
-    if (isExcludedTarget(target)) return false;
-    const now = Date.now();
-    const dt = now - _lastTap.t;
-    const dist = Math.hypot(clientX - _lastTap.x, clientY - _lastTap.y);
-    if (dt < DBL_TAP_MS && dist < DBL_TAP_MAX_PX) {
-      cycleViewMode();
-      _lastTap.t = 0;
-      if (preventDefault) preventDefault();
-      return true;
-    }
-    _lastTap = { t: now, x: clientX, y: clientY };
-    if (isChromeTapTarget(target)) onHudTap();
-    return false;
-  }
-  function onTouchEnd(e) {
-    const t = e.changedTouches?.[0];
-    if (!t) return;
-    _lastTouchEnd = Date.now();
-    if (registerTap(t.clientX, t.clientY, t.target, () => e.preventDefault())) return;
-  }
-  function onClick(e) {
-    if (e.button !== 0) return;
-    if (Date.now() - _lastTouchEnd < 500) return;
-    registerTap(e.clientX, e.clientY, e.target, null);
-  }
-  function initViewMode() {
-    if (_bound2) return;
-    const hud = $2("hud");
-    if (!hud) return;
-    hud.addEventListener("touchend", onTouchEnd, { passive: false });
-    hud.addEventListener("click", onClick);
-    _bound2 = true;
-    S.viewMode = "hud";
-  }
-  function resetViewMode() {
-    setViewMode("hud");
-    destroyNavMap();
-  }
-  var DBL_TAP_MS, DBL_TAP_MAX_PX, VIEW_ORDER, _lastTap, _lastTouchEnd, _bound2;
-  var init_view_mode = __esm({
-    "js/view-mode.js"() {
-      init_state();
-      init_util();
-      init_hud_chrome();
-      init_nav_map();
-      DBL_TAP_MS = 400;
-      DBL_TAP_MAX_PX = 40;
-      VIEW_ORDER = ["hud", "map_overview", "map_zoom"];
-      _lastTap = { t: 0, x: 0, y: 0 };
-      _lastTouchEnd = 0;
-      _bound2 = false;
     }
   });
 
@@ -25072,11 +25168,14 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     "opt-elev-profile-len",
     "opt-elev-exag",
     "opt-fuel-count",
-    "opt-chevron-max"
+    "opt-chevron-max",
+    "opt-path-min-speed"
   ];
   var HELP_TEXTS = {
     "opt-voice": "\u0413\u043E\u043B\u043E\u0441\u043E\u0432\u044B\u0435 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u0430\u043D\u0451\u0432\u0440\u043E\u0432 \u0438 \u043A\u0430\u043C\u0435\u0440. \u0420\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0447\u0435\u0440\u0435\u0437 \u0441\u0438\u043D\u0442\u0435\u0437 \u0440\u0435\u0447\u0438 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430.",
     "opt-path": "\u041F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430 \u043D\u0430 HUD: \u0440\u0435\u043B\u044C\u0435\u0444, \u0448\u0435\u0432\u0440\u043E\u043D\u044B, \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u043F\u0435\u0440\u0435\u043A\u0440\u0451\u0441\u0442\u043A\u043E\u0432.",
+    "opt-low-speed-map": "\u041D\u0438\u0436\u0435 \u043F\u043E\u0440\u043E\u0433\u0430 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u0438 \u0432\u043C\u0435\u0441\u0442\u043E \u0434\u043E\u0440\u043E\u0436\u043A\u0438 \u2014 \u043A\u0430\u0440\u0442\u0430 \u043A\u0440\u0443\u043F\u043D\u044B\u043C \u043F\u043B\u0430\u043D\u043E\u043C (\u0434\u0432\u043E\u0440\u044B, \u043F\u0430\u0440\u043A\u043E\u0432\u043A\u0438).",
+    "opt-path-min-speed": "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F: \u0432\u044B\u0448\u0435 \u2014 \u043F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430, \u043D\u0438\u0436\u0435 \u2014 \u043A\u0430\u0440\u0442\u0430. \u041F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E 8 \u043A\u043C/\u0447.",
     "opt-limit": "\u041B\u0438\u043C\u0438\u0442 \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E, \u043A\u043E\u0433\u0434\u0430 OSM \u043D\u0435 \u0437\u043D\u0430\u0435\u0442 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0438\u0435. \u041F\u0440\u0438 \u0434\u0438\u043D\u0430\u043C\u0438\u043A\u0435 \u2014 fallback.",
     "opt-speed-limit-dynamic": "\u0414\u0438\u043D\u0430\u043C\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u043B\u0438\u043C\u0438\u0442 \u043F\u043E \u0442\u0435\u0433\u0443 maxspeed OSM \u0432\u0434\u043E\u043B\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430. \u0412\u044B\u043A\u043B. \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u0435\u0444\u043E\u043B\u0442 \u0438\u0437 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438.",
     "opt-speed-limit-fallback": "\u0415\u0441\u043B\u0438 OSM \u0438 implicit \u043D\u0435 \u0434\u0430\u043B\u0438 \u043B\u0438\u043C\u0438\u0442: \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0432\u0430\u0448 \u0434\u0435\u0444\u043E\u043B\u0442 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u0437\u043D\u0430\u043A.",

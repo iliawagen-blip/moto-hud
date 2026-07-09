@@ -6,6 +6,7 @@ import { S } from './state.js';
 import { $ } from './util.js';
 import { onHudTap } from './hud-chrome.js';
 import { syncNavMap, pauseNavMap, tickNavMap, destroyNavMap } from './nav-map.js';
+import { onUserViewModeChange, resetLowSpeedMap } from './low-speed-map.js';
 
 const DBL_TAP_MS = 400;
 const DBL_TAP_MAX_PX = 40;
@@ -53,6 +54,7 @@ export function setViewMode(mode){
 }
 
 export function cycleViewMode(){
+  onUserViewModeChange();
   const i = VIEW_ORDER.indexOf(S.viewMode || 'hud');
   setViewMode(VIEW_ORDER[(i + 1) % VIEW_ORDER.length]);
 }
@@ -98,6 +100,7 @@ export function initViewMode(){
 }
 
 export function resetViewMode(){
+  resetLowSpeedMap();
   setViewMode('hud');
   destroyNavMap();
 }

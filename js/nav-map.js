@@ -9,6 +9,7 @@ import { curPos } from './gps.js';
 import { geometryToLatLngs, latLngsSliceByS, getNavSnap } from './route-geometry.js';
 import { getMapProviderId, resolveMapLayers } from './map-providers.js';
 import { findNextManeuver } from './route.js';
+import { LOW_SPEED_MAP_ZOOM } from './nav-constants.js';
 
 let _map = null;
 let _tileLayer = null;
@@ -114,11 +115,13 @@ export function syncNavMap(mode){
     if(!_overviewFit) fitOverview();
   }else if(mode === 'map_zoom' && pos){
     const now = Date.now();
+    const zoom = LOW_SPEED_MAP_ZOOM;
     if(now - _lastZoomPan > 2000){
-      map.setView([pos.lat, pos.lon], Math.max(map.getZoom(), 16), { animate: false });
+      map.setView([pos.lat, pos.lon], zoom, { animate: false });
       _lastZoomPan = now;
     }else{
       map.panTo([pos.lat, pos.lon], { animate: false, noMoveStart: true });
+      if(map.getZoom() < zoom) map.setZoom(zoom, { animate: false });
     }
   }
 }
