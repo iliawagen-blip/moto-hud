@@ -27,9 +27,9 @@ export function measuredSpreadM(fixes){
 }
 
 /**
- * Эффективная точность для converge: min(отчёт, разброс+запас) при стабильном кластере.
+ * Эффективная точность для converge и UI.
  * @param {number|null} reportedAcc
- * @param {Array<{lat:number,lon:number,acc?:number|null}>} recentFixes
+ * @param {Array<{lat:number,lon:number,acc?:number|null,speed?:number|null}>} recentFixes
  */
 export function effectiveAccM(reportedAcc, recentFixes){
   const spread = measuredSpreadM(recentFixes);
@@ -38,9 +38,17 @@ export function effectiveAccM(reportedAcc, recentFixes){
   }
   const measured = spread + 8;
   if(reportedAcc == null || !Number.isFinite(reportedAcc)) return measured;
-  if(reportedAcc > 35 && spread <= 22) return Math.min(reportedAcc, measured);
-  if(reportedAcc > spread * 2.5 && spread <= 30) return Math.min(reportedAcc, measured);
+  if(spread <= 55 && reportedAcc > measured) return measured;
   return reportedAcc;
+}
+
+/**
+ * Точность для отображения в чипе/HUD (не сырой отчёт ОС, если он завышен).
+ */
+export function displayAccM(reportedAcc, recentFixes){
+  const eff = effectiveAccM(reportedAcc, recentFixes);
+  if(eff == null) return null;
+  return Math.max(3, Math.round(eff));
 }
 
 /** Человекочитаемая причина блокировки converge. */

@@ -20,7 +20,7 @@ import { isSpeedOverLimit } from './speed-limit.js';
 import { tickRoundaboutHudRefresh } from './roundabout.js';
 import { tickNavMap } from './nav-map.js';
 import { feedGpsConverge, invalidateGpsConverge, hasEverConverged, getConvergeFailLabel } from './gps-converge.js';
-import { effectiveAccM, measuredSpreadM } from './gps-accuracy.js';
+import { effectiveAccM, measuredSpreadM, displayAccM } from './gps-accuracy.js';
 import { isSnapLost, lostDurationMs } from './snap-quality.js';
 import { tickConvergeBlocked } from './converge-telemetry.js';
 import { SNAP_HEADING_MAX_AGE_MS } from './nav-constants.js';
@@ -118,32 +118,36 @@ export function stopVisualLoop(){
   if(S.rafId){ cancelAnimationFrame(S.rafId); S.rafId = null; }
 }
 
+export function getGpsDisplayAcc(){
+  if(!S.gps) return null;
+  return displayAccM(S.gps.acc, S._gpsSpreadBuf || []);
+}
+
 function updateGpsConvergeUI(){
   const el = $('gps-converge');
   if(el){
     el.classList.toggle('on', $('hud').classList.contains('on') && !S.gpsConverged);
   }
   const reported = S.gps?.acc != null ? Math.round(S.gps.acc) : null;
+  const shown = getGpsDisplayAcc();
   const spread = S.gps ? measuredSpreadM(S._gpsSpreadBuf || []) : null;
   const failHint = getConvergeFailLabel();
   let title = 'Тап — включить GPS';
-  if(S.gps && !S.gpsConverged){
+  if(S.gps){
     const parts = [];
-    if(reported != null) parts.push('отчёт ±' + reported + ' м');
+    if(shown != null) parts.push('оценка ±' + shown + ' м');
+    if(reported != null && reported !== shown) parts.push('отчёт ОС ±' + reported + ' м');
     if(spread != null) parts.push('разброс ~' + Math.round(spread) + ' м');
-    if(failHint) parts.push('ждём: ' + failHint);
+    if(!S.gpsConverged && failHint) parts.push('ждём: ' + failHint);
     if(parts.length) title = parts.join(' · ');
-  } else if(S.gpsConverged && reported != null){
-    title = 'GPS сходится · отчёт ±' + reported + ' м' +
-      (spread != null ? ' · разброс ~' + Math.round(spread) + ' м' : '');
   }
 
   if(S.gpsConverged){
     const tag = isSim() ? ' сим' : '';
-    $('s-gps').textContent = '✅ GPS' + tag + ' ±' + (reported ?? '—') + 'м';
+    $('s-gps').textContent = '✅ GPS' + tag + ' ±' + (shown ?? '—') + 'м';
     $('s-gps').className = 'chip ok';
   } else if(S.gps){
-    $('s-gps').textContent = '⏳ GPS ±' + (reported ?? '…') + 'м';
+    $('s-gps').textContent = '⏳ GPS ±' + (shown ?? '…') + 'м';
     $('s-gps').className = 'chip';
   } else {
     $('s-gps').textContent = '⏳ GPS…';
