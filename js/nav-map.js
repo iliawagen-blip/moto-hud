@@ -19,6 +19,11 @@ let _finishMarker = null;
 let _maneuverMarker = null;
 let _overviewFit = false;
 let _lastZoomPan = 0;
+let _lastMapSync = 0;
+
+function livePos(){
+  return curPos() || S.gps;
+}
 
 function routeLatLngs(){
   const route = S.route;
@@ -47,7 +52,8 @@ function ensureMap(){
     applyTiles();
     _routeLayer = L.polyline([], { color: '#ffd400', weight: 6 }).addTo(_map);
     _posMarker = L.circleMarker([0, 0], {
-      radius: 8, color: '#fff', weight: 2, fillColor: '#3399ff', fillOpacity: 1
+      radius: 8, color: '#fff', weight: 2, fillColor: '#3399ff', fillOpacity: 1,
+      interactive: false, pane: 'markerPane'
     }).addTo(_map);
     _finishMarker = L.circleMarker([0, 0], {
       radius: 7, color: '#fff', weight: 2, fillColor: '#39d353', fillOpacity: 1
@@ -89,8 +95,11 @@ export function syncNavMap(mode){
 
   _routeLayer.setLatLngs(routeLatLngs());
 
-  const pos = curPos();
-  if(pos) _posMarker.setLatLng([pos.lat, pos.lon]);
+  const pos = livePos();
+  if(pos){
+    _posMarker.setLatLng([pos.lat, pos.lon]);
+    if(typeof _posMarker.redraw === 'function') _posMarker.redraw();
+  }
   if(S.finish) _finishMarker.setLatLng([S.finish.lat, S.finish.lon]);
 
   const nm = findNextManeuver();
@@ -106,10 +115,10 @@ export function syncNavMap(mode){
   }else if(mode === 'map_zoom' && pos){
     const now = Date.now();
     if(now - _lastZoomPan > 2000){
-      map.setView([pos.lat, pos.lon], 17, { animate: false });
+      map.setView([pos.lat, pos.lon], Math.max(map.getZoom(), 16), { animate: false });
       _lastZoomPan = now;
     }else{
-      map.panTo([pos.lat, pos.lon], { animate: false });
+      map.panTo([pos.lat, pos.lon], { animate: false, noMoveStart: true });
     }
   }
 }
@@ -134,7 +143,11 @@ export function destroyNavMap(){
   if(box) box.innerHTML = '';
 }
 
-export function tickNavMap(){
-  if(S.viewMode === 'hud' || !S.route) return;
+export function tickNavMap(opts = {}){
+  if(S.viewMode === 'hud' || !S.route || !$('hud')?.classList.contains('on')) return;
+  const force = opts.force === true;
+  const now = Date.now();
+  if(!force && now - _lastMapSync < 120) return;
+  _lastMapSync = now;
   syncNavMap(S.viewMode);
 }

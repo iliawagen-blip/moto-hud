@@ -1397,7 +1397,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, PATH_MIN_SPEED_KMH, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1461,6 +1461,7 @@ var init_nav_constants = __esm({
     ROUTE_LOW_MANEUVER_PER_KM = 25;
     FUSION_GPS_WEIGHT_MIN = 0.02;
     FUSION_GPS_WEIGHT_SPAN = 25;
+    PATH_MIN_SPEED_KMH = 8;
     PATH_SKIP_DS_M = 2;
     PATH_SKIP_FRAMES = 2;
     GPS_INVALIDATE_ACC_M = 50;
@@ -1823,6 +1824,20 @@ function tickPerfFrame() {
   }
   _perfLastTs = now;
 }
+function logTrackPoint(fix) {
+  if (!_active || !fix || fix.lat == null || fix.lon == null) return;
+  const ts = fix.ts || Date.now();
+  if (ts - _lastTrackTs < TRACK_INTERVAL_MS) return;
+  _lastTrackTs = ts;
+  log("track", {
+    lat: r6(fix.lat),
+    lon: r6(fix.lon),
+    spd: r2(fix.speed),
+    acc: r2(fix.acc),
+    hdg: r2(fix.heading),
+    ts
+  });
+}
 function logSnapFromResult(snap) {
   if (!_active || !snap) return;
   const s0 = r2(snap.s);
@@ -1842,9 +1857,11 @@ function computeSessionAggregate() {
   if (!_buffer.length) return null;
   const snaps = _buffer.map((b) => b.ev).filter((e) => e.type === "snap");
   const latOffs = snaps.map((s2) => s2.lat_off).filter((v) => v != null && Number.isFinite(v));
+  const tracks = _buffer.map((b) => b.ev).filter((e) => e.type === "track");
   const marks = _buffer.map((b) => b.ev).filter((e) => e.type === "mark");
   return {
     snap_count: snaps.length,
+    track_count: tracks.length,
     lat_off_p50: r2(pct(latOffs, 50)),
     lat_off_p95: r2(pct(latOffs, 95)),
     snap_jumps: snaps.filter((s2) => s2.jump).length,
@@ -1864,6 +1881,7 @@ async function start(meta) {
   _sessionId = uid();
   _sessionStart = Date.now();
   _lastSnapS0 = null;
+  _lastTrackTs = 0;
   _active = true;
   const rec = {
     id: _sessionId,
@@ -1904,6 +1922,7 @@ async function stop() {
   _sessionId = null;
   _sessionStart = 0;
   _lastSnapS0 = null;
+  _lastTrackTs = 0;
   document.documentElement.classList.remove("telemetry-on");
   stopTimers();
   updateMarkButtonVisibility();
@@ -2121,7 +2140,7 @@ async function initTelemetry() {
     console.warn("telemetry init:", e);
   }
 }
-var DB_NAME, DB_VER, MAX_SESSIONS, FLUSH_MS, ENABLE_KEY, APP_VERSION, _db, _active, _sessionId, _sessionStart, _buffer, _flushTimer, _batteryTimer, _perfTimer, _lastSnapS0, _perfFrames, _perfSum, _perfOver32, _perfLastTs, telemetry, telemetry_default;
+var DB_NAME, DB_VER, MAX_SESSIONS, FLUSH_MS, ENABLE_KEY, APP_VERSION, _db, _active, _sessionId, _sessionStart, _buffer, _flushTimer, _batteryTimer, _perfTimer, _lastSnapS0, _lastTrackTs, TRACK_INTERVAL_MS, _perfFrames, _perfSum, _perfOver32, _perfLastTs, telemetry, telemetry_default;
 var init_telemetry = __esm({
   "js/telemetry.js"() {
     init_state();
@@ -2140,6 +2159,8 @@ var init_telemetry = __esm({
     _batteryTimer = null;
     _perfTimer = null;
     _lastSnapS0 = null;
+    _lastTrackTs = 0;
+    TRACK_INTERVAL_MS = 1e3;
     _perfFrames = 0;
     _perfSum = 0;
     _perfOver32 = 0;
@@ -2163,6 +2184,7 @@ var init_telemetry = __esm({
       setEnabled,
       tickPerfFrame,
       logSnapFromResult,
+      logTrackPoint,
       updateMarkButtonVisibility,
       getBuildId,
       /** @param {object} fix */
@@ -2422,7 +2444,10 @@ function updateSnapQuality(snap, gps, geom, opts) {
 }
 function navSFromSnap(snap) {
   if (!snap) return null;
-  if (S.snapQuality === SnapQuality.DEGRADED && _frozenS != null) return _frozenS;
+  const spd = S.gps?.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
+  if (S.snapQuality === SnapQuality.DEGRADED && _frozenS != null && spd < SNAP_STATIONARY_SPD_MPS) {
+    return _frozenS;
+  }
   return snap.s;
 }
 function isSnapLost() {
@@ -4515,21 +4540,49 @@ function getCurrentSpeedLimit(snap, opts = {}) {
   if (!dynamic) {
     return fallbackResult(userDefault, "user-default");
   }
-  const idx = snap?.segIdx ?? snap?.idx;
-  if (idx == null || !route?.maxspeeds?.length) {
+  const seg = resolveSparseSegIdx(snap);
+  if (seg == null || !route?.maxspeeds?.length) {
     return fallbackResult(userDefault, fallbackMode);
   }
-  const i = Math.max(0, Math.min(idx, route.maxspeeds.length - 1));
-  const entry = route.maxspeeds[i];
+  return lookupSpeedLimitAtSeg(seg, route, userDefault, fallbackMode, now);
+}
+function resolveSparseSegIdx(snap) {
+  const pos = snap?.lat != null && snap?.lon != null ? { lat: snap.lat, lon: snap.lon } : S.gps;
+  if (pos && S.route?.coords?.length > 1) {
+    let best = 0;
+    let bestD = Infinity;
+    const c = S.route.coords;
+    for (let i = 0; i < c.length - 1; i++) {
+      const d = distToSegment(
+        pos,
+        { lat: c[i][0], lon: c[i][1] },
+        { lat: c[i + 1][0], lon: c[i + 1][1] }
+      );
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    return best;
+  }
+  const raw = snap?.segIdx ?? snap?.idx;
+  if (raw != null && S.route?.maxspeeds?.length) {
+    return Math.max(0, Math.min(raw, S.route.maxspeeds.length - 1));
+  }
+  return null;
+}
+function lookupSpeedLimitAtSeg(i, route, userDefault, fallbackMode, now) {
+  const idx = Math.max(0, Math.min(i, route.maxspeeds.length - 1));
+  const entry = route.maxspeeds[idx];
   if (entry?.none) return { limit: null, source: "none" };
   const kmh = maxspeedEntryToKmh(entry);
   if (kmh != null && kmh > 0) return { limit: kmh, source: "osm" };
   if (entry?.unknown) {
-    const fromWay = limitFromWayTags(route.wayTags?.[i], now);
+    const fromWay = limitFromWayTags(route.wayTags?.[idx], now);
     if (fromWay != null) return { limit: fromWay, source: "osm" };
-    const hw = route.highwayTypes?.[i];
+    const hw = route.highwayTypes?.[idx];
     if (hw) {
-      const urban = route.urbanSegments?.[i] ?? false;
+      const urban = route.urbanSegments?.[idx] ?? false;
       const implicit = resolveImplicitLimit(hw, urban);
       if (implicit != null) return { limit: implicit, source: "implicit" };
     }
@@ -4546,7 +4599,7 @@ function findNextLimitChange(snap, lookaheadM = SPEED_LIMIT_LOOKAHEAD_M) {
   if (S.speedLimitDynamic === false) return null;
   const route = S.route;
   if (!snap || !route?.maxspeeds?.length || !route.coords?.length) return null;
-  const startIdx = snap.segIdx ?? snap.idx ?? 0;
+  const startIdx = resolveSparseSegIdx(snap) ?? 0;
   const cur = getCurrentSpeedLimit(snap);
   const curVal = cur.source === "none" ? null : cur.limit;
   const coords = route.coords;
@@ -4579,8 +4632,19 @@ function renderSpeedLimitSign(info, preview) {
   const el = $2("speed-limit-sign");
   if (!el) return;
   if (S.speedLimitDynamic === false) {
-    el.classList.add("hidden", "sls-hidden");
-    el.setAttribute("aria-hidden", "true");
+    const lim = S.userDefaultLimit;
+    if (lim > 0) {
+      el.classList.remove("hidden", "sls-hidden");
+      el.setAttribute("aria-hidden", "false");
+      numEl?.classList.remove("hidden");
+      noneEl?.classList.add("hidden");
+      if (numEl) numEl.textContent = String(lim);
+      el.classList.add("sls-default");
+      if (tildeEl) tildeEl.classList.add("hidden");
+    } else {
+      el.classList.add("hidden", "sls-hidden");
+      el.setAttribute("aria-hidden", "true");
+    }
     return;
   }
   const numEl = $2("sls-num");
@@ -4632,7 +4696,16 @@ function tickSpeedLimit(snap) {
     resetSpeedLimitState();
     return;
   }
-  const info = getCurrentSpeedLimit(snap);
+  let eff = snap;
+  if (!eff && S.gps) eff = { lat: S.gps.lat, lon: S.gps.lon, s: null };
+  if (!eff && S.userDefaultLimit > 0) {
+    renderSpeedLimitSign({ limit: S.userDefaultLimit, source: "default" }, null);
+    S.currentLimit = S.userDefaultLimit;
+    S.currentLimitSource = "default";
+    return;
+  }
+  if (!eff) return;
+  const info = getCurrentSpeedLimit(eff);
   const key = limitKey(info);
   if (key !== _lastLimitKey) {
     const prevParts = _lastLimitKey.split(":");
@@ -4756,7 +4829,7 @@ function ensureRouteGeometry(route) {
 function attachRouteGeometry(route) {
   ensureRouteGeometry(route);
   S.routeQuality = assessRouteQuality(route);
-  S.compassMode = S.routeQuality === RouteQuality.LOW;
+  S.compassMode = false;
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
@@ -5103,6 +5176,24 @@ async function loadCameras() {
   }
   updateCamStatusUI();
 }
+function sparseRouteSegIdx(pos) {
+  const c = S.route?.coords;
+  if (!c || c.length < 2 || !pos) return 0;
+  let best = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < c.length - 1; i++) {
+    const d = distToSegment(
+      pos,
+      { lat: c[i][0], lon: c[i][1] },
+      { lat: c[i + 1][0], lon: c[i + 1][1] }
+    );
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  }
+  return best;
+}
 function findNearestOnRoute() {
   if (!S.route) return null;
   const pos = curPos();
@@ -5112,9 +5203,10 @@ function findNearestOnRoute() {
   if (geom) {
     const snap = getRouteSnapForNav(S.smoothedHeading);
     if (snap) {
-      _nearIdx = snap.segIdx;
+      const idx = sparseRouteSegIdx({ lat: snap.lat, lon: snap.lon });
+      _nearIdx = idx;
       _nearMemoPos = pos;
-      _nearMemoVal = { idx: snap.segIdx, dist: snap.lateral, s: snap.s };
+      _nearMemoVal = { idx, dist: snap.lateral, s: snap.s };
       return _nearMemoVal;
     }
   }
@@ -5161,7 +5253,7 @@ function findNextManeuver() {
   const geom = S.route.geometry;
   const snap = geom ? getNavSnap(S.smoothedHeading) : null;
   const curS = snap ? snap.s : null;
-  const curIdx = snap ? snap.segIdx : findNearestOnRoute()?.idx ?? 0;
+  const curIdx = snap ? sparseRouteSegIdx({ lat: snap.lat, lon: snap.lon }) : findNearestOnRoute()?.idx ?? 0;
   if (geom && curS != null) {
     const sorted = geom.maneuvers.filter((m) => m.step.type !== "depart" && m.step.type !== "arrive").sort((a, b) => a.s - b.s);
     for (const m of sorted) {
@@ -6099,6 +6191,31 @@ function snapToRoute(gps, geom, gpsHeadingDeg, meta) {
     if (ds > 0 && ds < 30) best.s = prev.s + ds * 0.65;
   }
   if (best.lateral > 60) best.confidence = Math.min(best.confidence, 0.3);
+  if (best.lateral > SNAP_QUALITY_LOST_LATERAL_M * 0.5) {
+    const nearS = findSForLatLon(geom, gps.lat, gps.lon);
+    const nearP = interpolateAtS(geom, nearS);
+    const nearLat = haversine(gps, nearP);
+    const maxBack = spd >= 1 ? 100 : 250;
+    const maxJump2 = Math.max(350, spd * dt + acc * 5);
+    const forwardOk = !prev || nearS >= prev.s - maxBack;
+    const jumpOk = !prev || Math.abs(nearS - prev.s) <= maxJump2;
+    if (nearLat + 8 < best.lateral && forwardOk && jumpOk) {
+      const segIdx = findSegAtS(geom, nearS);
+      const tangent = avgTangentDeg(geom, nearS, 20);
+      const dot = headingDot(tangent, gpsHeadingDeg);
+      best = {
+        s: nearS,
+        segIdx,
+        lat: nearP.lat,
+        lon: nearP.lon,
+        lateral: nearLat,
+        tangent,
+        dot,
+        score: nearLat,
+        confidence: 0.55
+      };
+    }
+  }
   const { R } = radiusAtS(geom, best.s);
   const curvMult = !isFinite(R) || R >= SNAP_CURVATURE_RADIUS_M ? 1 : SNAP_CURVATURE_THRESHOLD_MULT;
   const rbFlags = getRoundaboutSnapFlags(best.segIdx, S.route);
@@ -6470,2423 +6587,6 @@ var init_route_geometry = __esm({
     _camPitchLastTs = 0;
     RIBBON_NEAR_Z_MIN = 0.06;
     RIBBON_NEAR_Z_STEP = 0.22;
-  }
-});
-
-// js/converge-telemetry.js
-function r22(n) {
-  if (n == null || !Number.isFinite(n)) return null;
-  return Math.round(n * 100) / 100;
-}
-function hudOn() {
-  try {
-    return !!$2("hud")?.classList.contains("on");
-  } catch (e) {
-    return false;
-  }
-}
-function phase() {
-  if (typeof document !== "undefined" && document.visibilityState === "hidden") return "background";
-  return hudOn() ? "riding" : "setup";
-}
-function spdKmh(fix) {
-  const mps = fix?.speed ?? S.gps?.speed;
-  if (mps == null || !Number.isFinite(mps) || mps < 0) return 0;
-  return mps * 3.6;
-}
-function fixAgeMs(fix) {
-  const ts = fix?.ts ?? S.gps?.ts;
-  if (!ts) return null;
-  return Math.max(0, Date.now() - ts);
-}
-function buildContext(fix, bufStats, snap) {
-  return {
-    hud_on: hudOn(),
-    phase: phase(),
-    acc: r22(fix?.acc ?? S.gps?.acc),
-    spd_kmh: r22(spdKmh(fix)),
-    buf_len: bufStats?.buf_len ?? null,
-    buf_acc_max: bufStats?.buf_acc_max ?? null,
-    fix_age_ms: fixAgeMs(fix),
-    snap_quality: snap?.quality ?? S.snapQuality ?? null,
-    lat_off: snap?.lateral != null ? r22(snap.lateral) : null,
-    re_converge: !!bufStats?.re_converge,
-    gps_fix_count: S.gpsFixCount ?? null,
-    had_route: !!S.route?.coords?.length,
-    off_route_state: S.offRouteState || null
-  };
-}
-function logTransition(from, to, reason, extra, fix, bufStats, snap) {
-  if (!telemetry_default.isActive?.()) return;
-  telemetry_default.log("nav", {
-    sub: "converge_transition",
-    from,
-    to,
-    reason,
-    ...buildContext(fix, bufStats, snap),
-    ...extra
-  });
-}
-function onBlockedStart() {
-  const now = Date.now();
-  if (!_blockedSince) _blockedSince = now;
-  if (!_currentBlockedStreakStart) _currentBlockedStreakStart = now;
-}
-function onBlockedEnd() {
-  if (_currentBlockedStreakStart) {
-    const streak = Date.now() - _currentBlockedStreakStart;
-    _blockedTotalMs += streak;
-    if (streak > _maxBlockedStreakMs) _maxBlockedStreakMs = streak;
-    _currentBlockedStreakStart = 0;
-    _blockedSince = 0;
-  }
-}
-function resetConvergeTelemetryRide() {
-  _rideStartWall = Date.now();
-  _firstConvergeLogged = false;
-  _hadConverged = false;
-  _blockedSince = 0;
-  _blockedTotalMs = 0;
-  _blockedMovingMs = 0;
-  _lastBlockedTick = 0;
-  _maxBlockedStreakMs = 0;
-  _currentBlockedStreakStart = 0;
-  _falseEvents = 0;
-  _invalidateAcc = 0;
-  _invalidateLost = 0;
-  _reConvergeCount = 0;
-}
-function noteConvergeTransition(from, to, reason, extra, fix, bufStats, snap) {
-  if (from === to) return;
-  if (to === false) {
-    _falseEvents++;
-    if (reason === "invalidate_acc") _invalidateAcc++;
-    if (reason === "invalidate_lost") _invalidateLost++;
-    if (_hadConverged && (reason === "invalidate_acc" || reason === "invalidate_lost" || reason === "invalidate_error")) {
-      _reConvergeCount++;
-    }
-    if (hudOn()) onBlockedStart();
-  } else {
-    if (bufStats?.re_converge) _reConvergeCount++;
-    _hadConverged = true;
-    onBlockedEnd();
-    _blockedSince = 0;
-    if (hudOn() && !_firstConvergeLogged && _rideStartWall) {
-      _firstConvergeLogged = true;
-      if (telemetry_default.isActive?.()) {
-        telemetry_default.log("nav", {
-          sub: "converge_first",
-          time_to_first_converge_ms: Date.now() - _rideStartWall,
-          ...buildContext(fix, bufStats, snap)
-        });
-      }
-    }
-  }
-  logTransition(from, to, reason, extra || {}, fix, bufStats, snap);
-}
-function tickConvergeBlocked(fix, snap) {
-  if (!hudOn() || S.gpsConverged !== false) return;
-  if (!telemetry_default.isActive?.()) return;
-  const now = Date.now();
-  if (fix?.ts) _lastFixTs = fix.ts;
-  onBlockedStart();
-  const dt = _lastBlockedTick ? now - _lastBlockedTick : 0;
-  if (_lastBlockedTick && dt > 0 && spdKmh(fix) >= MOVING_SPD_KMH) {
-    _blockedMovingMs += dt;
-  }
-  if (_lastBlockedTick && now - _lastBlockedTick < BLOCKED_TICK_MS) return;
-  _lastBlockedTick = now;
-  const durBlocked = _blockedSince ? now - _blockedSince : 0;
-  telemetry_default.log("nav", {
-    sub: "converge_blocked_tick",
-    dur_blocked_ms: durBlocked,
-    ...buildContext(fix, null, snap)
-  });
-}
-function flushConvergeSummary() {
-  if (!telemetry_default.isActive?.()) return;
-  let blockedTotal = _blockedTotalMs;
-  if (_currentBlockedStreakStart) {
-    const streak = Date.now() - _currentBlockedStreakStart;
-    blockedTotal += streak;
-    if (streak > _maxBlockedStreakMs) _maxBlockedStreakMs = streak;
-  }
-  telemetry_default.log("meta", {
-    sub: "converge_session_summary",
-    converge_false_events: _falseEvents,
-    converge_blocked_total_ms: Math.round(blockedTotal),
-    converge_blocked_while_moving_ms: Math.round(_blockedMovingMs),
-    invalidate_acc_count: _invalidateAcc,
-    invalidate_lost_count: _invalidateLost,
-    re_converge_count: _reConvergeCount,
-    max_blocked_streak_ms: _maxBlockedStreakMs,
-    reached_converge: _hadConverged
-  });
-}
-function initConvergeVisibilityLog() {
-  if (typeof document === "undefined" || document._convergeVisBound) return;
-  document._convergeVisBound = true;
-  document.addEventListener("visibilitychange", () => {
-    if (!telemetry_default.isActive?.()) return;
-    telemetry_default.log("nav", {
-      sub: "converge_visibility",
-      state: document.visibilityState,
-      gps_converged: S.gpsConverged !== false,
-      hud_on: hudOn(),
-      phase: phase()
-    });
-  });
-}
-var BLOCKED_TICK_MS, MOVING_SPD_KMH, _rideStartWall, _firstConvergeLogged, _hadConverged, _blockedSince, _blockedTotalMs, _blockedMovingMs, _lastBlockedTick, _lastFixTs, _maxBlockedStreakMs, _currentBlockedStreakStart, _falseEvents, _invalidateAcc, _invalidateLost, _reConvergeCount;
-var init_converge_telemetry = __esm({
-  "js/converge-telemetry.js"() {
-    init_state();
-    init_util();
-    init_telemetry();
-    BLOCKED_TICK_MS = 5e3;
-    MOVING_SPD_KMH = 5;
-    _rideStartWall = 0;
-    _firstConvergeLogged = false;
-    _hadConverged = false;
-    _blockedSince = 0;
-    _blockedTotalMs = 0;
-    _blockedMovingMs = 0;
-    _lastBlockedTick = 0;
-    _lastFixTs = 0;
-    _maxBlockedStreakMs = 0;
-    _currentBlockedStreakStart = 0;
-    _falseEvents = 0;
-    _invalidateAcc = 0;
-    _invalidateLost = 0;
-    _reConvergeCount = 0;
-  }
-});
-
-// js/gps-converge.js
-function isNetworkFix(fix) {
-  return fix.provider === "network" || fix.lowAccuracy === true;
-}
-function maxJump(v, dt, acc) {
-  return (v || 0) * dt + (acc || GPS_CONVERGE_ACC_M) + GPS_CONVERGE_JUMP_PAD_M;
-}
-function evaluateBuffer(minFixes, accLimit) {
-  if (_buf.length < minFixes) return { ok: false, fail_detail: "buffer_short" };
-  const recent = _buf.slice(-minFixes);
-  if (recent.some((f2) => isNetworkFix(f2))) return { ok: false, fail_detail: "network_fix" };
-  if (recent.some((f2) => f2.acc != null && f2.acc > accLimit)) return { ok: false, fail_detail: "acc_over_limit" };
-  let gpsStreak = 0;
-  for (const f2 of recent) {
-    if (isNetworkFix(f2)) gpsStreak = 0;
-    else gpsStreak++;
-  }
-  if (gpsStreak < 2) return { ok: false, fail_detail: "gps_streak_low" };
-  for (let i = 1; i < recent.length; i++) {
-    const a = recent[i - 1];
-    const b = recent[i];
-    const dt = Math.max(0.2, (b.ts - a.ts) / 1e3);
-    const v = Math.max(a.speed || 0, b.speed || 0);
-    const d = haversine(a, b);
-    const accA = a.acc != null ? a.acc : accLimit;
-    const accB = b.acc != null ? b.acc : accLimit;
-    if (d > maxJump(v, dt, Math.max(accA, accB))) {
-      return { ok: false, fail_detail: "jump_reject" };
-    }
-  }
-  if (minFixes >= GPS_CONVERGE_MIN_FIXES) {
-    const last3 = _buf.slice(-3);
-    if (last3.length < 3 || last3.some((f2) => f2.acc != null && f2.acc > GPS_CONVERGE_LAST3_ACC_M)) {
-      return { ok: false, fail_detail: "last3_acc" };
-    }
-  }
-  return { ok: true, fail_detail: null };
-}
-function getConvergeBufferStats(reConverge) {
-  let bufAccMax = null;
-  for (const f2 of _buf) {
-    if (bufAccMax == null || f2.acc > bufAccMax) bufAccMax = f2.acc;
-  }
-  return {
-    buf_len: _buf.length,
-    buf_acc_max: bufAccMax != null ? Math.round(bufAccMax * 10) / 10 : null,
-    re_converge: !!reConverge
-  };
-}
-function feedGpsConverge(fix, telCtx) {
-  if (!fix) return S.gpsConverged;
-  if (isSim()) {
-    const prev2 = S.gpsConverged;
-    S.gpsConverged = true;
-    if (prev2 !== true) noteConvergeTransition(prev2, true, "sim", {}, fix, null, telCtx?.snap);
-    return true;
-  }
-  const prev = S.gpsConverged;
-  const acc = fix.acc != null && Number.isFinite(fix.acc) ? fix.acc : null;
-  if (!isNetworkFix(fix)) _gpsFixCount++;
-  S.gpsFixCount = _gpsFixCount;
-  _buf.push({
-    lat: fix.lat,
-    lon: fix.lon,
-    acc,
-    speed: fix.speed,
-    ts: fix.ts,
-    provider: fix.provider
-  });
-  while (_buf.length > 8) _buf.shift();
-  const re = _everConverged && S.gpsConverged === false && _buf.length >= 2;
-  const minFixes = re ? GPS_CONVERGE_RE_MIN_FIXES : GPS_CONVERGE_MIN_FIXES;
-  const accLim = re ? GPS_CONVERGE_RE_ACC_M : GPS_CONVERGE_ACC_M;
-  const bufStats = getConvergeBufferStats(re);
-  const ev = evaluateBuffer(minFixes, accLim);
-  if (ev.ok) {
-    S.gpsConverged = true;
-    _everConverged = true;
-    if (prev !== true) {
-      noteConvergeTransition(prev, true, "converged", {}, fix, bufStats, telCtx?.snap);
-    }
-  } else if (!re && _buf.length < minFixes) {
-    S.gpsConverged = false;
-  }
-  return S.gpsConverged;
-}
-function invalidateGpsConverge(reason = "invalidate_unknown", telCtx) {
-  const prev = S.gpsConverged;
-  S.gpsConverged = false;
-  if (prev !== false) {
-    noteConvergeTransition(prev, false, reason, {}, telCtx?.fix ?? S.gps, getConvergeBufferStats(_everConverged), telCtx?.snap);
-  }
-}
-var _buf, _gpsFixCount, _everConverged;
-var init_gps_converge = __esm({
-  "js/gps-converge.js"() {
-    init_state();
-    init_geo();
-    init_platform();
-    init_nav_constants();
-    init_converge_telemetry();
-    _buf = [];
-    _gpsFixCount = 0;
-    _everConverged = false;
-  }
-});
-
-// js/gps.js
-function curPos() {
-  return RENDER_POS || S.gps;
-}
-function updateRenderPos() {
-  if (!S.gps) {
-    RENDER_POS = null;
-    return;
-  }
-  const v = S.gps.speed != null && S.gps.speed > 0.6 ? S.gps.speed : 0;
-  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
-  if (!v || hdg == null || isNaN(hdg) || !S.fixPos) {
-    RENDER_POS = S.gps;
-    return;
-  }
-  const rad = Math.PI / 180;
-  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1e3));
-  const dist = v * dt;
-  RENDER_POS = {
-    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
-    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
-    speed: S.gps.speed,
-    heading: S.gps.heading,
-    acc: S.gps.acc
-  };
-}
-function easeSpeed() {
-  const el = $2("v-speed");
-  if (!el || !S.gps) return;
-  const raw = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  const target = Math.min(raw, GPS_SPEED_MAX_MPS * 3.6);
-  S.dispSpeed += (target - S.dispSpeed) * 0.22;
-  if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
-  const shown = Math.round(S.dispSpeed);
-  el.textContent = shown;
-  el.classList.toggle("over", isSpeedOverLimit(target));
-  el.classList.toggle("speed-3", shown >= 100);
-}
-function resolveGpsSpeed(next, prev) {
-  const acc = next.acc ?? 999;
-  const device = next.speed != null && !isNaN(next.speed) && next.speed >= 0 ? next.speed : null;
-  let meas = 0;
-  let dist = 0;
-  if (prev) {
-    const dt = (next.ts - prev.ts) / 1e3;
-    if (dt > 0.15 && dt < 12) {
-      dist = haversine(prev, next);
-      if (dist >= GPS_SPEED_MEAS_MIN_DIST_M && dist < 500) meas = dist / dt;
-    }
-  }
-  const noiseRadius = Math.max(GPS_SPEED_STATIONARY_DIST_M, acc * 0.55);
-  if (prev && dist < noiseRadius) return 0;
-  if (device != null && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
-    if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
-      return device;
-    }
-  }
-  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
-  if (meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)) {
-    return S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
-  }
-  return 0;
-}
-function initGps(callbacks) {
-  _onTick = callbacks.onTick || _onTick;
-  _onVisual = callbacks.onVisual || _onVisual;
-}
-function visualLoop() {
-  S.rafId = requestAnimationFrame(visualLoop);
-  if (!$2("hud").classList.contains("on")) return;
-  telemetry_default.tickPerfFrame();
-  updateRenderPos();
-  easeSpeed();
-  tickRoundaboutHudRefresh(_onTick);
-  _onVisual();
-}
-function startVisualLoop() {
-  if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
-}
-function stopVisualLoop() {
-  if (S.rafId) {
-    cancelAnimationFrame(S.rafId);
-    S.rafId = null;
-  }
-}
-function updateGpsConvergeUI() {
-  const el = $2("gps-converge");
-  if (el) {
-    el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
-  }
-  if (S.gpsConverged) {
-    const tag = isSim() ? " \u0441\u0438\u043C" : "";
-    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + Math.round(S.gps?.acc || 0) + "\u043C";
-    $2("s-gps").className = "chip ok";
-  } else if (S.gps) {
-    const acc = S.gps.acc != null ? Math.round(S.gps.acc) + "\u043C" : "\u2026";
-    $2("s-gps").textContent = "\u23F3 GPS \xB1" + acc;
-    $2("s-gps").className = "chip";
-  } else {
-    $2("s-gps").textContent = "\u23F3 GPS\u2026";
-    $2("s-gps").className = "chip";
-  }
-  checkStartReady();
-}
-function checkStartReady() {
-  const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
-  $2("btn-start").disabled = !(S.gps && S.finish && hasRoute);
-  const buildBtn = $2("btn-build-route");
-  if (buildBtn) buildBtn.disabled = !(S.gps && S.finish);
-}
-function onGpsError() {
-  $2("s-gps").textContent = "\u274C GPS";
-  $2("s-gps").className = "chip err";
-  invalidateGpsConverge("invalidate_error");
-  if (!_gpsLost) {
-    _gpsLost = true;
-    telemetry_default.log("nav", { sub: "gps_lost" });
-  }
-}
-function applyGpsFix(next) {
-  if (S.lastPos) {
-    const d = haversine(S.lastPos, next);
-    const dt = (next.ts - S.lastPos.ts) / 1e3;
-    if (d > 3 && d < 500) S.distDone += d;
-    if ((next.heading == null || isNaN(next.heading)) && d > 3) {
-      next.heading = bearing(S.lastPos, next);
-    }
-  }
-  const resolved = resolveGpsSpeed(next, S.lastPos);
-  S.measSpeed = resolved;
-  next.speed = resolved;
-  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
-  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
-  if (fused != null && !isNaN(fused)) next.heading = fused;
-  if (next.heading != null && !isNaN(next.heading)) {
-    if ((next.speed ?? 0) >= 3.2) S.lastReliableHeadingTs = Date.now();
-    if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
-    else {
-      const spd = next.speed ?? S.measSpeed ?? 0;
-      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
-      const keep = 1 - alpha;
-      const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
-      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
-      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
-    }
-  }
-  S.lastPos = next;
-  S.gps = next;
-  S.fixPos = { lat: next.lat, lon: next.lon };
-  S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
-  let telSnap = null;
-  let navSnap = null;
-  if ($2("hud").classList.contains("on") && S.route?.geometry) {
-    navSnap = getNavSnap(S.smoothedHeading);
-    if (navSnap) telSnap = { lateral: navSnap.lateral, quality: S.snapQuality };
-  }
-  const telCtx = { fix: next, snap: telSnap };
-  feedGpsConverge(next, telCtx);
-  if (next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge("invalidate_acc", telCtx);
-  if ($2("hud").classList.contains("on") && S.gpsConverged && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) invalidateGpsConverge("invalidate_lost", telCtx);
-  updateGpsConvergeUI();
-  tickConvergeBlocked(next, telSnap);
-  if ($2("hud").classList.contains("on")) _onTick();
-  const rcv = Date.now();
-  if (_gpsLost) {
-    _gpsLost = false;
-    telemetry_default.log("nav", { sub: "gps_restored" });
-  }
-  telemetry_default.logFix({
-    lat: next.lat,
-    lon: next.lon,
-    acc: next.acc,
-    speed: next.speed,
-    heading: next.heading,
-    alt: next.alt,
-    ts: next.ts,
-    rcv
-  });
-  if (navSnap) telemetry_default.logSnapFromResult(navSnap);
-}
-function stopWebGps() {
-  if (S.watchId !== null && navigator.geolocation) {
-    navigator.geolocation.clearWatch(S.watchId);
-    S.watchId = null;
-  }
-}
-function startWebGps() {
-  if (!navigator.geolocation) {
-    $2("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
-    $2("s-gps").className = "chip err";
-    return;
-  }
-  stopWebGps();
-  $2("s-gps").textContent = "\u23F3 GPS\u2026";
-  $2("s-gps").className = "chip";
-  S.watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      const c = pos.coords;
-      applyGpsFix({
-        lat: c.latitude,
-        lon: c.longitude,
-        speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
-        heading: c.heading == null ? null : c.heading,
-        acc: c.accuracy,
-        alt: c.altitude != null && !isNaN(c.altitude) ? c.altitude : null,
-        ts: pos.timestamp
-      });
-    },
-    onGpsError,
-    { enableHighAccuracy: true, timeout: 15e3, maximumAge: 1e3 }
-  );
-}
-function startGps() {
-  _navMode = false;
-  startHeadingSensors();
-  if (isNative()) {
-    $2("s-gps").textContent = "\u23F3 GPS\u2026";
-    $2("s-gps").className = "chip";
-    stopWebGps();
-    startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
-    return;
-  }
-  startWebGps();
-}
-async function startNavigationGps() {
-  if (!isNative()) return;
-  _navMode = true;
-  await startNavGps(applyGpsFix, onGpsError);
-}
-async function stopNavigationGps() {
-  if (!isNative()) return;
-  _navMode = false;
-  await stopNavGps();
-  await startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
-}
-var RENDER_POS, _navMode, _gpsLost, _onTick, _onVisual;
-var init_gps = __esm({
-  "js/gps.js"() {
-    init_state();
-    init_geo();
-    init_util();
-    init_platform();
-    init_native_gps();
-    init_heading();
-    init_telemetry();
-    init_route_geometry();
-    init_nav_constants();
-    init_speed_limit();
-    init_roundabout();
-    init_gps_converge();
-    init_snap_quality();
-    init_converge_telemetry();
-    init_nav_constants();
-    RENDER_POS = null;
-    _navMode = false;
-    _gpsLost = false;
-    _onTick = () => {
-    };
-    _onVisual = () => {
-    };
-  }
-});
-
-// js/render.js
-function computePathLayout(w, h) {
-  const aspect = Math.max(0.2, w / Math.max(1, h));
-  L2.W = 1e3;
-  L2.H = Math.max(480, Math.min(2400, Math.round(L2.W / aspect)));
-  L2.roadH = L2.H;
-  L2.cx = L2.W / 2;
-  L2.land = aspect > 1;
-  L2.camFocal = L2.land ? 900 : 1300;
-  L2.camVoff = L2.H * 0.78;
-  L2.horizonY = L2.camVoff - L2.camFocal * Math.tan(CAM_PITCH);
-}
-function projectGround2(x, z, elevDelta) {
-  const pitch = getCamPitchRad();
-  const cp = Math.cos(pitch);
-  const sp = Math.sin(pitch);
-  const dy = -CAM_H;
-  const dz = z + CAM_B;
-  const use3d = S.showElevProfile && S.route?.geometry?.elevReady;
-  const elevLift = use3d ? (elevDelta || 0) * getElevExag() * 0.16 : 0;
-  const Yc = dy * cp + dz * sp - elevLift;
-  const Zc = -dy * sp + dz * cp;
-  if (Zc < 0.85) return null;
-  const sx = L2.cx + L2.camFocal * x / Zc;
-  const sy = L2.camVoff - L2.camFocal * Yc / Zc;
-  if (sx < -L2.W * 0.4 || sx > L2.W * 1.4) return null;
-  return { x: sx, y: sy };
-}
-function toLocalFrenet(lat, lon, snap, headingRad) {
-  return worldToCamXZ(lat, lon, snap, headingRad);
-}
-function projectWorld(lat, lon, elev, snap, headingRad) {
-  const { x, z } = worldToCamXZ(lat, lon, snap, headingRad);
-  return projectGround2(x, z, elev);
-}
-function triArea2(a, b, c) {
-  if (!a || !b || !c) return 0;
-  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-}
-function projectCam(x, z, elev) {
-  return projectGround2(x, z, elev);
-}
-function buildStripMeshSvg(sections, geom, speedMps) {
-  if (sections.length < 2) return { fill: "", edges: "" };
-  const tok = getThemeTokens();
-  const fillNone = tok.pathFill === "none" || tok.pathFill === "transparent";
-  let fill = "";
-  let edges = "";
-  const pt = (p) => p.x.toFixed(1) + "," + p.y.toFixed(1);
-  const edgeW = tok.pathEdgeW;
-  const glowExtra = tok.glow !== "none" ? ' opacity="' + Math.max(0.1, tok.glowOpacity || 0.25) + '"' : "";
-  for (let i = sections.length - 2; i >= 0; i--) {
-    const a = sections[i];
-    const b = sections[i + 1];
-    if (b.cz <= a.cz + 0.05) continue;
-    const aL = projectCam(a.lx, a.lz, a.elev);
-    const aR = projectCam(a.rx, a.rz, a.elev);
-    const bL = projectCam(b.lx, b.lz, b.elev);
-    const bR = projectCam(b.rx, b.rz, b.elev);
-    if (!aL || !aR || !bL || !bR) continue;
-    const sMid = (a.s + b.s) * 0.5;
-    const warnCol = ribbonCurveColor(sMid, geom, speedMps);
-    const fillCol = warnCol || tok.pathFill;
-    const edgeCol = warnCol || tok.pathEdge;
-    const fillOp = warnCol ? 0.48 : tok.pathFillOpacity;
-    const ew = warnCol ? edgeW + 2 : edgeW;
-    if (!fillNone) {
-      const t1 = triArea2(aL, bL, bR);
-      const t2 = triArea2(aL, bR, aR);
-      const bowTie = t1 * t2 <= 0;
-      if (!bowTie || a.cz < 8 || b.cz < 8) {
-        if (t1 > 1) {
-          fill += '<polygon points="' + pt(aL) + " " + pt(bL) + " " + pt(bR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
-        }
-        if (t2 > 1) {
-          fill += '<polygon points="' + pt(aL) + " " + pt(bR) + " " + pt(aR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
-        }
-      }
-    }
-    const dash = tok.pathDash !== "none" ? ' stroke-dasharray="' + tok.pathDash + '"' : "";
-    edges += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + ew + '" stroke-linecap="round"' + dash + glowExtra + '/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + ew + '" stroke-linecap="round"' + dash + glowExtra + "/>";
-    if (tok.glow !== "none") {
-      edges += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + tok.glow + '" stroke-width="' + (ew + 4) + '" stroke-linecap="round" opacity="' + (tok.glowOpacity || 0.25) + '"/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + tok.glow + '" stroke-width="' + (ew + 4) + '" stroke-linecap="round" opacity="' + (tok.glowOpacity || 0.25) + '"/>';
-    }
-  }
-  return { fill, edges };
-}
-function effectiveHeading() {
-  if (S.smoothedHeading != null && !isNaN(S.smoothedHeading)) return S.smoothedHeading;
-  const rad = getCamHeadingRad();
-  if (rad != null) return (rad * 180 / Math.PI + 360) % 360;
-  return null;
-}
-function turnAngleAt(step) {
-  const coords = S.route.coords;
-  let bi = 0;
-  let bd = Infinity;
-  for (let i = 0; i < coords.length; i++) {
-    const d = haversine({ lat: coords[i][0], lon: coords[i][1] }, step);
-    if (d < bd) {
-      bd = d;
-      bi = i;
-    }
-  }
-  if (bi <= 0 || bi >= coords.length - 1) return null;
-  const bIn = bearing(
-    { lat: coords[bi - 1][0], lon: coords[bi - 1][1] },
-    { lat: coords[bi][0], lon: coords[bi][1] }
-  );
-  const bOut = bearing(
-    { lat: coords[bi][0], lon: coords[bi][1] },
-    { lat: coords[bi + 1][0], lon: coords[bi + 1][1] }
-  );
-  return (bOut - bIn + 540) % 360 - 180;
-}
-function modifierTurnSide(mod) {
-  if (!mod) return 0;
-  if (mod.includes("left")) return -1;
-  if (mod.includes("right")) return 1;
-  return 0;
-}
-function reconcileTurnAngle(ang, modifier) {
-  const side = modifierTurnSide(modifier);
-  if (modifier === "uturn") {
-    if (Math.abs(ang) < 120) return side < 0 ? -175 : 175;
-    return ang;
-  }
-  if (side === 0) return ang;
-  if (side < 0 && ang > 0) return -Math.abs(ang);
-  if (side > 0 && ang < 0) return Math.abs(ang);
-  if (Math.abs(ang) < 10) return side * 25;
-  return ang;
-}
-function chevronScreenBasis(snap, headingRad, geom, s2, modifier, ang) {
-  const ds = 16;
-  const total = geom.s[geom.n - 1];
-  const p0 = interpolateAtS(geom, Math.max(0, s2 - ds));
-  const p1 = interpolateAtS(geom, s2);
-  const p2 = interpolateAtS(geom, Math.min(total, s2 + ds));
-  const P0 = projectWorld(p0.lat, p0.lon, 0, snap, headingRad);
-  const P1 = projectWorld(p1.lat, p1.lon, 0, snap, headingRad);
-  const P2 = projectWorld(p2.lat, p2.lon, 0, snap, headingRad);
-  if (!P1) return null;
-  let ex = 0;
-  let ey = 0;
-  if (P0 && P2) {
-    ex = P2.x - P1.x;
-    ey = P2.y - P1.y;
-    const el = Math.hypot(ex, ey);
-    if (el > 1) {
-      ex /= el;
-      ey /= el;
-      const ax = P1.x - P0.x;
-      const ay = P1.y - P0.y;
-      const al = Math.hypot(ax, ay);
-      if (al > 1) {
-        const cross = ax / al * ey - ay / al * ex;
-        const modSide = modifierTurnSide(modifier);
-        const geoSide = cross > 0.02 ? 1 : cross < -0.02 ? -1 : 0;
-        if (modSide !== 0 && geoSide !== 0 && geoSide !== modSide) {
-          const lx = -ay / al;
-          const ly = ax / al;
-          ex = modSide < 0 ? lx : -lx;
-          ey = modSide < 0 ? ly : -ly;
-        }
-      }
-    }
-  }
-  if (Math.hypot(ex, ey) < 0.05) {
-    const side = modifierTurnSide(modifier) || (ang < 0 ? -1 : 1);
-    ex = side;
-    ey = 0;
-  }
-  return { P: P1, ex, ey };
-}
-function chevronPath(P, ex, ey, arm) {
-  const tipX = P.x + ex * arm;
-  const tipY = P.y + ey * arm;
-  const bx = P.x - ex * arm * 0.55;
-  const by = P.y - ey * arm * 0.55;
-  const px = -ey;
-  const py = ex;
-  const wing = arm * 0.88;
-  const x1 = (bx + px * wing).toFixed(1);
-  const y1 = (by + py * wing).toFixed(1);
-  const x2 = (bx - px * wing).toFixed(1);
-  const y2 = (by - py * wing).toFixed(1);
-  return "M " + x1 + " " + y1 + " L " + tipX.toFixed(1) + " " + tipY.toFixed(1) + " L " + x2 + " " + y2;
-}
-function textBBox(cx, cy, fontSize, text) {
-  const n = Math.max(String(text || "").length, 1);
-  const w = fontSize * n * 0.58;
-  const h = fontSize * 1.12;
-  return { left: cx - w * 0.5, right: cx + w * 0.5, top: cy - h * 0.82, bottom: cy + h * 0.18 };
-}
-function bboxOverlap2(a, b, pad) {
-  return a.left - pad < b.right + pad && a.right + pad > b.left - pad && a.top - pad < b.bottom + pad && a.bottom + pad > b.top - pad;
-}
-function clampLabelX(cx, halfW, vbX, vbW) {
-  return Math.min(vbX + vbW - halfW - 4, Math.max(vbX + halfW + 4, cx));
-}
-function clampLabelY(cy, fontSize, vbY, vbH) {
-  return Math.min(vbY + vbH - 4, Math.max(vbY + fontSize + 4, cy));
-}
-function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
-  if (S.pathChevronLabels === false) return;
-  const placed = [];
-  const minSep = vb * 0.07;
-  const pad = vb * 0.014;
-  for (let i = 0; i < markers.length; i++) {
-    const m = markers[i];
-    m.degX = null;
-    m.degY = null;
-    m.distX = null;
-    m.distY = null;
-    const prev = i > 0 ? markers[i - 1] : null;
-    const sep = prev ? Math.hypot(m.P.x - prev.P.x, m.P.y - prev.P.y) : Infinity;
-    const wantDeg = i === 0 && !!m.deg;
-    const wantDist = i === 0 ? true : sep >= minSep;
-    if (wantDeg) {
-      const sides = [m.labelSide, -m.labelSide];
-      for (const side of sides) {
-        const off = m.arm + m.degFont * 0.35;
-        let dx = m.P.x + m.nx * off * side;
-        const halfW = m.degFont * Math.max(m.deg.length, 1) * 0.34;
-        dx = clampLabelX(dx, halfW, vbX, vbW);
-        let dy = clampLabelY(
-          m.P.y + m.ny * off * side * 0.35 + m.degFont * 0.34,
-          m.degFont,
-          vbY,
-          vbH
-        );
-        const box = textBBox(dx, dy, m.degFont, m.deg);
-        if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
-          m.degX = dx;
-          m.degY = dy;
-          placed.push(box);
-          break;
-        }
-      }
-    }
-    if (!wantDist) continue;
-    const distText = m.dist + " \u043C";
-    const slots = [
-      () => ({
-        x: m.P.x + m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
-        y: m.P.y + m.ny * m.arm * 0.35 * m.labelSide + m.distFont * 0.15
-      }),
-      () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.1 + i * 0.35) }),
-      () => ({
-        x: m.P.x - m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
-        y: m.P.y - m.ny * m.arm * 0.35 * m.labelSide
-      }),
-      () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.6 + i * 0.4) })
-    ];
-    for (const slot of slots) {
-      let { x, y } = slot();
-      x = clampLabelX(x, m.distFont * distText.length * 0.32, vbX, vbW);
-      y = clampLabelY(y, m.distFont, vbY, vbH);
-      const box = textBBox(x, y, m.distFont, distText);
-      if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
-        m.distX = x;
-        m.distY = y;
-        placed.push(box);
-        break;
-      }
-    }
-  }
-}
-function isPathTurnStep(st) {
-  return st && st.type !== "depart" && st.type !== "arrive" && st.modifier && st.modifier !== "straight";
-}
-function renderTurnsStr(svg, snap, headingRad, geom, curS) {
-  if (!S.route || !snap || S.showPathChevrons === false) return "";
-  const maxChevrons = Math.max(1, Math.min(3, S.pathChevronMax || 3));
-  const tok = getThemeTokens();
-  const scale = tok.pathTurnScale || 1;
-  const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
-  const vb = bv && bv.width ? bv.width : L2.W;
-  const vbX = bv ? bv.x : 0;
-  const vbY = bv ? bv.y : 0;
-  const vbW = bv ? bv.width : L2.W;
-  const vbH = bv ? bv.height : L2.H;
-  const pos = curPos();
-  const items = geom && curS != null ? getVisibleTurnManeuvers(geom, curS, maxChevrons) : S.route.steps.filter(isPathTurnStep).map((st) => ({ maneuver: { step: st }, distAhead: haversine(pos, st) }));
-  const markers = [];
-  for (const item of items) {
-    if (markers.length >= maxChevrons) break;
-    const st = item.maneuver?.step;
-    if (!st) continue;
-    const loc = toLocalFrenet(st.lat, st.lon, snap, headingRad);
-    if (loc.z < 5 || loc.z > ROAD_MAX) continue;
-    const P = projectGround2(loc.x, loc.z, 0);
-    if (!P) continue;
-    let ang = null;
-    let chev = null;
-    const mS = item.maneuver?.s;
-    if (geom && mS != null) {
-      ang = reconcileTurnAngle(turnAngleAtS(geom, mS), st.modifier);
-      chev = chevronScreenBasis(snap, headingRad, geom, mS, st.modifier, ang);
-    }
-    if (ang == null) {
-      const raw = turnAngleAt(st);
-      ang = raw == null ? modifierTurnSide(st.modifier) < 0 ? -25 : modifierTurnSide(st.modifier) > 0 ? 25 : 0 : reconcileTurnAngle(raw, st.modifier);
-    }
-    if (!chev) {
-      const side = modifierTurnSide(st.modifier) || (ang < 0 ? -1 : 1);
-      chev = { P, ex: side, ey: 0 };
-    }
-    const k = (markers.length === 0 ? 1 : 0.72) * scale;
-    const degFont = vb * 0.12 * k;
-    const distFont = vb * 0.05 * k;
-    const arm = vb * 0.05 * k;
-    const tipY = chev.P.y + chev.ey * arm;
-    markers.push({
-      P: chev.P,
-      ex: chev.ex,
-      ey: chev.ey,
-      nx: -chev.ey,
-      ny: chev.ex,
-      arm,
-      sw: Math.max(2, vb * 0.012 * k),
-      col: markers.length === 0 ? tok.turnPrimary : tok.turnSecondary,
-      deg: Math.abs(ang) >= 4 ? Math.round(Math.abs(ang)) + "\xB0" : "",
-      dist: Math.round(item.distAhead != null ? item.distAhead : haversine(pos, st)),
-      degFont,
-      distFont,
-      tipY,
-      labelSide: ang < 0 ? 1 : -1
-    });
-  }
-  layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH);
-  let out = "";
-  for (const m of markers) {
-    out += '<g font-family="' + tok.fontNum + ',monospace" text-anchor="middle"><path d="' + chevronPath(m.P, m.ex, m.ey, m.arm) + '" fill="none" stroke="' + m.col + '" stroke-width="' + m.sw.toFixed(1) + '" stroke-linecap="round" stroke-linejoin="round"/>' + (m.degX != null ? '<text x="' + m.degX.toFixed(1) + '" y="' + m.degY.toFixed(1) + '" font-size="' + m.degFont.toFixed(1) + '" font-weight="900" fill="' + m.col + '">' + m.deg + "</text>" : "") + (m.distX != null ? '<text x="' + m.distX.toFixed(1) + '" y="' + m.distY.toFixed(1) + '" font-size="' + m.distFont.toFixed(1) + '" fill="' + m.col + '" opacity="0.9">' + m.dist + " \u043C</text>" : "") + "</g>";
-  }
-  return out;
-}
-function renderFuelStr(svg, snap, headingRad) {
-  if (S.fuelMode === 0 || !snap) return "";
-  const tok = getThemeTokens();
-  const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
-  const vb = bv && bv.width ? bv.width : L2.W;
-  const vbX = bv ? bv.x : 0;
-  const vbY = bv ? bv.y : 0;
-  const vbW = vb;
-  const vbH = bv ? bv.height : L2.H;
-  const stations = fuelStationsForRoad(ROAD_MAX);
-  let out = "";
-  for (const st of stations) {
-    const loc = toLocalFrenet(st.lat, st.lon, snap, headingRad);
-    if (loc.z < 5 || loc.z > ROAD_MAX) continue;
-    const P = projectGround2(loc.x, loc.z, 0);
-    if (!P) continue;
-    const sel = S.fuelSel && S.fuelSel.osmId === st.osmId;
-    const k = sel ? 0.62 : 0.46;
-    const r = vb * 0.045 * k;
-    const emoji = vb * 0.06 * k;
-    const distFont = vb * 0.032 * k;
-    const sw = Math.max(1.5, vb * 8e-3);
-    const col = fuelColor(st.status);
-    const dm = st.distAhead != null && isFinite(st.distAhead) ? st.distAhead : st.distGps;
-    const distTxt = dm < 1e3 ? Math.round(dm / 10) * 10 + " \u043C" : (dm / 1e3).toFixed(1) + " \u043A\u043C";
-    let cx = Math.min(vbX + vbW - r - 2, Math.max(vbX + r + 2, P.x));
-    let cy = Math.min(vbY + vbH - r - distFont - 4, Math.max(vbY + r + 2, P.y));
-    out += '<g text-anchor="middle" font-family="' + tok.fontNum + ',monospace"><circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '"/><text x="' + cx.toFixed(1) + '" y="' + (cy + emoji * 0.36).toFixed(1) + '" font-size="' + emoji.toFixed(1) + '">\u26FD</text><text x="' + cx.toFixed(1) + '" y="' + (cy + r + distFont * 1.05).toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" font-weight="900" fill="' + col + '" stroke="' + tok.svgHalo + '" stroke-width="' + (distFont * 0.14).toFixed(1) + '" paint-order="stroke">' + distTxt + "</text></g>";
-  }
-  return out;
-}
-function renderPathway() {
-  const block = $2("block-path");
-  const svg = $2("path-svg");
-  if (!block || !svg) return;
-  const hud = $2("hud");
-  const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  if (!S.showPath || kmh < 25 || isSnapLost() || S.compassMode || S.gpsConverged === false) {
-    block.classList.add("hidden");
-    hud.classList.add("no-path");
-    svg.innerHTML = "";
-    return;
-  }
-  block.classList.remove("hidden");
-  hud.classList.remove("no-path");
-  const gpsHdg = S.smoothedHeading;
-  if (S.route && !S.route.geometry) ensureRouteGeometry(S.route);
-  const rawSnap = getNavSnap(gpsHdg);
-  const geomReady = S.route?.geometry;
-  if (!geomReady || !rawSnap) {
-    svg.innerHTML = "";
-    return;
-  }
-  const speedMps = Math.max(0, S.dispSpeed / 3.6);
-  const snap = getDisplaySnap(rawSnap, geomReady, speedMps, gpsHdg);
-  if (!snap) {
-    svg.innerHTML = "";
-    return;
-  }
-  if (S.snapQuality === "GOOD" && _pathLastS != null && Math.abs(snap.s - _pathLastS) < PATH_SKIP_DS_M && kmh >= 25) {
-    _pathSkipFrames++;
-    if (_pathSkipFrames <= PATH_SKIP_FRAMES) return;
-  }
-  _pathSkipFrames = 0;
-  _pathLastS = snap.s;
-  const maxDist = Math.max(100, Math.min(ROAD_MAX, Math.round(kmh * 8)));
-  const rect = block.getBoundingClientRect();
-  computePathLayout(rect.width || block.clientWidth || 300, rect.height || block.clientHeight || 200);
-  svg.setAttribute("viewBox", "0 0 " + L2.W + " " + L2.H);
-  svg.setAttribute("preserveAspectRatio", "xMidYMax slice");
-  const headingRad = updateCamHeading(geomReady, snap);
-  updateCamPitch(geomReady, snap, getElevExag(), S.showElevProfile);
-  const activeRb = isCrossingContextEnabled() ? getActiveRoundabout(geomReady, rawSnap.s, speedMps) : null;
-  let sections = extendRibbonNearCam(
-    computeRibbonSectionsCam(geomReady, snap, maxDist, ROAD_HALF, headingRad)
-  );
-  if (activeRb) {
-    sections = sections.filter((sec) => sec.s < activeRb.sEnter || sec.s > activeRb.sExit);
-  }
-  if (sections.length < 2) {
-    svg.innerHTML = "";
-    return;
-  }
-  let html = "";
-  if (isCrossingContextEnabled()) {
-    html += renderCrossingWhiskers(snap, headingRad, geomReady, rawSnap.s, speedMps);
-    if (activeRb) html += renderRoundaboutSchema(activeRb, snap, headingRad);
-  }
-  const mesh = buildStripMeshSvg(sections, geomReady, speedMps);
-  html += mesh.fill + mesh.edges;
-  const tok = getThemeTokens();
-  const centerS = sections.map((sec) => ({ p: projectCam(sec.cx, sec.cz, sec.elev), s: sec.s })).filter((x) => x.p);
-  for (let ci = 0; ci < centerS.length - 1; ci++) {
-    const a = centerS[ci];
-    const b = centerS[ci + 1];
-    if (!a.p || !b.p) continue;
-    const dx = b.p.x - a.p.x;
-    const dy = b.p.y - a.p.y;
-    if (dx * dx + dy * dy > (L2.W * 0.32) ** 2) continue;
-    const sMid = (a.s + b.s) * 0.5;
-    const warnCol = ribbonCurveColor(sMid, geomReady, speedMps);
-    const stroke = warnCol || tok.pathEdge;
-    const sw = warnCol ? tok.strokeW + 1.5 : tok.strokeW;
-    const op = warnCol ? 0.85 : tok.pathCenterOpacity;
-    html += '<line x1="' + a.p.x.toFixed(1) + '" y1="' + a.p.y.toFixed(1) + '" x2="' + b.p.x.toFixed(1) + '" y2="' + b.p.y.toFixed(1) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" opacity="' + op + '"/>';
-  }
-  html += renderTurnsStr(svg, snap, headingRad, geomReady, rawSnap.s);
-  html += renderFuelStr(svg, snap, headingRad);
-  const profileH = getElevProfileH();
-  const prof = renderElevProfile(snap, geomReady, L2.W, profileH);
-  if (prof) html += '<g transform="translate(0,' + (L2.H - profileH - PROFILE_GAP) + ')">' + prof + "</g>";
-  svg.innerHTML = html;
-}
-function computeArrowCenterline(turnDeg, H = 120) {
-  const stemLen = H / 3;
-  const exitLen = H / 3;
-  const R = Math.abs(turnDeg) > 150 ? H / 3.2 : H / 4;
-  const dirVec = (aDeg) => {
-    const a2 = aDeg * Math.PI / 180;
-    return [Math.sin(a2), -Math.cos(a2)];
-  };
-  let a = 0, x = 0, y = 0;
-  const pts = [[x, y]];
-  let d = dirVec(a);
-  x += d[0] * stemLen;
-  y += d[1] * stemLen;
-  pts.push([x, y]);
-  const N = Math.max(3, Math.round(Math.abs(turnDeg) / 5));
-  const dA = turnDeg / N;
-  const segLen = R * Math.abs(turnDeg) * Math.PI / 180 / N;
-  for (let i = 0; i < N; i++) {
-    a += dA;
-    d = dirVec(a);
-    x += d[0] * segLen;
-    y += d[1] * segLen;
-    pts.push([x, y]);
-  }
-  d = dirVec(a);
-  x += d[0] * exitLen;
-  y += d[1] * exitLen;
-  pts.push([x, y]);
-  return { pts, dir: d, tip: [x, y] };
-}
-function arrowViewBox(all, pad) {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  all.forEach((p) => {
-    minX = Math.min(minX, p[0]);
-    minY = Math.min(minY, p[1]);
-    maxX = Math.max(maxX, p[0]);
-    maxY = Math.max(maxY, p[1]);
-  });
-  minX -= pad;
-  minY -= pad;
-  maxX += pad;
-  maxY += pad;
-  return {
-    vb: minX.toFixed(1) + " " + minY.toFixed(1) + " " + (maxX - minX).toFixed(1) + " " + (maxY - minY).toFixed(1)
-  };
-}
-function renderParametricArrow(turnDeg) {
-  const tok = getThemeTokens();
-  const H = 120;
-  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
-  const sw = Math.round(H * 0.12 * (tok.strokeW / 3));
-  const col = tok.accent;
-  const outline = tok.arrowStyle === "outline";
-  const hl = sw * 2.1, hw = sw * 1.5;
-  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
-  const perp = [-dir[1], dir[0]];
-  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
-  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
-  const stem = pts.slice(0, pts.length - 1).concat([back]);
-  const all = [...stem, tip, wingA, wingB];
-  const { vb } = arrowViewBox(all, sw);
-  const line = '<polyline points="' + stem.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ") + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round"/>';
-  const head = outline ? "" : '<polygon points="' + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1) + '" fill="' + col + '"/>';
-  const headOutline = outline ? '<polyline points="' + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1) + " " + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linejoin="round"/>' : "";
-  return '<svg class="arrow-svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + line + head + headOutline + "</svg>";
-}
-function renderChopperArrow(turnDeg) {
-  const tok = getThemeTokens();
-  const col = tok.accent;
-  const H = 120;
-  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
-  const halfW = 11;
-  const hl = 22, hw = 19;
-  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
-  const perp = [-dir[1], dir[0]];
-  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
-  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
-  const stem = pts.slice(0, pts.length - 1).concat([back]);
-  const left = [], right = [];
-  for (let i = 0; i < stem.length; i++) {
-    const p = stem[i];
-    let t;
-    if (i < stem.length - 1) {
-      const q = stem[i + 1];
-      t = [q[0] - p[0], q[1] - p[1]];
-    } else if (i > 0) {
-      const q = stem[i - 1];
-      t = [p[0] - q[0], p[1] - q[1]];
-    } else {
-      t = dir;
-    }
-    const len = Math.hypot(t[0], t[1]) || 1;
-    const n = [-t[1] / len, t[0] / len];
-    left.push([p[0] + n[0] * halfW, p[1] + n[1] * halfW]);
-    right.push([p[0] - n[0] * halfW, p[1] - n[1] * halfW]);
-  }
-  const body = left.concat(right.slice().reverse());
-  const bodyPts = body.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
-  const headPts = tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1);
-  const all = [...stem, tip, wingA, wingB, ...left, ...right];
-  const { vb } = arrowViewBox(all, halfW + 4);
-  const rim = tok.line || col;
-  return '<svg class="arrow-svg arrow-chopper" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet"><polygon points="' + bodyPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/><polygon points="' + headPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/></svg>';
-}
-function vfdQuant(v, step = 2) {
-  return Math.round(v / step) * step;
-}
-function offsetRibbonPoints(centerPts, halfW) {
-  const left = [], right = [];
-  for (let i = 0; i < centerPts.length; i++) {
-    const p = centerPts[i];
-    let dx, dy;
-    if (i < centerPts.length - 1) {
-      dx = centerPts[i + 1][0] - p[0];
-      dy = centerPts[i + 1][1] - p[1];
-    } else {
-      dx = p[0] - centerPts[i - 1][0];
-      dy = p[1] - centerPts[i - 1][1];
-    }
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len, ny = dx / len;
-    left.push([vfdQuant(p[0] + nx * halfW), vfdQuant(p[1] + ny * halfW)]);
-    right.push([vfdQuant(p[0] - nx * halfW), vfdQuant(p[1] - ny * halfW)]);
-  }
-  return { left, right };
-}
-function renderVintageArrow(turnDeg) {
-  const tok = getThemeTokens();
-  const col = tok.accent;
-  const halfW = 6.5;
-  const H = 120;
-  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
-  const hl = 22, hw = 17;
-  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
-  const perp = [-dir[1], dir[0]];
-  const wingA = [vfdQuant(back[0] + perp[0] * hw), vfdQuant(back[1] + perp[1] * hw)];
-  const wingB = [vfdQuant(back[0] - perp[0] * hw), vfdQuant(back[1] - perp[1] * hw)];
-  const tipQ = [vfdQuant(tip[0]), vfdQuant(tip[1])];
-  const stem = pts.slice(0, pts.length - 1).concat([back]);
-  const { left, right } = offsetRibbonPoints(stem, halfW);
-  const poly = left.concat([wingA, tipQ, wingB]).concat(right.slice().reverse());
-  const polyPts = poly.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
-  const all = [...stem, tipQ, wingA, wingB];
-  const { vb } = arrowViewBox(all, halfW + 4);
-  return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" filter="url(#vfd-glow-cyan)"><polygon points="' + polyPts + '" fill="' + col + '" stroke="none"/></svg>';
-}
-function renderManeuverArrow(turnDeg) {
-  const shape = getThemeTokens().arrowShape || "parametric";
-  if (shape === "chopper") return renderChopperArrow(turnDeg);
-  if (shape === "vintage") return renderVintageArrow(turnDeg);
-  return renderParametricArrow(turnDeg);
-}
-function arriveFlagSVG() {
-  const tok = getThemeTokens();
-  const sw = Math.max(4, tok.strokeW + 2);
-  const col = tok.pathEdge;
-  return '<svg class="arrow-svg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet"><rect x="-28" y="-32" width="56" height="40" fill="none" stroke="' + col + '" stroke-width="' + sw + '"/><path d="M-28 -32 L-28 8 L28 -12 Z" fill="' + (tok.arrowStyle === "outline" ? "none" : col) + '" stroke="' + col + '" stroke-width="' + sw * 0.5 + '"/><line x1="-28" y1="8" x2="-28" y2="28" stroke="' + col + '" stroke-width="' + sw + '"/></svg>';
-}
-function buildTurnArrowSVG(turnDeg) {
-  const turn = Math.max(-178, Math.min(178, turnDeg || 0));
-  return renderManeuverArrow(turn);
-}
-function buildArrowSVG(step, opts = {}) {
-  if (!step) return "";
-  if (step.type === "arrive") return arriveFlagSVG();
-  if (shouldUseRoundaboutSchema() && isRoundaboutStep(step)) {
-    const ctx = opts.ctx || (opts.snap ? getRoundaboutContext(opts.snap, S.route) : null);
-    const rbOpts = {
-      ...opts,
-      ctx,
-      isOnRoundabout: opts.isOnRoundabout ?? ctx?.isOnRoundabout,
-      distanceToExit: opts.distanceToExit ?? ctx?.distanceToExit,
-      progressAngle: opts.progressAngle ?? ctx?.progressAngle
-    };
-    const rb = buildRoundaboutSVG(step, rbOpts);
-    if (rb) return rb;
-  }
-  let turn = maneuverTurnAngle(step);
-  if (Math.abs(turn) < MANEUVER_BEND_ANGLE) {
-    if (step.modifier === "uturn") turn = 175;
-    else if (Math.abs(turn) < 4 && step.modifier) {
-      if (step.modifier.includes("left")) turn = -8;
-      else if (step.modifier.includes("right")) turn = 8;
-      else turn = 0;
-    } else {
-      turn = 0;
-    }
-  }
-  turn = Math.max(-178, Math.min(178, turn));
-  return renderManeuverArrow(turn);
-}
-function renderCompass() {
-  const el = $2("compass-svg");
-  if (!el) return;
-  const tok = getThemeTokens();
-  const hdg = effectiveHeading();
-  if (tok.compassStyle === "rose") {
-    renderCompassRose(el, tok, hdg);
-    return;
-  }
-  const W = 400, H = 36, cx = W / 2, px = 1.8;
-  let html = '<line x1="' + cx + '" y1="2" x2="' + cx + '" y2="' + H + '" stroke="' + tok.accent + '" stroke-width="2"/>';
-  if (hdg != null && !isNaN(hdg)) {
-    [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
-      let diff = (d[1] - hdg + 540) % 360 - 180;
-      const x = cx + diff * px;
-      if (x < 14 || x > W - 14) return;
-      const near = Math.abs(diff) < 12;
-      html += '<text x="' + x.toFixed(1) + '" y="29" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="27" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
-    });
-  }
-  el.setAttribute("viewBox", "0 0 " + W + " " + H);
-  el.innerHTML = html;
-}
-function renderCompassRose(el, tok, hdg) {
-  const chopper = document.documentElement.classList.contains("theme-chopper");
-  const W = 400, H = chopper ? 140 : 120, cx = W / 2, cy = H / 2, r = chopper ? 54 : 44;
-  const fs = chopper ? 30 : 22;
-  let html = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + tok.dim + '" stroke-width="' + (chopper ? 2 : 1.5) + '"/>';
-  if (hdg != null && !isNaN(hdg)) {
-    [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
-      const a2 = (d[1] - hdg) * Math.PI / 180;
-      const x = cx + Math.sin(a2) * r;
-      const y = cy - Math.cos(a2) * r;
-      const near = Math.abs((d[1] - hdg + 540) % 360 - 180) < 18;
-      html += '<text x="' + x.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="' + fs + '" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
-    });
-    const a = -hdg * Math.PI / 180;
-    html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.sin(a) * (r - 10)).toFixed(1) + '" y2="' + (cy - Math.cos(a) * (r - 10)).toFixed(1) + '" stroke="' + tok.accent + '" stroke-width="' + (chopper ? 4 : 3) + '"/>';
-  }
-  el.setAttribute("viewBox", "0 0 " + W + " " + H);
-  el.innerHTML = html;
-}
-function renderVisualFrame() {
-  renderCompass();
-  renderPathway();
-}
-var _pathLastS, _pathSkipFrames, PROFILE_GAP;
-var init_render = __esm({
-  "js/render.js"() {
-    init_state();
-    init_util();
-    init_geo();
-    init_gps();
-    init_route();
-    init_roundabout();
-    init_fuel();
-    init_route();
-    init_route_geometry();
-    init_snap_quality();
-    init_nav_constants();
-    init_elevation();
-    init_curve_speed();
-    init_theme_tokens();
-    init_crossings();
-    _pathLastS = null;
-    _pathSkipFrames = 0;
-    PROFILE_GAP = 6;
-  }
-});
-
-// js/vintage-vfd.js
-function initVintageVfd() {
-  document.addEventListener("themechange", syncVintageVfdDomClasses);
-  syncVintageVfdDomClasses();
-}
-function syncVintageVfdDomClasses() {
-  const vintage = document.documentElement.classList.contains("theme-vintage");
-  const speedVal = $2("v-speed");
-  const speedGhost = $2("speed-ghost");
-  const mdistInner = document.querySelector(".mdist-inner");
-  if (speedVal) speedVal.classList.toggle("vfd-emissive-cyan", vintage);
-  if (speedGhost && vintage) speedGhost.textContent = "888";
-  if (mdistInner) mdistInner.classList.toggle("vfd-emissive-cyan", vintage);
-}
-function resetVintageVfd() {
-}
-var init_vintage_vfd = __esm({
-  "js/vintage-vfd.js"() {
-    init_util();
-  }
-});
-
-// js/settings-telemetry.js
-function logSettingsEvent(type, data) {
-  const rec = { ts: Date.now(), type, ...data || {} };
-  try {
-    const arr = JSON.parse(localStorage.getItem(RING_KEY) || "[]");
-    arr.push(rec);
-    if (arr.length > RING_MAX) arr.splice(0, arr.length - RING_MAX);
-    localStorage.setItem(RING_KEY, JSON.stringify(arr));
-  } catch (e) {
-  }
-  try {
-    if (telemetry_default.isActive?.()) telemetry_default.log("settings", { subtype: type, ...data });
-  } catch (e) {
-  }
-}
-var RING_KEY, RING_MAX;
-var init_settings_telemetry = __esm({
-  "js/settings-telemetry.js"() {
-    init_telemetry();
-    RING_KEY = "moto-hud-settings-events";
-    RING_MAX = 200;
-  }
-});
-
-// js/settings-presets.js
-function setOptDom(id, value) {
-  const el = $2(id);
-  if (!el) return;
-  if (el.type === "checkbox") el.checked = !!value;
-  else el.value = String(value);
-}
-function applyPresetToDom(presetId) {
-  const p = PRESETS2[presetId];
-  if (!p) return false;
-  for (const [id, val] of Object.entries(p.values)) setOptDom(id, val);
-  return true;
-}
-function getPresetLabel(presetId) {
-  return PRESETS2[presetId]?.label || presetId;
-}
-function initSettingsPresets(onApplied) {
-  document.querySelectorAll("[data-preset]").forEach((btn) => {
-    if (btn.dataset.bound) return;
-    btn.dataset.bound = "1";
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-preset");
-      const p = PRESETS2[id];
-      if (!p) return;
-      if (!confirm("\u0417\u0430\u043C\u0435\u043D\u0438\u0442\u044C \u0442\u0435\u043A\u0443\u0449\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043F\u0440\u0435\u0441\u0435\u0442\u043E\u043C \xAB" + p.label + "\xBB?")) return;
-      applyPresetToDom(id);
-      try {
-        localStorage.setItem("moto-hud-preset-applied", id);
-      } catch (e) {
-      }
-      logSettingsEvent("preset_apply", { preset: id });
-      if (typeof onApplied === "function") onApplied(id);
-    });
-  });
-}
-var PRESETS2;
-var init_settings_presets = __esm({
-  "js/settings-presets.js"() {
-    init_util();
-    init_settings_telemetry();
-    PRESETS2 = {
-      city: {
-        label: "\u0413\u043E\u0440\u043E\u0434",
-        values: {
-          "opt-voice": true,
-          "opt-cams": true,
-          "opt-back-only": true,
-          "opt-path": false,
-          "opt-crossings": true,
-          "opt-elev-profile": false,
-          "opt-curve-warn": true,
-          "opt-curve-strict": "strict",
-          "opt-limit": 60,
-          "opt-cam-speed-tol": 10,
-          "opt-hud-status-mode": "tap",
-          "opt-hud-finish-mode": "tap"
-        }
-      },
-      highway: {
-        label: "\u0422\u0440\u0430\u0441\u0441\u0430",
-        values: {
-          "opt-voice": true,
-          "opt-cams": true,
-          "opt-back-only": true,
-          "opt-path": true,
-          "opt-crossings": true,
-          "opt-elev-profile": false,
-          "opt-curve-warn": true,
-          "opt-curve-strict": "normal",
-          "opt-limit": 90,
-          "opt-cam-speed-tol": 15,
-          "opt-hud-status-mode": "tap",
-          "opt-hud-finish-mode": "always"
-        }
-      },
-      tour: {
-        label: "\u0422\u0443\u0440",
-        values: {
-          "opt-voice": true,
-          "opt-cams": true,
-          "opt-back-only": false,
-          "opt-path": true,
-          "opt-crossings": true,
-          "opt-elev-profile": true,
-          "opt-curve-warn": true,
-          "opt-curve-strict": "relaxed",
-          "opt-limit": 90,
-          "opt-cam-speed-tol": 20,
-          "opt-hud-status-mode": "tap",
-          "opt-hud-finish-mode": "tap"
-        }
-      }
-    };
-  }
-});
-
-// js/sun-mode.js
-function sunTimes(lat, lon, date = /* @__PURE__ */ new Date()) {
-  const zenith = 90.833;
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
-  const lngHour = lon / 15;
-  function calc(isSunrise) {
-    const t = isSunrise ? dayOfYear + (6 - lngHour) / 24 : dayOfYear + (18 - lngHour) / 24;
-    const M = 0.9856 * t - 3.289;
-    let L6 = M + 1.916 * Math.sin(M * Math.PI / 180) + 0.02 * Math.sin(2 * M * Math.PI / 180) + 282.634;
-    L6 = (L6 % 360 + 360) % 360;
-    let RA = Math.atan(0.91764 * Math.tan(L6 * Math.PI / 180)) * 180 / Math.PI;
-    RA = (RA % 360 + 360) % 360;
-    const Lq = Math.floor(L6 / 90) * 90;
-    const Rq = Math.floor(RA / 90) * 90;
-    RA = (RA + (Lq - Rq)) / 15;
-    const sinDec = 0.39782 * Math.sin(L6 * Math.PI / 180);
-    const cosDec = Math.cos(Math.asin(sinDec));
-    const cosH = (Math.cos(zenith * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
-    if (cosH > 1 || cosH < -1) {
-      return isSunrise ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0) : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 18, 0, 0);
-    }
-    let H = Math.acos(cosH) * 180 / Math.PI / 15;
-    if (!isSunrise) H = 24 - H;
-    const T = H + RA - 0.06571 * t - 6.622;
-    let ut = T - lngHour;
-    ut = (ut % 24 + 24) % 24;
-    const h = Math.floor(ut);
-    const m = Math.floor((ut - h) * 60);
-    const s2 = Math.floor(((ut - h) * 60 - m) * 60);
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, s2);
-  }
-  return { sunrise: calc(true), sunset: calc(false) };
-}
-function resolveDisplayMode(pref, pos, now = /* @__PURE__ */ new Date()) {
-  if (pref === "day") return "day";
-  if (pref === "night") return "night";
-  const lat = pos?.lat;
-  const lon = pos?.lon;
-  if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
-    const { sunrise, sunset } = sunTimes(lat, lon, now);
-    const dawn = sunrise.getTime() + HYST_MS;
-    const dusk = sunset.getTime() - HYST_MS;
-    const ts = now.getTime();
-    let target = ts >= dawn && ts < dusk ? "day" : "night";
-    if (target !== _lastResolved && ts - _lastSwitchTs < HYST_MS) {
-      return _lastResolved;
-    }
-    if (target !== _lastResolved) {
-      _lastResolved = target;
-      _lastSwitchTs = ts;
-    }
-    return target;
-  }
-  const h = now.getHours() + now.getMinutes() / 60;
-  return h >= 7 && h < 21 ? "day" : "night";
-}
-function resetModeHysteresis() {
-  _lastResolved = "night";
-  _lastSwitchTs = 0;
-}
-var HYST_MS, _lastResolved, _lastSwitchTs;
-var init_sun_mode = __esm({
-  "js/sun-mode.js"() {
-    HYST_MS = 20 * 60 * 1e3;
-    _lastResolved = "night";
-    _lastSwitchTs = 0;
-  }
-});
-
-// js/theme-manager.js
-function loadThemePrefs() {
-  try {
-    const raw = localStorage.getItem(THEME_STORAGE_KEY);
-    if (!raw) return { theme: "avionics", modePref: "night" };
-    const o = JSON.parse(raw);
-    return {
-      theme: THEME_IDS.includes(o.theme) ? o.theme : "avionics",
-      modePref: MODE_PREFS.includes(o.modePref) ? o.modePref : "night"
-    };
-  } catch (e) {
-    return { theme: "avionics", modePref: "night" };
-  }
-}
-function saveThemePrefs(prefs) {
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(prefs));
-  } catch (e) {
-  }
-}
-function applyTheme(theme, modePref, save = true) {
-  const html = document.documentElement;
-  THEME_IDS.forEach((id) => html.classList.remove("theme-" + id));
-  const tid = THEME_IDS.includes(theme) ? theme : "avionics";
-  html.classList.add("theme-" + tid);
-  const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
-  const mode = resolveDisplayMode(modePref, pos);
-  html.setAttribute("data-mode", mode);
-  if (save) saveThemePrefs({ theme: tid, modePref });
-  applyThemeCss();
-  syncThemeControls(tid, modePref);
-  updateModeButtonLabel(modePref, mode);
-  if ($3("hud")?.classList.contains("on")) renderVisualFrame();
-  syncVintageVfdDomClasses();
-}
-function $3(id) {
-  return document.getElementById(id);
-}
-function syncThemeControls(theme, modePref) {
-  const sel = $3("opt-theme");
-  if (sel) sel.value = theme;
-  const mDay = $3("opt-mode-day");
-  const mNight = $3("opt-mode-night");
-  const mAuto = $3("opt-mode-auto");
-  if (mDay) mDay.checked = modePref === "day";
-  if (mNight) mNight.checked = modePref === "night";
-  if (mAuto) mAuto.checked = modePref === "auto";
-}
-function updateModeButtonLabel(modePref, resolved) {
-  const btn = $3("btn-mode");
-  if (!btn) return;
-  const lbl = btn.querySelector(".cb-lbl");
-  if (!lbl) return;
-  if (modePref === "auto") {
-    lbl.textContent = resolved === "day" ? "\u0410\u0412\u0422\u041E\u2600" : "\u0410\u0412\u0422\u041E\u{1F319}";
-  } else if (modePref === "day") {
-    lbl.textContent = "\u0414\u0415\u041D\u042C";
-  } else {
-    lbl.textContent = "\u041D\u041E\u0427\u042C";
-  }
-}
-function tickAutoMode() {
-  const cur = loadThemePrefs();
-  if (cur.modePref !== "auto") return;
-  const now = Date.now();
-  if (now - _lastAutoCheck < 3e4) return;
-  _lastAutoCheck = now;
-  const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
-  const mode = resolveDisplayMode("auto", pos);
-  const html = document.documentElement;
-  if (html.getAttribute("data-mode") !== mode) {
-    html.setAttribute("data-mode", mode);
-    invalidateThemeTokens();
-    applyThemeCss();
-    updateModeButtonLabel("auto", mode);
-    if ($3("hud")?.classList.contains("on")) renderVisualFrame();
-  } else {
-    updateModeButtonLabel("auto", mode);
-  }
-}
-function themeLabel(id) {
-  return LABELS[id] || id;
-}
-function initThemeManager() {
-  const cur = loadThemePrefs();
-  applyTheme(cur.theme, cur.modePref, false);
-  $3("opt-theme")?.addEventListener("change", (e) => {
-    applyTheme(e.target.value, loadThemePrefs().modePref);
-  });
-  ["opt-mode-day", "opt-mode-night", "opt-mode-auto"].forEach((id) => {
-    $3(id)?.addEventListener("change", (e) => {
-      if (!e.target.checked) return;
-      const mode = id.replace("opt-mode-", "");
-      if (mode !== "auto") resetModeHysteresis();
-      applyTheme(loadThemePrefs().theme, mode);
-    });
-  });
-}
-var THEME_STORAGE_KEY, THEME_IDS, MODE_PREFS, LABELS, _lastAutoCheck;
-var init_theme_manager = __esm({
-  "js/theme-manager.js"() {
-    init_state();
-    init_theme();
-    init_sun_mode();
-    init_render();
-    init_vintage_vfd();
-    THEME_STORAGE_KEY = "moto-hud-theme";
-    THEME_IDS = ["avionics", "hitech", "space", "sport", "chopper", "vintage"];
-    MODE_PREFS = ["day", "night", "auto"];
-    LABELS = {
-      avionics: "\u0410\u0432\u0438\u043E\u043D\u0438\u043A\u0430",
-      hitech: "\u0425\u0430\u0439\u0442\u0435\u043A",
-      space: "\u041A\u043E\u0441\u043C\u043E\u0441",
-      sport: "\u0421\u043F\u043E\u0440\u0442",
-      chopper: "\u0427\u043E\u043F\u043F\u0435\u0440",
-      vintage: "\u0412\u0438\u043D\u0442\u0430\u0436"
-    };
-    _lastAutoCheck = 0;
-  }
-});
-
-// js/settings-export.js
-function collectSettingsBundle() {
-  const read = (key) => {
-    try {
-      return JSON.parse(localStorage.getItem(key) || "null");
-    } catch (e) {
-      return null;
-    }
-  };
-  return {
-    kind: SETTINGS_BUNDLE_KIND,
-    version: SETTINGS_BUNDLE_VERSION,
-    exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    appOpts: read(APP_OPTS_KEY),
-    hudOpts: read(HUD_OPTS_KEY),
-    elevOpts: read(ELEV_OPTS_KEY),
-    curveOpts: read(CURVE_OPTS_KEY),
-    theme: read(THEME_STORAGE_KEY),
-    fuelProxy: localStorage.getItem(FUEL_PROXY_LS_KEY) || ""
-  };
-}
-function applySettingsBundle(data) {
-  if (!data || data.kind !== SETTINGS_BUNDLE_KIND) throw new Error("\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u0430\u0439\u043B \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A");
-  const write = (key, val) => {
-    if (val == null) return;
-    localStorage.setItem(key, JSON.stringify(val));
-  };
-  write(APP_OPTS_KEY, data.appOpts);
-  write(HUD_OPTS_KEY, data.hudOpts);
-  write(ELEV_OPTS_KEY, data.elevOpts);
-  write(CURVE_OPTS_KEY, data.curveOpts);
-  write(THEME_STORAGE_KEY, data.theme);
-  if (data.fuelProxy != null && data.fuelProxy !== "") {
-    localStorage.setItem(FUEL_PROXY_LS_KEY, String(data.fuelProxy));
-  } else {
-    localStorage.removeItem(FUEL_PROXY_LS_KEY);
-  }
-}
-function clearAllSettings() {
-  [APP_OPTS_KEY, HUD_OPTS_KEY, ELEV_OPTS_KEY, CURVE_OPTS_KEY, THEME_STORAGE_KEY, FUEL_PROXY_LS_KEY].forEach((k) => {
-    try {
-      localStorage.removeItem(k);
-    } catch (e) {
-    }
-  });
-}
-function downloadSettingsJson() {
-  const blob = new Blob(
-    [JSON.stringify(collectSettingsBundle(), null, 2)],
-    { type: "application/json;charset=utf-8" }
-  );
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "moto-hud-settings.json";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-var SETTINGS_BUNDLE_KIND, SETTINGS_BUNDLE_VERSION;
-var init_settings_export = __esm({
-  "js/settings-export.js"() {
-    init_state();
-    init_theme_manager();
-    init_fuel_config();
-    SETTINGS_BUNDLE_KIND = "moto-hud-settings";
-    SETTINGS_BUNDLE_VERSION = 1;
-  }
-});
-
-// js/settings-ui.js
-function openSettingsPanel() {
-  const setup = $2("setup");
-  const drawer = $2("drawer-opts");
-  if (!setup || !drawer) return;
-  setup.style.display = "block";
-  setup.style.zIndex = "40";
-  drawer.open = true;
-  requestAnimationFrame(() => {
-    drawer.scrollIntoView({ behavior: "smooth", block: "start" });
-    const core = drawer.querySelector('[data-section="core"]');
-    if (core) core.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  });
-  logSettingsEvent("panel_open", { from: $2("hud")?.classList.contains("on") ? "hud" : "setup" });
-}
-function readSectionState() {
-  try {
-    const raw = localStorage.getItem(SECTIONS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) {
-    return {};
-  }
-}
-function saveSectionOpen(id, open) {
-  const o = readSectionState();
-  o[id] = !!open;
-  try {
-    localStorage.setItem(SECTIONS_KEY, JSON.stringify(o));
-  } catch (e) {
-  }
-}
-function applySectionState() {
-  const state = readSectionState();
-  document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
-    const id = det.getAttribute("data-section");
-    if (id && state[id] != null) det.open = !!state[id];
-  });
-}
-function syncAriaExpanded(el) {
-  if (!el) return;
-  const open = el.tagName === "DETAILS" ? el.open : el.classList.contains("open");
-  el.setAttribute("aria-expanded", open ? "true" : "false");
-}
-function bindSectionPersistence() {
-  document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
-    syncAriaExpanded(det);
-    det.addEventListener("toggle", () => {
-      const id = det.getAttribute("data-section");
-      if (!id) return;
-      saveSectionOpen(id, det.open);
-      syncAriaExpanded(det);
-      if (det.open) logSettingsEvent("section_open", { section: id });
-    });
-  });
-  const main = $2("drawer-opts");
-  if (main) {
-    syncAriaExpanded(main);
-    main.addEventListener("toggle", () => {
-      syncAriaExpanded(main);
-      if (main.open) logSettingsEvent("drawer_open", {});
-    });
-  }
-}
-function updateDevSectionVisible() {
-  let on = false;
-  try {
-    on = localStorage.getItem(DEV_KEY) === "1";
-  } catch (e) {
-  }
-  if (new URLSearchParams(location.search).get("dev") === "1") on = true;
-  document.documentElement.classList.toggle("dev-mode", on);
-  const dev = $2("opts-dev-section");
-  if (dev) dev.classList.toggle("hidden", !on);
-}
-function bindDevModeEasterEgg() {
-  let taps = 0;
-  let lastTap = 0;
-  const el = $2(DEV_TAP_TARGET);
-  if (!el) return;
-  el.addEventListener("click", () => {
-    const now = Date.now();
-    if (now - lastTap > 2500) taps = 0;
-    lastTap = now;
-    taps++;
-    if (taps >= DEV_TAPS_NEEDED) {
-      taps = 0;
-      try {
-        localStorage.setItem(DEV_KEY, "1");
-      } catch (e) {
-      }
-      updateDevSectionVisible();
-      logSettingsEvent("dev_mode_on", {});
-    }
-  });
-}
-function bindOptChangeLogging() {
-  const root = $2("drawer-opts");
-  if (!root) return;
-  root.querySelectorAll("input, select").forEach((el) => {
-    if (!el.id || !el.id.startsWith("opt-")) return;
-    const ev = el.type === "checkbox" || el.type === "radio" ? "change" : "change";
-    el.addEventListener(ev, () => {
-      const val = el.type === "checkbox" ? el.checked : el.value;
-      logSettingsEvent("opt_change", { optId: el.id, value: val });
-    });
-  });
-}
-function bindMigrationBanner() {
-  const banner = $2("opts-migration-banner");
-  if (!banner) return;
-  let seen = false;
-  try {
-    seen = localStorage.getItem(MIGRATION_KEY) === "1";
-  } catch (e) {
-  }
-  if (!seen) banner.classList.remove("hidden");
-  $2("opts-migration-dismiss")?.addEventListener("click", () => {
-    banner.classList.add("hidden");
-    try {
-      localStorage.setItem(MIGRATION_KEY, "1");
-    } catch (e) {
-    }
-  });
-  $2("opts-migration-show")?.addEventListener("click", () => {
-    openSettingsPanel();
-    banner.classList.add("hidden");
-    try {
-      localStorage.setItem(MIGRATION_KEY, "1");
-    } catch (e) {
-    }
-  });
-}
-function initSettingsUi(reloadAllOpts, persistFromDom2) {
-  applySectionState();
-  bindSectionPersistence();
-  bindDevModeEasterEgg();
-  updateDevSectionVisible();
-  bindOptChangeLogging();
-  bindSettingsDataActions(reloadAllOpts);
-  bindMigrationBanner();
-  document.querySelectorAll(".setup-details").forEach((det) => {
-    syncAriaExpanded(det);
-    det.addEventListener("toggle", () => syncAriaExpanded(det));
-  });
-  initSettingsPresets(() => {
-    if (typeof persistFromDom2 === "function") persistFromDom2();
-  });
-}
-function bindSettingsDataActions(reloadAllOpts) {
-  $2("btn-settings-export")?.addEventListener("click", () => {
-    downloadSettingsJson();
-    logSettingsEvent("settings_export", {});
-  });
-  $2("btn-settings-import")?.addEventListener("click", () => $2("settings-import-file")?.click());
-  $2("settings-import-file")?.addEventListener("change", async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    try {
-      const text = await file.text();
-      applySettingsBundle(JSON.parse(text));
-      if (typeof reloadAllOpts === "function") reloadAllOpts();
-      logSettingsEvent("settings_import", {});
-      alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u044B");
-    } catch (err) {
-      alert("\u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043C\u043F\u043E\u0440\u0442\u0430: " + (err.message || err));
-    }
-  });
-  $2("btn-settings-reset")?.addEventListener("click", () => {
-    if (!confirm("\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u0441\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A \u0437\u0430\u0432\u043E\u0434\u0441\u043A\u0438\u043C?")) return;
-    clearAllSettings();
-    if (typeof reloadAllOpts === "function") reloadAllOpts();
-    logSettingsEvent("settings_reset", {});
-    alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B. \u041F\u0440\u0438 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E\u0441\u0442\u0438 \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443.");
-  });
-}
-var SECTIONS_KEY, DEV_KEY, MIGRATION_KEY, DEV_TAP_TARGET, DEV_TAPS_NEEDED;
-var init_settings_ui = __esm({
-  "js/settings-ui.js"() {
-    init_util();
-    init_settings_telemetry();
-    init_settings_presets();
-    init_settings_export();
-    SECTIONS_KEY = "moto-hud-opts-sections";
-    DEV_KEY = "moto-hud-dev-mode";
-    MIGRATION_KEY = "moto-hud-opts-migration-seen";
-    DEV_TAP_TARGET = "help-app-version";
-    DEV_TAPS_NEEDED = 7;
-  }
-});
-
-// js/app-opts.js
-function loadAppOptsFromStorage() {
-  try {
-    const raw = localStorage.getItem(APP_OPTS_KEY);
-    if (!raw) return;
-    const o = JSON.parse(raw);
-    const setCheck = (id, v) => {
-      if (typeof v !== "boolean") return;
-      const el = $2(id);
-      if (el) el.checked = v;
-    };
-    const setVal = (id, v) => {
-      if (v == null) return;
-      const el = $2(id);
-      if (el) el.value = String(v);
-    };
-    setCheck("opt-voice", o.voice);
-    setCheck("opt-path", o.showPath);
-    setCheck("opt-crossings", o.showCrossingContext);
-    setCheck("opt-path-chevrons", o.showPathChevrons !== false);
-    setCheck("opt-chevron-labels", o.pathChevronLabels !== false);
-    setVal("opt-chevron-max", o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
-    setCheck("opt-heading", o.showCompass);
-    setCheck("opt-cams", o.cams);
-    setCheck("opt-back-only", o.backOnly);
-    setVal("opt-tol", o.tolerance);
-    setVal("opt-nodir", o.noDirPolicy);
-    setVal("opt-limit", o.userDefaultLimit ?? o.limit);
-    if (o.userDefaultLimit != null || o.limit != null) {
-      S.userDefaultLimit = o.userDefaultLimit ?? o.limit ?? 60;
-    }
-    if (typeof o.speedLimitDynamic === "boolean") S.speedLimitDynamic = o.speedLimitDynamic;
-    if (o.speedLimitFallback) S.speedLimitFallback = o.speedLimitFallback;
-    setCheck("opt-speed-limit-dynamic", o.speedLimitDynamic !== false);
-    setVal("opt-speed-limit-fallback", o.speedLimitFallback || "user-default");
-    setCheck("opt-roundabout-schema", o.roundaboutSchema !== false);
-    if (typeof o.roundaboutSchema === "boolean") S.roundaboutSchema = o.roundaboutSchema;
-    setVal("opt-cam-speed-tol", o.camSpeedTol != null ? o.camSpeedTol : DEFAULT_CAM_SPEED_TOL);
-  } catch (e) {
-  }
-}
-function saveAppOptsToStorage() {
-  try {
-    localStorage.setItem(APP_OPTS_KEY, JSON.stringify({
-      voice: !!S.voice,
-      showPath: !!S.showPath,
-      showCrossingContext: S.showCrossingContext !== false,
-      showPathChevrons: S.showPathChevrons !== false,
-      pathChevronLabels: S.pathChevronLabels !== false,
-      pathChevronMax: S.pathChevronMax,
-      showCompass: !!S.showCompass,
-      cams: !!S.cams,
-      backOnly: !!S.backOnly,
-      tolerance: S.tolerance,
-      noDirPolicy: S.noDirPolicy,
-      limit: S.userDefaultLimit,
-      userDefaultLimit: S.userDefaultLimit,
-      speedLimitDynamic: S.speedLimitDynamic !== false,
-      speedLimitFallback: S.speedLimitFallback,
-      roundaboutSchema: S.roundaboutSchema !== false,
-      camSpeedTol: S.camSpeedTol
-    }));
-  } catch (e) {
-  }
-}
-var init_app_opts = __esm({
-  "js/app-opts.js"() {
-    init_state();
-    init_util();
-  }
-});
-
-// js/hud-chrome.js
-function normalizeChromeMode(v) {
-  return v === "always" || v === "off" ? v : "tap";
-}
-function chromeShown(mode) {
-  const m = normalizeChromeMode(mode);
-  if (m === "off") return false;
-  if (m === "always") return true;
-  return $2("hud")?.classList.contains("chrome-reveal");
-}
-function revealHudChrome() {
-  const hud = $2("hud");
-  if (!hud?.classList.contains("on")) return;
-  hud.classList.add("chrome-reveal");
-  applyHudChrome();
-  clearTimeout(_revealTimer);
-  _revealTimer = setTimeout(() => {
-    hud.classList.remove("chrome-reveal");
-    applyHudChrome();
-  }, HUD_CHROME_TAP_MS);
-}
-function onHudTap() {
-  revealHudChrome();
-}
-function clearHudChromeReveal() {
-  clearTimeout(_revealTimer);
-  _revealTimer = null;
-  $2("hud")?.classList.remove("chrome-reveal");
-  applyHudChrome();
-}
-function applyHudChrome() {
-  const hud = $2("hud");
-  if (!hud) return;
-  const reveal = hud.classList.contains("chrome-reveal");
-  const statusOn = chromeShown(S.hudStatusMode);
-  const finishFields = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
-  const finishOn = finishFields && chromeShown(S.hudFinishMode);
-  hud.classList.toggle("chrome-btns-on", reveal);
-  hud.classList.toggle("chrome-status-on", statusOn);
-  hud.classList.toggle("chrome-finish-on", finishOn);
-  const panel = $2("finish-info");
-  if (panel) {
-    panel.classList.toggle("hidden", !finishOn);
-    $2("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
-    $2("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
-    $2("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
-  }
-}
-function initHudChrome() {
-  if (_bound) return;
-  _bound = true;
-  applyHudChrome();
-}
-var HUD_CHROME_TAP_MS, _revealTimer, _bound;
-var init_hud_chrome = __esm({
-  "js/hud-chrome.js"() {
-    init_state();
-    init_util();
-    HUD_CHROME_TAP_MS = 15e3;
-    _revealTimer = null;
-    _bound = false;
-  }
-});
-
-// js/hud-opts.js
-function loadHudOptsFromStorage() {
-  try {
-    const raw = localStorage.getItem(HUD_OPTS_KEY);
-    if (!raw) return;
-    const o = JSON.parse(raw);
-    if (typeof o.showFinishDist === "boolean") {
-      const el = $("opt-finish-dist");
-      if (el) el.checked = o.showFinishDist;
-    }
-    if (typeof o.showFinishTime === "boolean") {
-      const el = $("opt-finish-time");
-      if (el) el.checked = o.showFinishTime;
-    }
-    if (typeof o.showFinishEta === "boolean") {
-      const el = $("opt-finish-eta");
-      if (el) el.checked = o.showFinishEta;
-    }
-    if (typeof o.fuelPlannerCount === "number") {
-      S.fuelPlannerCount = clampFuelPlannerCount(o.fuelPlannerCount);
-      const el = $("opt-fuel-count");
-      if (el) el.value = String(S.fuelPlannerCount);
-    }
-    if (o.hudStatusMode) {
-      S.hudStatusMode = normalizeChromeMode(o.hudStatusMode);
-      const el = $("opt-hud-status-mode");
-      if (el) el.value = S.hudStatusMode;
-    }
-    if (o.hudFinishMode) {
-      S.hudFinishMode = normalizeChromeMode(o.hudFinishMode);
-      const el = $("opt-hud-finish-mode");
-      if (el) el.value = S.hudFinishMode;
-    }
-  } catch (e) {
-  }
-}
-function clampFuelPlannerCount(n) {
-  return Math.max(MIN_FUEL_PLANNER_COUNT, Math.min(
-    MAX_FUEL_PLANNER_COUNT,
-    parseInt(n, 10) || DEFAULT_FUEL_PLANNER_COUNT
-  ));
-}
-function saveHudOptsToStorage() {
-  try {
-    localStorage.setItem(HUD_OPTS_KEY, JSON.stringify({
-      showFinishDist: !!S.showFinishDist,
-      showFinishTime: !!S.showFinishTime,
-      showFinishEta: !!S.showFinishEta,
-      hudStatusMode: normalizeChromeMode(S.hudStatusMode),
-      hudFinishMode: normalizeChromeMode(S.hudFinishMode),
-      fuelPlannerCount: clampFuelPlannerCount(S.fuelPlannerCount)
-    }));
-  } catch (e) {
-  }
-}
-var init_hud_opts = __esm({
-  "js/hud-opts.js"() {
-    init_state();
-    init_hud_chrome();
-  }
-});
-
-// js/hud-settings-sheet.js
-function isStationary() {
-  return (S.dispSpeed || 0) <= STATIONARY_KMH;
-}
-function showHudToast(msg) {
-  let el = $2("hud-settings-toast");
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "hud-settings-toast";
-    el.className = "hud-settings-toast";
-    $2("hud")?.appendChild(el);
-  }
-  el.textContent = msg;
-  el.classList.add("on");
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.classList.remove("on"), 2800);
-}
-function closeSheet() {
-  const sheet = $2("hud-settings-sheet");
-  sheet?.classList.remove("on");
-  if (sheet) sheet.setAttribute("aria-hidden", "true");
-}
-function closeHudSettingsSheet() {
-  closeSheet();
-}
-function syncSheetFromDom() {
-  const voice = $2("hud-opt-voice");
-  const cams = $2("hud-opt-cams");
-  if (voice) voice.checked = !!$2("opt-voice")?.checked;
-  if (cams) cams.checked = !!$2("opt-cams")?.checked;
-  const cur = loadThemePrefs();
-  document.querySelectorAll(".hud-theme-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.theme === cur.theme);
-  });
-}
-function persistFromDom(syncOptionsFromDom2) {
-  if (typeof syncOptionsFromDom2 === "function") syncOptionsFromDom2();
-  saveAppOptsToStorage();
-  saveHudOptsToStorage();
-  saveElevOptsToStorage();
-  saveCurveOptsToStorage();
-  applyHudChrome();
-}
-function openSheet() {
-  const sheet = $2("hud-settings-sheet");
-  if (!sheet) return;
-  syncSheetFromDom();
-  sheet.classList.add("on");
-  sheet.setAttribute("aria-hidden", "false");
-  logSettingsEvent("hud_sheet_open", {});
-}
-function handleHudGearClick(syncOptionsFromDom2) {
-  if (!isStationary()) {
-    showHudToast("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u2014 \u043D\u0430 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0435");
-    logSettingsEvent("hud_sheet_blocked", { speed: Math.round(S.dispSpeed || 0) });
-    return;
-  }
-  openSheet();
-  $2("hud-settings-sheet")._sync = syncOptionsFromDom2;
-}
-function bindHudThemeRow() {
-  const row = $2("hud-theme-row");
-  if (!row || row.dataset.bound) return;
-  row.dataset.bound = "1";
-  const cur = loadThemePrefs();
-  row.innerHTML = THEME_IDS.map(
-    (id) => '<button type="button" class="secondary hud-theme-btn' + (id === cur.theme ? " active" : "") + '" data-theme="' + id + '">' + themeLabel(id) + "</button>"
-  ).join("");
-  row.querySelectorAll(".hud-theme-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const theme = btn.getAttribute("data-theme");
-      if (!THEME_IDS.includes(theme)) return;
-      applyTheme(theme, loadThemePrefs().modePref);
-      row.querySelectorAll(".hud-theme-btn").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      logSettingsEvent("hud_sheet_change", { optId: "opt-theme", value: theme });
-    });
-  });
-}
-function initHudSettingsSheet(syncOptionsFromDom2) {
-  const sheet = $2("hud-settings-sheet");
-  if (!sheet || sheet.dataset.bound) return;
-  sheet.dataset.bound = "1";
-  sheet.setAttribute("aria-hidden", "true");
-  bindHudThemeRow();
-  $2("hud-settings-backdrop")?.addEventListener("click", closeSheet);
-  $2("hud-settings-close")?.addEventListener("click", closeSheet);
-  $2("hud-opt-voice")?.addEventListener("change", (e) => {
-    const main = $2("opt-voice");
-    if (main) main.checked = e.target.checked;
-    S.voice = e.target.checked;
-    saveAppOptsToStorage();
-    logSettingsEvent("hud_sheet_change", { optId: "opt-voice", value: S.voice });
-  });
-  $2("hud-opt-cams")?.addEventListener("change", (e) => {
-    const main = $2("opt-cams");
-    if (main) main.checked = e.target.checked;
-    S.cams = e.target.checked;
-    saveAppOptsToStorage();
-    logSettingsEvent("hud_sheet_change", { optId: "opt-cams", value: S.cams });
-  });
-  sheet.querySelectorAll(".hud-preset-btn[data-preset]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-preset");
-      if (!confirm("\u041F\u0440\u0435\u0441\u0435\u0442 \xAB" + getPresetLabel(id) + "\xBB?")) return;
-      applyPresetToDom(id);
-      persistFromDom(syncOptionsFromDom2);
-      syncSheetFromDom();
-      logSettingsEvent("hud_sheet_preset", { preset: id });
-    });
-  });
-  $2("hud-settings-full")?.addEventListener("click", () => {
-    closeSheet();
-    openSettingsPanel();
-  });
-}
-var STATIONARY_KMH, _toastTimer;
-var init_hud_settings_sheet = __esm({
-  "js/hud-settings-sheet.js"() {
-    init_state();
-    init_util();
-    init_settings_ui();
-    init_settings_presets();
-    init_app_opts();
-    init_hud_opts();
-    init_elevation();
-    init_curve_speed();
-    init_hud_chrome();
-    init_settings_telemetry();
-    init_theme_manager();
-    STATIONARY_KMH = 15;
-    _toastTimer = null;
-  }
-});
-
-// js/yandex-link.js
-var yandex_link_exports = {};
-__export(yandex_link_exports, {
-  YANDEX_PARSER_REV: () => YANDEX_PARSER_REV,
-  YANDEX_URL_RE: () => YANDEX_URL_RE,
-  extractYandexUrl: () => extractYandexUrl,
-  isYandexMapsUrl: () => isYandexMapsUrl,
-  parseYandexRouteLink: () => parseYandexRouteLink
-});
-function extractYandexUrl(text) {
-  const s2 = String(text || "").trim();
-  if (!s2) return null;
-  if (YANDEX_URL_RE.test(s2)) return s2.match(YANDEX_URL_RE)[0];
-  const m = s2.match(YANDEX_URL_RE);
-  return m ? m[0] : null;
-}
-function parseRtextPoint(part) {
-  const s2 = String(part || "").trim();
-  if (!s2) return null;
-  const coord = s2.match(/^(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)$/);
-  if (coord) {
-    const lat = parseFloat(coord[1]);
-    const lon = parseFloat(coord[2]);
-    if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon, label: s2 };
-  }
-  return null;
-}
-async function parseYandexRouteLink(rawUrl) {
-  let url = String(rawUrl || "").trim();
-  if (!url) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
-  if (!extractYandexUrl(url)) throw new Error("\u041D\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442");
-  if (SHORT_RE.test(url)) {
-    try {
-      const res = await fetch(url, { redirect: "follow", method: "HEAD", mode: "cors" });
-      if (res.url) url = res.url;
-    } catch {
-    }
-  }
-  const m = url.match(RTEXT_RE);
-  if (!m) throw new Error("\u0412 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (rtext). \u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB.");
-  const parts = decodeURIComponent(m[1]).split("~");
-  const waypoints = parts.map(parseRtextPoint).filter(Boolean);
-  if (waypoints.length < 2) throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652)");
-  return waypoints;
-}
-function isYandexMapsUrl(raw) {
-  return !!extractYandexUrl(raw);
-}
-var YANDEX_PARSER_REV, YANDEX_URL_RE, SHORT_RE, RTEXT_RE;
-var init_yandex_link = __esm({
-  "js/yandex-link.js"() {
-    YANDEX_PARSER_REV = 1;
-    YANDEX_URL_RE = /https?:\/\/(?:yandex\.ru|ya\.ru)\/maps[^\s"'<>]*/i;
-    SHORT_RE = /^https?:\/\/(?:yandex\.ru|ya\.ru)\/maps\/-/i;
-    RTEXT_RE = /[?&]rtext=([^&]+)/i;
-  }
-});
-
-// js/yandex-import.js
-function openDb2() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME2, DB_VER2);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains("imports")) {
-        db.createObjectStore("imports", { keyPath: "id" });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function saveYandexImportHistory(waypoints, mode) {
-  try {
-    const db = await openDb2();
-    const name = (waypoints[0]?.label || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442").split(/\s+/)[0].slice(0, 24);
-    await new Promise((resolve, reject) => {
-      const tx2 = db.transaction("imports", "readwrite");
-      tx2.objectStore("imports").put({
-        id: crypto.randomUUID(),
-        name,
-        ts: Date.now(),
-        mode,
-        waypointCount: waypoints.length
-      });
-      tx2.oncomplete = () => resolve();
-      tx2.onerror = () => reject(tx2.error);
-    });
-    db.close();
-  } catch (e) {
-    console.warn("yandex history:", e);
-  }
-}
-function waypointsToOsrmPoints(waypoints, gps) {
-  const pts = waypoints.map((w) => ({ lat: w.lat, lon: w.lon }));
-  if (gps && pts.length) {
-    if (haversine(gps, pts[0]) > 500) pts.unshift({ lat: gps.lat, lon: gps.lon });
-    else pts[0] = { lat: gps.lat, lon: gps.lon };
-  }
-  return pts;
-}
-function hideImportModal() {
-  $2("yandexImportModal")?.classList.remove("on");
-  _pendingWaypoints = null;
-  _pendingUrl = "";
-}
-function hideBanner() {
-  const banner = $2("yandex-banner");
-  banner?.classList.remove("on");
-  banner?.classList.add("hidden");
-}
-async function finishImport(mode) {
-  const wps = _pendingWaypoints;
-  const urlForInput = _pendingUrl;
-  if (!wps?.length) return;
-  hideImportModal();
-  hideBanner();
-  const status = $2("s-finish");
-  const btn = $2("btn-build-route");
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "\u23F3 \u0418\u043C\u043F\u043E\u0440\u0442\u2026";
-  }
-  if (status) {
-    status.textContent = mode === "direct" ? "\u23F3 \u0411\u044B\u0441\u0442\u0440\u044B\u0439 \u0441\u0442\u0430\u0440\u0442\u2026" : "\u23F3 \u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 OSRM\u2026";
-    status.className = "status";
-  }
-  try {
-    if (mode === "direct") {
-      attachRouteFromImport(buildDirectRouteFromWaypoints(wps), wps);
-    } else {
-      const pts = waypointsToOsrmPoints(wps, S.gps);
-      const route = await fetchRouteThroughWaypoints(pts);
-      attachRouteFromImport(route, pts);
-    }
-    const { refreshRouteUi: refreshRouteUi2 } = await Promise.resolve().then(() => (init_setup(), setup_exports));
-    refreshRouteUi2();
-    await saveYandexImportHistory(wps, mode);
-    telemetry_default.log("nav", { sub: "yandex_import", mode, n: wps.length });
-    if (status) {
-      status.textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442 \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB";
-      status.className = "status ok";
-    }
-    $2("finish-input").value = urlForInput || `${wps.length} \u0442\u043E\u0447\u0435\u043A \u042F\u043D\u0434\u0435\u043A\u0441`;
-  } catch (e) {
-    if (status) {
-      status.textContent = "\u274C " + (e.message || e);
-      status.className = "status err";
-    }
-  } finally {
-    if (btn) {
-      btn.disabled = !(S.gps && S.finish);
-      btn.textContent = "\u{1F5FA} \u041F\u043E\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442";
-    }
-  }
-}
-function offerYandexImport(waypoints, sourceUrl = "") {
-  _pendingWaypoints = waypoints;
-  _pendingUrl = sourceUrl || "";
-  const modal = $2("yandexImportModal");
-  const info = $2("yandex-import-info");
-  if (info) {
-    info.textContent = `\u0422\u043E\u0447\u0435\u043A: ${waypoints.length}. \u0414\u043B\u044F \u0442\u043E\u0447\u043D\u043E\u0433\u043E \u043F\u043E\u0432\u0442\u043E\u0440\u0435\u043D\u0438\u044F \u0433\u0435\u043E\u043C\u0435\u0442\u0440\u0438\u0438 \u042F\u043D\u0434\u0435\u043A\u0441\u0430 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0439\u0442\u0435 \u043F\u0440\u043E\u043C\u0435\u0436\u0443\u0442\u043E\u0447\u043D\u044B\u0435 \u0442\u043E\u0447\u043A\u0438 \u043A\u0430\u0436\u0434\u044B\u0435 3\u20135 \u043A\u043C \u2014 \u0438\u043D\u0430\u0447\u0435 OSRM \u043C\u043E\u0436\u0435\u0442 \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u0435 \u0434\u043E\u0440\u043E\u0433\u0438.`;
-  }
-  modal?.classList.add("on");
-}
-async function importYandexFromText(rawText) {
-  const { parseYandexRouteLink: parseYandexRouteLink2 } = await Promise.resolve().then(() => (init_yandex_link(), yandex_link_exports));
-  const url = extractYandexUrl(rawText) || rawText.trim();
-  const wps = await parseYandexRouteLink2(url);
-  offerYandexImport(wps, url);
-  return wps;
-}
-function showYandexBanner(message, onApply) {
-  const banner = $2("yandex-banner");
-  const msg = $2("yandex-banner-msg");
-  if (!banner) return;
-  if (msg) msg.textContent = message || "\u041D\u0430\u0439\u0434\u0435\u043D\u0430 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442";
-  banner.classList.remove("hidden");
-  banner.classList.add("on");
-  const applyBtn = $2("yandex-banner-apply");
-  const dismissBtn = $2("yandex-banner-dismiss");
-  const onOk = () => {
-    hideBanner();
-    onApply?.();
-  };
-  const onNo = () => hideBanner();
-  applyBtn?.replaceWith(applyBtn.cloneNode(true));
-  dismissBtn?.replaceWith(dismissBtn.cloneNode(true));
-  $2("yandex-banner-apply")?.addEventListener("click", onOk, { once: true });
-  $2("yandex-banner-dismiss")?.addEventListener("click", onNo, { once: true });
-}
-function initYandexImportUi() {
-  $2("yandex-import-direct")?.addEventListener("click", () => {
-    void finishImport("direct");
-  });
-  $2("yandex-import-routed")?.addEventListener("click", () => {
-    void finishImport("routed");
-  });
-  $2("yandex-import-cancel")?.addEventListener("click", hideImportModal);
-}
-var DB_NAME2, DB_VER2, _pendingWaypoints, _pendingUrl;
-var init_yandex_import = __esm({
-  "js/yandex-import.js"() {
-    init_state();
-    init_util();
-    init_geo();
-    init_route();
-    init_yandex_link();
-    init_telemetry();
-    DB_NAME2 = "moto-hud-yandex";
-    DB_VER2 = 1;
-    _pendingWaypoints = null;
-    _pendingUrl = "";
   }
 });
 
@@ -18673,12 +16373,2614 @@ var init_map_providers = __esm({
   }
 });
 
+// js/nav-map.js
+function livePos() {
+  return curPos() || S.gps;
+}
+function routeLatLngs() {
+  const route = S.route;
+  if (!route) return [];
+  if (route.geometry?.n > 1) return geometryToLatLngs(route.geometry);
+  return (route.coords || []).map((c) => [c[0], c[1]]);
+}
+function applyTiles() {
+  if (!_map) return;
+  const layers = resolveMapLayers(getMapProviderId());
+  if (_tileLayer) _map.removeLayer(_tileLayer);
+  if (_overlayLayer) {
+    _map.removeLayer(_overlayLayer);
+    _overlayLayer = null;
+  }
+  _tileLayer = import_leaflet.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map);
+  if (layers.overlay) {
+    _overlayLayer = import_leaflet.default.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map);
+  }
+}
+function ensureMap() {
+  const box = $2("nav-map-pane");
+  if (!box) return null;
+  if (!_map) {
+    box.innerHTML = "";
+    _map = import_leaflet.default.map(box, { zoomControl: false, attributionControl: false, preferCanvas: true });
+    applyTiles();
+    _routeLayer = import_leaflet.default.polyline([], { color: "#ffd400", weight: 6 }).addTo(_map);
+    _posMarker = import_leaflet.default.circleMarker([0, 0], {
+      radius: 8,
+      color: "#fff",
+      weight: 2,
+      fillColor: "#3399ff",
+      fillOpacity: 1,
+      interactive: false,
+      pane: "markerPane"
+    }).addTo(_map);
+    _finishMarker = import_leaflet.default.circleMarker([0, 0], {
+      radius: 7,
+      color: "#fff",
+      weight: 2,
+      fillColor: "#39d353",
+      fillOpacity: 1
+    }).addTo(_map);
+    _maneuverMarker = import_leaflet.default.circleMarker([0, 0], {
+      radius: 6,
+      color: "#000",
+      weight: 1,
+      fillColor: "#ffd400",
+      fillOpacity: 1
+    }).addTo(_map);
+  }
+  return _map;
+}
+function remainingLatLngs() {
+  const route = S.route;
+  if (!route?.geometry?.n) return routeLatLngs();
+  const snap = getNavSnap(S.smoothedHeading);
+  const s0 = snap?.s ?? 0;
+  return latLngsSliceByS(route.geometry, s0, route.geometry.s[route.geometry.n - 1]);
+}
+function fitOverview() {
+  const map = ensureMap();
+  if (!map) return;
+  const pts = remainingLatLngs();
+  const pos = curPos();
+  if (pos) pts.push([pos.lat, pos.lon]);
+  if (S.finish) pts.push([S.finish.lat, S.finish.lon]);
+  if (pts.length < 1) return;
+  map.fitBounds(import_leaflet.default.latLngBounds(pts).pad(0.12), { padding: [40, 40], animate: false });
+  _overviewFit = true;
+}
+function syncNavMap(mode) {
+  const map = ensureMap();
+  if (!map || !S.route) return;
+  map.invalidateSize();
+  if (typeof map.start === "function") map.start();
+  _routeLayer.setLatLngs(routeLatLngs());
+  const pos = livePos();
+  if (pos) {
+    _posMarker.setLatLng([pos.lat, pos.lon]);
+    if (typeof _posMarker.redraw === "function") _posMarker.redraw();
+  }
+  if (S.finish) _finishMarker.setLatLng([S.finish.lat, S.finish.lon]);
+  const nm = findNextManeuver();
+  if (nm?.step) {
+    _maneuverMarker.setLatLng([nm.step.lat, nm.step.lon]);
+    _maneuverMarker.setStyle({ opacity: 1, fillOpacity: 1 });
+  } else {
+    _maneuverMarker.setStyle({ opacity: 0, fillOpacity: 0 });
+  }
+  if (mode === "map_overview") {
+    if (!_overviewFit) fitOverview();
+  } else if (mode === "map_zoom" && pos) {
+    const now = Date.now();
+    if (now - _lastZoomPan > 2e3) {
+      map.setView([pos.lat, pos.lon], Math.max(map.getZoom(), 16), { animate: false });
+      _lastZoomPan = now;
+    } else {
+      map.panTo([pos.lat, pos.lon], { animate: false, noMoveStart: true });
+    }
+  }
+}
+function pauseNavMap() {
+  if (_map && typeof _map.stop === "function") _map.stop();
+  _overviewFit = false;
+}
+function destroyNavMap() {
+  pauseNavMap();
+  if (_map) {
+    _map.remove();
+    _map = null;
+    _tileLayer = null;
+    _routeLayer = null;
+    _posMarker = null;
+    _finishMarker = null;
+    _maneuverMarker = null;
+  }
+  const box = $2("nav-map-pane");
+  if (box) box.innerHTML = "";
+}
+function tickNavMap(opts = {}) {
+  if (S.viewMode === "hud" || !S.route || !$2("hud")?.classList.contains("on")) return;
+  const force = opts.force === true;
+  const now = Date.now();
+  if (!force && now - _lastMapSync < 120) return;
+  _lastMapSync = now;
+  syncNavMap(S.viewMode);
+}
+var import_leaflet, _map, _tileLayer, _overlayLayer, _routeLayer, _posMarker, _finishMarker, _maneuverMarker, _overviewFit, _lastZoomPan, _lastMapSync;
+var init_nav_map = __esm({
+  "js/nav-map.js"() {
+    import_leaflet = __toESM(require_leaflet_src());
+    init_state();
+    init_util();
+    init_gps();
+    init_route_geometry();
+    init_map_providers();
+    init_route();
+    _map = null;
+    _tileLayer = null;
+    _overlayLayer = null;
+    _routeLayer = null;
+    _posMarker = null;
+    _finishMarker = null;
+    _maneuverMarker = null;
+    _overviewFit = false;
+    _lastZoomPan = 0;
+    _lastMapSync = 0;
+  }
+});
+
+// js/converge-telemetry.js
+function r22(n) {
+  if (n == null || !Number.isFinite(n)) return null;
+  return Math.round(n * 100) / 100;
+}
+function hudOn() {
+  try {
+    return !!$2("hud")?.classList.contains("on");
+  } catch (e) {
+    return false;
+  }
+}
+function phase() {
+  if (typeof document !== "undefined" && document.visibilityState === "hidden") return "background";
+  return hudOn() ? "riding" : "setup";
+}
+function spdKmh(fix) {
+  const mps = fix?.speed ?? S.gps?.speed;
+  if (mps == null || !Number.isFinite(mps) || mps < 0) return 0;
+  return mps * 3.6;
+}
+function fixAgeMs(fix) {
+  const ts = fix?.ts ?? S.gps?.ts;
+  if (!ts) return null;
+  return Math.max(0, Date.now() - ts);
+}
+function buildContext(fix, bufStats, snap) {
+  return {
+    hud_on: hudOn(),
+    phase: phase(),
+    acc: r22(fix?.acc ?? S.gps?.acc),
+    spd_kmh: r22(spdKmh(fix)),
+    buf_len: bufStats?.buf_len ?? null,
+    buf_acc_max: bufStats?.buf_acc_max ?? null,
+    fix_age_ms: fixAgeMs(fix),
+    snap_quality: snap?.quality ?? S.snapQuality ?? null,
+    lat_off: snap?.lateral != null ? r22(snap.lateral) : null,
+    re_converge: !!bufStats?.re_converge,
+    gps_fix_count: S.gpsFixCount ?? null,
+    had_route: !!S.route?.coords?.length,
+    off_route_state: S.offRouteState || null
+  };
+}
+function logTransition(from, to, reason, extra, fix, bufStats, snap) {
+  if (!telemetry_default.isActive?.()) return;
+  telemetry_default.log("nav", {
+    sub: "converge_transition",
+    from,
+    to,
+    reason,
+    ...buildContext(fix, bufStats, snap),
+    ...extra
+  });
+}
+function onBlockedStart() {
+  const now = Date.now();
+  if (!_blockedSince) _blockedSince = now;
+  if (!_currentBlockedStreakStart) _currentBlockedStreakStart = now;
+}
+function onBlockedEnd() {
+  if (_currentBlockedStreakStart) {
+    const streak = Date.now() - _currentBlockedStreakStart;
+    _blockedTotalMs += streak;
+    if (streak > _maxBlockedStreakMs) _maxBlockedStreakMs = streak;
+    _currentBlockedStreakStart = 0;
+    _blockedSince = 0;
+  }
+}
+function resetConvergeTelemetryRide() {
+  _rideStartWall = Date.now();
+  _firstConvergeLogged = false;
+  _hadConverged = false;
+  _blockedSince = 0;
+  _blockedTotalMs = 0;
+  _blockedMovingMs = 0;
+  _lastBlockedTick = 0;
+  _maxBlockedStreakMs = 0;
+  _currentBlockedStreakStart = 0;
+  _falseEvents = 0;
+  _invalidateAcc = 0;
+  _invalidateLost = 0;
+  _reConvergeCount = 0;
+}
+function noteConvergeTransition(from, to, reason, extra, fix, bufStats, snap) {
+  if (from === to) return;
+  if (to === false) {
+    _falseEvents++;
+    if (reason === "invalidate_acc") _invalidateAcc++;
+    if (reason === "invalidate_lost") _invalidateLost++;
+    if (_hadConverged && (reason === "invalidate_acc" || reason === "invalidate_lost" || reason === "invalidate_error")) {
+      _reConvergeCount++;
+    }
+    if (hudOn()) onBlockedStart();
+  } else {
+    if (bufStats?.re_converge) _reConvergeCount++;
+    _hadConverged = true;
+    onBlockedEnd();
+    _blockedSince = 0;
+    if (hudOn() && !_firstConvergeLogged && _rideStartWall) {
+      _firstConvergeLogged = true;
+      if (telemetry_default.isActive?.()) {
+        telemetry_default.log("nav", {
+          sub: "converge_first",
+          time_to_first_converge_ms: Date.now() - _rideStartWall,
+          ...buildContext(fix, bufStats, snap)
+        });
+      }
+    }
+  }
+  logTransition(from, to, reason, extra || {}, fix, bufStats, snap);
+}
+function tickConvergeBlocked(fix, snap) {
+  if (!hudOn() || S.gpsConverged !== false) return;
+  if (!telemetry_default.isActive?.()) return;
+  const now = Date.now();
+  if (fix?.ts) _lastFixTs = fix.ts;
+  onBlockedStart();
+  const dt = _lastBlockedTick ? now - _lastBlockedTick : 0;
+  if (_lastBlockedTick && dt > 0 && spdKmh(fix) >= MOVING_SPD_KMH) {
+    _blockedMovingMs += dt;
+  }
+  if (_lastBlockedTick && now - _lastBlockedTick < BLOCKED_TICK_MS) return;
+  _lastBlockedTick = now;
+  const durBlocked = _blockedSince ? now - _blockedSince : 0;
+  telemetry_default.log("nav", {
+    sub: "converge_blocked_tick",
+    dur_blocked_ms: durBlocked,
+    ...buildContext(fix, null, snap)
+  });
+}
+function flushConvergeSummary() {
+  if (!telemetry_default.isActive?.()) return;
+  let blockedTotal = _blockedTotalMs;
+  if (_currentBlockedStreakStart) {
+    const streak = Date.now() - _currentBlockedStreakStart;
+    blockedTotal += streak;
+    if (streak > _maxBlockedStreakMs) _maxBlockedStreakMs = streak;
+  }
+  telemetry_default.log("meta", {
+    sub: "converge_session_summary",
+    converge_false_events: _falseEvents,
+    converge_blocked_total_ms: Math.round(blockedTotal),
+    converge_blocked_while_moving_ms: Math.round(_blockedMovingMs),
+    invalidate_acc_count: _invalidateAcc,
+    invalidate_lost_count: _invalidateLost,
+    re_converge_count: _reConvergeCount,
+    max_blocked_streak_ms: _maxBlockedStreakMs,
+    reached_converge: _hadConverged
+  });
+}
+function initConvergeVisibilityLog() {
+  if (typeof document === "undefined" || document._convergeVisBound) return;
+  document._convergeVisBound = true;
+  document.addEventListener("visibilitychange", () => {
+    if (!telemetry_default.isActive?.()) return;
+    telemetry_default.log("nav", {
+      sub: "converge_visibility",
+      state: document.visibilityState,
+      gps_converged: S.gpsConverged !== false,
+      hud_on: hudOn(),
+      phase: phase()
+    });
+  });
+}
+var BLOCKED_TICK_MS, MOVING_SPD_KMH, _rideStartWall, _firstConvergeLogged, _hadConverged, _blockedSince, _blockedTotalMs, _blockedMovingMs, _lastBlockedTick, _lastFixTs, _maxBlockedStreakMs, _currentBlockedStreakStart, _falseEvents, _invalidateAcc, _invalidateLost, _reConvergeCount;
+var init_converge_telemetry = __esm({
+  "js/converge-telemetry.js"() {
+    init_state();
+    init_util();
+    init_telemetry();
+    BLOCKED_TICK_MS = 5e3;
+    MOVING_SPD_KMH = 5;
+    _rideStartWall = 0;
+    _firstConvergeLogged = false;
+    _hadConverged = false;
+    _blockedSince = 0;
+    _blockedTotalMs = 0;
+    _blockedMovingMs = 0;
+    _lastBlockedTick = 0;
+    _lastFixTs = 0;
+    _maxBlockedStreakMs = 0;
+    _currentBlockedStreakStart = 0;
+    _falseEvents = 0;
+    _invalidateAcc = 0;
+    _invalidateLost = 0;
+    _reConvergeCount = 0;
+  }
+});
+
+// js/gps-converge.js
+function hasEverConverged() {
+  return _everConverged;
+}
+function isNetworkFix(fix) {
+  return fix.provider === "network" || fix.lowAccuracy === true;
+}
+function maxJump(v, dt, acc) {
+  return (v || 0) * dt + (acc || GPS_CONVERGE_ACC_M) + GPS_CONVERGE_JUMP_PAD_M;
+}
+function evaluateBuffer(minFixes, accLimit) {
+  if (_buf.length < minFixes) return { ok: false, fail_detail: "buffer_short" };
+  const recent = _buf.slice(-minFixes);
+  if (recent.some((f2) => isNetworkFix(f2))) return { ok: false, fail_detail: "network_fix" };
+  if (recent.some((f2) => f2.acc != null && f2.acc > accLimit)) return { ok: false, fail_detail: "acc_over_limit" };
+  let gpsStreak = 0;
+  for (const f2 of recent) {
+    if (isNetworkFix(f2)) gpsStreak = 0;
+    else gpsStreak++;
+  }
+  if (gpsStreak < 2) return { ok: false, fail_detail: "gps_streak_low" };
+  for (let i = 1; i < recent.length; i++) {
+    const a = recent[i - 1];
+    const b = recent[i];
+    const dt = Math.max(0.2, (b.ts - a.ts) / 1e3);
+    const v = Math.max(a.speed || 0, b.speed || 0);
+    const d = haversine(a, b);
+    const accA = a.acc != null ? a.acc : accLimit;
+    const accB = b.acc != null ? b.acc : accLimit;
+    if (d > maxJump(v, dt, Math.max(accA, accB))) {
+      return { ok: false, fail_detail: "jump_reject" };
+    }
+  }
+  if (minFixes >= GPS_CONVERGE_MIN_FIXES) {
+    const last3 = _buf.slice(-3);
+    if (last3.length < 3 || last3.some((f2) => f2.acc != null && f2.acc > GPS_CONVERGE_LAST3_ACC_M)) {
+      return { ok: false, fail_detail: "last3_acc" };
+    }
+  }
+  return { ok: true, fail_detail: null };
+}
+function getConvergeBufferStats(reConverge) {
+  let bufAccMax = null;
+  for (const f2 of _buf) {
+    if (bufAccMax == null || f2.acc > bufAccMax) bufAccMax = f2.acc;
+  }
+  return {
+    buf_len: _buf.length,
+    buf_acc_max: bufAccMax != null ? Math.round(bufAccMax * 10) / 10 : null,
+    re_converge: !!reConverge
+  };
+}
+function feedGpsConverge(fix, telCtx) {
+  if (!fix) return S.gpsConverged;
+  if (isSim()) {
+    const prev2 = S.gpsConverged;
+    S.gpsConverged = true;
+    if (prev2 !== true) noteConvergeTransition(prev2, true, "sim", {}, fix, null, telCtx?.snap);
+    return true;
+  }
+  const prev = S.gpsConverged;
+  const acc = fix.acc != null && Number.isFinite(fix.acc) ? fix.acc : null;
+  if (!isNetworkFix(fix)) _gpsFixCount++;
+  S.gpsFixCount = _gpsFixCount;
+  _buf.push({
+    lat: fix.lat,
+    lon: fix.lon,
+    acc,
+    speed: fix.speed,
+    ts: fix.ts,
+    provider: fix.provider
+  });
+  while (_buf.length > 8) _buf.shift();
+  const re = _everConverged && S.gpsConverged === false && _buf.length >= 2;
+  const minFixes = re ? GPS_CONVERGE_RE_MIN_FIXES : GPS_CONVERGE_MIN_FIXES;
+  const accLim = re ? GPS_CONVERGE_RE_ACC_M : GPS_CONVERGE_ACC_M;
+  const bufStats = getConvergeBufferStats(re);
+  const ev = evaluateBuffer(minFixes, accLim);
+  if (ev.ok) {
+    S.gpsConverged = true;
+    _everConverged = true;
+    if (prev !== true) {
+      noteConvergeTransition(prev, true, "converged", {}, fix, bufStats, telCtx?.snap);
+    }
+  } else if (!re && _buf.length < minFixes) {
+    S.gpsConverged = false;
+  }
+  return S.gpsConverged;
+}
+function invalidateGpsConverge(reason = "invalidate_unknown", telCtx) {
+  const prev = S.gpsConverged;
+  S.gpsConverged = false;
+  if (prev !== false) {
+    noteConvergeTransition(prev, false, reason, {}, telCtx?.fix ?? S.gps, getConvergeBufferStats(_everConverged), telCtx?.snap);
+  }
+}
+var _buf, _gpsFixCount, _everConverged;
+var init_gps_converge = __esm({
+  "js/gps-converge.js"() {
+    init_state();
+    init_geo();
+    init_platform();
+    init_nav_constants();
+    init_converge_telemetry();
+    _buf = [];
+    _gpsFixCount = 0;
+    _everConverged = false;
+  }
+});
+
+// js/gps.js
+function curPos() {
+  return RENDER_POS || S.gps;
+}
+function updateRenderPos() {
+  if (!S.gps) {
+    RENDER_POS = null;
+    return;
+  }
+  const v = S.gps.speed != null && S.gps.speed > 0.6 ? S.gps.speed : 0;
+  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
+  if (!v || hdg == null || isNaN(hdg) || !S.fixPos) {
+    RENDER_POS = S.gps;
+    return;
+  }
+  const rad = Math.PI / 180;
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1e3));
+  const dist = v * dt;
+  RENDER_POS = {
+    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
+    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
+    speed: S.gps.speed,
+    heading: S.gps.heading,
+    acc: S.gps.acc
+  };
+}
+function easeSpeed() {
+  const el = $2("v-speed");
+  if (!el || !S.gps) return;
+  const raw = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const target = Math.min(raw, GPS_SPEED_MAX_MPS * 3.6);
+  S.dispSpeed += (target - S.dispSpeed) * 0.22;
+  if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
+  const shown = Math.round(S.dispSpeed);
+  el.textContent = shown;
+  el.classList.toggle("over", isSpeedOverLimit(target));
+  el.classList.toggle("speed-3", shown >= 100);
+}
+function resolveGpsSpeed(next, prev) {
+  const acc = next.acc ?? 999;
+  const device = next.speed != null && !isNaN(next.speed) && next.speed >= 0 ? next.speed : null;
+  let meas = 0;
+  let dist = 0;
+  if (prev) {
+    const dt = (next.ts - prev.ts) / 1e3;
+    if (dt > 0.15 && dt < 12) {
+      dist = haversine(prev, next);
+      if (dist >= GPS_SPEED_MEAS_MIN_DIST_M && dist < 500) meas = dist / dt;
+    }
+  }
+  const noiseRadius = Math.max(GPS_SPEED_STATIONARY_DIST_M, acc * 0.55);
+  if (prev && dist < noiseRadius) return 0;
+  if (device != null && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
+    if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
+      return device;
+    }
+  }
+  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
+  if (meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)) {
+    return S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+  }
+  return 0;
+}
+function initGps(callbacks) {
+  _onTick = callbacks.onTick || _onTick;
+  _onVisual = callbacks.onVisual || _onVisual;
+}
+function visualLoop() {
+  S.rafId = requestAnimationFrame(visualLoop);
+  if (!$2("hud").classList.contains("on")) return;
+  telemetry_default.tickPerfFrame();
+  updateRenderPos();
+  tickNavMap();
+  easeSpeed();
+  tickRoundaboutHudRefresh(_onTick);
+  _onVisual();
+}
+function startVisualLoop() {
+  if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
+}
+function stopVisualLoop() {
+  if (S.rafId) {
+    cancelAnimationFrame(S.rafId);
+    S.rafId = null;
+  }
+}
+function updateGpsConvergeUI() {
+  const el = $2("gps-converge");
+  if (el) {
+    el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
+  }
+  if (S.gpsConverged) {
+    const tag = isSim() ? " \u0441\u0438\u043C" : "";
+    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + Math.round(S.gps?.acc || 0) + "\u043C";
+    $2("s-gps").className = "chip ok";
+  } else if (S.gps) {
+    const acc = S.gps.acc != null ? Math.round(S.gps.acc) + "\u043C" : "\u2026";
+    $2("s-gps").textContent = "\u23F3 GPS \xB1" + acc;
+    $2("s-gps").className = "chip";
+  } else {
+    $2("s-gps").textContent = "\u23F3 GPS\u2026";
+    $2("s-gps").className = "chip";
+  }
+  checkStartReady();
+}
+function checkStartReady() {
+  const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
+  $2("btn-start").disabled = !(S.gps && S.finish && hasRoute);
+  const buildBtn = $2("btn-build-route");
+  if (buildBtn) buildBtn.disabled = !(S.gps && S.finish);
+}
+function onGpsError() {
+  $2("s-gps").textContent = "\u274C GPS";
+  $2("s-gps").className = "chip err";
+  invalidateGpsConverge("invalidate_error");
+  if (!_gpsLost) {
+    _gpsLost = true;
+    telemetry_default.log("nav", { sub: "gps_lost" });
+  }
+}
+function applyGpsFix(next) {
+  if (S.lastPos) {
+    const d = haversine(S.lastPos, next);
+    const dt = (next.ts - S.lastPos.ts) / 1e3;
+    if (d > 3 && d < 500) S.distDone += d;
+    if ((next.heading == null || isNaN(next.heading)) && d > 3) {
+      next.heading = bearing(S.lastPos, next);
+    }
+  }
+  const resolved = resolveGpsSpeed(next, S.lastPos);
+  S.measSpeed = resolved;
+  next.speed = resolved;
+  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
+  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
+  if (fused != null && !isNaN(fused)) next.heading = fused;
+  if (next.heading != null && !isNaN(next.heading)) {
+    if ((next.speed ?? 0) >= 3.2) S.lastReliableHeadingTs = Date.now();
+    if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
+    else {
+      const spd = next.speed ?? S.measSpeed ?? 0;
+      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
+      const keep = 1 - alpha;
+      const r = Math.PI / 180, d = 180 / Math.PI;
+      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
+      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
+      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
+    }
+  }
+  S.lastPos = next;
+  S.gps = next;
+  S.fixPos = { lat: next.lat, lon: next.lon };
+  S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
+  let telSnap = null;
+  let navSnap = null;
+  if ($2("hud").classList.contains("on") && S.route?.geometry) {
+    navSnap = getNavSnap(S.smoothedHeading);
+    if (navSnap) telSnap = { lateral: navSnap.lateral, quality: S.snapQuality };
+  }
+  const telCtx = { fix: next, snap: telSnap };
+  feedGpsConverge(next, telCtx);
+  if (next.acc != null && next.acc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge("invalidate_acc", telCtx);
+  if ($2("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) {
+    telemetry_default.log("nav", {
+      sub: "snap_lost_long",
+      lat_off: telSnap?.lateral != null ? Math.round(telSnap.lateral) : null,
+      acc: next.acc != null ? Math.round(next.acc * 10) / 10 : null,
+      lost_ms: Math.round(lostDurationMs())
+    });
+  }
+  updateGpsConvergeUI();
+  tickConvergeBlocked(next, telSnap);
+  if ($2("hud").classList.contains("on")) {
+    _onTick();
+    if (S.viewMode !== "hud") tickNavMap({ force: true });
+  }
+  const rcv = Date.now();
+  if (_gpsLost) {
+    _gpsLost = false;
+    telemetry_default.log("nav", { sub: "gps_restored" });
+  }
+  telemetry_default.logFix({
+    lat: next.lat,
+    lon: next.lon,
+    acc: next.acc,
+    speed: next.speed,
+    heading: next.heading,
+    alt: next.alt,
+    ts: next.ts,
+    rcv
+  });
+  telemetry_default.logTrackPoint({
+    lat: next.lat,
+    lon: next.lon,
+    acc: next.acc,
+    speed: next.speed,
+    heading: next.heading,
+    ts: next.ts
+  });
+  if (navSnap) telemetry_default.logSnapFromResult(navSnap);
+}
+function stopWebGps() {
+  if (S.watchId !== null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(S.watchId);
+    S.watchId = null;
+  }
+}
+function startWebGps() {
+  if (!navigator.geolocation) {
+    $2("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
+    $2("s-gps").className = "chip err";
+    return;
+  }
+  stopWebGps();
+  $2("s-gps").textContent = "\u23F3 GPS\u2026";
+  $2("s-gps").className = "chip";
+  S.watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const c = pos.coords;
+      applyGpsFix({
+        lat: c.latitude,
+        lon: c.longitude,
+        speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
+        heading: c.heading == null ? null : c.heading,
+        acc: c.accuracy,
+        alt: c.altitude != null && !isNaN(c.altitude) ? c.altitude : null,
+        ts: pos.timestamp
+      });
+    },
+    onGpsError,
+    { enableHighAccuracy: true, timeout: 15e3, maximumAge: 1e3 }
+  );
+}
+function startGps() {
+  _navMode = false;
+  startHeadingSensors();
+  if (isNative()) {
+    $2("s-gps").textContent = "\u23F3 GPS\u2026";
+    $2("s-gps").className = "chip";
+    stopWebGps();
+    startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+    return;
+  }
+  startWebGps();
+}
+async function startNavigationGps() {
+  if (!isNative()) return;
+  _navMode = true;
+  await startNavGps(applyGpsFix, onGpsError);
+}
+async function stopNavigationGps() {
+  if (!isNative()) return;
+  _navMode = false;
+  await stopNavGps();
+  await startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+}
+var RENDER_POS, _navMode, _gpsLost, _onTick, _onVisual;
+var init_gps = __esm({
+  "js/gps.js"() {
+    init_state();
+    init_geo();
+    init_util();
+    init_platform();
+    init_native_gps();
+    init_heading();
+    init_telemetry();
+    init_route_geometry();
+    init_nav_constants();
+    init_speed_limit();
+    init_roundabout();
+    init_nav_map();
+    init_gps_converge();
+    init_snap_quality();
+    init_converge_telemetry();
+    init_nav_constants();
+    RENDER_POS = null;
+    _navMode = false;
+    _gpsLost = false;
+    _onTick = () => {
+    };
+    _onVisual = () => {
+    };
+  }
+});
+
+// js/render.js
+function computePathLayout(w, h) {
+  const aspect = Math.max(0.2, w / Math.max(1, h));
+  L2.W = 1e3;
+  L2.H = Math.max(480, Math.min(2400, Math.round(L2.W / aspect)));
+  L2.roadH = L2.H;
+  L2.cx = L2.W / 2;
+  L2.land = aspect > 1;
+  L2.camFocal = L2.land ? 900 : 1300;
+  L2.camVoff = L2.H * 0.78;
+  L2.horizonY = L2.camVoff - L2.camFocal * Math.tan(CAM_PITCH);
+}
+function projectGround2(x, z, elevDelta) {
+  const pitch = getCamPitchRad();
+  const cp = Math.cos(pitch);
+  const sp = Math.sin(pitch);
+  const dy = -CAM_H;
+  const dz = z + CAM_B;
+  const use3d = S.showElevProfile && S.route?.geometry?.elevReady;
+  const elevLift = use3d ? (elevDelta || 0) * getElevExag() * 0.16 : 0;
+  const Yc = dy * cp + dz * sp - elevLift;
+  const Zc = -dy * sp + dz * cp;
+  if (Zc < 0.85) return null;
+  const sx = L2.cx + L2.camFocal * x / Zc;
+  const sy = L2.camVoff - L2.camFocal * Yc / Zc;
+  if (sx < -L2.W * 0.4 || sx > L2.W * 1.4) return null;
+  return { x: sx, y: sy };
+}
+function toLocalFrenet(lat, lon, snap, headingRad) {
+  return worldToCamXZ(lat, lon, snap, headingRad);
+}
+function projectWorld(lat, lon, elev, snap, headingRad) {
+  const { x, z } = worldToCamXZ(lat, lon, snap, headingRad);
+  return projectGround2(x, z, elev);
+}
+function triArea2(a, b, c) {
+  if (!a || !b || !c) return 0;
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+}
+function projectCam(x, z, elev) {
+  return projectGround2(x, z, elev);
+}
+function buildStripMeshSvg(sections, geom, speedMps) {
+  if (sections.length < 2) return { fill: "", edges: "" };
+  const tok = getThemeTokens();
+  const fillNone = tok.pathFill === "none" || tok.pathFill === "transparent";
+  let fill = "";
+  let edges = "";
+  const pt = (p) => p.x.toFixed(1) + "," + p.y.toFixed(1);
+  const edgeW = tok.pathEdgeW;
+  const glowExtra = tok.glow !== "none" ? ' opacity="' + Math.max(0.1, tok.glowOpacity || 0.25) + '"' : "";
+  for (let i = sections.length - 2; i >= 0; i--) {
+    const a = sections[i];
+    const b = sections[i + 1];
+    if (b.cz <= a.cz + 0.05) continue;
+    const aL = projectCam(a.lx, a.lz, a.elev);
+    const aR = projectCam(a.rx, a.rz, a.elev);
+    const bL = projectCam(b.lx, b.lz, b.elev);
+    const bR = projectCam(b.rx, b.rz, b.elev);
+    if (!aL || !aR || !bL || !bR) continue;
+    const sMid = (a.s + b.s) * 0.5;
+    const warnCol = ribbonCurveColor(sMid, geom, speedMps);
+    const fillCol = warnCol || tok.pathFill;
+    const edgeCol = warnCol || tok.pathEdge;
+    const fillOp = warnCol ? 0.48 : tok.pathFillOpacity;
+    const ew = warnCol ? edgeW + 2 : edgeW;
+    if (!fillNone) {
+      const t1 = triArea2(aL, bL, bR);
+      const t2 = triArea2(aL, bR, aR);
+      const bowTie = t1 * t2 <= 0;
+      if (!bowTie || a.cz < 8 || b.cz < 8) {
+        if (t1 > 1) {
+          fill += '<polygon points="' + pt(aL) + " " + pt(bL) + " " + pt(bR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
+        }
+        if (t2 > 1) {
+          fill += '<polygon points="' + pt(aL) + " " + pt(bR) + " " + pt(aR) + '" fill="' + fillCol + '" fill-opacity="' + fillOp + '" stroke="none"/>';
+        }
+      }
+    }
+    const dash = tok.pathDash !== "none" ? ' stroke-dasharray="' + tok.pathDash + '"' : "";
+    edges += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + ew + '" stroke-linecap="round"' + dash + glowExtra + '/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="' + ew + '" stroke-linecap="round"' + dash + glowExtra + "/>";
+    if (tok.glow !== "none") {
+      edges += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + tok.glow + '" stroke-width="' + (ew + 4) + '" stroke-linecap="round" opacity="' + (tok.glowOpacity || 0.25) + '"/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + tok.glow + '" stroke-width="' + (ew + 4) + '" stroke-linecap="round" opacity="' + (tok.glowOpacity || 0.25) + '"/>';
+    }
+  }
+  return { fill, edges };
+}
+function effectiveHeading() {
+  if (S.smoothedHeading != null && !isNaN(S.smoothedHeading)) return S.smoothedHeading;
+  const rad = getCamHeadingRad();
+  if (rad != null) return (rad * 180 / Math.PI + 360) % 360;
+  return null;
+}
+function turnAngleAt(step) {
+  const coords = S.route.coords;
+  let bi = 0;
+  let bd = Infinity;
+  for (let i = 0; i < coords.length; i++) {
+    const d = haversine({ lat: coords[i][0], lon: coords[i][1] }, step);
+    if (d < bd) {
+      bd = d;
+      bi = i;
+    }
+  }
+  if (bi <= 0 || bi >= coords.length - 1) return null;
+  const bIn = bearing(
+    { lat: coords[bi - 1][0], lon: coords[bi - 1][1] },
+    { lat: coords[bi][0], lon: coords[bi][1] }
+  );
+  const bOut = bearing(
+    { lat: coords[bi][0], lon: coords[bi][1] },
+    { lat: coords[bi + 1][0], lon: coords[bi + 1][1] }
+  );
+  return (bOut - bIn + 540) % 360 - 180;
+}
+function modifierTurnSide(mod) {
+  if (!mod) return 0;
+  if (mod.includes("left")) return -1;
+  if (mod.includes("right")) return 1;
+  return 0;
+}
+function reconcileTurnAngle(ang, modifier) {
+  const side = modifierTurnSide(modifier);
+  if (modifier === "uturn") {
+    if (Math.abs(ang) < 120) return side < 0 ? -175 : 175;
+    return ang;
+  }
+  if (side === 0) return ang;
+  if (side < 0 && ang > 0) return -Math.abs(ang);
+  if (side > 0 && ang < 0) return Math.abs(ang);
+  if (Math.abs(ang) < 10) return side * 25;
+  return ang;
+}
+function chevronScreenBasis(snap, headingRad, geom, s2, modifier, ang) {
+  const ds = 16;
+  const total = geom.s[geom.n - 1];
+  const p0 = interpolateAtS(geom, Math.max(0, s2 - ds));
+  const p1 = interpolateAtS(geom, s2);
+  const p2 = interpolateAtS(geom, Math.min(total, s2 + ds));
+  const P0 = projectWorld(p0.lat, p0.lon, 0, snap, headingRad);
+  const P1 = projectWorld(p1.lat, p1.lon, 0, snap, headingRad);
+  const P2 = projectWorld(p2.lat, p2.lon, 0, snap, headingRad);
+  if (!P1) return null;
+  let ex = 0;
+  let ey = 0;
+  if (P0 && P2) {
+    ex = P2.x - P1.x;
+    ey = P2.y - P1.y;
+    const el = Math.hypot(ex, ey);
+    if (el > 1) {
+      ex /= el;
+      ey /= el;
+      const ax = P1.x - P0.x;
+      const ay = P1.y - P0.y;
+      const al = Math.hypot(ax, ay);
+      if (al > 1) {
+        const cross = ax / al * ey - ay / al * ex;
+        const modSide = modifierTurnSide(modifier);
+        const geoSide = cross > 0.02 ? 1 : cross < -0.02 ? -1 : 0;
+        if (modSide !== 0 && geoSide !== 0 && geoSide !== modSide) {
+          const lx = -ay / al;
+          const ly = ax / al;
+          ex = modSide < 0 ? lx : -lx;
+          ey = modSide < 0 ? ly : -ly;
+        }
+      }
+    }
+  }
+  if (Math.hypot(ex, ey) < 0.05) {
+    const side = modifierTurnSide(modifier) || (ang < 0 ? -1 : 1);
+    ex = side;
+    ey = 0;
+  }
+  return { P: P1, ex, ey };
+}
+function chevronPath(P, ex, ey, arm) {
+  const tipX = P.x + ex * arm;
+  const tipY = P.y + ey * arm;
+  const bx = P.x - ex * arm * 0.55;
+  const by = P.y - ey * arm * 0.55;
+  const px = -ey;
+  const py = ex;
+  const wing = arm * 0.88;
+  const x1 = (bx + px * wing).toFixed(1);
+  const y1 = (by + py * wing).toFixed(1);
+  const x2 = (bx - px * wing).toFixed(1);
+  const y2 = (by - py * wing).toFixed(1);
+  return "M " + x1 + " " + y1 + " L " + tipX.toFixed(1) + " " + tipY.toFixed(1) + " L " + x2 + " " + y2;
+}
+function textBBox(cx, cy, fontSize, text) {
+  const n = Math.max(String(text || "").length, 1);
+  const w = fontSize * n * 0.58;
+  const h = fontSize * 1.12;
+  return { left: cx - w * 0.5, right: cx + w * 0.5, top: cy - h * 0.82, bottom: cy + h * 0.18 };
+}
+function bboxOverlap2(a, b, pad) {
+  return a.left - pad < b.right + pad && a.right + pad > b.left - pad && a.top - pad < b.bottom + pad && a.bottom + pad > b.top - pad;
+}
+function clampLabelX(cx, halfW, vbX, vbW) {
+  return Math.min(vbX + vbW - halfW - 4, Math.max(vbX + halfW + 4, cx));
+}
+function clampLabelY(cy, fontSize, vbY, vbH) {
+  return Math.min(vbY + vbH - 4, Math.max(vbY + fontSize + 4, cy));
+}
+function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
+  if (S.pathChevronLabels === false) return;
+  const placed = [];
+  const minSep = vb * 0.07;
+  const pad = vb * 0.014;
+  for (let i = 0; i < markers.length; i++) {
+    const m = markers[i];
+    m.degX = null;
+    m.degY = null;
+    m.distX = null;
+    m.distY = null;
+    const prev = i > 0 ? markers[i - 1] : null;
+    const sep = prev ? Math.hypot(m.P.x - prev.P.x, m.P.y - prev.P.y) : Infinity;
+    const wantDeg = i === 0 && !!m.deg;
+    const wantDist = i === 0 ? true : sep >= minSep;
+    if (wantDeg) {
+      const sides = [m.labelSide, -m.labelSide];
+      for (const side of sides) {
+        const off = m.arm + m.degFont * 0.35;
+        let dx = m.P.x + m.nx * off * side;
+        const halfW = m.degFont * Math.max(m.deg.length, 1) * 0.34;
+        dx = clampLabelX(dx, halfW, vbX, vbW);
+        let dy = clampLabelY(
+          m.P.y + m.ny * off * side * 0.35 + m.degFont * 0.34,
+          m.degFont,
+          vbY,
+          vbH
+        );
+        const box = textBBox(dx, dy, m.degFont, m.deg);
+        if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
+          m.degX = dx;
+          m.degY = dy;
+          placed.push(box);
+          break;
+        }
+      }
+    }
+    if (!wantDist) continue;
+    const distText = m.dist + " \u043C";
+    const slots = [
+      () => ({
+        x: m.P.x + m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
+        y: m.P.y + m.ny * m.arm * 0.35 * m.labelSide + m.distFont * 0.15
+      }),
+      () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.1 + i * 0.35) }),
+      () => ({
+        x: m.P.x - m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
+        y: m.P.y - m.ny * m.arm * 0.35 * m.labelSide
+      }),
+      () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.6 + i * 0.4) })
+    ];
+    for (const slot of slots) {
+      let { x, y } = slot();
+      x = clampLabelX(x, m.distFont * distText.length * 0.32, vbX, vbW);
+      y = clampLabelY(y, m.distFont, vbY, vbH);
+      const box = textBBox(x, y, m.distFont, distText);
+      if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
+        m.distX = x;
+        m.distY = y;
+        placed.push(box);
+        break;
+      }
+    }
+  }
+}
+function isPathTurnStep(st) {
+  return st && st.type !== "depart" && st.type !== "arrive" && st.modifier && st.modifier !== "straight";
+}
+function renderTurnsStr(svg, snap, headingRad, geom, curS) {
+  if (!S.route || !snap || S.showPathChevrons === false) return "";
+  const maxChevrons = Math.max(1, Math.min(3, S.pathChevronMax || 3));
+  const tok = getThemeTokens();
+  const scale = tok.pathTurnScale || 1;
+  const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
+  const vb = bv && bv.width ? bv.width : L2.W;
+  const vbX = bv ? bv.x : 0;
+  const vbY = bv ? bv.y : 0;
+  const vbW = bv ? bv.width : L2.W;
+  const vbH = bv ? bv.height : L2.H;
+  const pos = curPos();
+  const items = geom && curS != null ? getVisibleTurnManeuvers(geom, curS, maxChevrons) : S.route.steps.filter(isPathTurnStep).map((st) => ({ maneuver: { step: st }, distAhead: haversine(pos, st) }));
+  const markers = [];
+  for (const item of items) {
+    if (markers.length >= maxChevrons) break;
+    const st = item.maneuver?.step;
+    if (!st) continue;
+    const loc = toLocalFrenet(st.lat, st.lon, snap, headingRad);
+    if (loc.z < 5 || loc.z > ROAD_MAX) continue;
+    const P = projectGround2(loc.x, loc.z, 0);
+    if (!P) continue;
+    let ang = null;
+    let chev = null;
+    const mS = item.maneuver?.s;
+    if (geom && mS != null) {
+      ang = reconcileTurnAngle(turnAngleAtS(geom, mS), st.modifier);
+      chev = chevronScreenBasis(snap, headingRad, geom, mS, st.modifier, ang);
+    }
+    if (ang == null) {
+      const raw = turnAngleAt(st);
+      ang = raw == null ? modifierTurnSide(st.modifier) < 0 ? -25 : modifierTurnSide(st.modifier) > 0 ? 25 : 0 : reconcileTurnAngle(raw, st.modifier);
+    }
+    if (!chev) {
+      const side = modifierTurnSide(st.modifier) || (ang < 0 ? -1 : 1);
+      chev = { P, ex: side, ey: 0 };
+    }
+    const k = (markers.length === 0 ? 1 : 0.72) * scale;
+    const degFont = vb * 0.12 * k;
+    const distFont = vb * 0.05 * k;
+    const arm = vb * 0.05 * k;
+    const tipY = chev.P.y + chev.ey * arm;
+    markers.push({
+      P: chev.P,
+      ex: chev.ex,
+      ey: chev.ey,
+      nx: -chev.ey,
+      ny: chev.ex,
+      arm,
+      sw: Math.max(2, vb * 0.012 * k),
+      col: markers.length === 0 ? tok.turnPrimary : tok.turnSecondary,
+      deg: Math.abs(ang) >= 4 ? Math.round(Math.abs(ang)) + "\xB0" : "",
+      dist: Math.round(item.distAhead != null ? item.distAhead : haversine(pos, st)),
+      degFont,
+      distFont,
+      tipY,
+      labelSide: ang < 0 ? 1 : -1
+    });
+  }
+  layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH);
+  let out = "";
+  for (const m of markers) {
+    out += '<g font-family="' + tok.fontNum + ',monospace" text-anchor="middle"><path d="' + chevronPath(m.P, m.ex, m.ey, m.arm) + '" fill="none" stroke="' + m.col + '" stroke-width="' + m.sw.toFixed(1) + '" stroke-linecap="round" stroke-linejoin="round"/>' + (m.degX != null ? '<text x="' + m.degX.toFixed(1) + '" y="' + m.degY.toFixed(1) + '" font-size="' + m.degFont.toFixed(1) + '" font-weight="900" fill="' + m.col + '">' + m.deg + "</text>" : "") + (m.distX != null ? '<text x="' + m.distX.toFixed(1) + '" y="' + m.distY.toFixed(1) + '" font-size="' + m.distFont.toFixed(1) + '" fill="' + m.col + '" opacity="0.9">' + m.dist + " \u043C</text>" : "") + "</g>";
+  }
+  return out;
+}
+function renderFuelStr(svg, snap, headingRad) {
+  if (S.fuelMode === 0 || !snap) return "";
+  const tok = getThemeTokens();
+  const bv = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
+  const vb = bv && bv.width ? bv.width : L2.W;
+  const vbX = bv ? bv.x : 0;
+  const vbY = bv ? bv.y : 0;
+  const vbW = vb;
+  const vbH = bv ? bv.height : L2.H;
+  const stations = fuelStationsForRoad(ROAD_MAX);
+  let out = "";
+  for (const st of stations) {
+    const loc = toLocalFrenet(st.lat, st.lon, snap, headingRad);
+    if (loc.z < 5 || loc.z > ROAD_MAX) continue;
+    const P = projectGround2(loc.x, loc.z, 0);
+    if (!P) continue;
+    const sel = S.fuelSel && S.fuelSel.osmId === st.osmId;
+    const k = sel ? 0.62 : 0.46;
+    const r = vb * 0.045 * k;
+    const emoji = vb * 0.06 * k;
+    const distFont = vb * 0.032 * k;
+    const sw = Math.max(1.5, vb * 8e-3);
+    const col = fuelColor(st.status);
+    const dm = st.distAhead != null && isFinite(st.distAhead) ? st.distAhead : st.distGps;
+    const distTxt = dm < 1e3 ? Math.round(dm / 10) * 10 + " \u043C" : (dm / 1e3).toFixed(1) + " \u043A\u043C";
+    let cx = Math.min(vbX + vbW - r - 2, Math.max(vbX + r + 2, P.x));
+    let cy = Math.min(vbY + vbH - r - distFont - 4, Math.max(vbY + r + 2, P.y));
+    out += '<g text-anchor="middle" font-family="' + tok.fontNum + ',monospace"><circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + sw.toFixed(1) + '"/><text x="' + cx.toFixed(1) + '" y="' + (cy + emoji * 0.36).toFixed(1) + '" font-size="' + emoji.toFixed(1) + '">\u26FD</text><text x="' + cx.toFixed(1) + '" y="' + (cy + r + distFont * 1.05).toFixed(1) + '" font-size="' + distFont.toFixed(1) + '" font-weight="900" fill="' + col + '" stroke="' + tok.svgHalo + '" stroke-width="' + (distFont * 0.14).toFixed(1) + '" paint-order="stroke">' + distTxt + "</text></g>";
+  }
+  return out;
+}
+function renderPathway() {
+  const block = $2("block-path");
+  const svg = $2("path-svg");
+  if (!block || !svg) return;
+  const hud = $2("hud");
+  const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const waitConverge = !hasEverConverged() && S.gpsConverged === false;
+  if (!S.showPath || kmh < PATH_MIN_SPEED_KMH || waitConverge || S.compassMode) {
+    block.classList.add("hidden");
+    hud.classList.add("no-path");
+    svg.innerHTML = "";
+    return;
+  }
+  block.classList.remove("hidden");
+  hud.classList.remove("no-path");
+  const gpsHdg = S.smoothedHeading;
+  if (S.route && !S.route.geometry) ensureRouteGeometry(S.route);
+  const rawSnap = getNavSnap(gpsHdg);
+  const geomReady = S.route?.geometry;
+  if (!geomReady || !rawSnap) {
+    svg.innerHTML = "";
+    return;
+  }
+  const speedMps = Math.max(0, S.dispSpeed / 3.6);
+  const snap = getDisplaySnap(rawSnap, geomReady, speedMps, gpsHdg);
+  if (!snap) {
+    svg.innerHTML = "";
+    return;
+  }
+  if (S.snapQuality === "GOOD" && _pathLastS != null && Math.abs(snap.s - _pathLastS) < PATH_SKIP_DS_M && kmh >= 25) {
+    _pathSkipFrames++;
+    if (_pathSkipFrames <= PATH_SKIP_FRAMES) return;
+  }
+  _pathSkipFrames = 0;
+  _pathLastS = snap.s;
+  const maxDist = Math.max(100, Math.min(ROAD_MAX, Math.round(kmh * 8)));
+  const rect = block.getBoundingClientRect();
+  computePathLayout(rect.width || block.clientWidth || 300, rect.height || block.clientHeight || 200);
+  svg.setAttribute("viewBox", "0 0 " + L2.W + " " + L2.H);
+  svg.setAttribute("preserveAspectRatio", "xMidYMax slice");
+  const headingRad = updateCamHeading(geomReady, snap);
+  updateCamPitch(geomReady, snap, getElevExag(), S.showElevProfile);
+  const activeRb = isCrossingContextEnabled() ? getActiveRoundabout(geomReady, rawSnap.s, speedMps) : null;
+  let sections = extendRibbonNearCam(
+    computeRibbonSectionsCam(geomReady, snap, maxDist, ROAD_HALF, headingRad)
+  );
+  if (activeRb) {
+    sections = sections.filter((sec) => sec.s < activeRb.sEnter || sec.s > activeRb.sExit);
+  }
+  if (sections.length < 2) {
+    svg.innerHTML = "";
+    return;
+  }
+  let html = "";
+  if (isCrossingContextEnabled()) {
+    html += renderCrossingWhiskers(snap, headingRad, geomReady, rawSnap.s, speedMps);
+    if (activeRb) html += renderRoundaboutSchema(activeRb, snap, headingRad);
+  }
+  const mesh = buildStripMeshSvg(sections, geomReady, speedMps);
+  html += mesh.fill + mesh.edges;
+  const tok = getThemeTokens();
+  const centerS = sections.map((sec) => ({ p: projectCam(sec.cx, sec.cz, sec.elev), s: sec.s })).filter((x) => x.p);
+  for (let ci = 0; ci < centerS.length - 1; ci++) {
+    const a = centerS[ci];
+    const b = centerS[ci + 1];
+    if (!a.p || !b.p) continue;
+    const dx = b.p.x - a.p.x;
+    const dy = b.p.y - a.p.y;
+    if (dx * dx + dy * dy > (L2.W * 0.32) ** 2) continue;
+    const sMid = (a.s + b.s) * 0.5;
+    const warnCol = ribbonCurveColor(sMid, geomReady, speedMps);
+    const stroke = warnCol || tok.pathEdge;
+    const sw = warnCol ? tok.strokeW + 1.5 : tok.strokeW;
+    const op = warnCol ? 0.85 : tok.pathCenterOpacity;
+    html += '<line x1="' + a.p.x.toFixed(1) + '" y1="' + a.p.y.toFixed(1) + '" x2="' + b.p.x.toFixed(1) + '" y2="' + b.p.y.toFixed(1) + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" opacity="' + op + '"/>';
+  }
+  html += renderTurnsStr(svg, snap, headingRad, geomReady, rawSnap.s);
+  html += renderFuelStr(svg, snap, headingRad);
+  const profileH = getElevProfileH();
+  const prof = renderElevProfile(snap, geomReady, L2.W, profileH);
+  if (prof) html += '<g transform="translate(0,' + (L2.H - profileH - PROFILE_GAP) + ')">' + prof + "</g>";
+  svg.innerHTML = html;
+}
+function computeArrowCenterline(turnDeg, H = 120) {
+  const stemLen = H / 3;
+  const exitLen = H / 3;
+  const R = Math.abs(turnDeg) > 150 ? H / 3.2 : H / 4;
+  const dirVec = (aDeg) => {
+    const a2 = aDeg * Math.PI / 180;
+    return [Math.sin(a2), -Math.cos(a2)];
+  };
+  let a = 0, x = 0, y = 0;
+  const pts = [[x, y]];
+  let d = dirVec(a);
+  x += d[0] * stemLen;
+  y += d[1] * stemLen;
+  pts.push([x, y]);
+  const N = Math.max(3, Math.round(Math.abs(turnDeg) / 5));
+  const dA = turnDeg / N;
+  const segLen = R * Math.abs(turnDeg) * Math.PI / 180 / N;
+  for (let i = 0; i < N; i++) {
+    a += dA;
+    d = dirVec(a);
+    x += d[0] * segLen;
+    y += d[1] * segLen;
+    pts.push([x, y]);
+  }
+  d = dirVec(a);
+  x += d[0] * exitLen;
+  y += d[1] * exitLen;
+  pts.push([x, y]);
+  return { pts, dir: d, tip: [x, y] };
+}
+function arrowViewBox(all, pad) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  all.forEach((p) => {
+    minX = Math.min(minX, p[0]);
+    minY = Math.min(minY, p[1]);
+    maxX = Math.max(maxX, p[0]);
+    maxY = Math.max(maxY, p[1]);
+  });
+  minX -= pad;
+  minY -= pad;
+  maxX += pad;
+  maxY += pad;
+  return {
+    vb: minX.toFixed(1) + " " + minY.toFixed(1) + " " + (maxX - minX).toFixed(1) + " " + (maxY - minY).toFixed(1)
+  };
+}
+function renderParametricArrow(turnDeg) {
+  const tok = getThemeTokens();
+  const H = 120;
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
+  const sw = Math.round(H * 0.12 * (tok.strokeW / 3));
+  const col = tok.accent;
+  const outline = tok.arrowStyle === "outline";
+  const hl = sw * 2.1, hw = sw * 1.5;
+  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
+  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
+  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
+  const stem = pts.slice(0, pts.length - 1).concat([back]);
+  const all = [...stem, tip, wingA, wingB];
+  const { vb } = arrowViewBox(all, sw);
+  const line = '<polyline points="' + stem.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ") + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round"/>';
+  const head = outline ? "" : '<polygon points="' + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1) + '" fill="' + col + '"/>';
+  const headOutline = outline ? '<polyline points="' + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1) + " " + tip[0].toFixed(1) + "," + tip[1].toFixed(1) + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linejoin="round"/>' : "";
+  return '<svg class="arrow-svg" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet">' + line + head + headOutline + "</svg>";
+}
+function renderChopperArrow(turnDeg) {
+  const tok = getThemeTokens();
+  const col = tok.accent;
+  const H = 120;
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
+  const halfW = 11;
+  const hl = 22, hw = 19;
+  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
+  const wingA = [back[0] + perp[0] * hw, back[1] + perp[1] * hw];
+  const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
+  const stem = pts.slice(0, pts.length - 1).concat([back]);
+  const left = [], right = [];
+  for (let i = 0; i < stem.length; i++) {
+    const p = stem[i];
+    let t;
+    if (i < stem.length - 1) {
+      const q = stem[i + 1];
+      t = [q[0] - p[0], q[1] - p[1]];
+    } else if (i > 0) {
+      const q = stem[i - 1];
+      t = [p[0] - q[0], p[1] - q[1]];
+    } else {
+      t = dir;
+    }
+    const len = Math.hypot(t[0], t[1]) || 1;
+    const n = [-t[1] / len, t[0] / len];
+    left.push([p[0] + n[0] * halfW, p[1] + n[1] * halfW]);
+    right.push([p[0] - n[0] * halfW, p[1] - n[1] * halfW]);
+  }
+  const body = left.concat(right.slice().reverse());
+  const bodyPts = body.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const headPts = tip[0].toFixed(1) + "," + tip[1].toFixed(1) + " " + wingA[0].toFixed(1) + "," + wingA[1].toFixed(1) + " " + wingB[0].toFixed(1) + "," + wingB[1].toFixed(1);
+  const all = [...stem, tip, wingA, wingB, ...left, ...right];
+  const { vb } = arrowViewBox(all, halfW + 4);
+  const rim = tok.line || col;
+  return '<svg class="arrow-svg arrow-chopper" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet"><polygon points="' + bodyPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/><polygon points="' + headPts + '" fill="' + col + '" stroke="' + rim + '" stroke-width="2" stroke-linejoin="round"/></svg>';
+}
+function vfdQuant(v, step = 2) {
+  return Math.round(v / step) * step;
+}
+function offsetRibbonPoints(centerPts, halfW) {
+  const left = [], right = [];
+  for (let i = 0; i < centerPts.length; i++) {
+    const p = centerPts[i];
+    let dx, dy;
+    if (i < centerPts.length - 1) {
+      dx = centerPts[i + 1][0] - p[0];
+      dy = centerPts[i + 1][1] - p[1];
+    } else {
+      dx = p[0] - centerPts[i - 1][0];
+      dy = p[1] - centerPts[i - 1][1];
+    }
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    left.push([vfdQuant(p[0] + nx * halfW), vfdQuant(p[1] + ny * halfW)]);
+    right.push([vfdQuant(p[0] - nx * halfW), vfdQuant(p[1] - ny * halfW)]);
+  }
+  return { left, right };
+}
+function renderVintageArrow(turnDeg) {
+  const tok = getThemeTokens();
+  const col = tok.accent;
+  const halfW = 6.5;
+  const H = 120;
+  const { pts, dir, tip } = computeArrowCenterline(turnDeg, H);
+  const hl = 22, hw = 17;
+  const back = [tip[0] - dir[0] * hl, tip[1] - dir[1] * hl];
+  const perp = [-dir[1], dir[0]];
+  const wingA = [vfdQuant(back[0] + perp[0] * hw), vfdQuant(back[1] + perp[1] * hw)];
+  const wingB = [vfdQuant(back[0] - perp[0] * hw), vfdQuant(back[1] - perp[1] * hw)];
+  const tipQ = [vfdQuant(tip[0]), vfdQuant(tip[1])];
+  const stem = pts.slice(0, pts.length - 1).concat([back]);
+  const { left, right } = offsetRibbonPoints(stem, halfW);
+  const poly = left.concat([wingA, tipQ, wingB]).concat(right.slice().reverse());
+  const polyPts = poly.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const all = [...stem, tipQ, wingA, wingB];
+  const { vb } = arrowViewBox(all, halfW + 4);
+  return '<svg class="arrow-svg arrow-vintage" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" filter="url(#vfd-glow-cyan)"><polygon points="' + polyPts + '" fill="' + col + '" stroke="none"/></svg>';
+}
+function renderManeuverArrow(turnDeg) {
+  const shape = getThemeTokens().arrowShape || "parametric";
+  if (shape === "chopper") return renderChopperArrow(turnDeg);
+  if (shape === "vintage") return renderVintageArrow(turnDeg);
+  return renderParametricArrow(turnDeg);
+}
+function arriveFlagSVG() {
+  const tok = getThemeTokens();
+  const sw = Math.max(4, tok.strokeW + 2);
+  const col = tok.pathEdge;
+  return '<svg class="arrow-svg" viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet"><rect x="-28" y="-32" width="56" height="40" fill="none" stroke="' + col + '" stroke-width="' + sw + '"/><path d="M-28 -32 L-28 8 L28 -12 Z" fill="' + (tok.arrowStyle === "outline" ? "none" : col) + '" stroke="' + col + '" stroke-width="' + sw * 0.5 + '"/><line x1="-28" y1="8" x2="-28" y2="28" stroke="' + col + '" stroke-width="' + sw + '"/></svg>';
+}
+function buildTurnArrowSVG(turnDeg) {
+  const turn = Math.max(-178, Math.min(178, turnDeg || 0));
+  return renderManeuverArrow(turn);
+}
+function buildArrowSVG(step, opts = {}) {
+  if (!step) return "";
+  if (step.type === "arrive") return arriveFlagSVG();
+  if (shouldUseRoundaboutSchema() && isRoundaboutStep(step)) {
+    const ctx = opts.ctx || (opts.snap ? getRoundaboutContext(opts.snap, S.route) : null);
+    const rbOpts = {
+      ...opts,
+      ctx,
+      isOnRoundabout: opts.isOnRoundabout ?? ctx?.isOnRoundabout,
+      distanceToExit: opts.distanceToExit ?? ctx?.distanceToExit,
+      progressAngle: opts.progressAngle ?? ctx?.progressAngle
+    };
+    const rb = buildRoundaboutSVG(step, rbOpts);
+    if (rb) return rb;
+  }
+  let turn = maneuverTurnAngle(step);
+  if (Math.abs(turn) < MANEUVER_BEND_ANGLE) {
+    if (step.modifier === "uturn") turn = 175;
+    else if (Math.abs(turn) < 4 && step.modifier) {
+      if (step.modifier.includes("left")) turn = -8;
+      else if (step.modifier.includes("right")) turn = 8;
+      else turn = 0;
+    } else {
+      turn = 0;
+    }
+  }
+  turn = Math.max(-178, Math.min(178, turn));
+  return renderManeuverArrow(turn);
+}
+function renderCompass() {
+  const el = $2("compass-svg");
+  if (!el) return;
+  const tok = getThemeTokens();
+  const hdg = effectiveHeading();
+  if (tok.compassStyle === "rose") {
+    renderCompassRose(el, tok, hdg);
+    return;
+  }
+  const W = 400, H = 36, cx = W / 2, px = 1.8;
+  let html = '<line x1="' + cx + '" y1="2" x2="' + cx + '" y2="' + H + '" stroke="' + tok.accent + '" stroke-width="2"/>';
+  if (hdg != null && !isNaN(hdg)) {
+    [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
+      let diff = (d[1] - hdg + 540) % 360 - 180;
+      const x = cx + diff * px;
+      if (x < 14 || x > W - 14) return;
+      const near = Math.abs(diff) < 12;
+      html += '<text x="' + x.toFixed(1) + '" y="29" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="27" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
+    });
+  }
+  el.setAttribute("viewBox", "0 0 " + W + " " + H);
+  el.innerHTML = html;
+}
+function renderCompassRose(el, tok, hdg) {
+  const chopper = document.documentElement.classList.contains("theme-chopper");
+  const W = 400, H = chopper ? 140 : 120, cx = W / 2, cy = H / 2, r = chopper ? 54 : 44;
+  const fs = chopper ? 30 : 22;
+  let html = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + tok.dim + '" stroke-width="' + (chopper ? 2 : 1.5) + '"/>';
+  if (hdg != null && !isNaN(hdg)) {
+    [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
+      const a2 = (d[1] - hdg) * Math.PI / 180;
+      const x = cx + Math.sin(a2) * r;
+      const y = cy - Math.cos(a2) * r;
+      const near = Math.abs((d[1] - hdg + 540) % 360 - 180) < 18;
+      html += '<text x="' + x.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="' + fs + '" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
+    });
+    const a = -hdg * Math.PI / 180;
+    html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.sin(a) * (r - 10)).toFixed(1) + '" y2="' + (cy - Math.cos(a) * (r - 10)).toFixed(1) + '" stroke="' + tok.accent + '" stroke-width="' + (chopper ? 4 : 3) + '"/>';
+  }
+  el.setAttribute("viewBox", "0 0 " + W + " " + H);
+  el.innerHTML = html;
+}
+function renderVisualFrame() {
+  renderCompass();
+  renderPathway();
+}
+var _pathLastS, _pathSkipFrames, PROFILE_GAP;
+var init_render = __esm({
+  "js/render.js"() {
+    init_state();
+    init_util();
+    init_geo();
+    init_gps();
+    init_route();
+    init_roundabout();
+    init_fuel();
+    init_route();
+    init_route_geometry();
+    init_gps_converge();
+    init_nav_constants();
+    init_elevation();
+    init_curve_speed();
+    init_theme_tokens();
+    init_crossings();
+    _pathLastS = null;
+    _pathSkipFrames = 0;
+    PROFILE_GAP = 6;
+  }
+});
+
+// js/vintage-vfd.js
+function initVintageVfd() {
+  document.addEventListener("themechange", syncVintageVfdDomClasses);
+  syncVintageVfdDomClasses();
+}
+function syncVintageVfdDomClasses() {
+  const vintage = document.documentElement.classList.contains("theme-vintage");
+  const speedVal = $2("v-speed");
+  const speedGhost = $2("speed-ghost");
+  const mdistInner = document.querySelector(".mdist-inner");
+  if (speedVal) speedVal.classList.toggle("vfd-emissive-cyan", vintage);
+  if (speedGhost && vintage) speedGhost.textContent = "888";
+  if (mdistInner) mdistInner.classList.toggle("vfd-emissive-cyan", vintage);
+}
+function resetVintageVfd() {
+}
+var init_vintage_vfd = __esm({
+  "js/vintage-vfd.js"() {
+    init_util();
+  }
+});
+
+// js/settings-telemetry.js
+function logSettingsEvent(type, data) {
+  const rec = { ts: Date.now(), type, ...data || {} };
+  try {
+    const arr = JSON.parse(localStorage.getItem(RING_KEY) || "[]");
+    arr.push(rec);
+    if (arr.length > RING_MAX) arr.splice(0, arr.length - RING_MAX);
+    localStorage.setItem(RING_KEY, JSON.stringify(arr));
+  } catch (e) {
+  }
+  try {
+    if (telemetry_default.isActive?.()) telemetry_default.log("settings", { subtype: type, ...data });
+  } catch (e) {
+  }
+}
+var RING_KEY, RING_MAX;
+var init_settings_telemetry = __esm({
+  "js/settings-telemetry.js"() {
+    init_telemetry();
+    RING_KEY = "moto-hud-settings-events";
+    RING_MAX = 200;
+  }
+});
+
+// js/settings-presets.js
+function setOptDom(id, value) {
+  const el = $2(id);
+  if (!el) return;
+  if (el.type === "checkbox") el.checked = !!value;
+  else el.value = String(value);
+}
+function applyPresetToDom(presetId) {
+  const p = PRESETS2[presetId];
+  if (!p) return false;
+  for (const [id, val] of Object.entries(p.values)) setOptDom(id, val);
+  return true;
+}
+function getPresetLabel(presetId) {
+  return PRESETS2[presetId]?.label || presetId;
+}
+function initSettingsPresets(onApplied) {
+  document.querySelectorAll("[data-preset]").forEach((btn) => {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-preset");
+      const p = PRESETS2[id];
+      if (!p) return;
+      if (!confirm("\u0417\u0430\u043C\u0435\u043D\u0438\u0442\u044C \u0442\u0435\u043A\u0443\u0449\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043F\u0440\u0435\u0441\u0435\u0442\u043E\u043C \xAB" + p.label + "\xBB?")) return;
+      applyPresetToDom(id);
+      try {
+        localStorage.setItem("moto-hud-preset-applied", id);
+      } catch (e) {
+      }
+      logSettingsEvent("preset_apply", { preset: id });
+      if (typeof onApplied === "function") onApplied(id);
+    });
+  });
+}
+var PRESETS2;
+var init_settings_presets = __esm({
+  "js/settings-presets.js"() {
+    init_util();
+    init_settings_telemetry();
+    PRESETS2 = {
+      city: {
+        label: "\u0413\u043E\u0440\u043E\u0434",
+        values: {
+          "opt-voice": true,
+          "opt-cams": true,
+          "opt-back-only": true,
+          "opt-path": false,
+          "opt-crossings": true,
+          "opt-elev-profile": false,
+          "opt-curve-warn": true,
+          "opt-curve-strict": "strict",
+          "opt-limit": 60,
+          "opt-cam-speed-tol": 10,
+          "opt-hud-status-mode": "tap",
+          "opt-hud-finish-mode": "tap"
+        }
+      },
+      highway: {
+        label: "\u0422\u0440\u0430\u0441\u0441\u0430",
+        values: {
+          "opt-voice": true,
+          "opt-cams": true,
+          "opt-back-only": true,
+          "opt-path": true,
+          "opt-crossings": true,
+          "opt-elev-profile": false,
+          "opt-curve-warn": true,
+          "opt-curve-strict": "normal",
+          "opt-limit": 90,
+          "opt-cam-speed-tol": 15,
+          "opt-hud-status-mode": "tap",
+          "opt-hud-finish-mode": "always"
+        }
+      },
+      tour: {
+        label: "\u0422\u0443\u0440",
+        values: {
+          "opt-voice": true,
+          "opt-cams": true,
+          "opt-back-only": false,
+          "opt-path": true,
+          "opt-crossings": true,
+          "opt-elev-profile": true,
+          "opt-curve-warn": true,
+          "opt-curve-strict": "relaxed",
+          "opt-limit": 90,
+          "opt-cam-speed-tol": 20,
+          "opt-hud-status-mode": "tap",
+          "opt-hud-finish-mode": "tap"
+        }
+      }
+    };
+  }
+});
+
+// js/sun-mode.js
+function sunTimes(lat, lon, date = /* @__PURE__ */ new Date()) {
+  const zenith = 90.833;
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
+  const lngHour = lon / 15;
+  function calc(isSunrise) {
+    const t = isSunrise ? dayOfYear + (6 - lngHour) / 24 : dayOfYear + (18 - lngHour) / 24;
+    const M = 0.9856 * t - 3.289;
+    let L6 = M + 1.916 * Math.sin(M * Math.PI / 180) + 0.02 * Math.sin(2 * M * Math.PI / 180) + 282.634;
+    L6 = (L6 % 360 + 360) % 360;
+    let RA = Math.atan(0.91764 * Math.tan(L6 * Math.PI / 180)) * 180 / Math.PI;
+    RA = (RA % 360 + 360) % 360;
+    const Lq = Math.floor(L6 / 90) * 90;
+    const Rq = Math.floor(RA / 90) * 90;
+    RA = (RA + (Lq - Rq)) / 15;
+    const sinDec = 0.39782 * Math.sin(L6 * Math.PI / 180);
+    const cosDec = Math.cos(Math.asin(sinDec));
+    const cosH = (Math.cos(zenith * Math.PI / 180) - sinDec * Math.sin(lat * Math.PI / 180)) / (cosDec * Math.cos(lat * Math.PI / 180));
+    if (cosH > 1 || cosH < -1) {
+      return isSunrise ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0) : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 18, 0, 0);
+    }
+    let H = Math.acos(cosH) * 180 / Math.PI / 15;
+    if (!isSunrise) H = 24 - H;
+    const T = H + RA - 0.06571 * t - 6.622;
+    let ut = T - lngHour;
+    ut = (ut % 24 + 24) % 24;
+    const h = Math.floor(ut);
+    const m = Math.floor((ut - h) * 60);
+    const s2 = Math.floor(((ut - h) * 60 - m) * 60);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, s2);
+  }
+  return { sunrise: calc(true), sunset: calc(false) };
+}
+function resolveDisplayMode(pref, pos, now = /* @__PURE__ */ new Date()) {
+  if (pref === "day") return "day";
+  if (pref === "night") return "night";
+  const lat = pos?.lat;
+  const lon = pos?.lon;
+  if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
+    const { sunrise, sunset } = sunTimes(lat, lon, now);
+    const dawn = sunrise.getTime() + HYST_MS;
+    const dusk = sunset.getTime() - HYST_MS;
+    const ts = now.getTime();
+    let target = ts >= dawn && ts < dusk ? "day" : "night";
+    if (target !== _lastResolved && ts - _lastSwitchTs < HYST_MS) {
+      return _lastResolved;
+    }
+    if (target !== _lastResolved) {
+      _lastResolved = target;
+      _lastSwitchTs = ts;
+    }
+    return target;
+  }
+  const h = now.getHours() + now.getMinutes() / 60;
+  return h >= 7 && h < 21 ? "day" : "night";
+}
+function resetModeHysteresis() {
+  _lastResolved = "night";
+  _lastSwitchTs = 0;
+}
+var HYST_MS, _lastResolved, _lastSwitchTs;
+var init_sun_mode = __esm({
+  "js/sun-mode.js"() {
+    HYST_MS = 20 * 60 * 1e3;
+    _lastResolved = "night";
+    _lastSwitchTs = 0;
+  }
+});
+
+// js/theme-manager.js
+function loadThemePrefs() {
+  try {
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
+    if (!raw) return { theme: "avionics", modePref: "night" };
+    const o = JSON.parse(raw);
+    return {
+      theme: THEME_IDS.includes(o.theme) ? o.theme : "avionics",
+      modePref: MODE_PREFS.includes(o.modePref) ? o.modePref : "night"
+    };
+  } catch (e) {
+    return { theme: "avionics", modePref: "night" };
+  }
+}
+function saveThemePrefs(prefs) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(prefs));
+  } catch (e) {
+  }
+}
+function applyTheme(theme, modePref, save = true) {
+  const html = document.documentElement;
+  THEME_IDS.forEach((id) => html.classList.remove("theme-" + id));
+  const tid = THEME_IDS.includes(theme) ? theme : "avionics";
+  html.classList.add("theme-" + tid);
+  const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
+  const mode = resolveDisplayMode(modePref, pos);
+  html.setAttribute("data-mode", mode);
+  if (save) saveThemePrefs({ theme: tid, modePref });
+  applyThemeCss();
+  syncThemeControls(tid, modePref);
+  updateModeButtonLabel(modePref, mode);
+  if ($3("hud")?.classList.contains("on")) renderVisualFrame();
+  syncVintageVfdDomClasses();
+}
+function $3(id) {
+  return document.getElementById(id);
+}
+function syncThemeControls(theme, modePref) {
+  const sel = $3("opt-theme");
+  if (sel) sel.value = theme;
+  const mDay = $3("opt-mode-day");
+  const mNight = $3("opt-mode-night");
+  const mAuto = $3("opt-mode-auto");
+  if (mDay) mDay.checked = modePref === "day";
+  if (mNight) mNight.checked = modePref === "night";
+  if (mAuto) mAuto.checked = modePref === "auto";
+}
+function updateModeButtonLabel(modePref, resolved) {
+  const btn = $3("btn-mode");
+  if (!btn) return;
+  const lbl = btn.querySelector(".cb-lbl");
+  if (!lbl) return;
+  if (modePref === "auto") {
+    lbl.textContent = resolved === "day" ? "\u0410\u0412\u0422\u041E\u2600" : "\u0410\u0412\u0422\u041E\u{1F319}";
+  } else if (modePref === "day") {
+    lbl.textContent = "\u0414\u0415\u041D\u042C";
+  } else {
+    lbl.textContent = "\u041D\u041E\u0427\u042C";
+  }
+}
+function tickAutoMode() {
+  const cur = loadThemePrefs();
+  if (cur.modePref !== "auto") return;
+  const now = Date.now();
+  if (now - _lastAutoCheck < 3e4) return;
+  _lastAutoCheck = now;
+  const pos = S.gps ? { lat: S.gps.lat, lon: S.gps.lon } : null;
+  const mode = resolveDisplayMode("auto", pos);
+  const html = document.documentElement;
+  if (html.getAttribute("data-mode") !== mode) {
+    html.setAttribute("data-mode", mode);
+    invalidateThemeTokens();
+    applyThemeCss();
+    updateModeButtonLabel("auto", mode);
+    if ($3("hud")?.classList.contains("on")) renderVisualFrame();
+  } else {
+    updateModeButtonLabel("auto", mode);
+  }
+}
+function themeLabel(id) {
+  return LABELS[id] || id;
+}
+function initThemeManager() {
+  const cur = loadThemePrefs();
+  applyTheme(cur.theme, cur.modePref, false);
+  $3("opt-theme")?.addEventListener("change", (e) => {
+    applyTheme(e.target.value, loadThemePrefs().modePref);
+  });
+  ["opt-mode-day", "opt-mode-night", "opt-mode-auto"].forEach((id) => {
+    $3(id)?.addEventListener("change", (e) => {
+      if (!e.target.checked) return;
+      const mode = id.replace("opt-mode-", "");
+      if (mode !== "auto") resetModeHysteresis();
+      applyTheme(loadThemePrefs().theme, mode);
+    });
+  });
+}
+var THEME_STORAGE_KEY, THEME_IDS, MODE_PREFS, LABELS, _lastAutoCheck;
+var init_theme_manager = __esm({
+  "js/theme-manager.js"() {
+    init_state();
+    init_theme();
+    init_sun_mode();
+    init_render();
+    init_vintage_vfd();
+    THEME_STORAGE_KEY = "moto-hud-theme";
+    THEME_IDS = ["avionics", "hitech", "space", "sport", "chopper", "vintage"];
+    MODE_PREFS = ["day", "night", "auto"];
+    LABELS = {
+      avionics: "\u0410\u0432\u0438\u043E\u043D\u0438\u043A\u0430",
+      hitech: "\u0425\u0430\u0439\u0442\u0435\u043A",
+      space: "\u041A\u043E\u0441\u043C\u043E\u0441",
+      sport: "\u0421\u043F\u043E\u0440\u0442",
+      chopper: "\u0427\u043E\u043F\u043F\u0435\u0440",
+      vintage: "\u0412\u0438\u043D\u0442\u0430\u0436"
+    };
+    _lastAutoCheck = 0;
+  }
+});
+
+// js/settings-export.js
+function collectSettingsBundle() {
+  const read = (key) => {
+    try {
+      return JSON.parse(localStorage.getItem(key) || "null");
+    } catch (e) {
+      return null;
+    }
+  };
+  return {
+    kind: SETTINGS_BUNDLE_KIND,
+    version: SETTINGS_BUNDLE_VERSION,
+    exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    appOpts: read(APP_OPTS_KEY),
+    hudOpts: read(HUD_OPTS_KEY),
+    elevOpts: read(ELEV_OPTS_KEY),
+    curveOpts: read(CURVE_OPTS_KEY),
+    theme: read(THEME_STORAGE_KEY),
+    fuelProxy: localStorage.getItem(FUEL_PROXY_LS_KEY) || ""
+  };
+}
+function applySettingsBundle(data) {
+  if (!data || data.kind !== SETTINGS_BUNDLE_KIND) throw new Error("\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u0430\u0439\u043B \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A");
+  const write = (key, val) => {
+    if (val == null) return;
+    localStorage.setItem(key, JSON.stringify(val));
+  };
+  write(APP_OPTS_KEY, data.appOpts);
+  write(HUD_OPTS_KEY, data.hudOpts);
+  write(ELEV_OPTS_KEY, data.elevOpts);
+  write(CURVE_OPTS_KEY, data.curveOpts);
+  write(THEME_STORAGE_KEY, data.theme);
+  if (data.fuelProxy != null && data.fuelProxy !== "") {
+    localStorage.setItem(FUEL_PROXY_LS_KEY, String(data.fuelProxy));
+  } else {
+    localStorage.removeItem(FUEL_PROXY_LS_KEY);
+  }
+}
+function clearAllSettings() {
+  [APP_OPTS_KEY, HUD_OPTS_KEY, ELEV_OPTS_KEY, CURVE_OPTS_KEY, THEME_STORAGE_KEY, FUEL_PROXY_LS_KEY].forEach((k) => {
+    try {
+      localStorage.removeItem(k);
+    } catch (e) {
+    }
+  });
+}
+function downloadSettingsJson() {
+  const blob = new Blob(
+    [JSON.stringify(collectSettingsBundle(), null, 2)],
+    { type: "application/json;charset=utf-8" }
+  );
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "moto-hud-settings.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+var SETTINGS_BUNDLE_KIND, SETTINGS_BUNDLE_VERSION;
+var init_settings_export = __esm({
+  "js/settings-export.js"() {
+    init_state();
+    init_theme_manager();
+    init_fuel_config();
+    SETTINGS_BUNDLE_KIND = "moto-hud-settings";
+    SETTINGS_BUNDLE_VERSION = 1;
+  }
+});
+
+// js/settings-ui.js
+function openSettingsPanel() {
+  const setup = $2("setup");
+  const drawer = $2("drawer-opts");
+  if (!setup || !drawer) return;
+  setup.style.display = "block";
+  setup.style.zIndex = "40";
+  drawer.open = true;
+  requestAnimationFrame(() => {
+    drawer.scrollIntoView({ behavior: "smooth", block: "start" });
+    const core = drawer.querySelector('[data-section="core"]');
+    if (core) core.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  logSettingsEvent("panel_open", { from: $2("hud")?.classList.contains("on") ? "hud" : "setup" });
+}
+function readSectionState() {
+  try {
+    const raw = localStorage.getItem(SECTIONS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+function saveSectionOpen(id, open) {
+  const o = readSectionState();
+  o[id] = !!open;
+  try {
+    localStorage.setItem(SECTIONS_KEY, JSON.stringify(o));
+  } catch (e) {
+  }
+}
+function applySectionState() {
+  const state = readSectionState();
+  document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
+    const id = det.getAttribute("data-section");
+    if (id && state[id] != null) det.open = !!state[id];
+  });
+}
+function syncAriaExpanded(el) {
+  if (!el) return;
+  const open = el.tagName === "DETAILS" ? el.open : el.classList.contains("open");
+  el.setAttribute("aria-expanded", open ? "true" : "false");
+}
+function bindSectionPersistence() {
+  document.querySelectorAll(".opts-fold[data-section]").forEach((det) => {
+    syncAriaExpanded(det);
+    det.addEventListener("toggle", () => {
+      const id = det.getAttribute("data-section");
+      if (!id) return;
+      saveSectionOpen(id, det.open);
+      syncAriaExpanded(det);
+      if (det.open) logSettingsEvent("section_open", { section: id });
+    });
+  });
+  const main = $2("drawer-opts");
+  if (main) {
+    syncAriaExpanded(main);
+    main.addEventListener("toggle", () => {
+      syncAriaExpanded(main);
+      if (main.open) logSettingsEvent("drawer_open", {});
+    });
+  }
+}
+function updateDevSectionVisible() {
+  let on = false;
+  try {
+    on = localStorage.getItem(DEV_KEY) === "1";
+  } catch (e) {
+  }
+  if (new URLSearchParams(location.search).get("dev") === "1") on = true;
+  document.documentElement.classList.toggle("dev-mode", on);
+  const dev = $2("opts-dev-section");
+  if (dev) dev.classList.toggle("hidden", !on);
+}
+function bindDevModeEasterEgg() {
+  let taps = 0;
+  let lastTap = 0;
+  const el = $2(DEV_TAP_TARGET);
+  if (!el) return;
+  el.addEventListener("click", () => {
+    const now = Date.now();
+    if (now - lastTap > 2500) taps = 0;
+    lastTap = now;
+    taps++;
+    if (taps >= DEV_TAPS_NEEDED) {
+      taps = 0;
+      try {
+        localStorage.setItem(DEV_KEY, "1");
+      } catch (e) {
+      }
+      updateDevSectionVisible();
+      logSettingsEvent("dev_mode_on", {});
+    }
+  });
+}
+function bindOptChangeLogging() {
+  const root = $2("drawer-opts");
+  if (!root) return;
+  root.querySelectorAll("input, select").forEach((el) => {
+    if (!el.id || !el.id.startsWith("opt-")) return;
+    const ev = el.type === "checkbox" || el.type === "radio" ? "change" : "change";
+    el.addEventListener(ev, () => {
+      const val = el.type === "checkbox" ? el.checked : el.value;
+      logSettingsEvent("opt_change", { optId: el.id, value: val });
+    });
+  });
+}
+function bindMigrationBanner() {
+  const banner = $2("opts-migration-banner");
+  if (!banner) return;
+  let seen = false;
+  try {
+    seen = localStorage.getItem(MIGRATION_KEY) === "1";
+  } catch (e) {
+  }
+  if (!seen) banner.classList.remove("hidden");
+  $2("opts-migration-dismiss")?.addEventListener("click", () => {
+    banner.classList.add("hidden");
+    try {
+      localStorage.setItem(MIGRATION_KEY, "1");
+    } catch (e) {
+    }
+  });
+  $2("opts-migration-show")?.addEventListener("click", () => {
+    openSettingsPanel();
+    banner.classList.add("hidden");
+    try {
+      localStorage.setItem(MIGRATION_KEY, "1");
+    } catch (e) {
+    }
+  });
+}
+function initSettingsUi(reloadAllOpts, persistFromDom2) {
+  applySectionState();
+  bindSectionPersistence();
+  bindDevModeEasterEgg();
+  updateDevSectionVisible();
+  bindOptChangeLogging();
+  bindSettingsDataActions(reloadAllOpts);
+  bindMigrationBanner();
+  document.querySelectorAll(".setup-details").forEach((det) => {
+    syncAriaExpanded(det);
+    det.addEventListener("toggle", () => syncAriaExpanded(det));
+  });
+  initSettingsPresets(() => {
+    if (typeof persistFromDom2 === "function") persistFromDom2();
+  });
+}
+function bindSettingsDataActions(reloadAllOpts) {
+  $2("btn-settings-export")?.addEventListener("click", () => {
+    downloadSettingsJson();
+    logSettingsEvent("settings_export", {});
+  });
+  $2("btn-settings-import")?.addEventListener("click", () => $2("settings-import-file")?.click());
+  $2("settings-import-file")?.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const text = await file.text();
+      applySettingsBundle(JSON.parse(text));
+      if (typeof reloadAllOpts === "function") reloadAllOpts();
+      logSettingsEvent("settings_import", {});
+      alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u044B");
+    } catch (err) {
+      alert("\u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043C\u043F\u043E\u0440\u0442\u0430: " + (err.message || err));
+    }
+  });
+  $2("btn-settings-reset")?.addEventListener("click", () => {
+    if (!confirm("\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u0441\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A \u0437\u0430\u0432\u043E\u0434\u0441\u043A\u0438\u043C?")) return;
+    clearAllSettings();
+    if (typeof reloadAllOpts === "function") reloadAllOpts();
+    logSettingsEvent("settings_reset", {});
+    alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B. \u041F\u0440\u0438 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E\u0441\u0442\u0438 \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443.");
+  });
+}
+var SECTIONS_KEY, DEV_KEY, MIGRATION_KEY, DEV_TAP_TARGET, DEV_TAPS_NEEDED;
+var init_settings_ui = __esm({
+  "js/settings-ui.js"() {
+    init_util();
+    init_settings_telemetry();
+    init_settings_presets();
+    init_settings_export();
+    SECTIONS_KEY = "moto-hud-opts-sections";
+    DEV_KEY = "moto-hud-dev-mode";
+    MIGRATION_KEY = "moto-hud-opts-migration-seen";
+    DEV_TAP_TARGET = "help-app-version";
+    DEV_TAPS_NEEDED = 7;
+  }
+});
+
+// js/app-opts.js
+function loadAppOptsFromStorage() {
+  try {
+    const raw = localStorage.getItem(APP_OPTS_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    const setCheck = (id, v) => {
+      if (typeof v !== "boolean") return;
+      const el = $2(id);
+      if (el) el.checked = v;
+    };
+    const setVal = (id, v) => {
+      if (v == null) return;
+      const el = $2(id);
+      if (el) el.value = String(v);
+    };
+    setCheck("opt-voice", o.voice);
+    setCheck("opt-path", o.showPath);
+    setCheck("opt-crossings", o.showCrossingContext);
+    setCheck("opt-path-chevrons", o.showPathChevrons !== false);
+    setCheck("opt-chevron-labels", o.pathChevronLabels !== false);
+    setVal("opt-chevron-max", o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
+    setCheck("opt-heading", o.showCompass);
+    setCheck("opt-cams", o.cams);
+    setCheck("opt-back-only", o.backOnly);
+    setVal("opt-tol", o.tolerance);
+    setVal("opt-nodir", o.noDirPolicy);
+    setVal("opt-limit", o.userDefaultLimit ?? o.limit);
+    if (o.userDefaultLimit != null || o.limit != null) {
+      S.userDefaultLimit = o.userDefaultLimit ?? o.limit ?? 60;
+    }
+    if (typeof o.speedLimitDynamic === "boolean") S.speedLimitDynamic = o.speedLimitDynamic;
+    if (o.speedLimitFallback) S.speedLimitFallback = o.speedLimitFallback;
+    setCheck("opt-speed-limit-dynamic", o.speedLimitDynamic !== false);
+    setVal("opt-speed-limit-fallback", o.speedLimitFallback || "user-default");
+    setCheck("opt-roundabout-schema", o.roundaboutSchema !== false);
+    if (typeof o.roundaboutSchema === "boolean") S.roundaboutSchema = o.roundaboutSchema;
+    setVal("opt-cam-speed-tol", o.camSpeedTol != null ? o.camSpeedTol : DEFAULT_CAM_SPEED_TOL);
+  } catch (e) {
+  }
+}
+function saveAppOptsToStorage() {
+  try {
+    localStorage.setItem(APP_OPTS_KEY, JSON.stringify({
+      voice: !!S.voice,
+      showPath: !!S.showPath,
+      showCrossingContext: S.showCrossingContext !== false,
+      showPathChevrons: S.showPathChevrons !== false,
+      pathChevronLabels: S.pathChevronLabels !== false,
+      pathChevronMax: S.pathChevronMax,
+      showCompass: !!S.showCompass,
+      cams: !!S.cams,
+      backOnly: !!S.backOnly,
+      tolerance: S.tolerance,
+      noDirPolicy: S.noDirPolicy,
+      limit: S.userDefaultLimit,
+      userDefaultLimit: S.userDefaultLimit,
+      speedLimitDynamic: S.speedLimitDynamic !== false,
+      speedLimitFallback: S.speedLimitFallback,
+      roundaboutSchema: S.roundaboutSchema !== false,
+      camSpeedTol: S.camSpeedTol
+    }));
+  } catch (e) {
+  }
+}
+var init_app_opts = __esm({
+  "js/app-opts.js"() {
+    init_state();
+    init_util();
+  }
+});
+
+// js/hud-chrome.js
+function normalizeChromeMode(v) {
+  return v === "always" || v === "off" ? v : "tap";
+}
+function chromeShown(mode) {
+  const m = normalizeChromeMode(mode);
+  if (m === "off") return false;
+  if (m === "always") return true;
+  return $2("hud")?.classList.contains("chrome-reveal");
+}
+function revealHudChrome() {
+  const hud = $2("hud");
+  if (!hud?.classList.contains("on")) return;
+  hud.classList.add("chrome-reveal");
+  applyHudChrome();
+  const btns = $2("hud-side-btns");
+  if (btns) btns.scrollTop = 0;
+  clearTimeout(_revealTimer);
+  _revealTimer = setTimeout(() => {
+    hud.classList.remove("chrome-reveal");
+    applyHudChrome();
+  }, HUD_CHROME_TAP_MS);
+}
+function onHudTap() {
+  revealHudChrome();
+}
+function clearHudChromeReveal() {
+  clearTimeout(_revealTimer);
+  _revealTimer = null;
+  $2("hud")?.classList.remove("chrome-reveal");
+  applyHudChrome();
+}
+function applyHudChrome() {
+  const hud = $2("hud");
+  if (!hud) return;
+  const reveal = hud.classList.contains("chrome-reveal");
+  const statusOn = chromeShown(S.hudStatusMode);
+  const finishFields = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
+  const finishOn = finishFields && chromeShown(S.hudFinishMode);
+  hud.classList.toggle("chrome-btns-on", reveal);
+  hud.classList.toggle("chrome-status-on", statusOn);
+  hud.classList.toggle("chrome-finish-on", finishOn);
+  if (reveal) {
+    const btns = $2("hud-side-btns");
+    if (btns) btns.scrollTop = 0;
+  }
+  const panel = $2("finish-info");
+  if (panel) {
+    panel.classList.toggle("hidden", !finishOn);
+    $2("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
+    $2("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
+    $2("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
+  }
+}
+function initHudChrome() {
+  if (_bound) return;
+  _bound = true;
+  applyHudChrome();
+}
+var HUD_CHROME_TAP_MS, _revealTimer, _bound;
+var init_hud_chrome = __esm({
+  "js/hud-chrome.js"() {
+    init_state();
+    init_util();
+    HUD_CHROME_TAP_MS = 15e3;
+    _revealTimer = null;
+    _bound = false;
+  }
+});
+
+// js/hud-opts.js
+function loadHudOptsFromStorage() {
+  try {
+    const raw = localStorage.getItem(HUD_OPTS_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    if (typeof o.showFinishDist === "boolean") {
+      const el = $("opt-finish-dist");
+      if (el) el.checked = o.showFinishDist;
+    }
+    if (typeof o.showFinishTime === "boolean") {
+      const el = $("opt-finish-time");
+      if (el) el.checked = o.showFinishTime;
+    }
+    if (typeof o.showFinishEta === "boolean") {
+      const el = $("opt-finish-eta");
+      if (el) el.checked = o.showFinishEta;
+    }
+    if (typeof o.fuelPlannerCount === "number") {
+      S.fuelPlannerCount = clampFuelPlannerCount(o.fuelPlannerCount);
+      const el = $("opt-fuel-count");
+      if (el) el.value = String(S.fuelPlannerCount);
+    }
+    if (o.hudStatusMode) {
+      S.hudStatusMode = normalizeChromeMode(o.hudStatusMode);
+      const el = $("opt-hud-status-mode");
+      if (el) el.value = S.hudStatusMode;
+    }
+    if (o.hudFinishMode) {
+      S.hudFinishMode = normalizeChromeMode(o.hudFinishMode);
+      const el = $("opt-hud-finish-mode");
+      if (el) el.value = S.hudFinishMode;
+    }
+  } catch (e) {
+  }
+}
+function clampFuelPlannerCount(n) {
+  return Math.max(MIN_FUEL_PLANNER_COUNT, Math.min(
+    MAX_FUEL_PLANNER_COUNT,
+    parseInt(n, 10) || DEFAULT_FUEL_PLANNER_COUNT
+  ));
+}
+function saveHudOptsToStorage() {
+  try {
+    localStorage.setItem(HUD_OPTS_KEY, JSON.stringify({
+      showFinishDist: !!S.showFinishDist,
+      showFinishTime: !!S.showFinishTime,
+      showFinishEta: !!S.showFinishEta,
+      hudStatusMode: normalizeChromeMode(S.hudStatusMode),
+      hudFinishMode: normalizeChromeMode(S.hudFinishMode),
+      fuelPlannerCount: clampFuelPlannerCount(S.fuelPlannerCount)
+    }));
+  } catch (e) {
+  }
+}
+var init_hud_opts = __esm({
+  "js/hud-opts.js"() {
+    init_state();
+    init_hud_chrome();
+  }
+});
+
+// js/hud-settings-sheet.js
+function isStationary() {
+  return (S.dispSpeed || 0) <= STATIONARY_KMH;
+}
+function showHudToast(msg) {
+  let el = $2("hud-settings-toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "hud-settings-toast";
+    el.className = "hud-settings-toast";
+    $2("hud")?.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add("on");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove("on"), 2800);
+}
+function closeSheet() {
+  const sheet = $2("hud-settings-sheet");
+  sheet?.classList.remove("on");
+  if (sheet) sheet.setAttribute("aria-hidden", "true");
+}
+function closeHudSettingsSheet() {
+  closeSheet();
+}
+function syncSheetFromDom() {
+  const voice = $2("hud-opt-voice");
+  const cams = $2("hud-opt-cams");
+  if (voice) voice.checked = !!$2("opt-voice")?.checked;
+  if (cams) cams.checked = !!$2("opt-cams")?.checked;
+  const cur = loadThemePrefs();
+  document.querySelectorAll(".hud-theme-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.theme === cur.theme);
+  });
+}
+function persistFromDom(syncOptionsFromDom2) {
+  if (typeof syncOptionsFromDom2 === "function") syncOptionsFromDom2();
+  saveAppOptsToStorage();
+  saveHudOptsToStorage();
+  saveElevOptsToStorage();
+  saveCurveOptsToStorage();
+  applyHudChrome();
+}
+function openSheet() {
+  const sheet = $2("hud-settings-sheet");
+  if (!sheet) return;
+  syncSheetFromDom();
+  sheet.classList.add("on");
+  sheet.setAttribute("aria-hidden", "false");
+  logSettingsEvent("hud_sheet_open", {});
+}
+function handleHudGearClick(syncOptionsFromDom2) {
+  if (!isStationary()) {
+    showHudToast("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u2014 \u043D\u0430 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0435");
+    logSettingsEvent("hud_sheet_blocked", { speed: Math.round(S.dispSpeed || 0) });
+    return;
+  }
+  openSheet();
+  $2("hud-settings-sheet")._sync = syncOptionsFromDom2;
+}
+function bindHudThemeRow() {
+  const row = $2("hud-theme-row");
+  if (!row || row.dataset.bound) return;
+  row.dataset.bound = "1";
+  const cur = loadThemePrefs();
+  row.innerHTML = THEME_IDS.map(
+    (id) => '<button type="button" class="secondary hud-theme-btn' + (id === cur.theme ? " active" : "") + '" data-theme="' + id + '">' + themeLabel(id) + "</button>"
+  ).join("");
+  row.querySelectorAll(".hud-theme-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const theme = btn.getAttribute("data-theme");
+      if (!THEME_IDS.includes(theme)) return;
+      applyTheme(theme, loadThemePrefs().modePref);
+      row.querySelectorAll(".hud-theme-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      logSettingsEvent("hud_sheet_change", { optId: "opt-theme", value: theme });
+    });
+  });
+}
+function initHudSettingsSheet(syncOptionsFromDom2) {
+  const sheet = $2("hud-settings-sheet");
+  if (!sheet || sheet.dataset.bound) return;
+  sheet.dataset.bound = "1";
+  sheet.setAttribute("aria-hidden", "true");
+  bindHudThemeRow();
+  $2("hud-settings-backdrop")?.addEventListener("click", closeSheet);
+  $2("hud-settings-close")?.addEventListener("click", closeSheet);
+  $2("hud-opt-voice")?.addEventListener("change", (e) => {
+    const main = $2("opt-voice");
+    if (main) main.checked = e.target.checked;
+    S.voice = e.target.checked;
+    saveAppOptsToStorage();
+    logSettingsEvent("hud_sheet_change", { optId: "opt-voice", value: S.voice });
+  });
+  $2("hud-opt-cams")?.addEventListener("change", (e) => {
+    const main = $2("opt-cams");
+    if (main) main.checked = e.target.checked;
+    S.cams = e.target.checked;
+    saveAppOptsToStorage();
+    logSettingsEvent("hud_sheet_change", { optId: "opt-cams", value: S.cams });
+  });
+  sheet.querySelectorAll(".hud-preset-btn[data-preset]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-preset");
+      if (!confirm("\u041F\u0440\u0435\u0441\u0435\u0442 \xAB" + getPresetLabel(id) + "\xBB?")) return;
+      applyPresetToDom(id);
+      persistFromDom(syncOptionsFromDom2);
+      syncSheetFromDom();
+      logSettingsEvent("hud_sheet_preset", { preset: id });
+    });
+  });
+  $2("hud-settings-full")?.addEventListener("click", () => {
+    closeSheet();
+    openSettingsPanel();
+  });
+}
+var STATIONARY_KMH, _toastTimer;
+var init_hud_settings_sheet = __esm({
+  "js/hud-settings-sheet.js"() {
+    init_state();
+    init_util();
+    init_settings_ui();
+    init_settings_presets();
+    init_app_opts();
+    init_hud_opts();
+    init_elevation();
+    init_curve_speed();
+    init_hud_chrome();
+    init_settings_telemetry();
+    init_theme_manager();
+    STATIONARY_KMH = 15;
+    _toastTimer = null;
+  }
+});
+
+// js/yandex-link.js
+var yandex_link_exports = {};
+__export(yandex_link_exports, {
+  YANDEX_PARSER_REV: () => YANDEX_PARSER_REV,
+  YANDEX_URL_RE: () => YANDEX_URL_RE,
+  extractYandexUrl: () => extractYandexUrl,
+  isYandexMapsUrl: () => isYandexMapsUrl,
+  parseYandexRouteLink: () => parseYandexRouteLink
+});
+function extractYandexUrl(text) {
+  const s2 = String(text || "").trim();
+  if (!s2) return null;
+  if (YANDEX_URL_RE.test(s2)) return s2.match(YANDEX_URL_RE)[0];
+  const m = s2.match(YANDEX_URL_RE);
+  return m ? m[0] : null;
+}
+function parseRtextPoint(part) {
+  const s2 = String(part || "").trim();
+  if (!s2) return null;
+  const coord = s2.match(/^(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)$/);
+  if (coord) {
+    const lat = parseFloat(coord[1]);
+    const lon = parseFloat(coord[2]);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon, label: s2 };
+  }
+  return null;
+}
+async function parseYandexRouteLink(rawUrl) {
+  let url = String(rawUrl || "").trim();
+  if (!url) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
+  if (!extractYandexUrl(url)) throw new Error("\u041D\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442");
+  if (SHORT_RE.test(url)) {
+    try {
+      const res = await fetch(url, { redirect: "follow", method: "HEAD", mode: "cors" });
+      if (res.url) url = res.url;
+    } catch {
+    }
+  }
+  const m = url.match(RTEXT_RE);
+  if (!m) throw new Error("\u0412 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (rtext). \u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB.");
+  const parts = decodeURIComponent(m[1]).split("~");
+  const waypoints = parts.map(parseRtextPoint).filter(Boolean);
+  if (waypoints.length < 2) throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652)");
+  return waypoints;
+}
+function isYandexMapsUrl(raw) {
+  return !!extractYandexUrl(raw);
+}
+var YANDEX_PARSER_REV, YANDEX_URL_RE, SHORT_RE, RTEXT_RE;
+var init_yandex_link = __esm({
+  "js/yandex-link.js"() {
+    YANDEX_PARSER_REV = 1;
+    YANDEX_URL_RE = /https?:\/\/(?:yandex\.ru|ya\.ru)\/maps[^\s"'<>]*/i;
+    SHORT_RE = /^https?:\/\/(?:yandex\.ru|ya\.ru)\/maps\/-/i;
+    RTEXT_RE = /[?&]rtext=([^&]+)/i;
+  }
+});
+
+// js/yandex-import.js
+function openDb2() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME2, DB_VER2);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("imports")) {
+        db.createObjectStore("imports", { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveYandexImportHistory(waypoints, mode) {
+  try {
+    const db = await openDb2();
+    const name = (waypoints[0]?.label || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442").split(/\s+/)[0].slice(0, 24);
+    await new Promise((resolve, reject) => {
+      const tx2 = db.transaction("imports", "readwrite");
+      tx2.objectStore("imports").put({
+        id: crypto.randomUUID(),
+        name,
+        ts: Date.now(),
+        mode,
+        waypointCount: waypoints.length
+      });
+      tx2.oncomplete = () => resolve();
+      tx2.onerror = () => reject(tx2.error);
+    });
+    db.close();
+  } catch (e) {
+    console.warn("yandex history:", e);
+  }
+}
+function waypointsToOsrmPoints(waypoints, gps) {
+  const pts = waypoints.map((w) => ({ lat: w.lat, lon: w.lon }));
+  if (gps && pts.length) {
+    if (haversine(gps, pts[0]) > 500) pts.unshift({ lat: gps.lat, lon: gps.lon });
+    else pts[0] = { lat: gps.lat, lon: gps.lon };
+  }
+  return pts;
+}
+function hideImportModal() {
+  $2("yandexImportModal")?.classList.remove("on");
+  _pendingWaypoints = null;
+  _pendingUrl = "";
+}
+function hideBanner() {
+  const banner = $2("yandex-banner");
+  banner?.classList.remove("on");
+  banner?.classList.add("hidden");
+}
+async function finishImport(mode) {
+  const wps = _pendingWaypoints;
+  const urlForInput = _pendingUrl;
+  if (!wps?.length) return;
+  hideImportModal();
+  hideBanner();
+  const status = $2("s-finish");
+  const btn = $2("btn-build-route");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "\u23F3 \u0418\u043C\u043F\u043E\u0440\u0442\u2026";
+  }
+  if (status) {
+    status.textContent = mode === "direct" ? "\u23F3 \u0411\u044B\u0441\u0442\u0440\u044B\u0439 \u0441\u0442\u0430\u0440\u0442\u2026" : "\u23F3 \u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 OSRM\u2026";
+    status.className = "status";
+  }
+  try {
+    if (mode === "direct") {
+      attachRouteFromImport(buildDirectRouteFromWaypoints(wps), wps);
+    } else {
+      const pts = waypointsToOsrmPoints(wps, S.gps);
+      const route = await fetchRouteThroughWaypoints(pts);
+      attachRouteFromImport(route, pts);
+    }
+    const { refreshRouteUi: refreshRouteUi2 } = await Promise.resolve().then(() => (init_setup(), setup_exports));
+    refreshRouteUi2();
+    await saveYandexImportHistory(wps, mode);
+    telemetry_default.log("nav", { sub: "yandex_import", mode, n: wps.length });
+    if (status) {
+      status.textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442 \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB";
+      status.className = "status ok";
+    }
+    $2("finish-input").value = urlForInput || `${wps.length} \u0442\u043E\u0447\u0435\u043A \u042F\u043D\u0434\u0435\u043A\u0441`;
+  } catch (e) {
+    if (status) {
+      status.textContent = "\u274C " + (e.message || e);
+      status.className = "status err";
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = !(S.gps && S.finish);
+      btn.textContent = "\u{1F5FA} \u041F\u043E\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442";
+    }
+  }
+}
+function offerYandexImport(waypoints, sourceUrl = "") {
+  _pendingWaypoints = waypoints;
+  _pendingUrl = sourceUrl || "";
+  const modal = $2("yandexImportModal");
+  const info = $2("yandex-import-info");
+  if (info) {
+    info.textContent = `\u0422\u043E\u0447\u0435\u043A: ${waypoints.length}. \u0414\u043B\u044F \u0442\u043E\u0447\u043D\u043E\u0433\u043E \u043F\u043E\u0432\u0442\u043E\u0440\u0435\u043D\u0438\u044F \u0433\u0435\u043E\u043C\u0435\u0442\u0440\u0438\u0438 \u042F\u043D\u0434\u0435\u043A\u0441\u0430 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0439\u0442\u0435 \u043F\u0440\u043E\u043C\u0435\u0436\u0443\u0442\u043E\u0447\u043D\u044B\u0435 \u0442\u043E\u0447\u043A\u0438 \u043A\u0430\u0436\u0434\u044B\u0435 3\u20135 \u043A\u043C \u2014 \u0438\u043D\u0430\u0447\u0435 OSRM \u043C\u043E\u0436\u0435\u0442 \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u0435 \u0434\u043E\u0440\u043E\u0433\u0438.`;
+  }
+  modal?.classList.add("on");
+}
+async function importYandexFromText(rawText) {
+  const { parseYandexRouteLink: parseYandexRouteLink2 } = await Promise.resolve().then(() => (init_yandex_link(), yandex_link_exports));
+  const url = extractYandexUrl(rawText) || rawText.trim();
+  const wps = await parseYandexRouteLink2(url);
+  offerYandexImport(wps, url);
+  return wps;
+}
+function showYandexBanner(message, onApply) {
+  const banner = $2("yandex-banner");
+  const msg = $2("yandex-banner-msg");
+  if (!banner) return;
+  if (msg) msg.textContent = message || "\u041D\u0430\u0439\u0434\u0435\u043D\u0430 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442";
+  banner.classList.remove("hidden");
+  banner.classList.add("on");
+  const applyBtn = $2("yandex-banner-apply");
+  const dismissBtn = $2("yandex-banner-dismiss");
+  const onOk = () => {
+    hideBanner();
+    onApply?.();
+  };
+  const onNo = () => hideBanner();
+  applyBtn?.replaceWith(applyBtn.cloneNode(true));
+  dismissBtn?.replaceWith(dismissBtn.cloneNode(true));
+  $2("yandex-banner-apply")?.addEventListener("click", onOk, { once: true });
+  $2("yandex-banner-dismiss")?.addEventListener("click", onNo, { once: true });
+}
+function initYandexImportUi() {
+  $2("yandex-import-direct")?.addEventListener("click", () => {
+    void finishImport("direct");
+  });
+  $2("yandex-import-routed")?.addEventListener("click", () => {
+    void finishImport("routed");
+  });
+  $2("yandex-import-cancel")?.addEventListener("click", hideImportModal);
+}
+var DB_NAME2, DB_VER2, _pendingWaypoints, _pendingUrl;
+var init_yandex_import = __esm({
+  "js/yandex-import.js"() {
+    init_state();
+    init_util();
+    init_geo();
+    init_route();
+    init_yandex_link();
+    init_telemetry();
+    DB_NAME2 = "moto-hud-yandex";
+    DB_VER2 = 1;
+    _pendingWaypoints = null;
+    _pendingUrl = "";
+  }
+});
+
 // js/route-map.js
 function clearLayers() {
-  if (!_map) return;
-  _routeLayers.forEach((l) => _map.removeLayer(l));
-  _hudWindowLayers.forEach((l) => _map.removeLayer(l));
-  _markers.forEach((m) => _map.removeLayer(m));
+  if (!_map2) return;
+  _routeLayers.forEach((l) => _map2.removeLayer(l));
+  _hudWindowLayers.forEach((l) => _map2.removeLayer(l));
+  _markers.forEach((m) => _map2.removeLayer(m));
   _routeLayers = [];
   _hudWindowLayers = [];
   _markers = [];
@@ -18713,31 +19015,31 @@ function latLngsForDistance(route, maxM, startS) {
   return out;
 }
 function applyTileLayer(id) {
-  if (!_map) return;
+  if (!_map2) return;
   const layers = resolveMapLayers(id);
-  if (_tileLayer) _map.removeLayer(_tileLayer);
-  if (_overlayLayer) {
-    _map.removeLayer(_overlayLayer);
-    _overlayLayer = null;
+  if (_tileLayer2) _map2.removeLayer(_tileLayer2);
+  if (_overlayLayer2) {
+    _map2.removeLayer(_overlayLayer2);
+    _overlayLayer2 = null;
   }
-  _tileLayer = import_leaflet.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map);
+  _tileLayer2 = import_leaflet2.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map2);
   if (layers.overlay) {
-    _overlayLayer = import_leaflet.default.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map);
+    _overlayLayer2 = import_leaflet2.default.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map2);
   }
 }
-function ensureMap() {
+function ensureMap2() {
   const box = $2("route-map");
   if (!box) return null;
-  if (!_map) {
+  if (!_map2) {
     box.innerHTML = "";
-    _map = import_leaflet.default.map(box, {
+    _map2 = import_leaflet2.default.map(box, {
       zoomControl: true,
       attributionControl: false,
       preferCanvas: true
     });
     applyTileLayer(getMapProviderId());
   }
-  return _map;
+  return _map2;
 }
 function initMapProviderSelect(onChange) {
   const sel = $2("opt-map");
@@ -18768,15 +19070,15 @@ function renderRouteMap(alternatives, selectedIdx, start2, finish) {
   }
   _lastRender = { alternatives, selectedIdx, start: start2, finish };
   section.classList.remove("hidden");
-  const map = ensureMap();
+  const map = ensureMap2();
   if (!map) return;
   clearLayers();
-  const bounds = import_leaflet.default.latLngBounds([]);
+  const bounds = import_leaflet2.default.latLngBounds([]);
   alternatives.forEach((r, i) => {
     const latlngs = routePolylineLatLngs(r);
     latlngs.forEach((ll) => bounds.extend(ll));
     const sel = i === selectedIdx;
-    const layer = import_leaflet.default.polyline(latlngs, {
+    const layer = import_leaflet2.default.polyline(latlngs, {
       color: ROUTE_COLORS[i % ROUTE_COLORS.length],
       weight: sel ? 7 : 4,
       opacity: sel ? 1 : 0.45,
@@ -18791,14 +19093,14 @@ function renderRouteMap(alternatives, selectedIdx, start2, finish) {
       const hudLenM = getElevProfileLenM();
       const hudWin = latLngsForDistance(r, hudLenM, 0);
       if (hudWin.length > 1) {
-        const glow = import_leaflet.default.polyline(hudWin, {
+        const glow = import_leaflet2.default.polyline(hudWin, {
           color: "#ffffff",
           weight: 11,
           opacity: 0.28,
           lineCap: "round",
           lineJoin: "round"
         }).addTo(map);
-        const core = import_leaflet.default.polyline(hudWin, {
+        const core = import_leaflet2.default.polyline(hudWin, {
           color: ROUTE_COLORS[i % ROUTE_COLORS.length],
           weight: 5,
           opacity: 0.95,
@@ -18811,7 +19113,7 @@ function renderRouteMap(alternatives, selectedIdx, start2, finish) {
     }
   });
   if (start2) {
-    const m = import_leaflet.default.circleMarker([start2.lat, start2.lon], {
+    const m = import_leaflet2.default.circleMarker([start2.lat, start2.lon], {
       radius: 9,
       color: "#000",
       weight: 2,
@@ -18822,7 +19124,7 @@ function renderRouteMap(alternatives, selectedIdx, start2, finish) {
     _markers.push(m);
   }
   if (finish) {
-    const m = import_leaflet.default.circleMarker([finish.lat, finish.lon], {
+    const m = import_leaflet2.default.circleMarker([finish.lat, finish.lon], {
       radius: 9,
       color: "#000",
       weight: 2,
@@ -18835,7 +19137,7 @@ function renderRouteMap(alternatives, selectedIdx, start2, finish) {
   const fuels = fuelStationsForMap(48);
   fuels.forEach((st) => {
     const col = fuelColor(st.status);
-    const m = import_leaflet.default.circleMarker([st.lat, st.lon], {
+    const m = import_leaflet2.default.circleMarker([st.lat, st.lon], {
       radius: 7,
       color: "#000",
       weight: 1,
@@ -18896,12 +19198,12 @@ function clearRouteMap() {
   }
 }
 function invalidateRouteMapSize() {
-  if (_map) setTimeout(() => _map.invalidateSize(), 150);
+  if (_map2) setTimeout(() => _map2.invalidateSize(), 150);
 }
-var import_leaflet, _onSelect, _map, _tileLayer, _overlayLayer, _routeLayers, _hudWindowLayers, _markers, _lastRender, ROUTE_COLORS;
+var import_leaflet2, _onSelect, _map2, _tileLayer2, _overlayLayer2, _routeLayers, _hudWindowLayers, _markers, _lastRender, ROUTE_COLORS;
 var init_route_map = __esm({
   "js/route-map.js"() {
-    import_leaflet = __toESM(require_leaflet_src());
+    import_leaflet2 = __toESM(require_leaflet_src());
     init_util();
     init_geo();
     init_elevation();
@@ -18910,9 +19212,9 @@ var init_route_map = __esm({
     init_fuel();
     init_theme();
     _onSelect = null;
-    _map = null;
-    _tileLayer = null;
-    _overlayLayer = null;
+    _map2 = null;
+    _tileLayer2 = null;
+    _overlayLayer2 = null;
     _routeLayers = [];
     _hudWindowLayers = [];
     _markers = [];
@@ -20374,148 +20676,6 @@ var init_telemetry_funnel = __esm({
   "js/telemetry-funnel.js"() {
     init_telemetry();
     FUNNEL_STORAGE_KEY = "moto-hud-telemetry-funnel-v1";
-  }
-});
-
-// js/nav-map.js
-function routeLatLngs() {
-  const route = S.route;
-  if (!route) return [];
-  if (route.geometry?.n > 1) return geometryToLatLngs(route.geometry);
-  return (route.coords || []).map((c) => [c[0], c[1]]);
-}
-function applyTiles() {
-  if (!_map2) return;
-  const layers = resolveMapLayers(getMapProviderId());
-  if (_tileLayer2) _map2.removeLayer(_tileLayer2);
-  if (_overlayLayer2) {
-    _map2.removeLayer(_overlayLayer2);
-    _overlayLayer2 = null;
-  }
-  _tileLayer2 = import_leaflet2.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map2);
-  if (layers.overlay) {
-    _overlayLayer2 = import_leaflet2.default.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map2);
-  }
-}
-function ensureMap2() {
-  const box = $2("nav-map-pane");
-  if (!box) return null;
-  if (!_map2) {
-    box.innerHTML = "";
-    _map2 = import_leaflet2.default.map(box, { zoomControl: false, attributionControl: false, preferCanvas: true });
-    applyTiles();
-    _routeLayer = import_leaflet2.default.polyline([], { color: "#ffd400", weight: 6 }).addTo(_map2);
-    _posMarker = import_leaflet2.default.circleMarker([0, 0], {
-      radius: 8,
-      color: "#fff",
-      weight: 2,
-      fillColor: "#3399ff",
-      fillOpacity: 1
-    }).addTo(_map2);
-    _finishMarker = import_leaflet2.default.circleMarker([0, 0], {
-      radius: 7,
-      color: "#fff",
-      weight: 2,
-      fillColor: "#39d353",
-      fillOpacity: 1
-    }).addTo(_map2);
-    _maneuverMarker = import_leaflet2.default.circleMarker([0, 0], {
-      radius: 6,
-      color: "#000",
-      weight: 1,
-      fillColor: "#ffd400",
-      fillOpacity: 1
-    }).addTo(_map2);
-  }
-  return _map2;
-}
-function remainingLatLngs() {
-  const route = S.route;
-  if (!route?.geometry?.n) return routeLatLngs();
-  const snap = getNavSnap(S.smoothedHeading);
-  const s0 = snap?.s ?? 0;
-  return latLngsSliceByS(route.geometry, s0, route.geometry.s[route.geometry.n - 1]);
-}
-function fitOverview() {
-  const map = ensureMap2();
-  if (!map) return;
-  const pts = remainingLatLngs();
-  const pos = curPos();
-  if (pos) pts.push([pos.lat, pos.lon]);
-  if (S.finish) pts.push([S.finish.lat, S.finish.lon]);
-  if (pts.length < 1) return;
-  map.fitBounds(import_leaflet2.default.latLngBounds(pts).pad(0.12), { padding: [40, 40], animate: false });
-  _overviewFit = true;
-}
-function syncNavMap(mode) {
-  const map = ensureMap2();
-  if (!map || !S.route) return;
-  map.invalidateSize();
-  if (typeof map.start === "function") map.start();
-  _routeLayer.setLatLngs(routeLatLngs());
-  const pos = curPos();
-  if (pos) _posMarker.setLatLng([pos.lat, pos.lon]);
-  if (S.finish) _finishMarker.setLatLng([S.finish.lat, S.finish.lon]);
-  const nm = findNextManeuver();
-  if (nm?.step) {
-    _maneuverMarker.setLatLng([nm.step.lat, nm.step.lon]);
-    _maneuverMarker.setStyle({ opacity: 1, fillOpacity: 1 });
-  } else {
-    _maneuverMarker.setStyle({ opacity: 0, fillOpacity: 0 });
-  }
-  if (mode === "map_overview") {
-    if (!_overviewFit) fitOverview();
-  } else if (mode === "map_zoom" && pos) {
-    const now = Date.now();
-    if (now - _lastZoomPan > 2e3) {
-      map.setView([pos.lat, pos.lon], 17, { animate: false });
-      _lastZoomPan = now;
-    } else {
-      map.panTo([pos.lat, pos.lon], { animate: false });
-    }
-  }
-}
-function pauseNavMap() {
-  if (_map2 && typeof _map2.stop === "function") _map2.stop();
-  _overviewFit = false;
-}
-function destroyNavMap() {
-  pauseNavMap();
-  if (_map2) {
-    _map2.remove();
-    _map2 = null;
-    _tileLayer2 = null;
-    _routeLayer = null;
-    _posMarker = null;
-    _finishMarker = null;
-    _maneuverMarker = null;
-  }
-  const box = $2("nav-map-pane");
-  if (box) box.innerHTML = "";
-}
-function tickNavMap() {
-  if (S.viewMode === "hud" || !S.route) return;
-  syncNavMap(S.viewMode);
-}
-var import_leaflet2, _map2, _tileLayer2, _overlayLayer2, _routeLayer, _posMarker, _finishMarker, _maneuverMarker, _overviewFit, _lastZoomPan;
-var init_nav_map = __esm({
-  "js/nav-map.js"() {
-    import_leaflet2 = __toESM(require_leaflet_src());
-    init_state();
-    init_util();
-    init_gps();
-    init_route_geometry();
-    init_map_providers();
-    init_route();
-    _map2 = null;
-    _tileLayer2 = null;
-    _overlayLayer2 = null;
-    _routeLayer = null;
-    _posMarker = null;
-    _finishMarker = null;
-    _maneuverMarker = null;
-    _overviewFit = false;
-    _lastZoomPan = 0;
   }
 });
 
@@ -24162,10 +24322,12 @@ function onTick() {
     updateFinishInfo(0, kmh, now);
     return;
   }
-  const gpsOk = S.gpsConverged !== false;
+  tickSpeedLimit(getNavSnap(S.smoothedHeading));
+  const gpsOk = hasEverConverged() || S.gpsConverged !== false;
   const hudOn2 = $2("hud").classList.contains("on");
   const snap = hudOn2 ? getNavSnap(S.smoothedHeading) : gpsOk ? getNavSnap(S.smoothedHeading) : null;
   const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
+  const snapLost = isSnapLost();
   if (hudOn2) {
     tickOffRouteMachine({
       lateral: lateralForOffRoute(snap),
@@ -24217,7 +24379,6 @@ function onTick() {
     updateFinishInfo(remaining, kmh, now);
     tickAutoMode();
     checkCamerasILS();
-    if (snap) tickSpeedLimit(snap);
     refreshFuelPanel();
     return;
   }
@@ -24325,7 +24486,8 @@ function onTick() {
   updateFinishInfo(remaining, kmh, now);
   const midLine = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
   const tripX = formatTripHudExtraLine();
-  const fullMid = tripX ? midLine + " \xB7 " + tripX : midLine;
+  let fullMid = tripX ? midLine + " \xB7 " + tripX : midLine;
+  if (snapLost) fullMid += " \xB7 SNAP?";
   if (S.routeQuality === RouteQuality.LOW && !S.compassMode) {
     $2("mid-info").textContent = fullMid + " \xB7 \u041D\u0418\u0417\u041A. OSM";
   } else {
@@ -24338,10 +24500,8 @@ function onTick() {
   tickAutoMode();
   checkCamerasILS();
   checkCurveSpeedWarn(kmh);
-  if (snap) tickSpeedLimit(snap);
   refreshFuelPanel();
   syncTripRefuelHud();
-  tickNavMap();
   syncTripHudBadge();
 }
 function checkCurveSpeedWarn(kmh) {
@@ -24410,6 +24570,7 @@ async function startHud() {
   }
   speak("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D. \u0412 \u043F\u0443\u0442\u0438 " + Math.round(S.route.duration / 60) + " \u043C\u0438\u043D\u0443\u0442");
   S.dispSpeed = S.gps?.speed > 0 ? Math.min(S.gps.speed * 3.6, 198) : 0;
+  tickSpeedLimit(getNavSnap(S.smoothedHeading));
   onTick();
   startVisualLoop();
 }
@@ -24663,6 +24824,7 @@ var init_hud = __esm({
     init_fuel_crowd();
     init_cam_status();
     init_route_geometry();
+    init_gps_converge();
     init_snap_quality();
     init_route_quality();
     init_maneuver_filter();

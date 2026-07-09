@@ -95,6 +95,61 @@ async function buildRouteInFrame(page){
   await waitForRoute(page);
 }
 
+async function checkHudLayout(page){
+  const r = await page.evaluate(() => {
+    const doc = document.getElementById('frame')?.contentWindow?.document;
+    const win = doc?.defaultView;
+    if(!doc || !win) return { ok: false, detail: 'no frame' };
+    const hud = doc.getElementById('hud');
+    if(!hud?.classList.contains('on')) return { ok: false, detail: 'hud off' };
+    hud.classList.add('chrome-reveal', 'chrome-btns-on', 'chrome-status-on', 'chrome-finish-on');
+    const btns = doc.getElementById('hud-side-btns');
+    if(btns) btns.scrollTop = 0;
+
+    const hudR = hud.getBoundingClientRect();
+    const padTop = parseFloat(win.getComputedStyle(hud).paddingTop) || 0;
+    const safeTop = hudR.top + padTop;
+    const visibleRect = el => {
+      const r = el?.getBoundingClientRect();
+      if(!r || r.width < 4 || r.height < 4) return null;
+      const st = win.getComputedStyle(el);
+      if(st.display === 'none' || st.visibility === 'hidden') return null;
+      return r;
+    };
+    const overlap = (a, b) => a && b && !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+
+    const stop = visibleRect(doc.getElementById('btn-stop'));
+    const status = visibleRect(doc.querySelector('.statusbar'));
+    const limit = visibleRect(doc.getElementById('speed-limit-sign'));
+    const speed = visibleRect(doc.getElementById('v-speed'));
+    const issues = [];
+
+    if(status && status.top < safeTop - 1) issues.push('statusbar выше safe-top');
+    if(stop && stop.top < safeTop - 1) issues.push('СТОП выше safe-top');
+    if(stop && status && overlap(stop, status)) issues.push('СТОП перекрывает statusbar');
+    if(limit && stop && overlap(limit, stop)) issues.push('лимит перекрывает СТОП');
+    if(limit && speed){
+      const cx = speed.left + speed.width * 0.5;
+      const cy = speed.top + speed.height * 0.5;
+      if(limit.left < cx && limit.right > cx && limit.top < cy && limit.bottom > cy){
+        issues.push('лимит на цифре скорости');
+      }
+    }
+
+    const limitEl = doc.getElementById('speed-limit-sign');
+    const limitVisible = limitEl && !limitEl.classList.contains('hidden');
+    const limitText = doc.getElementById('sls-num')?.textContent?.trim() || '';
+
+    return {
+      ok: issues.length === 0,
+      detail: issues.length ? issues.join('; ') : `limit=${limitVisible ? limitText : 'hidden'}`,
+      issues
+    };
+  });
+  log(r.ok, 'HUD layout (перекрытия)', r.detail);
+  return r.ok;
+}
+
 async function startHudInFrame(page){
   await acceptLegalInFrame(page);
   await page.evaluate(async () => {
@@ -212,6 +267,7 @@ async function runDesktop(page){
     await startHudInFrame(page);
     api = await getFrameApi(page);
     log(api.hudOn && api.route, 'HUD запущен (ПОЕХАЛИ)', JSON.stringify(api));
+    await checkHudLayout(page);
   }catch(e){
     api = await getFrameApi(page);
     log(false, 'HUD запущен (ПОЕХАЛИ)', e.message);
@@ -287,6 +343,15 @@ async function runMobile(page){
   await page.waitForTimeout(500);
   let api = await getFrameApi(page);
   log(api.running === true, 'Mobile: ▶ пуск симуляции');
+
+  try{
+    await startHudInFrame(page);
+    api = await getFrameApi(page);
+    log(api.hudOn && api.route, 'Mobile: HUD запущен');
+    await checkHudLayout(page);
+  }catch(e){
+    log(false, 'Mobile: HUD layout', e.message);
+  }
 }
 
 async function runAutohud(page){

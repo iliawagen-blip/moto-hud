@@ -28,6 +28,8 @@ export function revealHudChrome(){
   if(!hud?.classList.contains('on')) return;
   hud.classList.add('chrome-reveal');
   applyHudChrome();
+  const btns = $('hud-side-btns');
+  if(btns) btns.scrollTop = 0;
   clearTimeout(_revealTimer);
   _revealTimer = setTimeout(() => {
     hud.classList.remove('chrome-reveal');
@@ -58,6 +60,10 @@ export function applyHudChrome(){
   hud.classList.toggle('chrome-btns-on', reveal);
   hud.classList.toggle('chrome-status-on', statusOn);
   hud.classList.toggle('chrome-finish-on', finishOn);
+  if(reveal){
+    const btns = $('hud-side-btns');
+    if(btns) btns.scrollTop = 0;
+  }
 
   const panel = $('finish-info');
   if(panel){
