@@ -428,7 +428,7 @@ body.legal-blocked #hud{display:none!important}
   --hud-statusbar-h:56px;
   --hud-status-font:20px;
   --hud-finish-font:clamp(14px,4.2vw,22px);
-  --hud-btns-col:80px;
+  --hud-btns-col:88px;
   position:fixed;inset:0;display:none;background:var(--bg);overflow:hidden;
   font-family:var(--font-label);color:var(--fg);
   padding-top:var(--hud-safe-top);
@@ -486,20 +486,68 @@ body.legal-blocked #hud{display:none!important}
   grid-template-areas:"btns stack" "info info";
   grid-template-rows:minmax(0,1fr) auto
 }
-.speed-btns{
+.speed-btns,
+.hud-btn-panel{
   grid-area:btns;display:none;flex-direction:column;align-items:stretch;justify-content:flex-start;
-  gap:4px;border-right:1px solid var(--line);padding:8px 4px 6px;min-height:0;max-height:100%;
+  gap:0;border-right:1px solid var(--line);padding:10px 6px calc(env(safe-area-inset-bottom) + 6px);
+  min-height:0;max-height:100%;min-width:var(--hud-btns-col);
   overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain
 }
-#hud.chrome-btns-on .speed-btns{display:flex}
-.speed-btns .corner-btn{
-  position:relative;bottom:auto;left:auto;right:auto;flex-shrink:0;
-  background:transparent;border:none;border-radius:0;box-shadow:none;
-  min-width:0;width:100%;min-height:58px;padding:4px 2px;touch-action:manipulation;
-  -webkit-tap-highlight-color:transparent
+#hud.chrome-btns-on .speed-btns,
+#hud.chrome-btns-on .hud-btn-panel{display:flex}
+@media (orientation:landscape){
+  #hud.chrome-btns-on .hud-btn-panel{justify-content:center}
 }
-.speed-btns .cb-icon{font-size:36px}
-.speed-btns .cb-lbl{font-size:14px;letter-spacing:.5px}
+
+.hud-btn-group{
+  display:flex;flex-direction:column;align-items:stretch;gap:16px;flex-shrink:0
+}
+.hud-btn-group + .hud-btn-group{
+  margin-top:32px;padding-top:16px;border-top:1px solid var(--line)
+}
+.hud-btn-group--telemetry:empty,
+.hud-btn-group--telemetry:not(:has(.hud-btn:not(.hidden))){display:none;margin:0;padding:0;border:none}
+
+.hud-btn,
+.speed-btns .corner-btn{
+  position:relative;flex-shrink:0;cursor:pointer;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  min-width:56px;min-height:56px;width:100%;padding:6px 4px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  background:transparent;border:none;border-radius:8px;box-shadow:none;color:var(--fg);font-weight:800
+}
+.hud-btn::before,
+.speed-btns .corner-btn::before{content:"";position:absolute;inset:-2px}
+.hud-btn__icon,
+.speed-btns .cb-icon{font-size:32px;line-height:1;position:relative;z-index:1}
+.hud-btn__lbl,
+.speed-btns .cb-lbl{
+  font-size:11px;letter-spacing:.45px;color:var(--fg-dim);font-weight:700;line-height:1.15;
+  position:relative;z-index:1;text-transform:uppercase
+}
+.hud-btn--active{background:color-mix(in srgb, var(--sem-ok) 22%, transparent)}
+
+.hud-btn--stop .hud-btn__icon,
+.corner-btn.stop .cb-icon{color:var(--sem-danger)}
+.hud-btn--stop .hud-btn__lbl,
+.corner-btn.stop .cb-lbl{color:var(--sem-danger)}
+.hud-btn--fuel.active,
+.corner-btn.fuel.active{background:rgba(255,149,0,.9);color:#000;border-radius:10px}
+.hud-btn--fuel.active .hud-btn__lbl,
+.corner-btn.fuel.active .cb-lbl{color:#000}
+.btn-fuel.active{background:rgba(255,149,0,.88);border-radius:10px}
+.btn-stop.armed .cb-icon{filter:drop-shadow(0 0 5px var(--sem-danger))}
+.btn-stop.armed .cb-lbl::after{content:' ×2'}
+
+/* кнопки HUD вне панели (legacy corner-btn) */
+.corner-btn{
+  z-index:1;background:color-mix(in srgb, var(--bg-panel) 85%, transparent);color:var(--fg);
+  border:1px solid var(--line);border-radius:var(--radius);font-weight:800;
+  padding:5px 8px;min-width:48px;min-height:44px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px
+}
+.corner-btn .cb-icon{font-size:18px;line-height:1}
+.corner-btn .cb-lbl{font-size:8px;letter-spacing:.4px;color:var(--fg-dim);font-weight:700;line-height:1}
 .speed-stack{
   grid-area:stack;display:flex;flex-direction:column;align-items:center;justify-content:center;
   min-height:0;position:relative;padding:8px 6px 4px;overflow:visible
@@ -598,33 +646,14 @@ body.legal-blocked #hud{display:none!important}
   box-shadow:0 2px 8px rgba(0,0,0,.25);max-width:calc(100% - 70px);overflow:hidden;text-overflow:ellipsis
 }
 
-/* кнопки HUD (в .speed-btns и телеметрия) */
-.corner-btn{
-  z-index:1;background:color-mix(in srgb, var(--bg-panel) 85%, transparent);color:var(--fg);
-  border:1px solid var(--line);border-radius:var(--radius);font-weight:800;
-  padding:5px 8px;min-width:48px;min-height:44px;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px
-}
-.corner-btn .cb-icon{font-size:18px;line-height:1}
-.corner-btn .cb-lbl{font-size:8px;letter-spacing:.4px;color:var(--fg-dim);font-weight:700;line-height:1}
-.corner-btn.stop .cb-icon{color:var(--sem-danger)}
-.corner-btn.stop .cb-lbl{color:var(--sem-danger)}
-.corner-btn.fuel.active{background:rgba(255,149,0,.9);color:#000;border-color:#ff9500}
-.corner-btn.fuel.active .cb-lbl{color:#000}
-.btn-fuel.active{background:rgba(255,149,0,.88);border-radius:10px}
-.speed-btns .corner-btn::before{
-  content:"";position:absolute;inset:-4px -6px
-}
-.speed-btns .corner-btn .cb-icon,.speed-btns .corner-btn .cb-lbl{position:relative;z-index:1}
-.btn-stop.armed .cb-icon{filter:drop-shadow(0 0 5px var(--sem-danger))}
-.btn-stop.armed .cb-lbl::after{content:' ×2'}
-
 /* Компактный HUD внутри короткого #hud (landscape телефон, симулятор) */
 @container hud (max-height: 280px){
-  .speed-btns{overflow-y:hidden;gap:2px;padding:4px 2px 4px}
-  .speed-btns .corner-btn{min-height:34px;padding:2px 1px}
-  .speed-btns .cb-icon{font-size:20px}
-  .speed-btns .cb-lbl{font-size:8px;letter-spacing:.3px}
+  .hud-btn-panel{overflow-y:hidden;padding:6px 4px 4px}
+  .hud-btn-group{gap:10px}
+  .hud-btn-group + .hud-btn-group{margin-top:20px;padding-top:10px}
+  .hud-btn,.speed-btns .corner-btn{min-height:48px;padding:4px 2px}
+  .hud-btn__icon,.speed-btns .cb-icon{font-size:24px}
+  .hud-btn__lbl,.speed-btns .cb-lbl{font-size:9px;letter-spacing:.3px}
   .finish-info{padding:4px 6px calc(env(safe-area-inset-bottom) + 2px)}
   .fi-line{font-size:clamp(12px,3.2vw,16px)}
   .block-speed{min-height:64px}
@@ -796,12 +825,19 @@ body.legal-blocked #hud{display:none!important}
 .qf-close{min-height:66px;margin-top:12px;border:2px solid var(--alert);background:#000;color:var(--alert);
   border-radius:10px;font-family:"Consolas",monospace;font-size:16px;font-weight:900;letter-spacing:2px;cursor:pointer}
 
+.hud-btn-panel .btn-telemetry-mark .cb-icon,
 .speed-btns .btn-telemetry-mark .cb-icon{color:var(--accent)}
+.hud-btn-panel .btn-telemetry-mark.tel-idle,
 .speed-btns .btn-telemetry-mark.tel-idle{opacity:.45}
+.hud-btn-panel .btn-telemetry-mark.hidden,
 .speed-btns .btn-telemetry-mark.hidden{display:none!important}
+.hud-btn-panel .btn-telemetry-mark.flash,
 .speed-btns .btn-telemetry-mark.flash{background:var(--accent);opacity:1}
+.hud-btn-panel .btn-telemetry-mark.flash .cb-icon,
+.hud-btn-panel .btn-telemetry-mark.flash .cb-lbl,
 .speed-btns .btn-telemetry-mark.flash .cb-icon,
 .speed-btns .btn-telemetry-mark.flash .cb-lbl{color:var(--accent-on)}
+.hud-btn-panel .btn-telemetry-mark.critical-flash .cb-icon,
 .speed-btns .btn-telemetry-mark.critical-flash .cb-icon{color:var(--sem-danger);filter:drop-shadow(0 0 4px var(--sem-danger))}
 
 /* ---------- Телеметрия: список сессий ---------- */

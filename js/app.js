@@ -17280,7 +17280,7 @@ var init_hud_chrome = __esm({
 function isExcludedTarget(el) {
   if (!el || !(el instanceof Element)) return true;
   return !!el.closest(
-    ".corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #hud-settings-sheet, .hud-settings-sheet"
+    ".hud-btn, .corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #hud-settings-sheet, .hud-settings-sheet"
   );
 }
 function isChromeTapTarget(el) {
