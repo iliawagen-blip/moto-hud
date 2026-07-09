@@ -1,8 +1,9 @@
 /**
  * Общие опции панели «⚙ Опции» — загрузка и сохранение в localStorage.
  */
-import { S, APP_OPTS_KEY, DEFAULT_CAM_SPEED_TOL, DEFAULT_PATH_CHEVRON_MAX } from './state.js';
+import { S, APP_OPTS_KEY, DEFAULT_CAM_SPEED_TOL, DEFAULT_PATH_CHEVRON_MAX, DEFAULT_PATH_MIN_SPEED_KMH } from './state.js';
 import { $ } from './util.js';
+import { clampPathMinSpeedKmh } from './low-speed-map.js';
 
 export function loadAppOptsFromStorage(){
   try{
@@ -25,6 +26,8 @@ export function loadAppOptsFromStorage(){
     setCheck('opt-path-chevrons', o.showPathChevrons !== false);
     setCheck('opt-chevron-labels', o.pathChevronLabels !== false);
     setVal('opt-chevron-max', o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
+    setCheck('opt-low-speed-map', o.lowSpeedMap !== false);
+    setVal('opt-path-min-speed', o.pathMinSpeedKmh != null ? o.pathMinSpeedKmh : DEFAULT_PATH_MIN_SPEED_KMH);
     setCheck('opt-heading', o.showCompass);
     setCheck('opt-cams', o.cams);
     setCheck('opt-back-only', o.backOnly);
@@ -53,6 +56,8 @@ export function saveAppOptsToStorage(){
       showPathChevrons: S.showPathChevrons !== false,
       pathChevronLabels: S.pathChevronLabels !== false,
       pathChevronMax: S.pathChevronMax,
+      lowSpeedMap: S.lowSpeedMap !== false,
+      pathMinSpeedKmh: clampPathMinSpeedKmh(S.pathMinSpeedKmh),
       showCompass: !!S.showCompass,
       cams: !!S.cams,
       backOnly: !!S.backOnly,

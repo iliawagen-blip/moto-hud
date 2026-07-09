@@ -83,8 +83,12 @@ export const ROUTE_LOW_MANEUVER_PER_KM = 25;
 export const FUSION_GPS_WEIGHT_MIN = 0.02;
 export const FUSION_GPS_WEIGHT_SPAN = 25;
 
-/** Мин. скорость для отрисовки дорожки, км/ч */
+/** Мин. скорость для отрисовки дорожки, км/ч (дефолт; фактическое — S.pathMinSpeedKmh) */
 export const PATH_MIN_SPEED_KMH = 8;
+/** Зум Leaflet во дворе / на малой скорости */
+export const LOW_SPEED_MAP_ZOOM = 18;
+/** Гистерезис выхода из режима карты, км/ч */
+export const LOW_SPEED_MAP_EXIT_PAD_KMH = 2;
 /** --- Battery / render (направление 12) --- */
 export const PATH_SKIP_DS_M = 2;
 export const PATH_SKIP_FRAMES = 2;

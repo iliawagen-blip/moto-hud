@@ -15,6 +15,7 @@ import { updateCamStatusUI } from './cam-status.js';
 import { loadRouteElevation, saveElevOptsToStorage } from './elevation.js';
 import { computeCurveSpeed, saveCurveOptsToStorage } from './curve-speed.js';
 import { saveHudOptsToStorage, applyFinishInfoVisibility, clampFuelPlannerCount } from './hud-opts.js';
+import { clampPathMinSpeedKmh } from './low-speed-map.js';
 import { applyHudChrome, normalizeChromeMode } from './hud-chrome.js';
 import { saveAppOptsToStorage } from './app-opts.js';
 
@@ -603,6 +604,19 @@ export function bindSetupUI(){
     saveAppOptsToStorage();
   });
 
+  $('opt-low-speed-map')?.addEventListener('change', e => {
+    S.lowSpeedMap = e.target.checked;
+    const spd = $('opt-path-min-speed');
+    if(spd) spd.disabled = !S.lowSpeedMap;
+    saveAppOptsToStorage();
+  });
+
+  $('opt-path-min-speed')?.addEventListener('change', e => {
+    S.pathMinSpeedKmh = clampPathMinSpeedKmh(e.target.value);
+    if($('opt-path-min-speed')) $('opt-path-min-speed').value = String(S.pathMinSpeedKmh);
+    saveAppOptsToStorage();
+  });
+
   $('opt-chevron-labels')?.addEventListener('change', e => {
     S.pathChevronLabels = e.target.checked;
     saveAppOptsToStorage();
@@ -862,6 +876,10 @@ export function syncOptionsFromDom(){
   S.pathChevronLabels = $('opt-chevron-labels')?.checked ?? true;
   S.pathChevronMax = Math.max(1, Math.min(3,
     parseInt($('opt-chevron-max')?.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
+  S.lowSpeedMap = $('opt-low-speed-map')?.checked !== false;
+  S.pathMinSpeedKmh = clampPathMinSpeedKmh($('opt-path-min-speed')?.value);
+  if($('opt-path-min-speed')) $('opt-path-min-speed').value = String(S.pathMinSpeedKmh);
+  if($('opt-path-min-speed')) $('opt-path-min-speed').disabled = !S.lowSpeedMap;
   if($('opt-chevron-max')) $('opt-chevron-max').value = String(S.pathChevronMax);
   if($('opt-chevron-labels')) $('opt-chevron-labels').disabled = !S.showPathChevrons;
   if($('opt-chevron-max')) $('opt-chevron-max').disabled = !S.showPathChevrons;

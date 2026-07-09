@@ -6,12 +6,14 @@ import { $ } from './util.js';
 const STEPPER_IDS = [
   'opt-limit', 'opt-cam-speed-tol', 'opt-tol',
   'opt-elev-profile-h', 'opt-elev-profile-len', 'opt-elev-exag',
-  'opt-fuel-count', 'opt-chevron-max'
+  'opt-fuel-count', 'opt-chevron-max', 'opt-path-min-speed'
 ];
 
 const HELP_TEXTS = {
   'opt-voice': 'Голосовые подсказки манёвров и камер. Работает через синтез речи браузера.',
   'opt-path': 'Прогноз-дорожка на HUD: рельеф, шевроны, контекст перекрёстков.',
+  'opt-low-speed-map': 'Ниже порога скорости вместо дорожки — карта крупным планом (дворы, парковки).',
+  'opt-path-min-speed': 'Скорость переключения: выше — прогноз-дорожка, ниже — карта. По умолчанию 8 км/ч.',
   'opt-limit': 'Лимит по умолчанию, когда OSM не знает ограничение. При динамике — fallback.',
   'opt-speed-limit-dynamic': 'Динамический лимит по тегу maxspeed OSM вдоль маршрута. Выкл. — только дефолт из настройки.',
   'opt-speed-limit-fallback': 'Если OSM и implicit не дали лимит: показать ваш дефолт или скрыть знак.',

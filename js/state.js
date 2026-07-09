@@ -8,6 +8,9 @@ export const MAX_FUEL_PLANNER_COUNT = 10;
 export const DEFAULT_CAM_SPEED_TOL = 15;
 /** Макс. шевронов на прогноз-дорожке по умолчанию */
 export const DEFAULT_PATH_CHEVRON_MAX = 3;
+/** Порог скорости: выше — прогноз-дорожка, ниже — карта крупным планом */
+export const DEFAULT_PATH_MIN_SPEED_KMH = 8;
+export const MAX_PATH_MIN_SPEED_KMH = 30;
 
 export const S = {
   gps: null,
@@ -48,6 +51,9 @@ export const S = {
   showPathChevrons: true,
   pathChevronLabels: true,
   pathChevronMax: DEFAULT_PATH_CHEVRON_MAX,
+  /** Мин. скорость для прогноз-дорожки (км/ч); ниже — карта во дворах */
+  pathMinSpeedKmh: DEFAULT_PATH_MIN_SPEED_KMH,
+  lowSpeedMap: true,
   showElevProfile: true,
   elevExag: 1.8,
   elevProfileH: 72,

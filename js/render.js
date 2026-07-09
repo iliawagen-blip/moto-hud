@@ -15,7 +15,8 @@ import {
   interpolateAtS, turnAngleAtS
 } from './route-geometry.js';
 import { hasEverConverged } from './gps-converge.js';
-import { PATH_SKIP_DS_M, PATH_SKIP_FRAMES, PATH_MIN_SPEED_KMH } from './nav-constants.js';
+import { PATH_SKIP_DS_M, PATH_SKIP_FRAMES } from './nav-constants.js';
+import { getPathMinSpeedKmh, tickLowSpeedMap } from './low-speed-map.js';
 
 let _pathLastS = null;
 let _pathSkipFrames = 0;
@@ -478,12 +479,15 @@ export function renderPathway(){
   const hud = $('hud');
   const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
   const waitConverge = !hasEverConverged() && S.gpsConverged === false;
-  if(!S.showPath || kmh < PATH_MIN_SPEED_KMH || waitConverge || S.compassMode){
+  const pathMinKmh = getPathMinSpeedKmh();
+  if(!S.showPath || kmh < pathMinKmh || waitConverge || S.compassMode){
     block.classList.add('hidden');
     hud.classList.add('no-path');
     svg.innerHTML = '';
+    tickLowSpeedMap(kmh, waitConverge);
     return;
   }
+  tickLowSpeedMap(kmh, waitConverge);
   block.classList.remove('hidden');
   hud.classList.remove('no-path');
 
