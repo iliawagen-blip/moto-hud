@@ -12,21 +12,23 @@ OpenRouteService — **второй эталон** сравнения маршр
 
 ### 1. Регистрация аккаунта
 
-1. Откройте [openrouteservice.org](https://openrouteservice.org/).
-2. Нажмите **Sign Up** (правый верхний угол).
-3. Зарегистрируйтесь через email или GitHub.
-4. Подтвердите email по ссылке из письма (проверьте спам).
+> **Важно:** страница `dev/#/api-docs/...` — это **документация и playground**, не кабинет. Токены там не создаются.
 
-### 2. Создание токена
+1. Откройте **[account.heigit.org](https://account.heigit.org/)** (единый аккаунт HeiGIT / ORS).
+2. **Sign up** — email или GitHub.
+3. Подтвердите email (проверьте спам).
 
-1. Войдите в аккаунт.
-2. Перейдите в **Dashboard** → вкладка **Tokens**.
-3. Нажмите **Create Token**.
-4. Тип: **Free — Standard**.
-5. Имя токена, например: `motohud-regression`.
-6. Скопируйте выданный токен — строка вида `eyJvcmc…` (обычно 100+ символов).
+Альтернатива: [openrouteservice.org/dev/#/signup](https://openrouteservice.org/dev/#/signup) → перенаправит в HeiGIT Account.
 
-⚠️ Токен показывается **один раз**. Сохраните его сразу.
+### 2. Получение ключа (Basic Key)
+
+1. Войдите на **[account.heigit.org](https://account.heigit.org/)**.
+2. На главной Dashboard найдите **Basic Key** (или блок API keys / tokens).
+3. Скопируйте длинную строку ключа — с 2025 года часто JWT вида `eyJvcmc…`.
+
+⚠️ Если ключа ещё нет — кнопка **Create** / **Request token** / **Generate** на той же странице. Имя, например: `motohud-regression`, тариф **Free**.
+
+**Обходной путь:** если вы уже залогинены в ORS и открыли [api-docs Directions](https://openrouteservice.org/dev/#/api-docs/directions%20service), раскройте **Authorization-Header** (замок) — playground может подставить ключ автоматически; его можно скопировать оттуда.
 
 ### 3. Вставка в проект
 

@@ -601,7 +601,7 @@ export const telemetry = {
   /** @param {object} fix */
   logFix(fix){
     if(!_active) return;
-    log('fix', {
+    const ev = {
       lat: r6(fix.lat),
       lon: r6(fix.lon),
       acc: r2(fix.acc),
@@ -610,7 +610,14 @@ export const telemetry = {
       alt: fix.alt != null ? r2(fix.alt) : null,
       ts: fix.ts,
       rcv: fix.rcv ?? Date.now()
-    });
+    };
+    if(fix.dev != null && Number.isFinite(fix.dev)) ev.dev = r2(fix.dev);
+    if(fix.meas != null && Number.isFinite(fix.meas)) ev.meas = r2(fix.meas);
+    if(fix.spdSrc) ev.spd_src = fix.spdSrc;
+    if(fix.stepM != null && Number.isFinite(fix.stepM)) ev.step_m = r2(fix.stepM);
+    if(fix.driftM != null && Number.isFinite(fix.driftM)) ev.drift_m = r2(fix.driftM);
+    if(fix.stepDt != null && Number.isFinite(fix.stepDt)) ev.step_dt = r2(fix.stepDt);
+    log('fix', ev);
   }
 };
 

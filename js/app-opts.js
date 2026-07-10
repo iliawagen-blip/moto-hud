@@ -27,7 +27,7 @@ export function loadAppOptsFromStorage(){
     setCheck('opt-chevron-labels', o.pathChevronLabels !== false);
     setVal('opt-chevron-max', o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
     setCheck('opt-low-speed-map', o.lowSpeedMap !== false);
-    setVal('opt-path-min-speed', o.pathMinSpeedKmh != null ? o.pathMinSpeedKmh : DEFAULT_PATH_MIN_SPEED_KMH);
+    if(o.pathMinSpeedKmh != null) S.pathMinSpeedKmh = clampPathMinSpeedKmh(o.pathMinSpeedKmh);
     setCheck('opt-heading', o.showCompass);
     setCheck('opt-cams', o.cams);
     setCheck('opt-back-only', o.backOnly);

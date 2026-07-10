@@ -83,8 +83,8 @@ export const ROUTE_LOW_MANEUVER_PER_KM = 25;
 export const FUSION_GPS_WEIGHT_MIN = 0.02;
 export const FUSION_GPS_WEIGHT_SPAN = 25;
 
-/** Мин. скорость для отрисовки дорожки, км/ч (дефолт; фактическое — S.pathMinSpeedKmh) */
-export const PATH_MIN_SPEED_KMH = 8;
+/** Задержка автокарты вне маршрута, мс */
+export const OFF_ROAD_MAP_ENTER_MS = 1500;
 /** Зум Leaflet во дворе / на малой скорости */
 export const LOW_SPEED_MAP_ZOOM = 18;
 /** Гистерезис выхода из режима карты, км/ч */
@@ -100,7 +100,7 @@ export const GPS_LOST_RECONVERGE_MS = 60000;
 export const GPS_SPEED_MAX_MPS = 55;
 /** Доверять speed от чипа только при acc ≤ этого порога, м */
 export const GPS_SPEED_ACC_TRUST_M = 25;
-/** Движение меньше этого при плохом acc — считаем стоянку, м */
+/** Макс. дрейф GPS на стоянке (legacy / док.), м; в resolveGpsSpeed — acc×0.55 на тик */
 export const GPS_SPEED_STATIONARY_DIST_M = 12;
 /** Мин. смещение для расчёта meas speed, м */
 export const GPS_SPEED_MEAS_MIN_DIST_M = 1.5;

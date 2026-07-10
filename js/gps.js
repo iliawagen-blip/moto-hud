@@ -13,7 +13,7 @@ import { getNavSnap } from './route-geometry.js';
 import {
   FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN,
   GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS,
-  GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M,
+  GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M,
   GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO
 } from './nav-constants.js';
 import { isSpeedOverLimit } from './speed-limit.js';
@@ -61,34 +61,47 @@ export function easeSpeed(){
   el.classList.toggle('speed-3', shown >= 100);
 }
 
-/** Фильтрация speed: плохой acc, скачки чипа, стоянка в радиусе шума. */
+/**
+ * Фильтрация speed: плохой acc, скачки чипа, стоянка в радиусе шума.
+ * @returns {{ mps: number, src: string, device: number | null, meas: number, dist: number, driftM: number, dt: number }}
+ */
 function resolveGpsSpeed(next, prev){
   const acc = next.acc ?? 999;
   const device = (next.speed != null && !isNaN(next.speed) && next.speed >= 0) ? next.speed : null;
   let meas = 0;
   let dist = 0;
+  let dt = 0;
   if(prev){
-    const dt = (next.ts - prev.ts) / 1000;
+    dt = (next.ts - prev.ts) / 1000;
     if(dt > 0.15 && dt < 12){
       dist = haversine(prev, next);
-      if(dist >= GPS_SPEED_MEAS_MIN_DIST_M && dist < 500) meas = dist / dt;
+      const measFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
+      if(dist >= measFloor && dist < 500) meas = dist / dt;
     }
   }
 
-  const noiseRadius = Math.max(GPS_SPEED_STATIONARY_DIST_M, acc * 0.55);
-  if(prev && dist < noiseRadius) return 0;
+  const driftFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
+  const driftM = acc <= GPS_SPEED_ACC_TRUST_M
+    ? driftFloor
+    : Math.max(driftFloor, acc * 0.55);
+  const base = { device, meas, dist, driftM, dt };
 
-  if(device != null && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M){
+  if(prev && dist < driftM && (device == null || device < 0.5)){
+    return { ...base, mps: 0, src: 'drift' };
+  }
+
+  if(device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M){
     if(!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5){
-      return device;
+      return { ...base, mps: device, src: 'device' };
     }
   }
 
   if(meas > GPS_SPEED_MAX_MPS) meas = 0;
   if(meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)){
-    return S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+    const mps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+    return { ...base, meas, mps, src: 'meas' };
   }
-  return 0;
+  return { ...base, mps: 0, src: 'zero' };
 }
 
 let _onTick = () => {};
@@ -183,9 +196,9 @@ export function applyGpsFix(next){
       next.heading = bearing(S.lastPos, next);
     }
   }
-  const resolved = resolveGpsSpeed(next, S.lastPos);
-  S.measSpeed = resolved;
-  next.speed = resolved;
+  const speedRes = resolveGpsSpeed(next, S.lastPos);
+  S.measSpeed = speedRes.mps;
+  next.speed = speedRes.mps;
   updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
   const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
   if(fused != null && !isNaN(fused)) next.heading = fused;
@@ -218,6 +231,7 @@ export function applyGpsFix(next){
     navSnap = getNavSnap(S.smoothedHeading);
     if(navSnap) telSnap = { lateral: navSnap.lateral, quality: S.snapQuality };
   }
+  S.navLateral = navSnap?.lateral ?? null;
   const telCtx = { fix: next, snap: telSnap };
 
   feedGpsConverge(next, telCtx);
@@ -246,7 +260,13 @@ export function applyGpsFix(next){
   telemetry.logFix({
     lat: next.lat, lon: next.lon, acc: next.acc,
     speed: next.speed, heading: next.heading, alt: next.alt,
-    ts: next.ts, rcv
+    ts: next.ts, rcv,
+    dev: speedRes.device,
+    meas: speedRes.meas,
+    spdSrc: speedRes.src,
+    stepM: speedRes.dist,
+    driftM: speedRes.driftM,
+    stepDt: speedRes.dt
   });
   telemetry.logTrackPoint({
     lat: next.lat, lon: next.lon, acc: next.acc,

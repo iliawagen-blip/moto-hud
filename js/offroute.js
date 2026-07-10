@@ -5,6 +5,7 @@ import { recalcRoute } from './route.js';
 import { speak } from './voice.js';
 import telemetry from './telemetry.js';
 import { SnapQuality } from './snap-quality.js';
+import { simScaledDelta } from './sim-time-scale.js';
 import {
   OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS,
   OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M,
@@ -138,7 +139,7 @@ function headingDiverged(feed, now){
   if(feed.tangent == null || isNaN(feed.tangent)) return false;
   if(angleDiff(feed.heading, feed.tangent) <= OFF_ROUTE_HEADING_DIVERGE_DEG) return false;
   if(!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
-  return now - _ctx.headingDivergeSince >= OFF_ROUTE_HEADING_DIVERGE_MS;
+  return simScaledDelta(now - _ctx.headingDivergeSince) >= OFF_ROUTE_HEADING_DIVERGE_MS;
 }
 
 function canTriggerReroute(feed, now){
@@ -182,6 +183,11 @@ function tickOfflineGuideVoice(lateral){
 }
 
 function beginReroute(fromState, feed, trigger){
+  if(globalThis.__REGRESSION_SIM__?.disableReroute){
+    transition(fromState, OffRouteState.OFFLINE_GUIDE, { ...metaFromFeed(feed), trigger });
+    enterOfflineGuide(feed);
+    return;
+  }
   if(_ctx.rerouteBusy || S.offRouteState === OffRouteState.REROUTING) return;
   _ctx.rerouteBusy = true;
   transition(fromState, OffRouteState.REROUTING, { ...metaFromFeed(feed), trigger });
@@ -238,7 +244,7 @@ export function tickOffRouteMachine(feed){
   if(S.compassMode || feed.lateral == null || !S.route) return;
 
   const now = Date.now();
-  const dtMs = _ctx.lastFeedMs ? Math.min(3000, now - _ctx.lastFeedMs) : 0;
+  const dtMs = _ctx.lastFeedMs ? Math.min(3000, simScaledDelta(now - _ctx.lastFeedMs)) : 0;
   _ctx.lastFeedMs = now;
   feed = { ...feed, dtMs };
 
