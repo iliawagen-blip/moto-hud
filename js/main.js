@@ -34,7 +34,7 @@ import { initTripRefuelHud } from './trip-refuel-hud.js';
 import { initHudChrome } from './hud-chrome.js';
 import { initSettingsUi } from './settings-ui.js';
 import { initHudSettingsSheet } from './hud-settings-sheet.js';
-import { prepareRegressionHud, sampleRegressionState } from './regression-sim-bridge.js';
+import { prepareRegressionHud, sampleRegressionState, regressionPrimeSnap } from './regression-sim-bridge.js';
 import { simNavAction, simApplyTheme, simBuildRoute, simGetStatus, simKickGps, simEnsureDemoFinish } from './sim-bridge.js';
 import { findNearestOnRoute } from './route.js';
 
@@ -99,7 +99,7 @@ initTtsHealth();
 
 window.__motoHUD = {
   S, applyCoordsOrLink, setFinishQuiet, startHud, startGps, doBuildRoute, doAddressSearch, onTick,
-  findNearestOnRoute, prepareRegressionHud, sampleRegressionState,
+  findNearestOnRoute, prepareRegressionHud, sampleRegressionState, regressionPrimeSnap,
   toggleBearingMode, isBearingMode, enterBearingMode, exitBearingMode, onNavPathButton, onNavMapButton, setViewMode, getMapDisplayPos,
   simNavAction, simApplyTheme, simBuildRoute, simGetStatus, simKickGps, simEnsureDemoFinish,
   _searchBusy: false, _finishFocused: false

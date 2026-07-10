@@ -5845,6 +5845,25 @@ out geom;`;
       _disp.inited = true;
     }
   }
+  function primeRouteSnapFromDist(distM) {
+    const geom = S.route?.geometry;
+    if (!geom || geom.n < 2) return;
+    const total = geom.s[geom.n - 1];
+    const s2 = Math.max(0, Math.min(total, distM));
+    const p = interpolateAtS(geom, s2);
+    const gps = S.gps;
+    const lateral = gps ? haversine(gps, p) : 0;
+    const segIdx = findSegAtS(geom, s2);
+    const tangent = avgTangentDeg(geom, s2, 20);
+    if (_snap) {
+      _snap = { ..._snap, s: s2, segIdx, lat: p.lat, lon: p.lon, lateral, tangent };
+    } else {
+      _snap = { s: s2, segIdx, lat: p.lat, lon: p.lon, lateral, tangent, confidence: 0.85 };
+      _disp.s = s2;
+      _disp.inited = true;
+    }
+    _prevFixPos = gps ? { lat: gps.lat, lon: gps.lon } : _prevFixPos;
+  }
   function destPoint2(from, brgDeg, distM) {
     const r = Math.PI / 180;
     const br = brgDeg * r;
@@ -23990,7 +24009,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     resetVintageVfd();
     syncVintageVfdDomClasses();
     updateCamStatusUI();
-    if (hasRoute) loadCameras();
+    if (hasRoute && !globalThis.__REGRESSION_SIM__?.active) loadCameras();
     acquireWakeLock();
     try {
       await startNavigationGps();
@@ -26084,7 +26103,13 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     S.showElevProfile = false;
     resetOffRouteMachine();
     resetRouteSnap();
+    ensureRouteGeometry(S.route);
+    seedSnapFromGps({ relaxed: true });
     return { distance_m: route.distance, duration_s: route.duration };
+  }
+  function regressionPrimeSnap(distM) {
+    if (!globalThis.__REGRESSION_SIM__?.active) return;
+    if (distM != null && Number.isFinite(distM)) primeRouteSnapFromDist(distM);
   }
   function sampleRegressionState(extra = {}) {
     let lateral = null;
@@ -26331,6 +26356,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     findNearestOnRoute,
     prepareRegressionHud,
     sampleRegressionState,
+    regressionPrimeSnap,
     toggleBearingMode,
     isBearingMode,
     enterBearingMode,

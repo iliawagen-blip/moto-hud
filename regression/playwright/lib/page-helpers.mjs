@@ -69,6 +69,7 @@ export async function prepareFixtureRun(frame, { cache, waypoints, timeScale }){
 
 export async function injectFixAndSample(frame, fix){
   return frame.evaluate(({ fix: f }) => {
+    if(f.routeDistM != null) window.__motoHUD.regressionPrimeSnap?.(f.routeDistM);
     const spdMps = f.speedMps ?? 0;
     window.__SIM__.injectFix({
       lat: f.lat,

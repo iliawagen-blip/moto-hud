@@ -128,7 +128,8 @@ export async function runSimMode(page, opts){
         speedMps,
         acc,
         sim_s: Math.round(simS * 10) / 10,
-        mode
+        mode,
+        routeDistM: distM
       });
       ticks.push(tick);
       telStream.write(JSON.stringify(tick) + '\n');

@@ -86,6 +86,8 @@ npm run regression:review -- --tag-candidates
 
 ## Nightly (этап 9)
 
+**Handoff для агента:** [docs/HANDOFF-NIGHTLY.md](docs/HANDOFF-NIGHTLY.md)
+
 ```bash
 npm run regression:nightly
 npm run regression:smoke

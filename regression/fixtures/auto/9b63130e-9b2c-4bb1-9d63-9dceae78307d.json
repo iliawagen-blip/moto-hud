@@ -2,7 +2,7 @@
   "fixture_id": "9b63130e-9b2c-4bb1-9d63-9dceae78307d",
   "corpus_version": 1,
   "created_at": "2026-07-09T07:33:59.359Z",
-  "last_verified_at": "2026-07-09T12:21:57.105Z",
+  "last_verified_at": "2026-07-10T12:28:16.784Z",
   "source": "auto_generator",
   "category": "many_waypoints",
   "region": "moscow_outer",
@@ -60,7 +60,7 @@
       "duration_s": 9156,
       "maneuver_count": 56,
       "roundabout_count": 2,
-      "fetched_at": "2026-07-09T12:16:59.274Z",
+      "fetched_at": "2026-07-10T12:24:08.007Z",
       "fetch_error": null,
       "provider_meta": {
         "profile": "driving-car"
@@ -73,7 +73,7 @@
     "duration_s": 8537,
     "step_count": 118,
     "router": "osrm",
-    "fetched_at": "2026-07-09T07:37:46.481Z",
+    "fetched_at": "2026-07-10T12:22:46.129Z",
     "fetch_error": null
   },
   "metrics": {

@@ -1,0 +1,42 @@
+{
+  "updated_at": "2026-07-10T12:47:41.629Z",
+  "fixtures": {
+    "total": 5,
+    "valid": 5,
+    "full_coverage": 5,
+    "full_coverage_pct": 100
+  },
+  "sim": {
+    "last_nightly_date": "2026-07-10",
+    "last_pass": 0,
+    "last_total": 1,
+    "last_pass_rate_pct": 0,
+    "fixtures_tested": 1
+  },
+  "metrics": {
+    "median_p95_lateral_m": 1266.5136674681341,
+    "refs_agree_pct": 20
+  },
+  "api_counters": {
+    "graphhopper": {
+      "today": 0,
+      "limit": 500,
+      "reset_at": null,
+      "resets_in_h": null
+    },
+    "openrouteservice": {
+      "today": 0,
+      "limit": 2000
+    }
+  },
+  "yandex": {
+    "last_fetch_at": "2026-07-09T11:50:19.008Z",
+    "blocked_until": null
+  },
+  "known_issues": [],
+  "investigations_pending": 2,
+  "git": {
+    "hash": "6a33a230c56e77133e5a951cffa034164fef16a5",
+    "date": "2026-07-10 08:50:36 +0300"
+  }
+}

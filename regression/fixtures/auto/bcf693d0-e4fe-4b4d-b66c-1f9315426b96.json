@@ -2,7 +2,7 @@
   "fixture_id": "bcf693d0-e4fe-4b4d-b66c-1f9315426b96",
   "corpus_version": 1,
   "created_at": "2026-07-09T07:37:19.526Z",
-  "last_verified_at": "2026-07-09T12:22:15.381Z",
+  "last_verified_at": "2026-07-10T12:28:33.418Z",
   "source": "auto_generator",
   "category": "city",
   "region": "kazan",
@@ -55,7 +55,7 @@
       "duration_s": 4697,
       "maneuver_count": 48,
       "roundabout_count": 0,
-      "fetched_at": "2026-07-09T12:17:03.248Z",
+      "fetched_at": "2026-07-10T12:24:11.891Z",
       "fetch_error": null,
       "provider_meta": {
         "profile": "driving-car"
@@ -87,7 +87,7 @@
     "duration_s": 4200,
     "step_count": 70,
     "router": "osrm",
-    "fetched_at": "2026-07-09T07:37:50.390Z",
+    "fetched_at": "2026-07-10T12:22:50.068Z",
     "fetch_error": null
   },
   "metrics": {

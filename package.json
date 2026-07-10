@@ -32,7 +32,9 @@
     "regression:report": "node regression/scripts/generate-report.mjs",
     "regression:review": "node regression/scripts/review-worst.mjs",
     "regression:nightly": "node regression/scripts/run-nightly.mjs",
-    "regression:smoke": "node regression/scripts/run-nightly.mjs --fixtures 5 --skip-yandex"
+    "regression:smoke": "node regression/scripts/run-nightly.mjs --fixtures 5 --skip-yandex",
+    "regression:state": "node regression/scripts/update-state.mjs",
+    "regression:cleanup": "node regression/scripts/cleanup-cache.mjs"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",

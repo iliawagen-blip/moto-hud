@@ -493,7 +493,7 @@ export async function startHud(){
   resetVintageVfd();
   syncVintageVfdDomClasses();
   updateCamStatusUI();
-  if(hasRoute) loadCameras();
+  if(hasRoute && !globalThis.__REGRESSION_SIM__?.active) loadCameras();
   acquireWakeLock();
   try{ await startNavigationGps(); }catch(e){ console.warn('FGS GPS:', e); }
   if(window.__SIM__?.onNavigationStart) window.__SIM__.onNavigationStart();

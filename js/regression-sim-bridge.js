@@ -4,9 +4,9 @@
  */
 import { S } from './state.js';
 import { bearing, haversine } from './geo.js';
-import { attachRouteFromImport } from './route.js';
+import { attachRouteFromImport, ensureRouteGeometry, seedSnapFromGps } from './route.js';
 import { resetOffRouteMachine } from './offroute.js';
-import { resetRouteSnap, getNavSnap } from './route-geometry.js';
+import { resetRouteSnap, getNavSnap, primeRouteSnapFromDist } from './route-geometry.js';
 import { resetSimTimeEpoch } from './sim-time-scale.js';
 
 function minimalSteps(waypoints, distanceM){
@@ -78,7 +78,18 @@ export function prepareRegressionHud(opts){
   S.showElevProfile = false;
   resetOffRouteMachine();
   resetRouteSnap();
+  ensureRouteGeometry(S.route);
+  seedSnapFromGps({ relaxed: true });
   return { distance_m: route.distance, duration_s: route.duration };
+}
+
+/**
+ * Перед injectFix: якорь snap по пройденной дистанции sim-walker.
+ * @param {number} distM
+ */
+export function regressionPrimeSnap(distM){
+  if(!globalThis.__REGRESSION_SIM__?.active) return;
+  if(distM != null && Number.isFinite(distM)) primeRouteSnapFromDist(distM);
 }
 
 /**
