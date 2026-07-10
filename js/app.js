@@ -197,7 +197,6 @@ var init_state = __esm({
       routeQuality: "OK",
       /** 'route' | 'bearing' — пеленг вне цикла viewMode */
       navMode: "route",
-      compassMode: false,
       routerBackend: "osrm",
       rerouting: false,
       rerouteBackoffStep: 0,
@@ -1564,7 +1563,22 @@ function startCompassCalibration(durationMs = 15e3) {
   calibratingUntil = Date.now() + durationMs;
   forceGps = false;
   disagreeSince = 0;
+  recordCompassCalibration();
   startHeadingSensors();
+}
+function recordCompassCalibration() {
+  try {
+    localStorage.setItem(COMPASS_CAL_KEY, String(Date.now()));
+  } catch (e) {
+  }
+}
+function getCompassCalibrationAgeMs() {
+  try {
+    const ts = parseInt(localStorage.getItem(COMPASS_CAL_KEY) || "0", 10);
+    return ts > 0 ? Date.now() - ts : Infinity;
+  } catch (e) {
+    return Infinity;
+  }
 }
 function isCalibrating() {
   return Date.now() < calibratingUntil;
@@ -1620,7 +1634,7 @@ function fuseHeading(gpsHeading, speedMps) {
 function getSensorHeading() {
   return sensorHeading;
 }
-var sensorHeading, sensorTs, listening, motionListening, gyroHeading, gyroTs, lastMotionTs, forceGps, disagreeSince, calibratingUntil, DISAGREE_DEG, DISAGREE_MS, RECOVER_DEG;
+var sensorHeading, sensorTs, listening, motionListening, gyroHeading, gyroTs, lastMotionTs, forceGps, disagreeSince, calibratingUntil, COMPASS_CAL_KEY, DISAGREE_DEG, DISAGREE_MS, RECOVER_DEG;
 var init_heading = __esm({
   "js/heading.js"() {
     init_geo();
@@ -1635,6 +1649,7 @@ var init_heading = __esm({
     forceGps = false;
     disagreeSince = 0;
     calibratingUntil = 0;
+    COMPASS_CAL_KEY = "moto-hud-compass-cal-ts";
     DISAGREE_DEG = 55;
     DISAGREE_MS = 4500;
     RECOVER_DEG = 28;
@@ -4862,7 +4877,6 @@ function attachRouteGeometry(route) {
   delete route._stepSList;
   ensureRouteGeometry(route);
   S.routeQuality = assessRouteQuality(route);
-  S.compassMode = false;
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
@@ -16964,324 +16978,288 @@ var init_gps_converge = __esm({
   }
 });
 
-// js/gps.js
-function curPos() {
-  return RENDER_POS || S.gps;
-}
-function updateRenderPos() {
-  if (!S.gps) {
-    RENDER_POS = null;
-    return;
+// js/yandex-link.js
+var yandex_link_exports = {};
+__export(yandex_link_exports, {
+  YANDEX_PARSER_REV: () => YANDEX_PARSER_REV,
+  YANDEX_URL_RE: () => YANDEX_URL_RE,
+  buildYandexRouteUrl: () => buildYandexRouteUrl,
+  decodeQueryComponent: () => decodeQueryComponent,
+  extractRtextParam: () => extractRtextParam,
+  extractYandexUrl: () => extractYandexUrl,
+  isYandexMapsUrl: () => isYandexMapsUrl,
+  normalizePastedText: () => normalizePastedText,
+  parseRtextWaypoints: () => parseRtextWaypoints,
+  parseYandexRouteLink: () => parseYandexRouteLink,
+  resolveYandexShortLink: () => resolveYandexShortLink
+});
+function decodeQueryComponent(raw) {
+  if (raw == null) return "";
+  let s2 = String(raw).trim();
+  if (!s2) return "";
+  try {
+    s2 = decodeURIComponent(s2.replace(/\+/g, "%20"));
+  } catch {
+    s2 = s2.replace(/\+/g, " ");
   }
-  const v = S.gps.speed != null && S.gps.speed > 0.6 ? S.gps.speed : 0;
-  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
-  if (!v || hdg == null || isNaN(hdg) || !S.fixPos) {
-    RENDER_POS = S.gps;
-    return;
+  return s2;
+}
+function normalizePastedText(text) {
+  return String(text || "").replace(/&amp;/gi, "&").replace(/&#0*38;/g, "&").replace(/^[\s"'«»]+|[\s"'«»]+$/g, "").trim();
+}
+function extractYandexUrl(text) {
+  const s2 = normalizePastedText(text);
+  if (!s2) return null;
+  if (/^https?:\/\//i.test(s2)) {
+    const one = s2.match(YANDEX_URL_RE);
+    if (one) return one[0];
   }
-  const rad = Math.PI / 180;
-  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1e3));
-  const dist = v * dt;
-  RENDER_POS = {
-    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
-    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
-    speed: S.gps.speed,
-    heading: S.gps.heading,
-    acc: S.gps.acc
-  };
+  const m = s2.match(YANDEX_URL_RE);
+  return m ? m[0] : null;
 }
-function easeSpeed() {
-  const el = $2("v-speed");
-  if (!el || !S.gps) return;
-  const raw = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  const target = Math.min(raw, GPS_SPEED_MAX_MPS * 3.6);
-  S.dispSpeed += (target - S.dispSpeed) * 0.22;
-  if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
-  const shown = Math.round(S.dispSpeed);
-  el.textContent = shown;
-  el.classList.toggle("over", isSpeedOverLimit(target));
-  el.classList.toggle("speed-3", shown >= 100);
+function extractRtextParam(url) {
+  const m = String(url || "").match(RTEXT_RE);
+  return m ? decodeQueryComponent(m[1]) : null;
 }
-function resolveGpsSpeed(next, prev) {
-  const acc = next.acc ?? 999;
-  const device = next.speed != null && !isNaN(next.speed) && next.speed >= 0 ? next.speed : null;
-  let meas = 0;
-  let dist = 0;
-  let dt = 0;
-  if (prev) {
-    dt = (next.ts - prev.ts) / 1e3;
-    if (dt > 0.15 && dt < 12) {
-      dist = haversine(prev, next);
-      const measFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
-      if (dist >= measFloor && dist < 500) meas = dist / dt;
+function parseRtextPoint(part, index, total) {
+  const s2 = String(part || "").trim();
+  if (!s2) return null;
+  const coord = s2.match(/^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
+  if (coord) {
+    const lat = parseFloat(coord[1]);
+    const lon = parseFloat(coord[2]);
+    if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+      return { lat, lon, label: DEFAULT_LABELS(index, total) };
     }
   }
-  const driftFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
-  const driftM = acc <= GPS_SPEED_ACC_TRUST_M ? driftFloor : Math.max(driftFloor, acc * 0.55);
-  const base = { device, meas, dist, driftM, dt };
-  if (prev && dist < driftM && (device == null || device < 0.5)) {
-    return { ...base, mps: 0, src: "drift" };
-  }
-  if (device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
-    if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
-      return { ...base, mps: device, src: "device" };
-    }
-  }
-  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
-  if (meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)) {
-    const mps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
-    return { ...base, meas, mps, src: "meas" };
-  }
-  return { ...base, mps: 0, src: "zero" };
+  return null;
 }
-function initGps(callbacks) {
-  _onTick = callbacks.onTick || _onTick;
-  _onVisual = callbacks.onVisual || _onVisual;
-}
-function visualLoop() {
-  S.rafId = requestAnimationFrame(visualLoop);
-  if (!$2("hud").classList.contains("on")) return;
-  telemetry_default.tickPerfFrame();
-  updateRenderPos();
-  tickNavMap();
-  easeSpeed();
-  tickRoundaboutHudRefresh(_onTick);
-  _onVisual();
-}
-function startVisualLoop() {
-  if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
-}
-function stopVisualLoop() {
-  if (S.rafId) {
-    cancelAnimationFrame(S.rafId);
-    S.rafId = null;
+function parseRtextWaypoints(rtext) {
+  const parts = String(rtext || "").split("~").map((p) => p.trim()).filter(Boolean);
+  const waypoints = parts.map((part, i) => parseRtextPoint(part, i, parts.length)).filter(Boolean);
+  if (waypoints.length < 2) {
+    throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652 \u0441 \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u0430\u043C\u0438 lat,lon)");
   }
+  return waypoints;
 }
-function getGpsDisplayAcc() {
-  if (!S.gps) return null;
-  return displayAccM(S.gps.acc, S._gpsSpreadBuf || []);
-}
-function updateGpsConvergeUI() {
-  const el = $2("gps-converge");
-  if (el) {
-    el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
-  }
-  const reported = S.gps?.acc != null ? Math.round(S.gps.acc) : null;
-  const shown = getGpsDisplayAcc();
-  const spread = S.gps ? measuredSpreadM(S._gpsSpreadBuf || []) : null;
-  const failHint = getConvergeFailLabel();
-  let title = "\u0422\u0430\u043F \u2014 \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C GPS";
-  if (S.gps) {
-    const parts = [];
-    if (shown != null) parts.push("\u043E\u0446\u0435\u043D\u043A\u0430 \xB1" + shown + " \u043C");
-    if (reported != null && reported !== shown) parts.push("\u043E\u0442\u0447\u0451\u0442 \u041E\u0421 \xB1" + reported + " \u043C");
-    if (spread != null) parts.push("\u0440\u0430\u0437\u0431\u0440\u043E\u0441 ~" + Math.round(spread) + " \u043C");
-    if (!S.gpsConverged && failHint) parts.push("\u0436\u0434\u0451\u043C: " + failHint);
-    if (parts.length) title = parts.join(" \xB7 ");
-  }
-  if (S.gpsConverged) {
-    const tag = isSim() ? " \u0441\u0438\u043C" : "";
-    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + (shown ?? "\u2014") + "\u043C";
-    $2("s-gps").className = "chip ok";
-  } else if (S.gps) {
-    $2("s-gps").textContent = "\u23F3 GPS \xB1" + (shown ?? "\u2026") + "\u043C";
-    $2("s-gps").className = "chip";
-  } else {
-    $2("s-gps").textContent = "\u23F3 GPS\u2026";
-    $2("s-gps").className = "chip";
-  }
-  $2("s-gps").title = title;
-  checkStartReady();
-}
-function checkStartReady() {
-  const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
-  $2("btn-start").disabled = !(S.gps && S.finish && hasRoute);
-  const buildBtn = $2("btn-build-route");
-  if (buildBtn) buildBtn.disabled = !(S.gps && S.finish);
-}
-function onGpsError() {
-  $2("s-gps").textContent = "\u274C GPS";
-  $2("s-gps").className = "chip err";
-  invalidateGpsConverge("invalidate_error");
-  if (!_gpsLost) {
-    _gpsLost = true;
-    telemetry_default.log("nav", { sub: "gps_lost" });
-  }
-}
-function applyGpsFix(next) {
-  if (S.lastPos) {
-    const d = haversine(S.lastPos, next);
-    const dt = (next.ts - S.lastPos.ts) / 1e3;
-    if (d > 3 && d < 500) S.distDone += d;
-    if ((next.heading == null || isNaN(next.heading)) && d > 3) {
-      next.heading = bearing(S.lastPos, next);
-    }
-  }
-  const speedRes = resolveGpsSpeed(next, S.lastPos);
-  S.measSpeed = speedRes.mps;
-  next.speed = speedRes.mps;
-  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
-  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
-  if (fused != null && !isNaN(fused)) next.heading = fused;
-  if (next.heading != null && !isNaN(next.heading)) {
-    if ((next.speed ?? 0) >= 3.2) S.lastReliableHeadingTs = Date.now();
-    if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
-    else {
-      const spd = next.speed ?? S.measSpeed ?? 0;
-      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
-      const keep = 1 - alpha;
-      const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
-      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
-      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
-    }
-  }
-  S.lastPos = next;
-  S.gps = next;
-  if (!S._gpsSpreadBuf) S._gpsSpreadBuf = [];
-  S._gpsSpreadBuf.push({ lat: next.lat, lon: next.lon, acc: next.acc });
-  while (S._gpsSpreadBuf.length > 8) S._gpsSpreadBuf.shift();
-  S.fixPos = { lat: next.lat, lon: next.lon };
-  S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
-  let telSnap = null;
-  let navSnap = null;
-  if ($2("hud").classList.contains("on") && S.route?.geometry) {
-    navSnap = getNavSnap(S.smoothedHeading);
-    if (navSnap) telSnap = { lateral: navSnap.lateral, quality: S.snapQuality };
-  }
-  S.navLateral = navSnap?.lateral ?? null;
-  const telCtx = { fix: next, snap: telSnap };
-  feedGpsConverge(next, telCtx);
-  const effAcc = effectiveAccM(next.acc, S._gpsSpreadBuf);
-  if (effAcc != null && effAcc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge("invalidate_acc", telCtx);
-  if ($2("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) {
-    telemetry_default.log("nav", {
-      sub: "snap_lost_long",
-      lat_off: telSnap?.lateral != null ? Math.round(telSnap.lateral) : null,
-      acc: next.acc != null ? Math.round(next.acc * 10) / 10 : null,
-      lost_ms: Math.round(lostDurationMs())
+async function resolveYandexShortLink(url, opts = {}) {
+  const fetchFn = opts.fetchFn || globalThis.fetch;
+  if (!fetchFn) return url;
+  if (!SHORT_RE.test(url)) return url;
+  const tryFetch = async (method) => {
+    const res = await fetchFn(url, {
+      redirect: "follow",
+      method,
+      signal: AbortSignal.timeout?.(15e3)
     });
-  }
-  updateGpsConvergeUI();
-  tickConvergeBlocked(next, telSnap);
-  if ($2("hud").classList.contains("on")) {
-    _onTick();
-    if (S.viewMode !== "hud") tickNavMap({ force: true });
-  }
-  const rcv = Date.now();
-  if (_gpsLost) {
-    _gpsLost = false;
-    telemetry_default.log("nav", { sub: "gps_restored" });
-  }
-  telemetry_default.logFix({
-    lat: next.lat,
-    lon: next.lon,
-    acc: next.acc,
-    speed: next.speed,
-    heading: next.heading,
-    alt: next.alt,
-    ts: next.ts,
-    rcv,
-    dev: speedRes.device,
-    meas: speedRes.meas,
-    spdSrc: speedRes.src,
-    stepM: speedRes.dist,
-    driftM: speedRes.driftM,
-    stepDt: speedRes.dt
-  });
-  telemetry_default.logTrackPoint({
-    lat: next.lat,
-    lon: next.lon,
-    acc: next.acc,
-    speed: next.speed,
-    heading: next.heading,
-    ts: next.ts
-  });
-  if (navSnap) telemetry_default.logSnapFromResult(navSnap);
-}
-function stopWebGps() {
-  if (S.watchId !== null && navigator.geolocation) {
-    navigator.geolocation.clearWatch(S.watchId);
-    S.watchId = null;
+    return res.url && res.url !== url ? res.url : url;
+  };
+  try {
+    return await tryFetch("HEAD");
+  } catch {
+    try {
+      return await tryFetch("GET");
+    } catch {
+      return url;
+    }
   }
 }
-function startWebGps() {
-  if (!navigator.geolocation) {
-    $2("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
-    $2("s-gps").className = "chip err";
-    return;
+function buildYandexRouteUrl(waypoints, opts = {}) {
+  const rtext = waypoints.map((w) => `${w.lat},${w.lon}`).join("~");
+  const rtt = opts.rtt || "auto";
+  return `https://yandex.ru/maps/?rtext=${encodeURIComponent(rtext)}&rtt=${rtt}`;
+}
+async function parseYandexRouteLink(rawUrl, opts = {}) {
+  let url = normalizePastedText(rawUrl);
+  if (!url) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
+  const extracted = extractYandexUrl(url);
+  if (extracted) url = extracted;
+  else if (!/yandex\.|ya\.ru/i.test(url)) {
+    throw new Error("\u041D\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442");
   }
-  stopWebGps();
-  $2("s-gps").textContent = "\u23F3 GPS\u2026";
-  $2("s-gps").className = "chip";
-  S.watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      const c = pos.coords;
-      applyGpsFix({
-        lat: c.latitude,
-        lon: c.longitude,
-        speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
-        heading: c.heading == null ? null : c.heading,
-        acc: c.accuracy,
-        alt: c.altitude != null && !isNaN(c.altitude) ? c.altitude : null,
-        ts: pos.timestamp
+  url = await resolveYandexShortLink(url, opts);
+  const rtext = extractRtextParam(url);
+  if (!rtext) {
+    throw new Error(
+      "\u0412 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (rtext). \u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u2192 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB \u2192 \u0441\u043A\u043E\u043F\u0438\u0440\u0443\u0439\u0442\u0435 \u0434\u043B\u0438\u043D\u043D\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443."
+    );
+  }
+  return parseRtextWaypoints(rtext);
+}
+function isYandexMapsUrl(raw) {
+  return !!extractYandexUrl(raw) || /yandex\.(?:ru|com)|ya\.ru\/maps/i.test(normalizePastedText(raw));
+}
+var YANDEX_PARSER_REV, YANDEX_URL_RE, SHORT_RE, RTEXT_RE, DEFAULT_LABELS;
+var init_yandex_link = __esm({
+  "js/yandex-link.js"() {
+    YANDEX_PARSER_REV = 2;
+    YANDEX_URL_RE = /https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/(?:maps|navi)[^\s"'<>]*/gi;
+    SHORT_RE = /^https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/maps\/-/i;
+    RTEXT_RE = /[?&#]rtext=([^&#]+)/i;
+    DEFAULT_LABELS = (i, total) => {
+      if (i === 0) return "\u0421\u0442\u0430\u0440\u0442";
+      if (i === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
+      return `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
+    };
+  }
+});
+
+// js/yandex-import.js
+function openDb2() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME2, DB_VER2);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("imports")) {
+        db.createObjectStore("imports", { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveYandexImportHistory(waypoints, mode) {
+  try {
+    const db = await openDb2();
+    const name = (waypoints[0]?.label || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442").split(/\s+/)[0].slice(0, 24);
+    await new Promise((resolve, reject) => {
+      const tx2 = db.transaction("imports", "readwrite");
+      tx2.objectStore("imports").put({
+        id: crypto.randomUUID(),
+        name,
+        ts: Date.now(),
+        mode,
+        waypointCount: waypoints.length
       });
-    },
-    onGpsError,
-    { enableHighAccuracy: true, timeout: 15e3, maximumAge: 1e3 }
-  );
-}
-function startGps() {
-  _navMode = false;
-  startHeadingSensors();
-  if (isNative()) {
-    $2("s-gps").textContent = "\u23F3 GPS\u2026";
-    $2("s-gps").className = "chip";
-    stopWebGps();
-    startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
-    return;
+      tx2.oncomplete = () => resolve();
+      tx2.onerror = () => reject(tx2.error);
+    });
+    db.close();
+  } catch (e) {
+    console.warn("yandex history:", e);
   }
-  startWebGps();
 }
-async function startNavigationGps() {
-  if (!isNative()) return;
-  _navMode = true;
-  await startNavGps(applyGpsFix, onGpsError);
+function waypointsToOsrmPoints(waypoints, gps) {
+  const pts = waypoints.map((w) => ({ lat: w.lat, lon: w.lon }));
+  if (gps && pts.length) {
+    if (haversine(gps, pts[0]) > 500) pts.unshift({ lat: gps.lat, lon: gps.lon });
+    else pts[0] = { lat: gps.lat, lon: gps.lon };
+  }
+  return pts;
 }
-async function stopNavigationGps() {
-  if (!isNative()) return;
-  _navMode = false;
-  await stopNavGps();
-  await startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+function hideImportModal() {
+  $2("yandexImportModal")?.classList.remove("on");
+  _pendingWaypoints = null;
+  _pendingUrl = "";
 }
-var RENDER_POS, _navMode, _gpsLost, _onTick, _onVisual;
-var init_gps = __esm({
-  "js/gps.js"() {
+function hideBanner() {
+  const banner = $2("yandex-banner");
+  banner?.classList.remove("on");
+  banner?.classList.add("hidden");
+}
+async function finishImport(mode) {
+  const wps = _pendingWaypoints;
+  const urlForInput = _pendingUrl;
+  if (!wps?.length) return;
+  hideImportModal();
+  hideBanner();
+  const status = $2("s-finish");
+  const btn = $2("btn-build-route");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "\u23F3 \u0418\u043C\u043F\u043E\u0440\u0442\u2026";
+  }
+  if (status) {
+    status.textContent = mode === "direct" ? "\u23F3 \u0411\u044B\u0441\u0442\u0440\u044B\u0439 \u0441\u0442\u0430\u0440\u0442\u2026" : "\u23F3 \u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 OSRM\u2026";
+    status.className = "status";
+  }
+  try {
+    if (mode === "direct") {
+      attachRouteFromImport(buildDirectRouteFromWaypoints(wps), wps);
+    } else {
+      const pts = waypointsToOsrmPoints(wps, S.gps);
+      const route = await fetchRouteThroughWaypoints(pts);
+      attachRouteFromImport(route, pts);
+    }
+    const { refreshRouteUi: refreshRouteUi2 } = await Promise.resolve().then(() => (init_setup(), setup_exports));
+    refreshRouteUi2();
+    await saveYandexImportHistory(wps, mode);
+    telemetry_default.log("nav", { sub: "yandex_import", mode, n: wps.length });
+    if (status) {
+      status.textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442 \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB";
+      status.className = "status ok";
+    }
+    $2("finish-input").value = urlForInput || `${wps.length} \u0442\u043E\u0447\u0435\u043A \u042F\u043D\u0434\u0435\u043A\u0441`;
+  } catch (e) {
+    if (status) {
+      status.textContent = "\u274C " + (e.message || e);
+      status.className = "status err";
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = !(S.gps && S.finish);
+      btn.textContent = "\u{1F5FA} \u041F\u043E\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442";
+    }
+  }
+}
+function offerYandexImport(waypoints, sourceUrl = "") {
+  _pendingWaypoints = waypoints;
+  _pendingUrl = sourceUrl || "";
+  const modal = $2("yandexImportModal");
+  const info = $2("yandex-import-info");
+  if (info) {
+    info.textContent = `\u0422\u043E\u0447\u0435\u043A: ${waypoints.length}. \u0414\u043B\u044F \u0442\u043E\u0447\u043D\u043E\u0433\u043E \u043F\u043E\u0432\u0442\u043E\u0440\u0435\u043D\u0438\u044F \u0433\u0435\u043E\u043C\u0435\u0442\u0440\u0438\u0438 \u042F\u043D\u0434\u0435\u043A\u0441\u0430 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0439\u0442\u0435 \u043F\u0440\u043E\u043C\u0435\u0436\u0443\u0442\u043E\u0447\u043D\u044B\u0435 \u0442\u043E\u0447\u043A\u0438 \u043A\u0430\u0436\u0434\u044B\u0435 3\u20135 \u043A\u043C \u2014 \u0438\u043D\u0430\u0447\u0435 OSRM \u043C\u043E\u0436\u0435\u0442 \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u0435 \u0434\u043E\u0440\u043E\u0433\u0438.`;
+  }
+  modal?.classList.add("on");
+}
+async function importYandexFromText(rawText) {
+  const { parseYandexRouteLink: parseYandexRouteLink2 } = await Promise.resolve().then(() => (init_yandex_link(), yandex_link_exports));
+  const url = extractYandexUrl(rawText) || rawText.trim();
+  const wps = await parseYandexRouteLink2(url);
+  offerYandexImport(wps, url);
+  return wps;
+}
+function showYandexBanner(message, onApply) {
+  const banner = $2("yandex-banner");
+  const msg = $2("yandex-banner-msg");
+  if (!banner) return;
+  if (msg) msg.textContent = message || "\u041D\u0430\u0439\u0434\u0435\u043D\u0430 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442";
+  banner.classList.remove("hidden");
+  banner.classList.add("on");
+  const applyBtn = $2("yandex-banner-apply");
+  const dismissBtn = $2("yandex-banner-dismiss");
+  const onOk = () => {
+    hideBanner();
+    onApply?.();
+  };
+  const onNo = () => hideBanner();
+  applyBtn?.replaceWith(applyBtn.cloneNode(true));
+  dismissBtn?.replaceWith(dismissBtn.cloneNode(true));
+  $2("yandex-banner-apply")?.addEventListener("click", onOk, { once: true });
+  $2("yandex-banner-dismiss")?.addEventListener("click", onNo, { once: true });
+}
+function initYandexImportUi() {
+  $2("yandex-import-direct")?.addEventListener("click", () => {
+    void finishImport("direct");
+  });
+  $2("yandex-import-routed")?.addEventListener("click", () => {
+    void finishImport("routed");
+  });
+  $2("yandex-import-cancel")?.addEventListener("click", hideImportModal);
+}
+var DB_NAME2, DB_VER2, _pendingWaypoints, _pendingUrl;
+var init_yandex_import = __esm({
+  "js/yandex-import.js"() {
     init_state();
-    init_geo();
     init_util();
-    init_platform();
-    init_native_gps();
-    init_heading();
+    init_geo();
+    init_route();
+    init_yandex_link();
     init_telemetry();
-    init_route_geometry();
-    init_nav_constants();
-    init_speed_limit();
-    init_roundabout();
-    init_nav_map();
-    init_gps_converge();
-    init_gps_accuracy();
-    init_snap_quality();
-    init_converge_telemetry();
-    init_nav_constants();
-    RENDER_POS = null;
-    _navMode = false;
-    _gpsLost = false;
-    _onTick = () => {
-    };
-    _onVisual = () => {
-    };
+    DB_NAME2 = "moto-hud-yandex";
+    DB_VER2 = 1;
+    _pendingWaypoints = null;
+    _pendingUrl = "";
   }
 });
 
@@ -17551,6 +17529,12 @@ function syncNavButtons() {
   mapBtn?.classList.toggle("hidden", isBearingMode());
   bearingBtn?.classList.toggle("hud-btn--active", isBearingMode());
 }
+function maybeShowCalibrationBanner() {
+  const banner = $2("bearing-cal-banner");
+  if (!banner) return;
+  const stale = getCompassCalibrationAgeMs() > CAL_WARN_MS;
+  banner.classList.toggle("hidden", !isBearingMode() || !stale);
+}
 function enterBearingMode(opts = {}) {
   const quiet = !!opts.quiet;
   if (!S.finish) {
@@ -17561,25 +17545,25 @@ function enterBearingMode(opts = {}) {
     if (!quiet) alert("\u041D\u0435\u0442 GPS");
     return false;
   }
-  if (!S.route) {
-    if (!quiet) alert("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u043B\u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448");
-    return false;
-  }
   S.navMode = "bearing";
   setViewMode("hud");
   _smoothRel = 0;
+  _arrivedSpoken = false;
   applyBearingLayout(true);
   syncNavButtons();
+  maybeShowCalibrationBanner();
   if (telemetry_default.isActive?.()) {
-    telemetry_default.log("nav", { sub: "bearing_enter" });
+    telemetry_default.log("nav", { sub: "bearing_enter", has_route: !!S.route?.coords?.length });
   }
   return true;
 }
 function exitBearingMode() {
   if (S.navMode !== "bearing") return;
   S.navMode = "route";
+  _arrivedSpoken = false;
   applyBearingLayout(false);
   syncNavButtons();
+  $2("bearing-cal-banner")?.classList.add("hidden");
   if (telemetry_default.isActive?.()) {
     telemetry_default.log("nav", { sub: "bearing_exit" });
   }
@@ -17609,20 +17593,32 @@ function tickBearing(now, kmh) {
   const gps = S.gps;
   const target = getBearingTarget();
   const hdg = getEffectiveHeading(gps);
+  const gpsLost = isGpsFixStale(GPS_LOST_MS);
   const mid = $2("mid-info");
   const tStr = S.startTs ? "T+" + fmtRideTime((Date.now() - S.startTs) / 1e3) : "\u2014";
-  if (mid) mid.textContent = tStr + " \xB7 \u041F\u0415\u041B\u0415\u041D\u0413";
-  if (!target || !gps) {
-    renderBearingArrow(0, "\u2014", { dim: true });
+  if (mid) {
+    mid.textContent = tStr + " \xB7 \u041F\u0415\u041B\u0415\u041D\u0413" + (gpsLost ? " \xB7 GPS?" : "");
+  }
+  maybeShowCalibrationBanner();
+  if (!target || !gps || gpsLost) {
+    renderBearingArrow(0, gpsLost ? "GPS \u043F\u043E\u0442\u0435\u0440\u044F\u043D" : "\u2014", { dim: true });
     const distEl2 = $2("bearing-distance");
     if (distEl2) distEl2.textContent = "\u2014";
+    const labelEl2 = $2("bearing-label");
+    if (labelEl2) {
+      labelEl2.textContent = gpsLost ? "\u041D\u0415\u0422 GPS" : "\u2014";
+      labelEl2.classList.toggle("bearing-label--warn", gpsLost);
+    }
     return;
   }
   const res = updateBearing(gps, target, hdg);
   if (!res) return;
   _smoothRel += (res.bearingRel - _smoothRel) * ARROW_SMOOTH;
   const labelEl = $2("bearing-label");
-  if (labelEl) labelEl.textContent = res.state.label;
+  if (labelEl) {
+    labelEl.textContent = res.state.label;
+    labelEl.classList.toggle("bearing-label--warn", res.state.uTurn || gpsLost);
+  }
   renderBearingArrow(_smoothRel, res.state.uTurn ? "\u0420\u0410\u0417\u0412\u041E\u0420\u041E\u0422" : "", {
     uTurn: res.state.uTurn,
     dim: false
@@ -17631,6 +17627,10 @@ function tickBearing(now, kmh) {
   const distEl = $2("bearing-distance");
   if (distEl) {
     distEl.innerHTML = fmt.u ? '<span class="bearing-dist-val">' + fmt.v + '</span><span class="bearing-dist-u">' + fmt.u + "</span>" : fmt.v;
+  }
+  if (res.state.arrived && !_arrivedSpoken) {
+    _arrivedSpoken = true;
+    speak("\u0412\u044B \u0443 \u0446\u0435\u043B\u0438");
   }
   const meta = $2("bearing-heading-meta");
   if (meta) {
@@ -17645,7 +17645,8 @@ function tickBearing(now, kmh) {
       sub: "bearing_tick",
       dist_m: Math.round(res.distanceM),
       rel: Math.round(_smoothRel),
-      hdg: hdg != null ? Math.round(hdg) : null
+      hdg: hdg != null ? Math.round(hdg) : null,
+      gps_lost: gpsLost
     });
   }
 }
@@ -17672,7 +17673,7 @@ function initBearingMode() {
   });
   syncNavButtons();
 }
-var ARRIVED_M, U_TURN_DEG, GPS_HEADING_ACC_M, GPS_HEADING_MIN_KMH, COMPASS_PREF_MAX_KMH, COMPASS_PREF_ACC_M, ARROW_SMOOTH, _smoothRel, _bound3, _lastTickLog, BEARING_ICON_SVG;
+var ARRIVED_M, U_TURN_DEG, GPS_HEADING_ACC_M, GPS_HEADING_MIN_KMH, COMPASS_PREF_MAX_KMH, COMPASS_PREF_ACC_M, ARROW_SMOOTH, GPS_LOST_MS, CAL_WARN_MS, _smoothRel, _bound3, _lastTickLog, _arrivedSpoken, BEARING_ICON_SVG;
 var init_bearing_mode = __esm({
   "js/bearing-mode.js"() {
     init_state();
@@ -17680,6 +17681,8 @@ var init_bearing_mode = __esm({
     init_geo();
     init_view_mode();
     init_heading();
+    init_gps();
+    init_voice();
     init_telemetry();
     ARRIVED_M = 30;
     U_TURN_DEG = 170;
@@ -17688,9 +17691,12 @@ var init_bearing_mode = __esm({
     COMPASS_PREF_MAX_KMH = 5;
     COMPASS_PREF_ACC_M = 20;
     ARROW_SMOOTH = 0.18;
+    GPS_LOST_MS = 5e3;
+    CAL_WARN_MS = 7 * 864e5;
     _smoothRel = 0;
     _bound3 = false;
     _lastTickLog = 0;
+    _arrivedSpoken = false;
     BEARING_ICON_SVG = '<svg class="bearing-icon-svg" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,5 21,23 16,19 11,23" fill="currentColor"/><circle cx="16" cy="16" r="2.2" fill="currentColor"/></svg>';
   }
 });
@@ -17888,7 +17894,7 @@ function tryReturnOnRoute(feed) {
   return true;
 }
 function tickOffRouteMachine(feed) {
-  if (isBearingMode() || S.compassMode || feed.lateral == null || !S.route) return;
+  if (isBearingMode() || feed.lateral == null || !S.route) return;
   const now = Date.now();
   const dtMs = _ctx.lastFeedMs ? Math.min(3e3, simScaledDelta(now - _ctx.lastFeedMs)) : 0;
   _ctx.lastFeedMs = now;
@@ -17955,7 +17961,7 @@ var init_offroute = __esm({
 
 // js/low-speed-map.js
 function canUseLowSpeedMap(waitConverge) {
-  return !!$2("hud")?.classList.contains("on") && !!S.route && !waitConverge && !S.compassMode && !isBearingMode();
+  return !!$2("hud")?.classList.contains("on") && !!S.route && !waitConverge && !isBearingMode();
 }
 function isNavOnRoad(ctx = {}) {
   if (!S.route?.geometry) return false;
@@ -18426,7 +18432,7 @@ function renderPathway() {
   const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
   const waitConverge = !hasEverConverged() && S.gpsConverged === false;
   const pathCtx = { lateral: S.navLateral };
-  if (!S.showPath || waitConverge || S.compassMode || isBearingMode()) {
+  if (!S.showPath || waitConverge || isBearingMode()) {
     block.classList.add("hidden");
     hud.classList.add("no-path");
     svg.innerHTML = "";
@@ -19645,1305 +19651,6 @@ var init_hud_settings_sheet = __esm({
     init_theme_manager();
     STATIONARY_KMH = 15;
     _toastTimer = null;
-  }
-});
-
-// js/yandex-link.js
-var yandex_link_exports = {};
-__export(yandex_link_exports, {
-  YANDEX_PARSER_REV: () => YANDEX_PARSER_REV,
-  YANDEX_URL_RE: () => YANDEX_URL_RE,
-  buildYandexRouteUrl: () => buildYandexRouteUrl,
-  decodeQueryComponent: () => decodeQueryComponent,
-  extractRtextParam: () => extractRtextParam,
-  extractYandexUrl: () => extractYandexUrl,
-  isYandexMapsUrl: () => isYandexMapsUrl,
-  normalizePastedText: () => normalizePastedText,
-  parseRtextWaypoints: () => parseRtextWaypoints,
-  parseYandexRouteLink: () => parseYandexRouteLink,
-  resolveYandexShortLink: () => resolveYandexShortLink
-});
-function decodeQueryComponent(raw) {
-  if (raw == null) return "";
-  let s2 = String(raw).trim();
-  if (!s2) return "";
-  try {
-    s2 = decodeURIComponent(s2.replace(/\+/g, "%20"));
-  } catch {
-    s2 = s2.replace(/\+/g, " ");
-  }
-  return s2;
-}
-function normalizePastedText(text) {
-  return String(text || "").replace(/&amp;/gi, "&").replace(/&#0*38;/g, "&").replace(/^[\s"'«»]+|[\s"'«»]+$/g, "").trim();
-}
-function extractYandexUrl(text) {
-  const s2 = normalizePastedText(text);
-  if (!s2) return null;
-  if (/^https?:\/\//i.test(s2)) {
-    const one = s2.match(YANDEX_URL_RE);
-    if (one) return one[0];
-  }
-  const m = s2.match(YANDEX_URL_RE);
-  return m ? m[0] : null;
-}
-function extractRtextParam(url) {
-  const m = String(url || "").match(RTEXT_RE);
-  return m ? decodeQueryComponent(m[1]) : null;
-}
-function parseRtextPoint(part, index, total) {
-  const s2 = String(part || "").trim();
-  if (!s2) return null;
-  const coord = s2.match(/^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
-  if (coord) {
-    const lat = parseFloat(coord[1]);
-    const lon = parseFloat(coord[2]);
-    if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
-      return { lat, lon, label: DEFAULT_LABELS(index, total) };
-    }
-  }
-  return null;
-}
-function parseRtextWaypoints(rtext) {
-  const parts = String(rtext || "").split("~").map((p) => p.trim()).filter(Boolean);
-  const waypoints = parts.map((part, i) => parseRtextPoint(part, i, parts.length)).filter(Boolean);
-  if (waypoints.length < 2) {
-    throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652 \u0441 \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u0430\u043C\u0438 lat,lon)");
-  }
-  return waypoints;
-}
-async function resolveYandexShortLink(url, opts = {}) {
-  const fetchFn = opts.fetchFn || globalThis.fetch;
-  if (!fetchFn) return url;
-  if (!SHORT_RE.test(url)) return url;
-  const tryFetch = async (method) => {
-    const res = await fetchFn(url, {
-      redirect: "follow",
-      method,
-      signal: AbortSignal.timeout?.(15e3)
-    });
-    return res.url && res.url !== url ? res.url : url;
-  };
-  try {
-    return await tryFetch("HEAD");
-  } catch {
-    try {
-      return await tryFetch("GET");
-    } catch {
-      return url;
-    }
-  }
-}
-function buildYandexRouteUrl(waypoints, opts = {}) {
-  const rtext = waypoints.map((w) => `${w.lat},${w.lon}`).join("~");
-  const rtt = opts.rtt || "auto";
-  return `https://yandex.ru/maps/?rtext=${encodeURIComponent(rtext)}&rtt=${rtt}`;
-}
-async function parseYandexRouteLink(rawUrl, opts = {}) {
-  let url = normalizePastedText(rawUrl);
-  if (!url) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
-  const extracted = extractYandexUrl(url);
-  if (extracted) url = extracted;
-  else if (!/yandex\.|ya\.ru/i.test(url)) {
-    throw new Error("\u041D\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442");
-  }
-  url = await resolveYandexShortLink(url, opts);
-  const rtext = extractRtextParam(url);
-  if (!rtext) {
-    throw new Error(
-      "\u0412 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (rtext). \u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u2192 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB \u2192 \u0441\u043A\u043E\u043F\u0438\u0440\u0443\u0439\u0442\u0435 \u0434\u043B\u0438\u043D\u043D\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443."
-    );
-  }
-  return parseRtextWaypoints(rtext);
-}
-function isYandexMapsUrl(raw) {
-  return !!extractYandexUrl(raw) || /yandex\.(?:ru|com)|ya\.ru\/maps/i.test(normalizePastedText(raw));
-}
-var YANDEX_PARSER_REV, YANDEX_URL_RE, SHORT_RE, RTEXT_RE, DEFAULT_LABELS;
-var init_yandex_link = __esm({
-  "js/yandex-link.js"() {
-    YANDEX_PARSER_REV = 2;
-    YANDEX_URL_RE = /https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/(?:maps|navi)[^\s"'<>]*/gi;
-    SHORT_RE = /^https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/maps\/-/i;
-    RTEXT_RE = /[?&#]rtext=([^&#]+)/i;
-    DEFAULT_LABELS = (i, total) => {
-      if (i === 0) return "\u0421\u0442\u0430\u0440\u0442";
-      if (i === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
-      return `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
-    };
-  }
-});
-
-// js/yandex-import.js
-function openDb2() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME2, DB_VER2);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains("imports")) {
-        db.createObjectStore("imports", { keyPath: "id" });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function saveYandexImportHistory(waypoints, mode) {
-  try {
-    const db = await openDb2();
-    const name = (waypoints[0]?.label || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442").split(/\s+/)[0].slice(0, 24);
-    await new Promise((resolve, reject) => {
-      const tx2 = db.transaction("imports", "readwrite");
-      tx2.objectStore("imports").put({
-        id: crypto.randomUUID(),
-        name,
-        ts: Date.now(),
-        mode,
-        waypointCount: waypoints.length
-      });
-      tx2.oncomplete = () => resolve();
-      tx2.onerror = () => reject(tx2.error);
-    });
-    db.close();
-  } catch (e) {
-    console.warn("yandex history:", e);
-  }
-}
-function waypointsToOsrmPoints(waypoints, gps) {
-  const pts = waypoints.map((w) => ({ lat: w.lat, lon: w.lon }));
-  if (gps && pts.length) {
-    if (haversine(gps, pts[0]) > 500) pts.unshift({ lat: gps.lat, lon: gps.lon });
-    else pts[0] = { lat: gps.lat, lon: gps.lon };
-  }
-  return pts;
-}
-function hideImportModal() {
-  $2("yandexImportModal")?.classList.remove("on");
-  _pendingWaypoints = null;
-  _pendingUrl = "";
-}
-function hideBanner() {
-  const banner = $2("yandex-banner");
-  banner?.classList.remove("on");
-  banner?.classList.add("hidden");
-}
-async function finishImport(mode) {
-  const wps = _pendingWaypoints;
-  const urlForInput = _pendingUrl;
-  if (!wps?.length) return;
-  hideImportModal();
-  hideBanner();
-  const status = $2("s-finish");
-  const btn = $2("btn-build-route");
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "\u23F3 \u0418\u043C\u043F\u043E\u0440\u0442\u2026";
-  }
-  if (status) {
-    status.textContent = mode === "direct" ? "\u23F3 \u0411\u044B\u0441\u0442\u0440\u044B\u0439 \u0441\u0442\u0430\u0440\u0442\u2026" : "\u23F3 \u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 OSRM\u2026";
-    status.className = "status";
-  }
-  try {
-    if (mode === "direct") {
-      attachRouteFromImport(buildDirectRouteFromWaypoints(wps), wps);
-    } else {
-      const pts = waypointsToOsrmPoints(wps, S.gps);
-      const route = await fetchRouteThroughWaypoints(pts);
-      attachRouteFromImport(route, pts);
-    }
-    const { refreshRouteUi: refreshRouteUi2 } = await Promise.resolve().then(() => (init_setup(), setup_exports));
-    refreshRouteUi2();
-    await saveYandexImportHistory(wps, mode);
-    telemetry_default.log("nav", { sub: "yandex_import", mode, n: wps.length });
-    if (status) {
-      status.textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442 \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB";
-      status.className = "status ok";
-    }
-    $2("finish-input").value = urlForInput || `${wps.length} \u0442\u043E\u0447\u0435\u043A \u042F\u043D\u0434\u0435\u043A\u0441`;
-  } catch (e) {
-    if (status) {
-      status.textContent = "\u274C " + (e.message || e);
-      status.className = "status err";
-    }
-  } finally {
-    if (btn) {
-      btn.disabled = !(S.gps && S.finish);
-      btn.textContent = "\u{1F5FA} \u041F\u043E\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442";
-    }
-  }
-}
-function offerYandexImport(waypoints, sourceUrl = "") {
-  _pendingWaypoints = waypoints;
-  _pendingUrl = sourceUrl || "";
-  const modal = $2("yandexImportModal");
-  const info = $2("yandex-import-info");
-  if (info) {
-    info.textContent = `\u0422\u043E\u0447\u0435\u043A: ${waypoints.length}. \u0414\u043B\u044F \u0442\u043E\u0447\u043D\u043E\u0433\u043E \u043F\u043E\u0432\u0442\u043E\u0440\u0435\u043D\u0438\u044F \u0433\u0435\u043E\u043C\u0435\u0442\u0440\u0438\u0438 \u042F\u043D\u0434\u0435\u043A\u0441\u0430 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0439\u0442\u0435 \u043F\u0440\u043E\u043C\u0435\u0436\u0443\u0442\u043E\u0447\u043D\u044B\u0435 \u0442\u043E\u0447\u043A\u0438 \u043A\u0430\u0436\u0434\u044B\u0435 3\u20135 \u043A\u043C \u2014 \u0438\u043D\u0430\u0447\u0435 OSRM \u043C\u043E\u0436\u0435\u0442 \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u0435 \u0434\u043E\u0440\u043E\u0433\u0438.`;
-  }
-  modal?.classList.add("on");
-}
-async function importYandexFromText(rawText) {
-  const { parseYandexRouteLink: parseYandexRouteLink2 } = await Promise.resolve().then(() => (init_yandex_link(), yandex_link_exports));
-  const url = extractYandexUrl(rawText) || rawText.trim();
-  const wps = await parseYandexRouteLink2(url);
-  offerYandexImport(wps, url);
-  return wps;
-}
-function showYandexBanner(message, onApply) {
-  const banner = $2("yandex-banner");
-  const msg = $2("yandex-banner-msg");
-  if (!banner) return;
-  if (msg) msg.textContent = message || "\u041D\u0430\u0439\u0434\u0435\u043D\u0430 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442";
-  banner.classList.remove("hidden");
-  banner.classList.add("on");
-  const applyBtn = $2("yandex-banner-apply");
-  const dismissBtn = $2("yandex-banner-dismiss");
-  const onOk = () => {
-    hideBanner();
-    onApply?.();
-  };
-  const onNo = () => hideBanner();
-  applyBtn?.replaceWith(applyBtn.cloneNode(true));
-  dismissBtn?.replaceWith(dismissBtn.cloneNode(true));
-  $2("yandex-banner-apply")?.addEventListener("click", onOk, { once: true });
-  $2("yandex-banner-dismiss")?.addEventListener("click", onNo, { once: true });
-}
-function initYandexImportUi() {
-  $2("yandex-import-direct")?.addEventListener("click", () => {
-    void finishImport("direct");
-  });
-  $2("yandex-import-routed")?.addEventListener("click", () => {
-    void finishImport("routed");
-  });
-  $2("yandex-import-cancel")?.addEventListener("click", hideImportModal);
-}
-var DB_NAME2, DB_VER2, _pendingWaypoints, _pendingUrl;
-var init_yandex_import = __esm({
-  "js/yandex-import.js"() {
-    init_state();
-    init_util();
-    init_geo();
-    init_route();
-    init_yandex_link();
-    init_telemetry();
-    DB_NAME2 = "moto-hud-yandex";
-    DB_VER2 = 1;
-    _pendingWaypoints = null;
-    _pendingUrl = "";
-  }
-});
-
-// js/route-map.js
-function clearLayers() {
-  if (!_map2) return;
-  _routeLayers.forEach((l) => _map2.removeLayer(l));
-  _hudWindowLayers.forEach((l) => _map2.removeLayer(l));
-  _markers.forEach((m) => _map2.removeLayer(m));
-  _routeLayers = [];
-  _hudWindowLayers = [];
-  _markers = [];
-}
-function routePolylineLatLngs(route) {
-  if (route?.geometry?.n > 1) return geometryToLatLngs(route.geometry);
-  const coords = route?.coords;
-  if (!coords?.length) return [];
-  return coords.map((c) => [c[0], c[1]]);
-}
-function latLngsForDistance(route, maxM, startS) {
-  const geom = route?.geometry;
-  if (geom?.n > 1) {
-    return latLngsSliceByS(geom, startS || 0, (startS || 0) + maxM);
-  }
-  const coords = route?.coords;
-  if (!coords || coords.length < 2) return [];
-  const out = [[coords[0][0], coords[0][1]]];
-  let acc = 0;
-  for (let i = 0; i < coords.length - 1 && acc < maxM; i++) {
-    const a = { lat: coords[i][0], lon: coords[i][1] };
-    const b = { lat: coords[i + 1][0], lon: coords[i + 1][1] };
-    const seg = haversine(a, b);
-    if (acc + seg >= maxM) {
-      const t = (maxM - acc) / seg;
-      out.push([a.lat + t * (b.lat - a.lat), a.lon + t * (b.lon - a.lon)]);
-      break;
-    }
-    acc += seg;
-    out.push([b.lat, b.lon]);
-  }
-  return out;
-}
-function applyTileLayer(id) {
-  if (!_map2) return;
-  const layers = resolveMapLayers(id);
-  if (_tileLayer2) _map2.removeLayer(_tileLayer2);
-  if (_overlayLayer2) {
-    _map2.removeLayer(_overlayLayer2);
-    _overlayLayer2 = null;
-  }
-  _tileLayer2 = import_leaflet2.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map2);
-  if (layers.overlay) {
-    _overlayLayer2 = import_leaflet2.default.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map2);
-  }
-}
-function ensureMap2() {
-  const box = $2("route-map");
-  if (!box) return null;
-  if (!_map2) {
-    box.innerHTML = "";
-    _map2 = import_leaflet2.default.map(box, {
-      zoomControl: true,
-      attributionControl: false,
-      preferCanvas: true
-    });
-    applyTileLayer(getMapProviderId());
-  }
-  return _map2;
-}
-function initMapProviderSelect(onChange) {
-  const sel = $2("opt-map");
-  if (!sel) return;
-  sel.innerHTML = buildMapProviderSelectHtml(getMapProviderId());
-  sel.addEventListener("change", () => {
-    saveMapProviderId(sel.value);
-    applyTileLayer(sel.value);
-    if (_lastRender) {
-      renderRouteMap(
-        _lastRender.alternatives,
-        _lastRender.selectedIdx,
-        _lastRender.start,
-        _lastRender.finish
-      );
-    }
-    if (onChange) onChange(sel.value);
-  });
-}
-function renderRouteMap(alternatives, selectedIdx, start2, finish) {
-  const section = $2("route-section");
-  if (!section) return;
-  if (!alternatives || !alternatives.length) {
-    section.classList.add("hidden");
-    clearLayers();
-    _lastRender = null;
-    return;
-  }
-  _lastRender = { alternatives, selectedIdx, start: start2, finish };
-  section.classList.remove("hidden");
-  const map = ensureMap2();
-  if (!map) return;
-  clearLayers();
-  const bounds = import_leaflet2.default.latLngBounds([]);
-  alternatives.forEach((r, i) => {
-    const latlngs = routePolylineLatLngs(r);
-    latlngs.forEach((ll) => bounds.extend(ll));
-    const sel = i === selectedIdx;
-    const layer = import_leaflet2.default.polyline(latlngs, {
-      color: ROUTE_COLORS[i % ROUTE_COLORS.length],
-      weight: sel ? 7 : 4,
-      opacity: sel ? 1 : 0.45,
-      lineCap: "round",
-      lineJoin: "round"
-    }).addTo(map);
-    layer.on("click", () => {
-      if (_onSelect) _onSelect(i);
-    });
-    _routeLayers.push(layer);
-    if (sel) {
-      const hudLenM = getElevProfileLenM();
-      const hudWin = latLngsForDistance(r, hudLenM, 0);
-      if (hudWin.length > 1) {
-        const glow = import_leaflet2.default.polyline(hudWin, {
-          color: "#ffffff",
-          weight: 11,
-          opacity: 0.28,
-          lineCap: "round",
-          lineJoin: "round"
-        }).addTo(map);
-        const core = import_leaflet2.default.polyline(hudWin, {
-          color: ROUTE_COLORS[i % ROUTE_COLORS.length],
-          weight: 5,
-          opacity: 0.95,
-          dashArray: "10,8",
-          lineCap: "round",
-          lineJoin: "round"
-        }).addTo(map).bindTooltip("\u041E\u043A\u043D\u043E HUD ~" + hudLenM / 1e3 + " \u043A\u043C", { direction: "top", sticky: true });
-        _hudWindowLayers.push(glow, core);
-      }
-    }
-  });
-  if (start2) {
-    const m = import_leaflet2.default.circleMarker([start2.lat, start2.lon], {
-      radius: 9,
-      color: "#000",
-      weight: 2,
-      fillColor: THEME.routeStart,
-      fillOpacity: 1
-    }).addTo(map).bindTooltip("\u0412\u044B", { permanent: false, direction: "top" });
-    bounds.extend([start2.lat, start2.lon]);
-    _markers.push(m);
-  }
-  if (finish) {
-    const m = import_leaflet2.default.circleMarker([finish.lat, finish.lon], {
-      radius: 9,
-      color: "#000",
-      weight: 2,
-      fillColor: THEME.routeFinish,
-      fillOpacity: 1
-    }).addTo(map).bindTooltip("\u0424\u0438\u043D\u0438\u0448", { permanent: false, direction: "top" });
-    bounds.extend([finish.lat, finish.lon]);
-    _markers.push(m);
-  }
-  const fuels = fuelStationsForMap(48);
-  fuels.forEach((st) => {
-    const col = fuelColor(st.status);
-    const m = import_leaflet2.default.circleMarker([st.lat, st.lon], {
-      radius: 7,
-      color: "#000",
-      weight: 1,
-      fillColor: col,
-      fillOpacity: 0.92
-    }).addTo(map).bindTooltip("\u26FD " + (st.brand || "\u0410\u0417\u0421"), { direction: "top", opacity: 0.92 });
-    bounds.extend([st.lat, st.lon]);
-    _markers.push(m);
-  });
-  if (bounds.isValid()) {
-    map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });
-  }
-  setTimeout(() => map.invalidateSize(), 120);
-}
-function renderRouteAlts(alternatives, selectedIdx, onPick) {
-  const box = $2("route-alts");
-  if (!box) return;
-  if (!alternatives || !alternatives.length) {
-    box.innerHTML = "";
-    return;
-  }
-  box.innerHTML = alternatives.map((r, i) => {
-    const km = (r.distance / 1e3).toFixed(1);
-    const min = Math.max(1, Math.round(r.duration / 60));
-    const sel = i === selectedIdx;
-    const col = ROUTE_COLORS[i % ROUTE_COLORS.length];
-    return '<button type="button" class="route-alt' + (sel ? " sel" : "") + '" data-ri="' + i + '"><span class="ra-dot" style="background:' + col + '"></span><span class="ra-main">\u0412\u0430\u0440\u0438\u0430\u043D\u0442 ' + (i + 1) + '</span><span class="ra-meta">' + km + " \u043A\u043C \xB7 ~" + min + " \u043C\u0438\u043D</span></button>";
-  }).join("");
-  box.querySelectorAll(".route-alt").forEach((b) => {
-    b.addEventListener("click", () => {
-      const idx = parseInt(b.getAttribute("data-ri"), 10);
-      if (!isNaN(idx)) onPick(idx);
-    });
-  });
-}
-function setRouteMapSelectHandler(fn) {
-  _onSelect = fn;
-}
-function updateRouteInfo(route) {
-  const el = $2("route-info");
-  if (!el || !route) {
-    if (el) el.textContent = "";
-    return;
-  }
-  const km = (route.distance / 1e3).toFixed(1);
-  const min = Math.max(1, Math.round(route.duration / 60));
-  el.textContent = "\u2705 " + km + " \u043A\u043C \xB7 ~" + min + " \u043C\u0438\u043D \u0434\u043E \u0444\u0438\u043D\u0438\u0448\u0430";
-  el.className = "route-info ok";
-}
-function clearRouteMap() {
-  $2("route-section")?.classList.add("hidden");
-  clearLayers();
-  _lastRender = null;
-  if ($2("route-alts")) $2("route-alts").innerHTML = "";
-  if ($2("route-info")) {
-    $2("route-info").textContent = "";
-    $2("route-info").className = "route-info";
-  }
-}
-function invalidateRouteMapSize() {
-  if (_map2) setTimeout(() => _map2.invalidateSize(), 150);
-}
-var import_leaflet2, _onSelect, _map2, _tileLayer2, _overlayLayer2, _routeLayers, _hudWindowLayers, _markers, _lastRender, ROUTE_COLORS;
-var init_route_map = __esm({
-  "js/route-map.js"() {
-    import_leaflet2 = __toESM(require_leaflet_src());
-    init_util();
-    init_geo();
-    init_elevation();
-    init_route_geometry();
-    init_map_providers();
-    init_fuel();
-    init_theme();
-    _onSelect = null;
-    _map2 = null;
-    _tileLayer2 = null;
-    _overlayLayer2 = null;
-    _routeLayers = [];
-    _hudWindowLayers = [];
-    _markers = [];
-    _lastRender = null;
-    ROUTE_COLORS = THEME.routeAlts;
-  }
-});
-
-// js/tts-health.js
-async function auditTtsHealth() {
-  if (!S.voice) {
-    return { ok: true, offlineVoice: true, platform: "off", hint: "" };
-  }
-  if (isNative()) {
-    try {
-      const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
-      const { supported } = await TextToSpeech2.isLanguageSupported({ lang: TTS_LANG });
-      let offlineVoice = supported;
-      let voices2 = 0;
-      try {
-        const res = await TextToSpeech2.getSupportedVoices();
-        const list = res.voices || [];
-        voices2 = list.length;
-        const ru2 = list.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
-        if (ru2.length) {
-          offlineVoice = ru2.some((v) => v.network === false || v.networkConnectionRequired === false);
-        }
-      } catch (e) {
-      }
-      return {
-        ok: !!supported,
-        offlineVoice,
-        voices: voices2,
-        platform: "native",
-        hint: !supported ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u2014 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0431\u0443\u0434\u0435\u0442 \u0431\u0435\u0437 \u043E\u0437\u0432\u0443\u0447\u043A\u0438." : !offlineVoice ? "\u041D\u0435\u0442 \u043E\u0444\u043B\u0430\u0439\u043D-\u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \xAB\u0432 \u0441\u0430\u043C\u043E\u043B\u0451\u0442\u0435\xBB \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u043E\u0433\u0443\u0442 \u043D\u0435 \u0437\u0432\u0443\u0447\u0430\u0442\u044C." : ""
-      };
-    } catch (e) {
-      return { ok: false, offlineVoice: false, platform: "native", hint: String(e.message || e) };
-    }
-  }
-  if (!("speechSynthesis" in window)) {
-    return { ok: false, offlineVoice: false, platform: "web", hint: "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043E\u0437\u0432\u0443\u0447\u043A\u0443." };
-  }
-  const voices = speechSynthesis.getVoices();
-  const ru = voices.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
-  const localRu = ru.filter((v) => v.localService);
-  const best = ru.reduce((acc, v) => {
-    const sc = scoreRuVoice(v);
-    return sc > acc.score ? { score: sc, name: v.name } : acc;
-  }, { score: -1, name: "" });
-  return {
-    ok: ru.length > 0,
-    offlineVoice: localRu.length > 0,
-    voices: ru.length,
-    platform: "web",
-    hint: !ru.length ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0438 \u0441\u0438\u0441\u0442\u0435\u043C\u044B/\u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430." : !localRu.length ? "\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0431\u043B\u0430\u0447\u043D\u044B\u0435 \u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0431\u0435\u0437 \u0441\u0435\u0442\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0430 \u043C\u043E\u0436\u0435\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C." : best.name ? "\u0413\u043E\u043B\u043E\u0441: " + best.name : ""
-  };
-}
-async function openTtsInstall() {
-  if (!isNative()) return false;
-  try {
-    const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
-    await TextToSpeech2.openInstall();
-    return true;
-  } catch (e) {
-    console.warn("TTS install:", e);
-    return false;
-  }
-}
-function renderBanner(health) {
-  const el = $2("tts-banner");
-  if (!el) return;
-  if (!S.voice || health.ok && health.offlineVoice !== false) {
-    el.classList.add("hidden");
-    el.innerHTML = "";
-    return;
-  }
-  el.classList.remove("hidden");
-  let html = "<b>\u{1F50A} \u0413\u043E\u043B\u043E\u0441:</b> ";
-  if (!health.ok) {
-    html += health.hint || "\u0440\u0443\u0441\u0441\u043A\u0438\u0439 TTS \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.";
-  } else {
-    html += health.hint || "\u043E\u0444\u043B\u0430\u0439\u043D-\u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 \u044F\u0437\u044B\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043A\u0435\u0442.";
-  }
-  if (isNative()) {
-    html += ' <button type="button" class="linkish" id="btn-tts-install">\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0433\u043E\u043B\u043E\u0441\u0430</button>';
-  }
-  el.innerHTML = html;
-  $2("btn-tts-install")?.addEventListener("click", () => {
-    openTtsInstall().then(() => setTimeout(refreshTtsBanner, 2e3));
-  });
-}
-function applyTtsBanner(health) {
-  renderBanner(health);
-}
-async function refreshTtsBanner() {
-  const health = await auditTtsHealth();
-  applyTtsBanner(health);
-  return health;
-}
-function initTtsHealth() {
-  initRuVoice();
-  if ("speechSynthesis" in window) {
-    speechSynthesis.addEventListener("voiceschanged", () => {
-      refreshRuVoice();
-      refreshTtsBanner();
-    }, { once: false });
-  }
-  refreshTtsBanner();
-}
-var TTS_LANG;
-var init_tts_health = __esm({
-  "js/tts-health.js"() {
-    init_state();
-    init_util();
-    init_platform();
-    init_tts_ru();
-    TTS_LANG = "ru-RU";
-  }
-});
-
-// js/setup.js
-var setup_exports = {};
-__export(setup_exports, {
-  applyCoordsOrLink: () => applyCoordsOrLink,
-  bindSetupUI: () => bindSetupUI,
-  doAddressSearch: () => doAddressSearch,
-  doBuildRoute: () => doBuildRoute,
-  doFuelSearch: () => doFuelSearch,
-  initNativeHints: () => initNativeHints,
-  invalidateRoute: () => invalidateRoute,
-  refreshRouteUi: () => refreshRouteUi,
-  setFinishQuiet: () => setFinishQuiet,
-  setGoBarVisible: () => setGoBarVisible,
-  syncOptionsFromDom: () => syncOptionsFromDom
-});
-function syncSimPath() {
-  if (window.__SIM__?.setRoutePath && S.route?.coords?.length) {
-    window.__SIM__.setRoutePath(S.route.coords);
-  }
-}
-function setGoBarVisible(visible) {
-  $2("go-bar")?.classList.toggle("hidden", !visible);
-  $2("setup")?.classList.toggle("has-go-bar", !!visible);
-}
-function refreshRouteUi() {
-  if (!S.route) return;
-  renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-  renderRouteAlts(S.routeAlternatives, S.selectedRouteIdx, pickRoute);
-  updateRouteInfo(S.route);
-  syncSimPath();
-  setGoBarVisible(true);
-  $2("route-export-row")?.classList.toggle("hidden", !S.route?.coords?.length);
-  loadCameras();
-  checkStartReady();
-  scheduleGeometryBuild(S.routeAlternatives, () => {
-    renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-  });
-}
-function invalidateRoute() {
-  S.route = null;
-  S.routeAlternatives = [];
-  S.selectedRouteIdx = 0;
-  clearRouteMap();
-  setGoBarVisible(false);
-  $2("route-export-row")?.classList.add("hidden");
-  checkStartReady();
-  const b = $2("btn-build-route");
-  if (b) b.disabled = !(S.gps && S.finish);
-}
-function pickRoute(idx) {
-  selectRouteIndex(idx);
-  ensureRouteGeometry(S.route);
-  renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-  renderRouteAlts(S.routeAlternatives, S.selectedRouteIdx, pickRoute);
-  updateRouteInfo(S.route);
-  syncSimPath();
-  checkStartReady();
-  loadCameras();
-}
-async function doBuildRoute() {
-  if (!S.gps || !S.finish) {
-    $2("s-finish").textContent = "\u274C \u041D\u0443\u0436\u043D\u044B GPS \u0438 \u0444\u0438\u043D\u0438\u0448";
-    $2("s-finish").className = "status err";
-    return;
-  }
-  const btn = $2("btn-build-route");
-  const prev = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "\u23F3 \u0421\u0442\u0440\u043E\u0438\u043C\u2026";
-  $2("route-info").textContent = "\u23F3 \u0417\u0430\u043F\u0440\u043E\u0441 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u043E\u0432\u2026";
-  $2("route-info").className = "route-info";
-  try {
-    S.routeAlternatives = await fetchRouteAlternatives();
-    S.selectedRouteIdx = 0;
-    selectRouteIndex(0);
-    renderRouteMap(S.routeAlternatives, 0, S.gps, S.finish);
-    renderRouteAlts(S.routeAlternatives, 0, pickRoute);
-    updateRouteInfo(S.route);
-    syncSimPath();
-    setGoBarVisible(true);
-    loadCameras();
-    telemetry_default.log("nav", { sub: "route_built", variants: S.routeAlternatives.length });
-    $2("s-finish").textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D \u2014 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB \u0432\u043D\u0438\u0437\u0443";
-    $2("s-finish").className = "status ok";
-    scheduleGeometryBuild(S.routeAlternatives, () => {
-      renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-    });
-    prefetchFuelForMap().then(() => {
-      renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-    });
-  } catch (e) {
-    $2("route-info").textContent = "\u274C " + e.message;
-    $2("route-info").className = "route-info";
-    $2("s-finish").textContent = "\u274C " + e.message;
-    $2("s-finish").className = "status err";
-    clearRouteMap();
-  } finally {
-    btn.textContent = prev;
-    btn.disabled = !(S.gps && S.finish);
-    checkStartReady();
-  }
-}
-async function doAddressSearch() {
-  const q = $2("finish-input").value.trim();
-  if (!q) {
-    $2("s-finish").textContent = "\u274C \u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441";
-    $2("s-finish").className = "status err";
-    return;
-  }
-  if (parseInput(q)) {
-    applyCoordsOrLink();
-    return;
-  }
-  $2("s-finish").textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0430\u0434\u0440\u0435\u0441\u2026";
-  $2("s-finish").className = "status";
-  S.finish = null;
-  invalidateRoute();
-  if (window.__motoHUD) window.__motoHUD._searchBusy = true;
-  try {
-    const res = await searchAddress(q);
-    if (!res.length) {
-      $2("s-finish").textContent = "\u274C \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E";
-      $2("s-finish").className = "status err";
-      $2("search-results").style.display = "none";
-      return;
-    }
-    const box = $2("search-results");
-    box.innerHTML = "";
-    res.forEach((r) => {
-      const d = document.createElement("div");
-      d.textContent = r.display_name;
-      d.addEventListener("click", () => {
-        S.finish = { lat: parseFloat(r.lat), lon: parseFloat(r.lon), label: r.display_name.split(",")[0] };
-        $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + r.display_name;
-        $2("s-finish").className = "status ok";
-        $2("finish-input").value = r.display_name;
-        box.style.display = "none";
-        invalidateRoute();
-      });
-      box.appendChild(d);
-    });
-    box.style.display = "block";
-    try {
-      box.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
-    } catch (e) {
-    }
-    $2("s-finish").textContent = "\u{1F50E} \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430";
-    $2("s-finish").className = "status";
-  } catch (e) {
-    $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430: " + e.message;
-    $2("s-finish").className = "status err";
-  } finally {
-    if (window.__motoHUD) window.__motoHUD._searchBusy = false;
-  }
-}
-function applyFuelFinish(st) {
-  const brand = st.brand || st.name || "\u0410\u0417\u0421";
-  S.finish = { lat: st.lat, lon: st.lon, label: "\u26FD " + brand };
-  const inputVal = st.name && st.name !== st.brand ? brand + " \u2014 " + st.name : brand;
-  $2("finish-input").value = inputVal;
-  $2("finish-input").dataset.userEdited = "1";
-  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + inputVal + " \xB7 " + formatFuelDist(st.distGps);
-  $2("s-finish").className = "status ok";
-  invalidateRoute();
-  checkStartReady();
-}
-function fuelStationMetaLine(st) {
-  const parts = ['<span class="fuel-st ' + (st.status || "unknown") + '">' + escapeHtml(fuelStatusText(st.status)) + "</span>"];
-  if (st.confirmations) parts.push("\u043E\u0442\u0447\u0451\u0442\u043E\u0432: " + st.confirmations);
-  if (st.lastAt) parts.push("\u0434\u0430\u043D\u043D\u044B\u0435: " + escapeHtml(String(st.lastAt).split(" ")[0]));
-  if (st.statusSource === "crowd") parts.push("\u0432\u0430\u0448 \u043E\u0442\u0447\u0451\u0442");
-  return parts.join(" \xB7 ");
-}
-async function doFuelSearch() {
-  if (!S.gps) {
-    $2("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 GPS (\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u{1F4CD} GPS)";
-    $2("s-finish").className = "status err";
-    return;
-  }
-  const btn = $2("btn-fuel-search");
-  const prev = btn?.textContent;
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0410\u0417\u0421\u2026";
-  }
-  $2("s-finish").textContent = "\u23F3 \u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A\u2026";
-  $2("s-finish").className = "status";
-  try {
-    syncOptionsFromDom();
-    const limit = clampFuelPlannerCount(S.fuelPlannerCount);
-    const list = await searchNearestFuelStations(limit);
-    const box = $2("search-results");
-    box.innerHTML = "";
-    if (!list.length) {
-      $2("s-finish").textContent = "\u274C \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438";
-      $2("s-finish").className = "status err";
-      box.style.display = "none";
-      return;
-    }
-    list.forEach((st) => {
-      const row = document.createElement("div");
-      row.className = "fuel-item";
-      row.innerHTML = '<div class="fuel-title"><span>\u26FD ' + escapeHtml(st.brand || st.name || "\u0410\u0417\u0421") + '</span><span class="fuel-dist">' + formatFuelDist(st.distGps) + "</span></div>" + (st.name && st.name !== st.brand ? '<div class="fuel-meta">' + escapeHtml(st.name) + "</div>" : "") + '<div class="fuel-meta">' + fuelStationMetaLine(st) + "</div>";
-      row.addEventListener("click", () => {
-        applyFuelFinish(st);
-        box.style.display = "none";
-      });
-      box.appendChild(row);
-    });
-    box.style.display = "block";
-    try {
-      box.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
-    } catch (e) {
-    }
-    $2("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")" + fuelStatusHint();
-    $2("s-finish").className = "status";
-  } catch (e) {
-    $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0410\u0417\u0421: " + e.message;
-    $2("s-finish").className = "status err";
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = prev || "\u26FD \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0438";
-    }
-  }
-}
-function setFinishQuiet(lat, lon, label = "\u0422\u043E\u0447\u043A\u0430") {
-  S.finish = { lat, lon, label };
-  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + lat.toFixed(5) + ", " + lon.toFixed(5);
-  $2("s-finish").className = "status ok";
-  checkStartReady();
-}
-async function applyCoordsOrLink(opts = {}) {
-  const hideSearch = opts.hideSearch !== false;
-  const raw = $2("finish-input").value.trim();
-  if (await tryYandexRouteImport(raw)) return;
-  const p = parseInput(raw);
-  if (!p) {
-    $2("s-finish").textContent = "\u274C \u041D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043B\u0438. \u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B, \u0441\u0441\u044B\u043B\u043A\u0430 \u0438\u043B\u0438 \xAB\u041D\u0430\u0439\u0442\u0438 \u0430\u0434\u0440\u0435\u0441\xBB";
-    $2("s-finish").className = "status err";
-    return;
-  }
-  S.finish = p;
-  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + p.lat.toFixed(5) + ", " + p.lon.toFixed(5);
-  $2("s-finish").className = "status ok";
-  if (hideSearch) $2("search-results").style.display = "none";
-  invalidateRoute();
-}
-function looksLikeCoordsOrLink(s2) {
-  return /-?\d{1,2}\.\d+.*-?\d{1,3}\.\d+/.test(s2) || /[?&](ll|pt)=/.test(s2) || isYandexMapsUrl(s2);
-}
-async function tryYandexRouteImport(raw) {
-  if (!isYandexMapsUrl(raw)) return false;
-  try {
-    await importYandexFromText(raw);
-    return true;
-  } catch (e) {
-    $2("s-finish").textContent = "\u274C " + (e.message || e);
-    $2("s-finish").className = "status err";
-    return true;
-  }
-}
-function bindSetupUI() {
-  setRouteMapSelectHandler(pickRoute);
-  initMapProviderSelect();
-  $2("s-gps").addEventListener("click", startGps);
-  $2("btn-search").addEventListener("click", doAddressSearch);
-  $2("btn-fuel-search")?.addEventListener("click", doFuelSearch);
-  $2("btn-parse").addEventListener("click", applyCoordsOrLink);
-  $2("btn-build-route").addEventListener("click", doBuildRoute);
-  $2("finish-input").addEventListener("input", () => {
-    $2("finish-input").dataset.userEdited = "1";
-  });
-  $2("finish-input").addEventListener("focus", () => {
-    if (window.__motoHUD) window.__motoHUD._finishFocused = true;
-  });
-  $2("finish-input").addEventListener("blur", () => {
-    if (window.__motoHUD) window.__motoHUD._finishFocused = false;
-  });
-  $2("finish-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (looksLikeCoordsOrLink(e.target.value)) applyCoordsOrLink();
-      else doAddressSearch();
-    }
-  });
-  $2("btn-paste").addEventListener("click", async () => {
-    try {
-      const t = await navigator.clipboard.readText();
-      if (t) {
-        $2("finish-input").value = t;
-        if (await tryYandexRouteImport(t)) return;
-        if (looksLikeCoordsOrLink(t)) await applyCoordsOrLink();
-        else doAddressSearch();
-      }
-    } catch (e) {
-      $2("s-finish").textContent = "\u274C \u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u0431\u0443\u0444\u0435\u0440\u0443";
-      $2("s-finish").className = "status err";
-    }
-  });
-  $2("opt-voice").addEventListener("change", (e) => {
-    S.voice = e.target.checked;
-    refreshTtsBanner();
-    saveAppOptsToStorage();
-  });
-  $2("btn-compass-cal")?.addEventListener("click", async () => {
-    const btn = $2("btn-compass-cal");
-    const ok = await requestHeadingPermission();
-    if (!ok) {
-      alert("\u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u043A\u043E\u043C\u043F\u0430\u0441\u0443. \u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u0435 \u0434\u0430\u0442\u0447\u0438\u043A\u0438 \u043E\u0440\u0438\u0435\u043D\u0442\u0430\u0446\u0438\u0438 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430/\u0441\u0438\u0441\u0442\u0435\u043C\u044B.");
-      return;
-    }
-    startCompassCalibration(15e3);
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "\u23F3 \u0412\u043E\u0441\u044C\u043C\u0451\u0440\u043A\u0430\u2026 15 \u0441";
-    }
-    setTimeout(() => {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "\u{1F9ED} \u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043C\u043F\u0430\u0441\u0430";
-      }
-      if (!isCalibrating()) speak("\u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430");
-    }, 15e3);
-  });
-  $2("opt-path").addEventListener("change", (e) => {
-    S.showPath = e.target.checked;
-    if (!S.showPath) {
-      $2("block-path").classList.add("hidden");
-      $2("hud").classList.add("no-path");
-    } else {
-      $2("block-path").classList.remove("hidden");
-      $2("hud").classList.remove("no-path");
-    }
-    saveAppOptsToStorage();
-  });
-  $2("opt-crossings")?.addEventListener("change", (e) => {
-    S.showCrossingContext = e.target.checked;
-    saveAppOptsToStorage();
-  });
-  function syncChevronInputs() {
-    const on = S.showPathChevrons !== false;
-    const labels = $2("opt-chevron-labels");
-    const maxEl = $2("opt-chevron-max");
-    if (labels) labels.disabled = !on;
-    if (maxEl) maxEl.disabled = !on;
-  }
-  $2("opt-path-chevrons")?.addEventListener("change", (e) => {
-    S.showPathChevrons = e.target.checked;
-    syncChevronInputs();
-    saveAppOptsToStorage();
-  });
-  $2("opt-low-speed-map")?.addEventListener("change", (e) => {
-    S.lowSpeedMap = e.target.checked;
-    saveAppOptsToStorage();
-  });
-  $2("opt-chevron-labels")?.addEventListener("change", (e) => {
-    S.pathChevronLabels = e.target.checked;
-    saveAppOptsToStorage();
-  });
-  $2("opt-chevron-max")?.addEventListener("change", (e) => {
-    S.pathChevronMax = Math.max(1, Math.min(3, parseInt(e.target.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
-    e.target.value = String(S.pathChevronMax);
-    saveAppOptsToStorage();
-  });
-  const bindFinishOpt = (id) => {
-    $2(id)?.addEventListener("change", () => {
-      syncOptionsFromDom();
-      saveHudOptsToStorage();
-      applyHudChrome();
-    });
-  };
-  bindFinishOpt("opt-finish-dist");
-  bindFinishOpt("opt-finish-time");
-  bindFinishOpt("opt-finish-eta");
-  const bindChromeMode = (id, key) => {
-    $2(id)?.addEventListener("change", (e) => {
-      S[key] = normalizeChromeMode(e.target.value);
-      e.target.value = S[key];
-      saveHudOptsToStorage();
-      applyHudChrome();
-    });
-  };
-  bindChromeMode("opt-hud-status-mode", "hudStatusMode");
-  bindChromeMode("opt-hud-finish-mode", "hudFinishMode");
-  $2("opt-fuel-count")?.addEventListener("change", (e) => {
-    S.fuelPlannerCount = clampFuelPlannerCount(e.target.value);
-    e.target.value = String(S.fuelPlannerCount);
-    saveHudOptsToStorage();
-  });
-  $2("opt-fuel-proxy")?.addEventListener("change", (e) => {
-    setFuelProxyBase(e.target.value.trim());
-  });
-  $2("opt-fuel-proxy")?.addEventListener("blur", (e) => {
-    setFuelProxyBase(e.target.value.trim());
-  });
-  function syncElevInputs() {
-    const on = S.showElevProfile;
-    const exag = $2("opt-elev-exag");
-    const ph = $2("opt-elev-profile-h");
-    const plen = $2("opt-elev-profile-len");
-    if (exag) exag.disabled = !on;
-    if (ph) ph.disabled = !on;
-    if (plen) plen.disabled = !on;
-  }
-  $2("opt-elev-profile").addEventListener("change", (e) => {
-    S.showElevProfile = e.target.checked;
-    syncElevInputs();
-    saveElevOptsToStorage();
-    if (S.showElevProfile && S.route?.geometry) loadRouteElevation();
-  });
-  $2("opt-elev-exag").addEventListener("change", (e) => {
-    S.elevExag = Math.max(0.5, Math.min(5, parseFloat(e.target.value) || DEFAULT_ELEV_EXAG));
-    e.target.value = String(S.elevExag);
-    saveElevOptsToStorage();
-  });
-  $2("opt-elev-profile-h").addEventListener("change", (e) => {
-    S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
-      MAX_ELEV_PROFILE_H,
-      parseInt(e.target.value, 10) || DEFAULT_ELEV_PROFILE_H
-    ));
-    e.target.value = String(S.elevProfileH);
-    saveElevOptsToStorage();
-  });
-  $2("opt-elev-profile-len").addEventListener("change", (e) => {
-    S.elevProfileLenKm = Math.max(MIN_ELEV_PROFILE_LEN_KM, Math.min(
-      MAX_ELEV_PROFILE_LEN_KM,
-      parseInt(e.target.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
-    ));
-    e.target.value = String(S.elevProfileLenKm);
-    saveElevOptsToStorage();
-    if (S.routeAlternatives?.length) renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-  });
-  function syncCurveInputs() {
-    const on = S.curveWarn;
-    const sel = $2("opt-curve-strict");
-    if (sel) sel.disabled = !on;
-  }
-  function recomputeCurveIfReady() {
-    const geom = S.route?.geometry;
-    if (geom) computeCurveSpeed(geom, S.route);
-  }
-  $2("opt-curve-warn").addEventListener("change", (e) => {
-    S.curveWarn = e.target.checked;
-    syncCurveInputs();
-    saveCurveOptsToStorage();
-  });
-  $2("opt-curve-strict").addEventListener("change", (e) => {
-    const v = e.target.value;
-    if (v === "relaxed" || v === "normal" || v === "strict") S.curveStrict = v;
-    saveCurveOptsToStorage();
-    recomputeCurveIfReady();
-  });
-  $2("opt-heading").addEventListener("change", (e) => {
-    S.showCompass = e.target.checked;
-    $2("hud").classList.toggle("show-compass", S.showCompass);
-    saveAppOptsToStorage();
-  });
-  $2("opt-cams").addEventListener("change", (e) => {
-    S.cams = e.target.checked;
-    if (!S.cams) {
-      S.camLoadStatus = "off";
-      S.cameras = [];
-    }
-    updateCamStatusUI();
-    if (S.cams && S.route) loadCameras();
-    saveAppOptsToStorage();
-  });
-  $2("opt-back-only").addEventListener("change", (e) => {
-    S.backOnly = e.target.checked;
-    saveAppOptsToStorage();
-  });
-  $2("opt-tol").addEventListener("change", (e) => {
-    S.tolerance = Math.max(10, Math.min(90, parseInt(e.target.value, 10) || 45));
-    saveAppOptsToStorage();
-  });
-  $2("opt-nodir").addEventListener("change", (e) => {
-    S.noDirPolicy = e.target.value;
-    saveAppOptsToStorage();
-  });
-  $2("opt-limit").addEventListener("change", (e) => {
-    S.userDefaultLimit = parseInt(e.target.value, 10) || 0;
-    saveAppOptsToStorage();
-  });
-  $2("opt-speed-limit-dynamic")?.addEventListener("change", (e) => {
-    S.speedLimitDynamic = !!e.target.checked;
-    saveAppOptsToStorage();
-  });
-  $2("opt-speed-limit-fallback")?.addEventListener("change", (e) => {
-    S.speedLimitFallback = e.target.value === "hide" ? "hide" : "user-default";
-    saveAppOptsToStorage();
-  });
-  $2("opt-roundabout-schema")?.addEventListener("change", (e) => {
-    S.roundaboutSchema = !!e.target.checked;
-    saveAppOptsToStorage();
-  });
-  $2("opt-cam-speed-tol")?.addEventListener("change", (e) => {
-    S.camSpeedTol = Math.max(0, Math.min(50, parseInt(e.target.value, 10) || DEFAULT_CAM_SPEED_TOL));
-    e.target.value = String(S.camSpeedTol);
-    saveAppOptsToStorage();
-  });
-  $2("btn-start").addEventListener("click", () => {
-    requestAppFullscreen();
-    startHud();
-  });
-  let stopArmed = false;
-  let stopArmTimer = null;
-  let stopLastTap = 0;
-  $2("btn-stop").addEventListener("click", (e) => {
-    e.preventDefault();
-    const now = Date.now();
-    if (now - stopLastTap < 350) return;
-    stopLastTap = now;
-    if (stopArmed) {
-      stopArmed = false;
-      clearTimeout(stopArmTimer);
-      $2("btn-stop")?.classList.remove("armed");
-      if (confirm("\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044C \u043F\u043E\u0435\u0437\u0434\u043A\u0443?")) stopHud();
-      return;
-    }
-    stopArmed = true;
-    $2("btn-stop")?.classList.add("armed");
-    stopArmTimer = setTimeout(() => {
-      stopArmed = false;
-      $2("btn-stop")?.classList.remove("armed");
-    }, 1400);
-  });
-  $2("btn-fuel").addEventListener("click", () => {
-    cycleFuelAssist();
-  });
-  $2("btn-gear").addEventListener("click", () => {
-    if ($2("hud")?.classList.contains("on")) handleHudGearClick(syncOptionsFromDom);
-    else openSettingsPanel();
-  });
-  $2("qf-close").addEventListener("click", () => $2("quickFinish").classList.remove("on"));
-  window.addEventListener("orientationchange", () => {
-    invalidateRouteMapSize();
-    setTimeout(() => {
-      if ($2("hud").classList.contains("on")) onTick();
-    }, 250);
-  });
-  document.querySelectorAll(".setup-details").forEach((det) => {
-    det.addEventListener("toggle", () => {
-      if (det.open) setTimeout(() => det.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80);
-    });
-  });
-}
-function syncOptionsFromDom() {
-  S.voice = $2("opt-voice").checked;
-  S.showPath = $2("opt-path").checked;
-  S.showCrossingContext = $2("opt-crossings")?.checked ?? true;
-  S.showPathChevrons = $2("opt-path-chevrons")?.checked ?? true;
-  S.pathChevronLabels = $2("opt-chevron-labels")?.checked ?? true;
-  S.pathChevronMax = Math.max(1, Math.min(
-    3,
-    parseInt($2("opt-chevron-max")?.value, 10) || DEFAULT_PATH_CHEVRON_MAX
-  ));
-  S.lowSpeedMap = $2("opt-low-speed-map")?.checked !== false;
-  if ($2("opt-chevron-max")) $2("opt-chevron-max").value = String(S.pathChevronMax);
-  if ($2("opt-chevron-labels")) $2("opt-chevron-labels").disabled = !S.showPathChevrons;
-  if ($2("opt-chevron-max")) $2("opt-chevron-max").disabled = !S.showPathChevrons;
-  S.showFinishDist = $2("opt-finish-dist")?.checked ?? true;
-  S.showFinishTime = $2("opt-finish-time")?.checked ?? true;
-  S.showFinishEta = $2("opt-finish-eta")?.checked ?? true;
-  S.hudStatusMode = normalizeChromeMode($2("opt-hud-status-mode")?.value || S.hudStatusMode);
-  S.hudFinishMode = normalizeChromeMode($2("opt-hud-finish-mode")?.value || S.hudFinishMode);
-  if ($2("opt-hud-status-mode")) $2("opt-hud-status-mode").value = S.hudStatusMode;
-  if ($2("opt-hud-finish-mode")) $2("opt-hud-finish-mode").value = S.hudFinishMode;
-  applyHudChrome();
-  S.fuelPlannerCount = clampFuelPlannerCount($2("opt-fuel-count")?.value);
-  if ($2("opt-fuel-count")) $2("opt-fuel-count").value = String(S.fuelPlannerCount);
-  const proxyEl = $2("opt-fuel-proxy");
-  if (proxyEl) proxyEl.value = getFuelProxyBase();
-  S.showElevProfile = $2("opt-elev-profile").checked;
-  S.elevExag = Math.max(0.5, Math.min(5, parseFloat($2("opt-elev-exag").value) || DEFAULT_ELEV_EXAG));
-  S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
-    MAX_ELEV_PROFILE_H,
-    parseInt($2("opt-elev-profile-h")?.value, 10) || DEFAULT_ELEV_PROFILE_H
-  ));
-  S.elevProfileLenKm = Math.max(MIN_ELEV_PROFILE_LEN_KM, Math.min(
-    MAX_ELEV_PROFILE_LEN_KM,
-    parseInt($2("opt-elev-profile-len")?.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
-  ));
-  if ($2("opt-elev-exag")) $2("opt-elev-exag").value = String(S.elevExag);
-  if ($2("opt-elev-profile-h")) $2("opt-elev-profile-h").value = String(S.elevProfileH);
-  if ($2("opt-elev-profile-len")) $2("opt-elev-profile-len").value = String(S.elevProfileLenKm);
-  if ($2("opt-elev-exag")) $2("opt-elev-exag").disabled = !S.showElevProfile;
-  if ($2("opt-elev-profile-h")) $2("opt-elev-profile-h").disabled = !S.showElevProfile;
-  if ($2("opt-elev-profile-len")) $2("opt-elev-profile-len").disabled = !S.showElevProfile;
-  S.curveWarn = $2("opt-curve-warn")?.checked ?? true;
-  const strictEl = $2("opt-curve-strict");
-  if (strictEl) {
-    S.curveStrict = strictEl.value || "normal";
-    strictEl.disabled = !S.curveWarn;
-  }
-  S.showCompass = $2("opt-heading").checked;
-  S.cams = $2("opt-cams").checked;
-  S.backOnly = $2("opt-back-only").checked;
-  S.tolerance = parseInt($2("opt-tol").value, 10) || 45;
-  S.noDirPolicy = $2("opt-nodir").value;
-  S.userDefaultLimit = parseInt($2("opt-limit").value, 10) || 60;
-  S.speedLimitDynamic = $2("opt-speed-limit-dynamic")?.checked !== false;
-  S.speedLimitFallback = $2("opt-speed-limit-fallback")?.value === "hide" ? "hide" : "user-default";
-  S.roundaboutSchema = $2("opt-roundabout-schema")?.checked !== false;
-  S.camSpeedTol = Math.max(0, Math.min(
-    50,
-    parseInt($2("opt-cam-speed-tol")?.value, 10) || DEFAULT_CAM_SPEED_TOL
-  ));
-  if ($2("opt-cam-speed-tol")) $2("opt-cam-speed-tol").value = String(S.camSpeedTol);
-  $2("hud")?.classList.toggle("show-compass", S.showCompass);
-  if (!S.showPath) {
-    $2("block-path").classList.add("hidden");
-    $2("hud").classList.add("no-path");
-  } else {
-    $2("block-path")?.classList.remove("hidden");
-    $2("hud")?.classList.remove("no-path");
-  }
-}
-function initNativeHints() {
-  if (!isAndroidNative()) return;
-  const help = $2("drawer-help")?.querySelector(".hint, .drawer-body");
-  if (!help) return;
-  help.innerHTML += '<span class="help-section"><b>Android-\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435</b> \u041F\u0440\u0438 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u0438 \u2014 \u0443\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435 \xAB\u041D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u0430\xBB (foreground-service GPS). \u0412 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043E\u043F\u0442\u0438\u043C\u0438\u0437\u0430\u0446\u0438\u044E \u0431\u0430\u0442\u0430\u0440\u0435\u0438 \u0434\u043B\u044F \xAB\u041C\u043E\u0442\u043E \u0418\u041B\u0421\xBB, \u0438\u043D\u0430\u0447\u0435 GPS \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u0432\u0430\u043B\u0438\u0432\u0430\u0442\u044C\u0441\u044F \u043D\u0430 Samsung/Xiaomi/Huawei. \u0427\u0435\u043A-\u043B\u0438\u0441\u0442: <code>docs/oem-gps-matrix.md</code>.</span>';
-}
-var init_setup = __esm({
-  "js/setup.js"() {
-    init_state();
-    init_util();
-    init_geo();
-    init_yandex_link();
-    init_yandex_import();
-    init_gps();
-    init_route();
-    init_hud();
-    init_cam_status();
-    init_elevation();
-    init_curve_speed();
-    init_hud_opts();
-    init_hud_chrome();
-    init_app_opts();
-    init_platform();
-    init_route_map();
-    init_fuel();
-    init_fuel_config();
-    init_settings_ui();
-    init_hud_settings_sheet();
-    init_tts_health();
-    init_heading();
-    init_voice();
-    init_telemetry();
   }
 });
 
@@ -22640,19 +21347,19 @@ var init_trip_segment_editor = __esm({
 
 // js/trip-segment-map.js
 function destroyMap() {
-  if (_map3) {
-    _map3.remove();
-    _map3 = null;
+  if (_map2) {
+    _map2.remove();
+    _map2 = null;
   }
-  _tileLayer3 = null;
-  _markers2 = [];
+  _tileLayer2 = null;
+  _markers = [];
   _line = null;
 }
 function applyTiles2() {
-  if (!_map3) return;
+  if (!_map2) return;
   const layers = resolveMapLayers(getMapProviderId());
-  if (_tileLayer3) _map3.removeLayer(_tileLayer3);
-  _tileLayer3 = import_leaflet3.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map3);
+  if (_tileLayer2) _map2.removeLayer(_tileLayer2);
+  _tileLayer2 = import_leaflet2.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map2);
 }
 function markerLabel(i, total) {
   if (i === 0) return "\u0421\u0442\u0430\u0440\u0442";
@@ -22660,66 +21367,66 @@ function markerLabel(i, total) {
   return `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
 }
 function syncPolyline() {
-  const latlngs = _markers2.map((m) => m.getLatLng());
+  const latlngs = _markers.map((m) => m.getLatLng());
   if (_line) _line.setLatLngs(latlngs);
-  else if (_map3 && latlngs.length) {
-    _line = import_leaflet3.default.polyline(latlngs, { color: "#4dabf7", weight: 4, opacity: 0.9 }).addTo(_map3);
+  else if (_map2 && latlngs.length) {
+    _line = import_leaflet2.default.polyline(latlngs, { color: "#4dabf7", weight: 4, opacity: 0.9 }).addTo(_map2);
   }
   const n = $2("trip-seg-map-count");
   if (n) n.textContent = `${latlngs.length} \u0442\u043E\u0447\u0435\u043A`;
 }
 function addMarker(lat, lon, label, draggable = true) {
-  if (!_map3) return null;
-  const idx = _markers2.length;
-  const m = import_leaflet3.default.marker([lat, lon], { draggable });
+  if (!_map2) return null;
+  const idx = _markers.length;
+  const m = import_leaflet2.default.marker([lat, lon], { draggable });
   m._wpLabel = label || markerLabel(idx, idx + 1);
   m.bindTooltip(m._wpLabel, { permanent: true, direction: "top", className: "trip-map-lbl" });
   m.on("drag", syncPolyline);
   m.on("dragend", () => {
-    m._wpLabel = markerLabel(_markers2.indexOf(m), _markers2.length);
+    m._wpLabel = markerLabel(_markers.indexOf(m), _markers.length);
     m.setTooltipContent(m._wpLabel);
   });
-  m.addTo(_map3);
-  _markers2.push(m);
+  m.addTo(_map2);
+  _markers.push(m);
   syncPolyline();
   return m;
 }
 function pointsFromMarkers() {
-  return _markers2.map((m, i) => ({
+  return _markers.map((m, i) => ({
     lat: m.getLatLng().lat,
     lon: m.getLatLng().lng,
-    label: m._wpLabel || markerLabel(i, _markers2.length)
+    label: m._wpLabel || markerLabel(i, _markers.length)
   }));
 }
 function fitBounds() {
-  if (!_map3 || !_markers2.length) return;
-  if (_markers2.length === 1) {
-    _map3.setView(_markers2[0].getLatLng(), 10);
+  if (!_map2 || !_markers.length) return;
+  if (_markers.length === 1) {
+    _map2.setView(_markers[0].getLatLng(), 10);
     return;
   }
-  const g = import_leaflet3.default.featureGroup(_markers2);
-  _map3.fitBounds(g.getBounds().pad(0.15));
+  const g = import_leaflet2.default.featureGroup(_markers);
+  _map2.fitBounds(g.getBounds().pad(0.15));
 }
 function initMap(segment) {
   const box = $2("trip-seg-map");
   if (!box) return;
   destroyMap();
   box.innerHTML = "";
-  _map3 = import_leaflet3.default.map(box, { zoomControl: true, attributionControl: false, preferCanvas: true });
+  _map2 = import_leaflet2.default.map(box, { zoomControl: true, attributionControl: false, preferCanvas: true });
   applyTiles2();
   const pts = parseRtext(segment.rtext);
   if (!pts.length) {
-    _map3.setView([55.75, 37.62], 6);
-    _map3.on("click", onMapClick);
+    _map2.setView([55.75, 37.62], 6);
+    _map2.on("click", onMapClick);
     return;
   }
   pts.forEach((p, i) => addMarker(p.lat, p.lon, p.label || markerLabel(i, pts.length)));
   fitBounds();
-  _map3.on("click", onMapClick);
+  _map2.on("click", onMapClick);
 }
 function onMapClick(e) {
-  if (!_map3 || !_ctx3) return;
-  const n = _markers2.length;
+  if (!_map2 || !_ctx3) return;
+  const n = _markers.length;
   addMarker(e.latlng.lat, e.latlng.lng, markerLabel(n, n + 1));
 }
 function setError2(msg) {
@@ -22736,7 +21443,7 @@ function openSegmentMapEditor(ctx) {
   $2("trip-segment-map-modal")?.classList.add("on");
   requestAnimationFrame(() => {
     initMap(ctx.segment);
-    _map3?.invalidateSize();
+    _map2?.invalidateSize();
   });
 }
 function closeSegmentMapEditor() {
@@ -22750,8 +21457,8 @@ function initSegmentMapEditor() {
   modal.dataset.bound = "1";
   $2("trip-seg-map-cancel")?.addEventListener("click", closeSegmentMapEditor);
   $2("trip-seg-map-undo")?.addEventListener("click", () => {
-    const m = _markers2.pop();
-    if (m && _map3) _map3.removeLayer(m);
+    const m = _markers.pop();
+    if (m && _map2) _map2.removeLayer(m);
     syncPolyline();
   });
   $2("trip-seg-map-save")?.addEventListener("click", async () => {
@@ -22776,17 +21483,17 @@ function initSegmentMapEditor() {
     }
   });
 }
-var import_leaflet3, _ctx3, _map3, _tileLayer3, _markers2, _line;
+var import_leaflet2, _ctx3, _map2, _tileLayer2, _markers, _line;
 var init_trip_segment_map = __esm({
   "js/trip-segment-map.js"() {
-    import_leaflet3 = __toESM(require_leaflet_src());
+    import_leaflet2 = __toESM(require_leaflet_src());
     init_util();
     init_trip_model();
     init_map_providers();
     _ctx3 = null;
-    _map3 = null;
-    _tileLayer3 = null;
-    _markers2 = [];
+    _map2 = null;
+    _tileLayer2 = null;
+    _markers = [];
     _line = null;
   }
 });
@@ -25063,14 +23770,16 @@ function onTick() {
     hw.classList.toggle("on", !!hh.interference && kmh < 25);
     hw.textContent = hh.calibrating ? "\u{1F9ED} \u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043C\u043F\u0430\u0441\u0430 \u2014 \u0432\u043E\u0441\u044C\u043C\u0451\u0440\u043A\u0430 15 \u0441" : "\u26A0 \u041F\u043E\u043C\u0435\u0445\u0438 \u043A\u043E\u043C\u043F\u0430\u0441\u0430 \u2014 \u043A\u0443\u0440\u0441 \u043F\u043E GPS";
   }
+  if (isBearingMode() && S.finish && S.gps) {
+    tickBearing(now, kmh);
+    updateFinishInfo(haversine(S.gps, S.finish), kmh, now);
+    tickAutoMode();
+    refreshFuelPanel();
+    return;
+  }
   if (!S.route) {
     $2("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
     updateFinishInfo(0, kmh, now);
-    return;
-  }
-  if (isBearingMode()) {
-    tickBearing(now, kmh);
-    updateFinishInfo(haversine(S.gps, S.finish), kmh, now);
     return;
   }
   tickSpeedLimit(getNavSnap(S.smoothedHeading));
@@ -25107,32 +23816,6 @@ function onTick() {
   }
   const remaining = getRemainingDistance();
   const near = findNearestOnRoute();
-  if (S.compassMode && S.finish && S.gps && !isOfflineGuide()) {
-    const brg = bearing(S.gps, S.finish);
-    const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
-    let turn = 0;
-    if (hdg != null && !isNaN(hdg)) turn = (brg - hdg + 540) % 360 - 180;
-    $2("arrow-box").innerHTML = buildTurnArrowSVG(turn);
-    const dFin = haversine(S.gps, S.finish);
-    if (dFin < 1e3) {
-      $2("v-mdist").textContent = Math.max(0, Math.round(dFin / 10) * 10);
-      $2("v-mdist-u").textContent = "\u043C";
-    } else {
-      $2("v-mdist").textContent = (dFin / 1e3).toFixed(1);
-      $2("v-mdist-u").textContent = "\u043A\u043C";
-    }
-    setHudStreetLabels("\u041A \u0424\u0418\u041D\u0418\u0428\u0423", hudCurrentStreetLabel(snap));
-    $2("rb-exit-label")?.classList.add("hidden");
-    const mid = $2("mid-info");
-    const tStr = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
-    const tripX2 = formatTripHudExtraLine();
-    mid.textContent = tripX2 ? tStr + " \xB7 " + tripX2 : tStr + " \xB7 \u041A\u041E\u041C\u041F\u0410\u0421";
-    updateFinishInfo(remaining, kmh, now);
-    tickAutoMode();
-    checkCamerasILS();
-    refreshFuelPanel();
-    return;
-  }
   if (!gpsOk) return;
   if (snapLostBlocksNav(snap)) return;
   if (isOfflineGuide() && snap && S.gps) {
@@ -25237,7 +23920,7 @@ function onTick() {
   const tripX = formatTripHudExtraLine();
   let fullMid = tripX ? midLine + " \xB7 " + tripX : midLine;
   if (snapLost) fullMid += " \xB7 SNAP?";
-  if (S.routeQuality === RouteQuality.LOW && !S.compassMode) {
+  if (S.routeQuality === RouteQuality.LOW) {
     $2("mid-info").textContent = fullMid + " \xB7 \u041D\u0418\u0417\u041A. OSM";
   } else {
     $2("mid-info").textContent = fullMid;
@@ -25271,15 +23954,16 @@ function r23(n) {
 async function startHud() {
   clearHudChromeReveal();
   applyHudChrome();
-  if (!S.route) {
-    alert("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
+  if (!S.gps || !S.finish) {
+    alert("\u0414\u043E\u0436\u0434\u0438\u0442\u0435\u0441\u044C GPS \u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448");
     return;
   }
+  const hasRoute = !!S.route?.coords?.length;
   saveLastRun();
   if (telemetry_default.isEnabled()) {
-    telemetry_default.start({ routeKm: S.route?.distance ? r23(S.route.distance / 1e3) : null });
+    telemetry_default.start({ routeKm: hasRoute && S.route?.distance ? r23(S.route.distance / 1e3) : null });
     telemetry_default.updateMarkButtonVisibility();
-    logFunnel("ride_start", { routeKm: S.route?.distance ? r23(S.route.distance / 1e3) : null });
+    logFunnel("ride_start", { routeKm: hasRoute && S.route?.distance ? r23(S.route.distance / 1e3) : null });
   }
   resetConvergeTelemetryRide();
   if (isTrackRecordEnabled()) startTrackRecorder();
@@ -25293,8 +23977,10 @@ async function startHud() {
   resetCurveRibbonState();
   resetSpeedLimitState();
   resetRoundaboutState();
-  ensureRouteGeometry(S.route);
-  seedSnapFromGps({ relaxed: true });
+  if (hasRoute) {
+    ensureRouteGeometry(S.route);
+    seedSnapFromGps({ relaxed: true });
+  }
   $2("setup").style.display = "none";
   $2("setup").style.zIndex = "30";
   $2("hud").classList.add("on");
@@ -25303,7 +23989,7 @@ async function startHud() {
   resetVintageVfd();
   syncVintageVfdDomClasses();
   updateCamStatusUI();
-  loadCameras();
+  if (hasRoute) loadCameras();
   acquireWakeLock();
   try {
     await startNavigationGps();
@@ -25312,11 +23998,18 @@ async function startHud() {
   }
   if (window.__SIM__?.onNavigationStart) window.__SIM__.onNavigationStart();
   requestAppFullscreen();
-  speak("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D. \u0412 \u043F\u0443\u0442\u0438 " + Math.round(S.route.duration / 60) + " \u043C\u0438\u043D\u0443\u0442");
   S.dispSpeed = S.gps?.speed > 0 ? Math.min(S.gps.speed * 3.6, 198) : 0;
-  S.navMode = "route";
-  syncNavButtons();
-  tickSpeedLimit(getNavSnap(S.smoothedHeading));
+  if (hasRoute) {
+    speak("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D. \u0412 \u043F\u0443\u0442\u0438 " + Math.round(S.route.duration / 60) + " \u043C\u0438\u043D\u0443\u0442");
+    S.navMode = "route";
+    syncNavButtons();
+    tickSpeedLimit(getNavSnap(S.smoothedHeading));
+  } else {
+    enterBearingMode({ quiet: true });
+    const d = haversine(S.gps, S.finish);
+    const distSpeech = d < 1e3 ? Math.max(0, Math.round(d / 10) * 10) + " \u043C\u0435\u0442\u0440\u043E\u0432" : (d / 1e3).toFixed(1) + " \u043A\u0438\u043B\u043E\u043C\u0435\u0442\u0440\u043E\u0432";
+    speak("\u041F\u0435\u043B\u0435\u043D\u0433 \u043A \u0446\u0435\u043B\u0438. \u0414\u043E \u0444\u0438\u043D\u0438\u0448\u0430 " + distSpeech);
+  }
   onTick();
   startVisualLoop();
 }
@@ -25349,8 +24042,7 @@ async function stopHud() {
   clearHudChromeReveal();
   $2("setup").style.display = "block";
   renderFavs();
-  const goBar = $2("go-bar");
-  if (goBar) goBar.classList.toggle("hidden", !(S.route && S.route.coords?.length));
+  checkStartReady();
   releaseWakeLock();
   clearVoiceQueue();
   resetOffRouteMachine();
@@ -25601,6 +24293,1373 @@ var init_hud = __esm({
     _fuelBusy = false;
     _fuelPanelShownAt = 0;
     FUEL_PANEL_MS = 9e3;
+  }
+});
+
+// js/route-map.js
+function clearLayers() {
+  if (!_map3) return;
+  _routeLayers.forEach((l) => _map3.removeLayer(l));
+  _hudWindowLayers.forEach((l) => _map3.removeLayer(l));
+  _markers2.forEach((m) => _map3.removeLayer(m));
+  _routeLayers = [];
+  _hudWindowLayers = [];
+  _markers2 = [];
+}
+function routePolylineLatLngs(route) {
+  if (route?.geometry?.n > 1) return geometryToLatLngs(route.geometry);
+  const coords = route?.coords;
+  if (!coords?.length) return [];
+  return coords.map((c) => [c[0], c[1]]);
+}
+function latLngsForDistance(route, maxM, startS) {
+  const geom = route?.geometry;
+  if (geom?.n > 1) {
+    return latLngsSliceByS(geom, startS || 0, (startS || 0) + maxM);
+  }
+  const coords = route?.coords;
+  if (!coords || coords.length < 2) return [];
+  const out = [[coords[0][0], coords[0][1]]];
+  let acc = 0;
+  for (let i = 0; i < coords.length - 1 && acc < maxM; i++) {
+    const a = { lat: coords[i][0], lon: coords[i][1] };
+    const b = { lat: coords[i + 1][0], lon: coords[i + 1][1] };
+    const seg = haversine(a, b);
+    if (acc + seg >= maxM) {
+      const t = (maxM - acc) / seg;
+      out.push([a.lat + t * (b.lat - a.lat), a.lon + t * (b.lon - a.lon)]);
+      break;
+    }
+    acc += seg;
+    out.push([b.lat, b.lon]);
+  }
+  return out;
+}
+function applyTileLayer(id) {
+  if (!_map3) return;
+  const layers = resolveMapLayers(id);
+  if (_tileLayer3) _map3.removeLayer(_tileLayer3);
+  if (_overlayLayer2) {
+    _map3.removeLayer(_overlayLayer2);
+    _overlayLayer2 = null;
+  }
+  _tileLayer3 = import_leaflet3.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map3);
+  if (layers.overlay) {
+    _overlayLayer2 = import_leaflet3.default.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map3);
+  }
+}
+function ensureMap2() {
+  const box = $2("route-map");
+  if (!box) return null;
+  if (!_map3) {
+    box.innerHTML = "";
+    _map3 = import_leaflet3.default.map(box, {
+      zoomControl: true,
+      attributionControl: false,
+      preferCanvas: true
+    });
+    applyTileLayer(getMapProviderId());
+  }
+  return _map3;
+}
+function initMapProviderSelect(onChange) {
+  const sel = $2("opt-map");
+  if (!sel) return;
+  sel.innerHTML = buildMapProviderSelectHtml(getMapProviderId());
+  sel.addEventListener("change", () => {
+    saveMapProviderId(sel.value);
+    applyTileLayer(sel.value);
+    if (_lastRender) {
+      renderRouteMap(
+        _lastRender.alternatives,
+        _lastRender.selectedIdx,
+        _lastRender.start,
+        _lastRender.finish
+      );
+    }
+    if (onChange) onChange(sel.value);
+  });
+}
+function renderRouteMap(alternatives, selectedIdx, start2, finish) {
+  const section = $2("route-section");
+  if (!section) return;
+  if (!alternatives || !alternatives.length) {
+    section.classList.add("hidden");
+    clearLayers();
+    _lastRender = null;
+    return;
+  }
+  _lastRender = { alternatives, selectedIdx, start: start2, finish };
+  section.classList.remove("hidden");
+  const map = ensureMap2();
+  if (!map) return;
+  clearLayers();
+  const bounds = import_leaflet3.default.latLngBounds([]);
+  alternatives.forEach((r, i) => {
+    const latlngs = routePolylineLatLngs(r);
+    latlngs.forEach((ll) => bounds.extend(ll));
+    const sel = i === selectedIdx;
+    const layer = import_leaflet3.default.polyline(latlngs, {
+      color: ROUTE_COLORS[i % ROUTE_COLORS.length],
+      weight: sel ? 7 : 4,
+      opacity: sel ? 1 : 0.45,
+      lineCap: "round",
+      lineJoin: "round"
+    }).addTo(map);
+    layer.on("click", () => {
+      if (_onSelect) _onSelect(i);
+    });
+    _routeLayers.push(layer);
+    if (sel) {
+      const hudLenM = getElevProfileLenM();
+      const hudWin = latLngsForDistance(r, hudLenM, 0);
+      if (hudWin.length > 1) {
+        const glow = import_leaflet3.default.polyline(hudWin, {
+          color: "#ffffff",
+          weight: 11,
+          opacity: 0.28,
+          lineCap: "round",
+          lineJoin: "round"
+        }).addTo(map);
+        const core = import_leaflet3.default.polyline(hudWin, {
+          color: ROUTE_COLORS[i % ROUTE_COLORS.length],
+          weight: 5,
+          opacity: 0.95,
+          dashArray: "10,8",
+          lineCap: "round",
+          lineJoin: "round"
+        }).addTo(map).bindTooltip("\u041E\u043A\u043D\u043E HUD ~" + hudLenM / 1e3 + " \u043A\u043C", { direction: "top", sticky: true });
+        _hudWindowLayers.push(glow, core);
+      }
+    }
+  });
+  if (start2) {
+    const m = import_leaflet3.default.circleMarker([start2.lat, start2.lon], {
+      radius: 9,
+      color: "#000",
+      weight: 2,
+      fillColor: THEME.routeStart,
+      fillOpacity: 1
+    }).addTo(map).bindTooltip("\u0412\u044B", { permanent: false, direction: "top" });
+    bounds.extend([start2.lat, start2.lon]);
+    _markers2.push(m);
+  }
+  if (finish) {
+    const m = import_leaflet3.default.circleMarker([finish.lat, finish.lon], {
+      radius: 9,
+      color: "#000",
+      weight: 2,
+      fillColor: THEME.routeFinish,
+      fillOpacity: 1
+    }).addTo(map).bindTooltip("\u0424\u0438\u043D\u0438\u0448", { permanent: false, direction: "top" });
+    bounds.extend([finish.lat, finish.lon]);
+    _markers2.push(m);
+  }
+  const fuels = fuelStationsForMap(48);
+  fuels.forEach((st) => {
+    const col = fuelColor(st.status);
+    const m = import_leaflet3.default.circleMarker([st.lat, st.lon], {
+      radius: 7,
+      color: "#000",
+      weight: 1,
+      fillColor: col,
+      fillOpacity: 0.92
+    }).addTo(map).bindTooltip("\u26FD " + (st.brand || "\u0410\u0417\u0421"), { direction: "top", opacity: 0.92 });
+    bounds.extend([st.lat, st.lon]);
+    _markers2.push(m);
+  });
+  if (bounds.isValid()) {
+    map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });
+  }
+  setTimeout(() => map.invalidateSize(), 120);
+}
+function renderRouteAlts(alternatives, selectedIdx, onPick) {
+  const box = $2("route-alts");
+  if (!box) return;
+  if (!alternatives || !alternatives.length) {
+    box.innerHTML = "";
+    return;
+  }
+  box.innerHTML = alternatives.map((r, i) => {
+    const km = (r.distance / 1e3).toFixed(1);
+    const min = Math.max(1, Math.round(r.duration / 60));
+    const sel = i === selectedIdx;
+    const col = ROUTE_COLORS[i % ROUTE_COLORS.length];
+    return '<button type="button" class="route-alt' + (sel ? " sel" : "") + '" data-ri="' + i + '"><span class="ra-dot" style="background:' + col + '"></span><span class="ra-main">\u0412\u0430\u0440\u0438\u0430\u043D\u0442 ' + (i + 1) + '</span><span class="ra-meta">' + km + " \u043A\u043C \xB7 ~" + min + " \u043C\u0438\u043D</span></button>";
+  }).join("");
+  box.querySelectorAll(".route-alt").forEach((b) => {
+    b.addEventListener("click", () => {
+      const idx = parseInt(b.getAttribute("data-ri"), 10);
+      if (!isNaN(idx)) onPick(idx);
+    });
+  });
+}
+function setRouteMapSelectHandler(fn) {
+  _onSelect = fn;
+}
+function updateRouteInfo(route) {
+  const el = $2("route-info");
+  if (!el || !route) {
+    if (el) el.textContent = "";
+    return;
+  }
+  const km = (route.distance / 1e3).toFixed(1);
+  const min = Math.max(1, Math.round(route.duration / 60));
+  el.textContent = "\u2705 " + km + " \u043A\u043C \xB7 ~" + min + " \u043C\u0438\u043D \u0434\u043E \u0444\u0438\u043D\u0438\u0448\u0430";
+  el.className = "route-info ok";
+}
+function clearRouteMap() {
+  $2("route-section")?.classList.add("hidden");
+  clearLayers();
+  _lastRender = null;
+  if ($2("route-alts")) $2("route-alts").innerHTML = "";
+  if ($2("route-info")) {
+    $2("route-info").textContent = "";
+    $2("route-info").className = "route-info";
+  }
+}
+function invalidateRouteMapSize() {
+  if (_map3) setTimeout(() => _map3.invalidateSize(), 150);
+}
+var import_leaflet3, _onSelect, _map3, _tileLayer3, _overlayLayer2, _routeLayers, _hudWindowLayers, _markers2, _lastRender, ROUTE_COLORS;
+var init_route_map = __esm({
+  "js/route-map.js"() {
+    import_leaflet3 = __toESM(require_leaflet_src());
+    init_util();
+    init_geo();
+    init_elevation();
+    init_route_geometry();
+    init_map_providers();
+    init_fuel();
+    init_theme();
+    _onSelect = null;
+    _map3 = null;
+    _tileLayer3 = null;
+    _overlayLayer2 = null;
+    _routeLayers = [];
+    _hudWindowLayers = [];
+    _markers2 = [];
+    _lastRender = null;
+    ROUTE_COLORS = THEME.routeAlts;
+  }
+});
+
+// js/tts-health.js
+async function auditTtsHealth() {
+  if (!S.voice) {
+    return { ok: true, offlineVoice: true, platform: "off", hint: "" };
+  }
+  if (isNative()) {
+    try {
+      const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
+      const { supported } = await TextToSpeech2.isLanguageSupported({ lang: TTS_LANG });
+      let offlineVoice = supported;
+      let voices2 = 0;
+      try {
+        const res = await TextToSpeech2.getSupportedVoices();
+        const list = res.voices || [];
+        voices2 = list.length;
+        const ru2 = list.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
+        if (ru2.length) {
+          offlineVoice = ru2.some((v) => v.network === false || v.networkConnectionRequired === false);
+        }
+      } catch (e) {
+      }
+      return {
+        ok: !!supported,
+        offlineVoice,
+        voices: voices2,
+        platform: "native",
+        hint: !supported ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u2014 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0431\u0443\u0434\u0435\u0442 \u0431\u0435\u0437 \u043E\u0437\u0432\u0443\u0447\u043A\u0438." : !offlineVoice ? "\u041D\u0435\u0442 \u043E\u0444\u043B\u0430\u0439\u043D-\u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \xAB\u0432 \u0441\u0430\u043C\u043E\u043B\u0451\u0442\u0435\xBB \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u043E\u0433\u0443\u0442 \u043D\u0435 \u0437\u0432\u0443\u0447\u0430\u0442\u044C." : ""
+      };
+    } catch (e) {
+      return { ok: false, offlineVoice: false, platform: "native", hint: String(e.message || e) };
+    }
+  }
+  if (!("speechSynthesis" in window)) {
+    return { ok: false, offlineVoice: false, platform: "web", hint: "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043E\u0437\u0432\u0443\u0447\u043A\u0443." };
+  }
+  const voices = speechSynthesis.getVoices();
+  const ru = voices.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
+  const localRu = ru.filter((v) => v.localService);
+  const best = ru.reduce((acc, v) => {
+    const sc = scoreRuVoice(v);
+    return sc > acc.score ? { score: sc, name: v.name } : acc;
+  }, { score: -1, name: "" });
+  return {
+    ok: ru.length > 0,
+    offlineVoice: localRu.length > 0,
+    voices: ru.length,
+    platform: "web",
+    hint: !ru.length ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0438 \u0441\u0438\u0441\u0442\u0435\u043C\u044B/\u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430." : !localRu.length ? "\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0431\u043B\u0430\u0447\u043D\u044B\u0435 \u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0431\u0435\u0437 \u0441\u0435\u0442\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0430 \u043C\u043E\u0436\u0435\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C." : best.name ? "\u0413\u043E\u043B\u043E\u0441: " + best.name : ""
+  };
+}
+async function openTtsInstall() {
+  if (!isNative()) return false;
+  try {
+    const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
+    await TextToSpeech2.openInstall();
+    return true;
+  } catch (e) {
+    console.warn("TTS install:", e);
+    return false;
+  }
+}
+function renderBanner(health) {
+  const el = $2("tts-banner");
+  if (!el) return;
+  if (!S.voice || health.ok && health.offlineVoice !== false) {
+    el.classList.add("hidden");
+    el.innerHTML = "";
+    return;
+  }
+  el.classList.remove("hidden");
+  let html = "<b>\u{1F50A} \u0413\u043E\u043B\u043E\u0441:</b> ";
+  if (!health.ok) {
+    html += health.hint || "\u0440\u0443\u0441\u0441\u043A\u0438\u0439 TTS \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.";
+  } else {
+    html += health.hint || "\u043E\u0444\u043B\u0430\u0439\u043D-\u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 \u044F\u0437\u044B\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043A\u0435\u0442.";
+  }
+  if (isNative()) {
+    html += ' <button type="button" class="linkish" id="btn-tts-install">\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0433\u043E\u043B\u043E\u0441\u0430</button>';
+  }
+  el.innerHTML = html;
+  $2("btn-tts-install")?.addEventListener("click", () => {
+    openTtsInstall().then(() => setTimeout(refreshTtsBanner, 2e3));
+  });
+}
+function applyTtsBanner(health) {
+  renderBanner(health);
+}
+async function refreshTtsBanner() {
+  const health = await auditTtsHealth();
+  applyTtsBanner(health);
+  return health;
+}
+function initTtsHealth() {
+  initRuVoice();
+  if ("speechSynthesis" in window) {
+    speechSynthesis.addEventListener("voiceschanged", () => {
+      refreshRuVoice();
+      refreshTtsBanner();
+    }, { once: false });
+  }
+  refreshTtsBanner();
+}
+var TTS_LANG;
+var init_tts_health = __esm({
+  "js/tts-health.js"() {
+    init_state();
+    init_util();
+    init_platform();
+    init_tts_ru();
+    TTS_LANG = "ru-RU";
+  }
+});
+
+// js/setup.js
+var setup_exports = {};
+__export(setup_exports, {
+  applyCoordsOrLink: () => applyCoordsOrLink,
+  bindSetupUI: () => bindSetupUI,
+  doAddressSearch: () => doAddressSearch,
+  doBuildRoute: () => doBuildRoute,
+  doFuelSearch: () => doFuelSearch,
+  initNativeHints: () => initNativeHints,
+  invalidateRoute: () => invalidateRoute,
+  refreshRouteUi: () => refreshRouteUi,
+  setFinishQuiet: () => setFinishQuiet,
+  setGoBarVisible: () => setGoBarVisible,
+  syncOptionsFromDom: () => syncOptionsFromDom,
+  updateBearingStartHint: () => updateBearingStartHint
+});
+function syncSimPath() {
+  if (window.__SIM__?.setRoutePath && S.route?.coords?.length) {
+    window.__SIM__.setRoutePath(S.route.coords);
+  }
+}
+function setGoBarVisible(visible) {
+  $2("go-bar")?.classList.toggle("hidden", !visible);
+  $2("setup")?.classList.toggle("has-go-bar", !!visible);
+}
+function updateBearingStartHint() {
+  const ri = $2("route-info");
+  if (!ri || !S.gps || !S.finish || S.route?.coords?.length) return;
+  const txt = (ri.textContent || "").trim();
+  if (txt.startsWith("\u23F3") || txt.startsWith("\u274C")) return;
+  ri.textContent = "\u{1F9ED} \u0411\u0435\u0437 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430: \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB \u2014 \u043F\u0435\u043B\u0435\u043D\u0433 \u043A \u0444\u0438\u043D\u0438\u0448\u0443";
+  ri.className = "route-info ok";
+}
+function refreshRouteUi() {
+  if (!S.route) return;
+  renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+  renderRouteAlts(S.routeAlternatives, S.selectedRouteIdx, pickRoute);
+  updateRouteInfo(S.route);
+  syncSimPath();
+  setGoBarVisible(true);
+  $2("route-export-row")?.classList.toggle("hidden", !S.route?.coords?.length);
+  loadCameras();
+  checkStartReady();
+  scheduleGeometryBuild(S.routeAlternatives, () => {
+    renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+  });
+}
+function invalidateRoute() {
+  S.route = null;
+  S.routeAlternatives = [];
+  S.selectedRouteIdx = 0;
+  clearRouteMap();
+  $2("route-export-row")?.classList.add("hidden");
+  checkStartReady();
+  updateBearingStartHint();
+  const b = $2("btn-build-route");
+  if (b) b.disabled = !(S.gps && S.finish);
+}
+function pickRoute(idx) {
+  selectRouteIndex(idx);
+  ensureRouteGeometry(S.route);
+  renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+  renderRouteAlts(S.routeAlternatives, S.selectedRouteIdx, pickRoute);
+  updateRouteInfo(S.route);
+  syncSimPath();
+  checkStartReady();
+  loadCameras();
+}
+async function doBuildRoute() {
+  if (!S.gps || !S.finish) {
+    $2("s-finish").textContent = "\u274C \u041D\u0443\u0436\u043D\u044B GPS \u0438 \u0444\u0438\u043D\u0438\u0448";
+    $2("s-finish").className = "status err";
+    return;
+  }
+  const btn = $2("btn-build-route");
+  const prev = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "\u23F3 \u0421\u0442\u0440\u043E\u0438\u043C\u2026";
+  $2("route-info").textContent = "\u23F3 \u0417\u0430\u043F\u0440\u043E\u0441 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u043E\u0432\u2026";
+  $2("route-info").className = "route-info";
+  try {
+    S.routeAlternatives = await fetchRouteAlternatives();
+    S.selectedRouteIdx = 0;
+    selectRouteIndex(0);
+    renderRouteMap(S.routeAlternatives, 0, S.gps, S.finish);
+    renderRouteAlts(S.routeAlternatives, 0, pickRoute);
+    updateRouteInfo(S.route);
+    syncSimPath();
+    setGoBarVisible(true);
+    loadCameras();
+    telemetry_default.log("nav", { sub: "route_built", variants: S.routeAlternatives.length });
+    $2("s-finish").textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D \u2014 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB \u0432\u043D\u0438\u0437\u0443";
+    $2("s-finish").className = "status ok";
+    scheduleGeometryBuild(S.routeAlternatives, () => {
+      renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+    });
+    prefetchFuelForMap().then(() => {
+      renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+    });
+  } catch (e) {
+    $2("route-info").textContent = "\u274C " + e.message;
+    $2("route-info").className = "route-info";
+    $2("s-finish").textContent = "\u274C " + e.message;
+    $2("s-finish").className = "status err";
+    clearRouteMap();
+    updateBearingStartHint();
+  } finally {
+    btn.textContent = prev;
+    btn.disabled = !(S.gps && S.finish);
+    checkStartReady();
+  }
+}
+async function doAddressSearch() {
+  const q = $2("finish-input").value.trim();
+  if (!q) {
+    $2("s-finish").textContent = "\u274C \u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441";
+    $2("s-finish").className = "status err";
+    return;
+  }
+  if (parseInput(q)) {
+    applyCoordsOrLink();
+    return;
+  }
+  $2("s-finish").textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0430\u0434\u0440\u0435\u0441\u2026";
+  $2("s-finish").className = "status";
+  S.finish = null;
+  invalidateRoute();
+  if (window.__motoHUD) window.__motoHUD._searchBusy = true;
+  try {
+    const res = await searchAddress(q);
+    if (!res.length) {
+      $2("s-finish").textContent = "\u274C \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E";
+      $2("s-finish").className = "status err";
+      $2("search-results").style.display = "none";
+      return;
+    }
+    const box = $2("search-results");
+    box.innerHTML = "";
+    res.forEach((r) => {
+      const d = document.createElement("div");
+      d.textContent = r.display_name;
+      d.addEventListener("click", () => {
+        S.finish = { lat: parseFloat(r.lat), lon: parseFloat(r.lon), label: r.display_name.split(",")[0] };
+        $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + r.display_name;
+        $2("s-finish").className = "status ok";
+        $2("finish-input").value = r.display_name;
+        box.style.display = "none";
+        invalidateRoute();
+      });
+      box.appendChild(d);
+    });
+    box.style.display = "block";
+    try {
+      box.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
+    } catch (e) {
+    }
+    $2("s-finish").textContent = "\u{1F50E} \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430";
+    $2("s-finish").className = "status";
+  } catch (e) {
+    $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430: " + e.message;
+    $2("s-finish").className = "status err";
+  } finally {
+    if (window.__motoHUD) window.__motoHUD._searchBusy = false;
+  }
+}
+function applyFuelFinish(st) {
+  const brand = st.brand || st.name || "\u0410\u0417\u0421";
+  S.finish = { lat: st.lat, lon: st.lon, label: "\u26FD " + brand };
+  const inputVal = st.name && st.name !== st.brand ? brand + " \u2014 " + st.name : brand;
+  $2("finish-input").value = inputVal;
+  $2("finish-input").dataset.userEdited = "1";
+  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + inputVal + " \xB7 " + formatFuelDist(st.distGps);
+  $2("s-finish").className = "status ok";
+  invalidateRoute();
+  checkStartReady();
+}
+function fuelStationMetaLine(st) {
+  const parts = ['<span class="fuel-st ' + (st.status || "unknown") + '">' + escapeHtml(fuelStatusText(st.status)) + "</span>"];
+  if (st.confirmations) parts.push("\u043E\u0442\u0447\u0451\u0442\u043E\u0432: " + st.confirmations);
+  if (st.lastAt) parts.push("\u0434\u0430\u043D\u043D\u044B\u0435: " + escapeHtml(String(st.lastAt).split(" ")[0]));
+  if (st.statusSource === "crowd") parts.push("\u0432\u0430\u0448 \u043E\u0442\u0447\u0451\u0442");
+  return parts.join(" \xB7 ");
+}
+async function doFuelSearch() {
+  if (!S.gps) {
+    $2("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 GPS (\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u{1F4CD} GPS)";
+    $2("s-finish").className = "status err";
+    return;
+  }
+  const btn = $2("btn-fuel-search");
+  const prev = btn?.textContent;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0410\u0417\u0421\u2026";
+  }
+  $2("s-finish").textContent = "\u23F3 \u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A\u2026";
+  $2("s-finish").className = "status";
+  try {
+    syncOptionsFromDom();
+    const limit = clampFuelPlannerCount(S.fuelPlannerCount);
+    const list = await searchNearestFuelStations(limit);
+    const box = $2("search-results");
+    box.innerHTML = "";
+    if (!list.length) {
+      $2("s-finish").textContent = "\u274C \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438";
+      $2("s-finish").className = "status err";
+      box.style.display = "none";
+      return;
+    }
+    list.forEach((st) => {
+      const row = document.createElement("div");
+      row.className = "fuel-item";
+      row.innerHTML = '<div class="fuel-title"><span>\u26FD ' + escapeHtml(st.brand || st.name || "\u0410\u0417\u0421") + '</span><span class="fuel-dist">' + formatFuelDist(st.distGps) + "</span></div>" + (st.name && st.name !== st.brand ? '<div class="fuel-meta">' + escapeHtml(st.name) + "</div>" : "") + '<div class="fuel-meta">' + fuelStationMetaLine(st) + "</div>";
+      row.addEventListener("click", () => {
+        applyFuelFinish(st);
+        box.style.display = "none";
+      });
+      box.appendChild(row);
+    });
+    box.style.display = "block";
+    try {
+      box.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
+    } catch (e) {
+    }
+    $2("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")" + fuelStatusHint();
+    $2("s-finish").className = "status";
+  } catch (e) {
+    $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0410\u0417\u0421: " + e.message;
+    $2("s-finish").className = "status err";
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = prev || "\u26FD \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0438";
+    }
+  }
+}
+function setFinishQuiet(lat, lon, label = "\u0422\u043E\u0447\u043A\u0430") {
+  S.finish = { lat, lon, label };
+  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + lat.toFixed(5) + ", " + lon.toFixed(5);
+  $2("s-finish").className = "status ok";
+  checkStartReady();
+  updateBearingStartHint();
+}
+async function applyCoordsOrLink(opts = {}) {
+  const hideSearch = opts.hideSearch !== false;
+  const raw = $2("finish-input").value.trim();
+  if (await tryYandexRouteImport(raw)) return;
+  const p = parseInput(raw);
+  if (!p) {
+    $2("s-finish").textContent = "\u274C \u041D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043B\u0438. \u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B, \u0441\u0441\u044B\u043B\u043A\u0430 \u0438\u043B\u0438 \xAB\u041D\u0430\u0439\u0442\u0438 \u0430\u0434\u0440\u0435\u0441\xBB";
+    $2("s-finish").className = "status err";
+    return;
+  }
+  S.finish = p;
+  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + p.lat.toFixed(5) + ", " + p.lon.toFixed(5);
+  $2("s-finish").className = "status ok";
+  if (hideSearch) $2("search-results").style.display = "none";
+  invalidateRoute();
+  updateBearingStartHint();
+}
+function looksLikeCoordsOrLink(s2) {
+  return /-?\d{1,2}\.\d+.*-?\d{1,3}\.\d+/.test(s2) || /[?&](ll|pt)=/.test(s2) || isYandexMapsUrl(s2);
+}
+async function tryYandexRouteImport(raw) {
+  if (!isYandexMapsUrl(raw)) return false;
+  try {
+    await importYandexFromText(raw);
+    return true;
+  } catch (e) {
+    $2("s-finish").textContent = "\u274C " + (e.message || e);
+    $2("s-finish").className = "status err";
+    return true;
+  }
+}
+function bindSetupUI() {
+  setRouteMapSelectHandler(pickRoute);
+  initMapProviderSelect();
+  $2("s-gps").addEventListener("click", startGps);
+  $2("btn-search").addEventListener("click", doAddressSearch);
+  $2("btn-fuel-search")?.addEventListener("click", doFuelSearch);
+  $2("btn-parse").addEventListener("click", applyCoordsOrLink);
+  $2("btn-build-route").addEventListener("click", doBuildRoute);
+  $2("finish-input").addEventListener("input", () => {
+    $2("finish-input").dataset.userEdited = "1";
+  });
+  $2("finish-input").addEventListener("focus", () => {
+    if (window.__motoHUD) window.__motoHUD._finishFocused = true;
+  });
+  $2("finish-input").addEventListener("blur", () => {
+    if (window.__motoHUD) window.__motoHUD._finishFocused = false;
+  });
+  $2("finish-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (looksLikeCoordsOrLink(e.target.value)) applyCoordsOrLink();
+      else doAddressSearch();
+    }
+  });
+  $2("btn-paste").addEventListener("click", async () => {
+    try {
+      const t = await navigator.clipboard.readText();
+      if (t) {
+        $2("finish-input").value = t;
+        if (await tryYandexRouteImport(t)) return;
+        if (looksLikeCoordsOrLink(t)) await applyCoordsOrLink();
+        else doAddressSearch();
+      }
+    } catch (e) {
+      $2("s-finish").textContent = "\u274C \u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u0431\u0443\u0444\u0435\u0440\u0443";
+      $2("s-finish").className = "status err";
+    }
+  });
+  $2("opt-voice").addEventListener("change", (e) => {
+    S.voice = e.target.checked;
+    refreshTtsBanner();
+    saveAppOptsToStorage();
+  });
+  $2("btn-compass-cal")?.addEventListener("click", async () => {
+    const btn = $2("btn-compass-cal");
+    const ok = await requestHeadingPermission();
+    if (!ok) {
+      alert("\u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u043A\u043E\u043C\u043F\u0430\u0441\u0443. \u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u0435 \u0434\u0430\u0442\u0447\u0438\u043A\u0438 \u043E\u0440\u0438\u0435\u043D\u0442\u0430\u0446\u0438\u0438 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430/\u0441\u0438\u0441\u0442\u0435\u043C\u044B.");
+      return;
+    }
+    startCompassCalibration(15e3);
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "\u23F3 \u0412\u043E\u0441\u044C\u043C\u0451\u0440\u043A\u0430\u2026 15 \u0441";
+    }
+    setTimeout(() => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "\u{1F9ED} \u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043C\u043F\u0430\u0441\u0430";
+      }
+      if (!isCalibrating()) speak("\u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430");
+    }, 15e3);
+  });
+  $2("opt-path").addEventListener("change", (e) => {
+    S.showPath = e.target.checked;
+    if (!S.showPath) {
+      $2("block-path").classList.add("hidden");
+      $2("hud").classList.add("no-path");
+    } else {
+      $2("block-path").classList.remove("hidden");
+      $2("hud").classList.remove("no-path");
+    }
+    saveAppOptsToStorage();
+  });
+  $2("opt-crossings")?.addEventListener("change", (e) => {
+    S.showCrossingContext = e.target.checked;
+    saveAppOptsToStorage();
+  });
+  function syncChevronInputs() {
+    const on = S.showPathChevrons !== false;
+    const labels = $2("opt-chevron-labels");
+    const maxEl = $2("opt-chevron-max");
+    if (labels) labels.disabled = !on;
+    if (maxEl) maxEl.disabled = !on;
+  }
+  $2("opt-path-chevrons")?.addEventListener("change", (e) => {
+    S.showPathChevrons = e.target.checked;
+    syncChevronInputs();
+    saveAppOptsToStorage();
+  });
+  $2("opt-low-speed-map")?.addEventListener("change", (e) => {
+    S.lowSpeedMap = e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $2("opt-chevron-labels")?.addEventListener("change", (e) => {
+    S.pathChevronLabels = e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $2("opt-chevron-max")?.addEventListener("change", (e) => {
+    S.pathChevronMax = Math.max(1, Math.min(3, parseInt(e.target.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
+    e.target.value = String(S.pathChevronMax);
+    saveAppOptsToStorage();
+  });
+  const bindFinishOpt = (id) => {
+    $2(id)?.addEventListener("change", () => {
+      syncOptionsFromDom();
+      saveHudOptsToStorage();
+      applyHudChrome();
+    });
+  };
+  bindFinishOpt("opt-finish-dist");
+  bindFinishOpt("opt-finish-time");
+  bindFinishOpt("opt-finish-eta");
+  const bindChromeMode = (id, key) => {
+    $2(id)?.addEventListener("change", (e) => {
+      S[key] = normalizeChromeMode(e.target.value);
+      e.target.value = S[key];
+      saveHudOptsToStorage();
+      applyHudChrome();
+    });
+  };
+  bindChromeMode("opt-hud-status-mode", "hudStatusMode");
+  bindChromeMode("opt-hud-finish-mode", "hudFinishMode");
+  $2("opt-fuel-count")?.addEventListener("change", (e) => {
+    S.fuelPlannerCount = clampFuelPlannerCount(e.target.value);
+    e.target.value = String(S.fuelPlannerCount);
+    saveHudOptsToStorage();
+  });
+  $2("opt-fuel-proxy")?.addEventListener("change", (e) => {
+    setFuelProxyBase(e.target.value.trim());
+  });
+  $2("opt-fuel-proxy")?.addEventListener("blur", (e) => {
+    setFuelProxyBase(e.target.value.trim());
+  });
+  function syncElevInputs() {
+    const on = S.showElevProfile;
+    const exag = $2("opt-elev-exag");
+    const ph = $2("opt-elev-profile-h");
+    const plen = $2("opt-elev-profile-len");
+    if (exag) exag.disabled = !on;
+    if (ph) ph.disabled = !on;
+    if (plen) plen.disabled = !on;
+  }
+  $2("opt-elev-profile").addEventListener("change", (e) => {
+    S.showElevProfile = e.target.checked;
+    syncElevInputs();
+    saveElevOptsToStorage();
+    if (S.showElevProfile && S.route?.geometry) loadRouteElevation();
+  });
+  $2("opt-elev-exag").addEventListener("change", (e) => {
+    S.elevExag = Math.max(0.5, Math.min(5, parseFloat(e.target.value) || DEFAULT_ELEV_EXAG));
+    e.target.value = String(S.elevExag);
+    saveElevOptsToStorage();
+  });
+  $2("opt-elev-profile-h").addEventListener("change", (e) => {
+    S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
+      MAX_ELEV_PROFILE_H,
+      parseInt(e.target.value, 10) || DEFAULT_ELEV_PROFILE_H
+    ));
+    e.target.value = String(S.elevProfileH);
+    saveElevOptsToStorage();
+  });
+  $2("opt-elev-profile-len").addEventListener("change", (e) => {
+    S.elevProfileLenKm = Math.max(MIN_ELEV_PROFILE_LEN_KM, Math.min(
+      MAX_ELEV_PROFILE_LEN_KM,
+      parseInt(e.target.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
+    ));
+    e.target.value = String(S.elevProfileLenKm);
+    saveElevOptsToStorage();
+    if (S.routeAlternatives?.length) renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+  });
+  function syncCurveInputs() {
+    const on = S.curveWarn;
+    const sel = $2("opt-curve-strict");
+    if (sel) sel.disabled = !on;
+  }
+  function recomputeCurveIfReady() {
+    const geom = S.route?.geometry;
+    if (geom) computeCurveSpeed(geom, S.route);
+  }
+  $2("opt-curve-warn").addEventListener("change", (e) => {
+    S.curveWarn = e.target.checked;
+    syncCurveInputs();
+    saveCurveOptsToStorage();
+  });
+  $2("opt-curve-strict").addEventListener("change", (e) => {
+    const v = e.target.value;
+    if (v === "relaxed" || v === "normal" || v === "strict") S.curveStrict = v;
+    saveCurveOptsToStorage();
+    recomputeCurveIfReady();
+  });
+  $2("opt-heading").addEventListener("change", (e) => {
+    S.showCompass = e.target.checked;
+    $2("hud").classList.toggle("show-compass", S.showCompass);
+    saveAppOptsToStorage();
+  });
+  $2("opt-cams").addEventListener("change", (e) => {
+    S.cams = e.target.checked;
+    if (!S.cams) {
+      S.camLoadStatus = "off";
+      S.cameras = [];
+    }
+    updateCamStatusUI();
+    if (S.cams && S.route) loadCameras();
+    saveAppOptsToStorage();
+  });
+  $2("opt-back-only").addEventListener("change", (e) => {
+    S.backOnly = e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $2("opt-tol").addEventListener("change", (e) => {
+    S.tolerance = Math.max(10, Math.min(90, parseInt(e.target.value, 10) || 45));
+    saveAppOptsToStorage();
+  });
+  $2("opt-nodir").addEventListener("change", (e) => {
+    S.noDirPolicy = e.target.value;
+    saveAppOptsToStorage();
+  });
+  $2("opt-limit").addEventListener("change", (e) => {
+    S.userDefaultLimit = parseInt(e.target.value, 10) || 0;
+    saveAppOptsToStorage();
+  });
+  $2("opt-speed-limit-dynamic")?.addEventListener("change", (e) => {
+    S.speedLimitDynamic = !!e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $2("opt-speed-limit-fallback")?.addEventListener("change", (e) => {
+    S.speedLimitFallback = e.target.value === "hide" ? "hide" : "user-default";
+    saveAppOptsToStorage();
+  });
+  $2("opt-roundabout-schema")?.addEventListener("change", (e) => {
+    S.roundaboutSchema = !!e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $2("opt-cam-speed-tol")?.addEventListener("change", (e) => {
+    S.camSpeedTol = Math.max(0, Math.min(50, parseInt(e.target.value, 10) || DEFAULT_CAM_SPEED_TOL));
+    e.target.value = String(S.camSpeedTol);
+    saveAppOptsToStorage();
+  });
+  $2("btn-start").addEventListener("click", () => {
+    requestAppFullscreen();
+    startHud();
+  });
+  let stopArmed = false;
+  let stopArmTimer = null;
+  let stopLastTap = 0;
+  $2("btn-stop").addEventListener("click", (e) => {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - stopLastTap < 350) return;
+    stopLastTap = now;
+    if (stopArmed) {
+      stopArmed = false;
+      clearTimeout(stopArmTimer);
+      $2("btn-stop")?.classList.remove("armed");
+      if (confirm("\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044C \u043F\u043E\u0435\u0437\u0434\u043A\u0443?")) stopHud();
+      return;
+    }
+    stopArmed = true;
+    $2("btn-stop")?.classList.add("armed");
+    stopArmTimer = setTimeout(() => {
+      stopArmed = false;
+      $2("btn-stop")?.classList.remove("armed");
+    }, 1400);
+  });
+  $2("btn-fuel").addEventListener("click", () => {
+    cycleFuelAssist();
+  });
+  $2("btn-gear").addEventListener("click", () => {
+    if ($2("hud")?.classList.contains("on")) handleHudGearClick(syncOptionsFromDom);
+    else openSettingsPanel();
+  });
+  $2("qf-close").addEventListener("click", () => $2("quickFinish").classList.remove("on"));
+  window.addEventListener("orientationchange", () => {
+    invalidateRouteMapSize();
+    setTimeout(() => {
+      if ($2("hud").classList.contains("on")) onTick();
+    }, 250);
+  });
+  document.querySelectorAll(".setup-details").forEach((det) => {
+    det.addEventListener("toggle", () => {
+      if (det.open) setTimeout(() => det.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80);
+    });
+  });
+}
+function syncOptionsFromDom() {
+  S.voice = $2("opt-voice").checked;
+  S.showPath = $2("opt-path").checked;
+  S.showCrossingContext = $2("opt-crossings")?.checked ?? true;
+  S.showPathChevrons = $2("opt-path-chevrons")?.checked ?? true;
+  S.pathChevronLabels = $2("opt-chevron-labels")?.checked ?? true;
+  S.pathChevronMax = Math.max(1, Math.min(
+    3,
+    parseInt($2("opt-chevron-max")?.value, 10) || DEFAULT_PATH_CHEVRON_MAX
+  ));
+  S.lowSpeedMap = $2("opt-low-speed-map")?.checked !== false;
+  if ($2("opt-chevron-max")) $2("opt-chevron-max").value = String(S.pathChevronMax);
+  if ($2("opt-chevron-labels")) $2("opt-chevron-labels").disabled = !S.showPathChevrons;
+  if ($2("opt-chevron-max")) $2("opt-chevron-max").disabled = !S.showPathChevrons;
+  S.showFinishDist = $2("opt-finish-dist")?.checked ?? true;
+  S.showFinishTime = $2("opt-finish-time")?.checked ?? true;
+  S.showFinishEta = $2("opt-finish-eta")?.checked ?? true;
+  S.hudStatusMode = normalizeChromeMode($2("opt-hud-status-mode")?.value || S.hudStatusMode);
+  S.hudFinishMode = normalizeChromeMode($2("opt-hud-finish-mode")?.value || S.hudFinishMode);
+  if ($2("opt-hud-status-mode")) $2("opt-hud-status-mode").value = S.hudStatusMode;
+  if ($2("opt-hud-finish-mode")) $2("opt-hud-finish-mode").value = S.hudFinishMode;
+  applyHudChrome();
+  S.fuelPlannerCount = clampFuelPlannerCount($2("opt-fuel-count")?.value);
+  if ($2("opt-fuel-count")) $2("opt-fuel-count").value = String(S.fuelPlannerCount);
+  const proxyEl = $2("opt-fuel-proxy");
+  if (proxyEl) proxyEl.value = getFuelProxyBase();
+  S.showElevProfile = $2("opt-elev-profile").checked;
+  S.elevExag = Math.max(0.5, Math.min(5, parseFloat($2("opt-elev-exag").value) || DEFAULT_ELEV_EXAG));
+  S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
+    MAX_ELEV_PROFILE_H,
+    parseInt($2("opt-elev-profile-h")?.value, 10) || DEFAULT_ELEV_PROFILE_H
+  ));
+  S.elevProfileLenKm = Math.max(MIN_ELEV_PROFILE_LEN_KM, Math.min(
+    MAX_ELEV_PROFILE_LEN_KM,
+    parseInt($2("opt-elev-profile-len")?.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
+  ));
+  if ($2("opt-elev-exag")) $2("opt-elev-exag").value = String(S.elevExag);
+  if ($2("opt-elev-profile-h")) $2("opt-elev-profile-h").value = String(S.elevProfileH);
+  if ($2("opt-elev-profile-len")) $2("opt-elev-profile-len").value = String(S.elevProfileLenKm);
+  if ($2("opt-elev-exag")) $2("opt-elev-exag").disabled = !S.showElevProfile;
+  if ($2("opt-elev-profile-h")) $2("opt-elev-profile-h").disabled = !S.showElevProfile;
+  if ($2("opt-elev-profile-len")) $2("opt-elev-profile-len").disabled = !S.showElevProfile;
+  S.curveWarn = $2("opt-curve-warn")?.checked ?? true;
+  const strictEl = $2("opt-curve-strict");
+  if (strictEl) {
+    S.curveStrict = strictEl.value || "normal";
+    strictEl.disabled = !S.curveWarn;
+  }
+  S.showCompass = $2("opt-heading").checked;
+  S.cams = $2("opt-cams").checked;
+  S.backOnly = $2("opt-back-only").checked;
+  S.tolerance = parseInt($2("opt-tol").value, 10) || 45;
+  S.noDirPolicy = $2("opt-nodir").value;
+  S.userDefaultLimit = parseInt($2("opt-limit").value, 10) || 60;
+  S.speedLimitDynamic = $2("opt-speed-limit-dynamic")?.checked !== false;
+  S.speedLimitFallback = $2("opt-speed-limit-fallback")?.value === "hide" ? "hide" : "user-default";
+  S.roundaboutSchema = $2("opt-roundabout-schema")?.checked !== false;
+  S.camSpeedTol = Math.max(0, Math.min(
+    50,
+    parseInt($2("opt-cam-speed-tol")?.value, 10) || DEFAULT_CAM_SPEED_TOL
+  ));
+  if ($2("opt-cam-speed-tol")) $2("opt-cam-speed-tol").value = String(S.camSpeedTol);
+  $2("hud")?.classList.toggle("show-compass", S.showCompass);
+  if (!S.showPath) {
+    $2("block-path").classList.add("hidden");
+    $2("hud").classList.add("no-path");
+  } else {
+    $2("block-path")?.classList.remove("hidden");
+    $2("hud")?.classList.remove("no-path");
+  }
+}
+function initNativeHints() {
+  if (!isAndroidNative()) return;
+  const help = $2("drawer-help")?.querySelector(".hint, .drawer-body");
+  if (!help) return;
+  help.innerHTML += '<span class="help-section"><b>Android-\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435</b> \u041F\u0440\u0438 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u0438 \u2014 \u0443\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435 \xAB\u041D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u0430\xBB (foreground-service GPS). \u0412 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043E\u043F\u0442\u0438\u043C\u0438\u0437\u0430\u0446\u0438\u044E \u0431\u0430\u0442\u0430\u0440\u0435\u0438 \u0434\u043B\u044F \xAB\u041C\u043E\u0442\u043E \u0418\u041B\u0421\xBB, \u0438\u043D\u0430\u0447\u0435 GPS \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u0432\u0430\u043B\u0438\u0432\u0430\u0442\u044C\u0441\u044F \u043D\u0430 Samsung/Xiaomi/Huawei. \u0427\u0435\u043A-\u043B\u0438\u0441\u0442: <code>docs/oem-gps-matrix.md</code>.</span>';
+}
+var init_setup = __esm({
+  "js/setup.js"() {
+    init_state();
+    init_util();
+    init_geo();
+    init_yandex_link();
+    init_yandex_import();
+    init_gps();
+    init_route();
+    init_hud();
+    init_cam_status();
+    init_elevation();
+    init_curve_speed();
+    init_hud_opts();
+    init_hud_chrome();
+    init_app_opts();
+    init_platform();
+    init_route_map();
+    init_fuel();
+    init_fuel_config();
+    init_settings_ui();
+    init_hud_settings_sheet();
+    init_tts_health();
+    init_heading();
+    init_voice();
+    init_telemetry();
+  }
+});
+
+// js/gps.js
+function curPos() {
+  return RENDER_POS || S.gps;
+}
+function updateRenderPos() {
+  if (!S.gps) {
+    RENDER_POS = null;
+    return;
+  }
+  const v = S.gps.speed != null && S.gps.speed > 0.6 ? S.gps.speed : 0;
+  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
+  if (!v || hdg == null || isNaN(hdg) || !S.fixPos) {
+    RENDER_POS = S.gps;
+    return;
+  }
+  const rad = Math.PI / 180;
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1e3));
+  const dist = v * dt;
+  RENDER_POS = {
+    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
+    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
+    speed: S.gps.speed,
+    heading: S.gps.heading,
+    acc: S.gps.acc
+  };
+}
+function easeSpeed() {
+  const el = $2("v-speed");
+  if (!el || !S.gps) return;
+  const raw = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const target = Math.min(raw, GPS_SPEED_MAX_MPS * 3.6);
+  S.dispSpeed += (target - S.dispSpeed) * 0.22;
+  if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
+  const shown = Math.round(S.dispSpeed);
+  el.textContent = shown;
+  el.classList.toggle("over", isSpeedOverLimit(target));
+  el.classList.toggle("speed-3", shown >= 100);
+}
+function resolveGpsSpeed(next, prev) {
+  const acc = next.acc ?? 999;
+  const device = next.speed != null && !isNaN(next.speed) && next.speed >= 0 ? next.speed : null;
+  let meas = 0;
+  let dist = 0;
+  let dt = 0;
+  if (prev) {
+    dt = (next.ts - prev.ts) / 1e3;
+    if (dt > 0.15 && dt < 12) {
+      dist = haversine(prev, next);
+      const measFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
+      if (dist >= measFloor && dist < 500) meas = dist / dt;
+    }
+  }
+  const driftFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
+  const driftM = acc <= GPS_SPEED_ACC_TRUST_M ? driftFloor : Math.max(driftFloor, acc * 0.55);
+  const base = { device, meas, dist, driftM, dt };
+  if (prev && dist < driftM && (device == null || device < 0.5)) {
+    return { ...base, mps: 0, src: "drift" };
+  }
+  if (device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
+    if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
+      return { ...base, mps: device, src: "device" };
+    }
+  }
+  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
+  if (meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)) {
+    const mps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+    return { ...base, meas, mps, src: "meas" };
+  }
+  return { ...base, mps: 0, src: "zero" };
+}
+function initGps(callbacks) {
+  _onTick = callbacks.onTick || _onTick;
+  _onVisual = callbacks.onVisual || _onVisual;
+}
+function visualLoop() {
+  S.rafId = requestAnimationFrame(visualLoop);
+  if (!$2("hud").classList.contains("on")) return;
+  telemetry_default.tickPerfFrame();
+  updateRenderPos();
+  tickNavMap();
+  easeSpeed();
+  tickRoundaboutHudRefresh(_onTick);
+  _onVisual();
+}
+function startVisualLoop() {
+  if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
+}
+function stopVisualLoop() {
+  if (S.rafId) {
+    cancelAnimationFrame(S.rafId);
+    S.rafId = null;
+  }
+}
+function getGpsDisplayAcc() {
+  if (!S.gps) return null;
+  return displayAccM(S.gps.acc, S._gpsSpreadBuf || []);
+}
+function updateGpsConvergeUI() {
+  const el = $2("gps-converge");
+  if (el) {
+    el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
+  }
+  const reported = S.gps?.acc != null ? Math.round(S.gps.acc) : null;
+  const shown = getGpsDisplayAcc();
+  const spread = S.gps ? measuredSpreadM(S._gpsSpreadBuf || []) : null;
+  const failHint = getConvergeFailLabel();
+  let title = "\u0422\u0430\u043F \u2014 \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C GPS";
+  if (S.gps) {
+    const parts = [];
+    if (shown != null) parts.push("\u043E\u0446\u0435\u043D\u043A\u0430 \xB1" + shown + " \u043C");
+    if (reported != null && reported !== shown) parts.push("\u043E\u0442\u0447\u0451\u0442 \u041E\u0421 \xB1" + reported + " \u043C");
+    if (spread != null) parts.push("\u0440\u0430\u0437\u0431\u0440\u043E\u0441 ~" + Math.round(spread) + " \u043C");
+    if (!S.gpsConverged && failHint) parts.push("\u0436\u0434\u0451\u043C: " + failHint);
+    if (parts.length) title = parts.join(" \xB7 ");
+  }
+  if (S.gpsConverged) {
+    const tag = isSim() ? " \u0441\u0438\u043C" : "";
+    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + (shown ?? "\u2014") + "\u043C";
+    $2("s-gps").className = "chip ok";
+  } else if (S.gps) {
+    $2("s-gps").textContent = "\u23F3 GPS \xB1" + (shown ?? "\u2026") + "\u043C";
+    $2("s-gps").className = "chip";
+  } else {
+    $2("s-gps").textContent = "\u23F3 GPS\u2026";
+    $2("s-gps").className = "chip";
+  }
+  $2("s-gps").title = title;
+  checkStartReady();
+}
+function checkStartReady() {
+  const ready = !!(S.gps && S.finish);
+  $2("btn-start").disabled = !ready;
+  const buildBtn = $2("btn-build-route");
+  if (buildBtn) buildBtn.disabled = !ready;
+  const goBar = $2("go-bar");
+  if (goBar) {
+    goBar.classList.toggle("hidden", !ready);
+    $2("setup")?.classList.toggle("has-go-bar", ready);
+  }
+  if (ready) {
+    Promise.resolve().then(() => (init_setup(), setup_exports)).then((m) => m.updateBearingStartHint?.()).catch(() => {
+    });
+  }
+}
+function getGpsFixAgeMs() {
+  if (!S.gps) return Infinity;
+  if (_lastGpsRcvMs > 0) return Math.max(0, Date.now() - _lastGpsRcvMs);
+  if (S.gps.ts) return Math.max(0, Date.now() - S.gps.ts);
+  return Infinity;
+}
+function isGpsFixStale(maxMs = 5e3) {
+  return getGpsFixAgeMs() > maxMs;
+}
+function onGpsError() {
+  $2("s-gps").textContent = "\u274C GPS";
+  $2("s-gps").className = "chip err";
+  invalidateGpsConverge("invalidate_error");
+  if (!_gpsLost) {
+    _gpsLost = true;
+    telemetry_default.log("nav", { sub: "gps_lost" });
+  }
+}
+function applyGpsFix(next) {
+  if (S.lastPos) {
+    const d = haversine(S.lastPos, next);
+    const dt = (next.ts - S.lastPos.ts) / 1e3;
+    if (d > 3 && d < 500) S.distDone += d;
+    if ((next.heading == null || isNaN(next.heading)) && d > 3) {
+      next.heading = bearing(S.lastPos, next);
+    }
+  }
+  const speedRes = resolveGpsSpeed(next, S.lastPos);
+  S.measSpeed = speedRes.mps;
+  next.speed = speedRes.mps;
+  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
+  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
+  if (fused != null && !isNaN(fused)) next.heading = fused;
+  if (next.heading != null && !isNaN(next.heading)) {
+    if ((next.speed ?? 0) >= 3.2) S.lastReliableHeadingTs = Date.now();
+    if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
+    else {
+      const spd = next.speed ?? S.measSpeed ?? 0;
+      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
+      const keep = 1 - alpha;
+      const r = Math.PI / 180, d = 180 / Math.PI;
+      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
+      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
+      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
+    }
+  }
+  _lastGpsRcvMs = Date.now();
+  S.lastPos = next;
+  S.gps = next;
+  if (!S._gpsSpreadBuf) S._gpsSpreadBuf = [];
+  S._gpsSpreadBuf.push({ lat: next.lat, lon: next.lon, acc: next.acc });
+  while (S._gpsSpreadBuf.length > 8) S._gpsSpreadBuf.shift();
+  S.fixPos = { lat: next.lat, lon: next.lon };
+  S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
+  let telSnap = null;
+  let navSnap = null;
+  if ($2("hud").classList.contains("on") && S.route?.geometry) {
+    navSnap = getNavSnap(S.smoothedHeading);
+    if (navSnap) telSnap = { lateral: navSnap.lateral, quality: S.snapQuality };
+  }
+  S.navLateral = navSnap?.lateral ?? null;
+  const telCtx = { fix: next, snap: telSnap };
+  feedGpsConverge(next, telCtx);
+  const effAcc = effectiveAccM(next.acc, S._gpsSpreadBuf);
+  if (effAcc != null && effAcc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge("invalidate_acc", telCtx);
+  if ($2("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) {
+    telemetry_default.log("nav", {
+      sub: "snap_lost_long",
+      lat_off: telSnap?.lateral != null ? Math.round(telSnap.lateral) : null,
+      acc: next.acc != null ? Math.round(next.acc * 10) / 10 : null,
+      lost_ms: Math.round(lostDurationMs())
+    });
+  }
+  updateGpsConvergeUI();
+  tickConvergeBlocked(next, telSnap);
+  if ($2("hud").classList.contains("on")) {
+    _onTick();
+    if (S.viewMode !== "hud") tickNavMap({ force: true });
+  }
+  const rcv = Date.now();
+  if (_gpsLost) {
+    _gpsLost = false;
+    telemetry_default.log("nav", { sub: "gps_restored" });
+  }
+  telemetry_default.logFix({
+    lat: next.lat,
+    lon: next.lon,
+    acc: next.acc,
+    speed: next.speed,
+    heading: next.heading,
+    alt: next.alt,
+    ts: next.ts,
+    rcv,
+    dev: speedRes.device,
+    meas: speedRes.meas,
+    spdSrc: speedRes.src,
+    stepM: speedRes.dist,
+    driftM: speedRes.driftM,
+    stepDt: speedRes.dt
+  });
+  telemetry_default.logTrackPoint({
+    lat: next.lat,
+    lon: next.lon,
+    acc: next.acc,
+    speed: next.speed,
+    heading: next.heading,
+    ts: next.ts
+  });
+  if (navSnap) telemetry_default.logSnapFromResult(navSnap);
+}
+function stopWebGps() {
+  if (S.watchId !== null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(S.watchId);
+    S.watchId = null;
+  }
+}
+function startWebGps() {
+  if (!navigator.geolocation) {
+    $2("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
+    $2("s-gps").className = "chip err";
+    return;
+  }
+  stopWebGps();
+  $2("s-gps").textContent = "\u23F3 GPS\u2026";
+  $2("s-gps").className = "chip";
+  S.watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const c = pos.coords;
+      applyGpsFix({
+        lat: c.latitude,
+        lon: c.longitude,
+        speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
+        heading: c.heading == null ? null : c.heading,
+        acc: c.accuracy,
+        alt: c.altitude != null && !isNaN(c.altitude) ? c.altitude : null,
+        ts: pos.timestamp
+      });
+    },
+    onGpsError,
+    { enableHighAccuracy: true, timeout: 15e3, maximumAge: 1e3 }
+  );
+}
+function startGps() {
+  _navMode = false;
+  startHeadingSensors();
+  if (isNative()) {
+    $2("s-gps").textContent = "\u23F3 GPS\u2026";
+    $2("s-gps").className = "chip";
+    stopWebGps();
+    startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+    return;
+  }
+  startWebGps();
+}
+async function startNavigationGps() {
+  if (!isNative()) return;
+  _navMode = true;
+  await startNavGps(applyGpsFix, onGpsError);
+}
+async function stopNavigationGps() {
+  if (!isNative()) return;
+  _navMode = false;
+  await stopNavGps();
+  await startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+}
+var RENDER_POS, _navMode, _gpsLost, _lastGpsRcvMs, _onTick, _onVisual;
+var init_gps = __esm({
+  "js/gps.js"() {
+    init_state();
+    init_geo();
+    init_util();
+    init_platform();
+    init_native_gps();
+    init_heading();
+    init_telemetry();
+    init_route_geometry();
+    init_nav_constants();
+    init_speed_limit();
+    init_roundabout();
+    init_nav_map();
+    init_gps_converge();
+    init_gps_accuracy();
+    init_snap_quality();
+    init_converge_telemetry();
+    init_nav_constants();
+    RENDER_POS = null;
+    _navMode = false;
+    _gpsLost = false;
+    _lastGpsRcvMs = 0;
+    _onTick = () => {
+    };
+    _onVisual = () => {
+    };
   }
 });
 
@@ -26019,7 +26078,6 @@ function prepareRegressionHud(opts) {
   S.smoothedHeading = hdg;
   S.gpsConverged = true;
   S.gpsFixCount = 12;
-  S.compassMode = false;
   S.voice = false;
   S.cams = false;
   S.showElevProfile = false;
@@ -26162,8 +26220,8 @@ async function simBuildRoute() {
 async function simNavAction(kind) {
   const hud = $2("hud");
   if (!hud?.classList.contains("on")) {
-    if (!S.route) {
-      return { ok: false, error: "\u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u043C\u0435\u043D\u044E \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB" };
+    if (!S.gps || !S.finish) {
+      return { ok: false, error: "\u0414\u043E\u0436\u0434\u0438\u0442\u0435\u0441\u044C GPS \u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448 \u0432 \u043C\u0435\u043D\u044E" };
     }
     await startHud();
     if (!$2("hud")?.classList.contains("on")) {
@@ -26180,8 +26238,7 @@ async function simNavAction(kind) {
       exitBearingMode();
     } else {
       if (!S.finish) return { ok: false, error: "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448" };
-      if (!S.gps) return { ok: false, error: "\u041D\u0435\u0442 GPS \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB" };
-      if (!S.route) return { ok: false, error: "\u041D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430" };
+      if (!S.gps) return { ok: false, error: "\u041D\u0435\u0442 GPS" };
       if (!enterBearingMode({ quiet: true })) {
         return { ok: false, error: "\u041F\u0435\u043B\u0435\u043D\u0433 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D" };
       }

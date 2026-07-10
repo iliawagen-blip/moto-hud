@@ -80,7 +80,6 @@ function attachRouteGeometry(route){
   delete route._stepSList;
   ensureRouteGeometry(route);
   S.routeQuality = assessRouteQuality(route);
-  S.compassMode = false;
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();

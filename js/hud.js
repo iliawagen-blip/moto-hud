@@ -10,7 +10,7 @@ import { speak, maneuverText, isTurnStep, isCameraBehind } from './voice.js';
 import { buildArrowSVG, buildTurnArrowSVG } from './render.js';
 import { syncVintageVfdDomClasses, resetVintageVfd } from './vintage-vfd.js';
 import { closeHudSettingsSheet } from './hud-settings-sheet.js';
-import { startVisualLoop, stopVisualLoop, startNavigationGps, stopNavigationGps } from './gps.js';
+import { startVisualLoop, stopVisualLoop, startNavigationGps, stopNavigationGps, checkStartReady } from './gps.js';
 import {
   ensureFuelStations, bestAlongRoute, nearestOverall,
   fuelColor, fuelStatusText, crowdStatusSuffix, recomputeFuelGeometry
@@ -37,7 +37,7 @@ import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide } from './off
 import telemetry from './telemetry.js';
 import { logFunnel } from './telemetry-funnel.js';
 import { tickNavMap, resetViewMode } from './view-mode.js';
-import { isBearingMode, tickBearing, resetBearingMode, syncNavButtons } from './bearing-mode.js';
+import { isBearingMode, tickBearing, resetBearingMode, syncNavButtons, enterBearingMode } from './bearing-mode.js';
 import { syncTripHudBadge } from './trip-ui.js';
 import { formatTripHudExtraLine } from './trip-hud-context.js';
 import { syncTripRefuelHud } from './trip-refuel-hud.js';
@@ -259,15 +259,17 @@ export function onTick(){
       : '⚠ Помехи компаса — курс по GPS';
   }
 
-  if(!S.route){
-    $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
-    updateFinishInfo(0, kmh, now);
+  if(isBearingMode() && S.finish && S.gps){
+    tickBearing(now, kmh);
+    updateFinishInfo(haversine(S.gps, S.finish), kmh, now);
+    tickAutoMode();
+    refreshFuelPanel();
     return;
   }
 
-  if(isBearingMode()){
-    tickBearing(now, kmh);
-    updateFinishInfo(haversine(S.gps, S.finish), kmh, now);
+  if(!S.route){
+    $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
+    updateFinishInfo(0, kmh, now);
     return;
   }
 
@@ -310,34 +312,6 @@ export function onTick(){
 
   const remaining = getRemainingDistance();
   const near = findNearestOnRoute();
-
-  if(S.compassMode && S.finish && S.gps && !isOfflineGuide()){
-    const brg = bearing(S.gps, S.finish);
-    const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading)
-      ? S.smoothedHeading : S.gps.heading;
-    let turn = 0;
-    if(hdg != null && !isNaN(hdg)) turn = ((brg - hdg + 540) % 360) - 180;
-    $('arrow-box').innerHTML = buildTurnArrowSVG(turn);
-    const dFin = haversine(S.gps, S.finish);
-    if(dFin < 1000){
-      $('v-mdist').textContent = Math.max(0, Math.round(dFin / 10) * 10);
-      $('v-mdist-u').textContent = 'м';
-    } else {
-      $('v-mdist').textContent = (dFin / 1000).toFixed(1);
-      $('v-mdist-u').textContent = 'км';
-    }
-    setHudStreetLabels('К ФИНИШУ', hudCurrentStreetLabel(snap));
-    $('rb-exit-label')?.classList.add('hidden');
-    const mid = $('mid-info');
-    const tStr = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
-    const tripX = formatTripHudExtraLine();
-    mid.textContent = tripX ? tStr + ' · ' + tripX : tStr + ' · КОМПАС';
-    updateFinishInfo(remaining, kmh, now);
-    tickAutoMode();
-    checkCamerasILS();
-    refreshFuelPanel();
-    return;
-  }
 
   if(!gpsOk) return;
 
@@ -448,7 +422,7 @@ export function onTick(){
   const tripX = formatTripHudExtraLine();
   let fullMid = tripX ? midLine + ' · ' + tripX : midLine;
   if(snapLost) fullMid += ' · SNAP?';
-  if(S.routeQuality === RouteQuality.LOW && !S.compassMode){
+  if(S.routeQuality === RouteQuality.LOW){
     $('mid-info').textContent = fullMid + ' · НИЗК. OSM';
   } else {
     $('mid-info').textContent = fullMid;
@@ -484,15 +458,16 @@ function r2(n){ return n != null && Number.isFinite(n) ? Math.round(n * 100) / 1
 export async function startHud(){
   clearHudChromeReveal();
   applyHudChrome();
-  if(!S.route){
-    alert('Сначала постройте маршрут');
+  if(!S.gps || !S.finish){
+    alert('Дождитесь GPS и укажите финиш');
     return;
   }
+  const hasRoute = !!(S.route?.coords?.length);
   saveLastRun();
   if(telemetry.isEnabled()){
-    telemetry.start({ routeKm: S.route?.distance ? r2(S.route.distance / 1000) : null });
+    telemetry.start({ routeKm: hasRoute && S.route?.distance ? r2(S.route.distance / 1000) : null });
     telemetry.updateMarkButtonVisibility();
-    logFunnel('ride_start', { routeKm: S.route?.distance ? r2(S.route.distance / 1000) : null });
+    logFunnel('ride_start', { routeKm: hasRoute && S.route?.distance ? r2(S.route.distance / 1000) : null });
   }
   resetConvergeTelemetryRide();
   if(isTrackRecordEnabled()) startTrackRecorder();
@@ -506,8 +481,10 @@ export async function startHud(){
   resetCurveRibbonState();
   resetSpeedLimitState();
   resetRoundaboutState();
-  ensureRouteGeometry(S.route);
-  seedSnapFromGps({ relaxed: true });
+  if(hasRoute){
+    ensureRouteGeometry(S.route);
+    seedSnapFromGps({ relaxed: true });
+  }
   $('setup').style.display = 'none';
   $('setup').style.zIndex = '30';
   $('hud').classList.add('on');
@@ -516,16 +493,25 @@ export async function startHud(){
   resetVintageVfd();
   syncVintageVfdDomClasses();
   updateCamStatusUI();
-  loadCameras(); // фоном, не блокирует старт
+  if(hasRoute) loadCameras();
   acquireWakeLock();
   try{ await startNavigationGps(); }catch(e){ console.warn('FGS GPS:', e); }
   if(window.__SIM__?.onNavigationStart) window.__SIM__.onNavigationStart();
   requestAppFullscreen();
-  speak('Маршрут построен. В пути ' + Math.round(S.route.duration / 60) + ' минут');
   S.dispSpeed = S.gps?.speed > 0 ? Math.min(S.gps.speed * 3.6, 198) : 0;
-  S.navMode = 'route';
-  syncNavButtons();
-  tickSpeedLimit(getNavSnap(S.smoothedHeading));
+  if(hasRoute){
+    speak('Маршрут построен. В пути ' + Math.round(S.route.duration / 60) + ' минут');
+    S.navMode = 'route';
+    syncNavButtons();
+    tickSpeedLimit(getNavSnap(S.smoothedHeading));
+  }else{
+    enterBearingMode({ quiet: true });
+    const d = haversine(S.gps, S.finish);
+    const distSpeech = d < 1000
+      ? Math.max(0, Math.round(d / 10) * 10) + ' метров'
+      : (d / 1000).toFixed(1) + ' километров';
+    speak('Пеленг к цели. До финиша ' + distSpeech);
+  }
   onTick();
   startVisualLoop();
 }
@@ -554,8 +540,7 @@ export async function stopHud(){
   clearHudChromeReveal();
   $('setup').style.display = 'block';
   renderFavs();
-  const goBar = $('go-bar');
-  if(goBar) goBar.classList.toggle('hidden', !(S.route && S.route.coords?.length));
+  checkStartReady();
   releaseWakeLock();
   clearVoiceQueue();
   resetOffRouteMachine();

@@ -396,6 +396,31 @@ async function runDesktop(page){
   await page.click('#btn-sim-path');
   await page.waitForTimeout(200);
 
+  // ПЕЛЕНГ
+  await page.click('#btn-sim-bearing');
+  await page.waitForTimeout(400);
+  navDbg = await page.evaluate(() => document.getElementById('hud-nav-debug')?.textContent || '');
+  const bearingState = await page.evaluate(() => {
+    const win = document.getElementById('frame')?.contentWindow;
+    const doc = win?.document;
+    const S = win?.__motoHUD?.S;
+    const bv = doc?.getElementById('bearing-view');
+    const hidden = bv?.classList.contains('hidden');
+    return {
+      navMode: S?.navMode,
+      bearingVisible: bv && !hidden,
+      label: doc?.getElementById('bearing-label')?.textContent?.trim(),
+      dist: doc?.getElementById('bearing-distance')?.textContent?.trim()
+    };
+  });
+  log(/nav:\s*bearing/.test(navDbg) && bearingState.bearingVisible,
+    'Нав: ПЕЛЕНГ → bearing-view', JSON.stringify({ navDbg, ...bearingState }));
+
+  await page.click('#btn-sim-path');
+  await page.waitForTimeout(300);
+  navDbg = await page.evaluate(() => document.getElementById('hud-nav-debug')?.textContent || '');
+  log(/nav:\s*route/.test(navDbg), 'Нав: ДОР → выход из пеленга', navDbg);
+
   // Старт HUD (ПОЕХАЛИ) — повторная проверка
   try{
     await startHudInFrame(page);

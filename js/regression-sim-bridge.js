@@ -73,7 +73,6 @@ export function prepareRegressionHud(opts){
   S.smoothedHeading = hdg;
   S.gpsConverged = true;
   S.gpsFixCount = 12;
-  S.compassMode = false;
   S.voice = false;
   S.cams = false;
   S.showElevProfile = false;

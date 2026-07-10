@@ -28,6 +28,7 @@ import { SNAP_HEADING_MAX_AGE_MS } from './nav-constants.js';
 let RENDER_POS = null;
 let _navMode = false;
 let _gpsLost = false;
+let _lastGpsRcvMs = 0;
 
 export function curPos(){ return RENDER_POS || S.gps; }
 
@@ -171,10 +172,30 @@ function updateGpsConvergeUI(){
 }
 
 export function checkStartReady(){
-  const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
-  $('btn-start').disabled = !(S.gps && S.finish && hasRoute);
+  const ready = !!(S.gps && S.finish);
+  $('btn-start').disabled = !ready;
   const buildBtn = $('btn-build-route');
-  if(buildBtn) buildBtn.disabled = !(S.gps && S.finish);
+  if(buildBtn) buildBtn.disabled = !ready;
+  const goBar = $('go-bar');
+  if(goBar){
+    goBar.classList.toggle('hidden', !ready);
+    $('setup')?.classList.toggle('has-go-bar', ready);
+  }
+  if(ready){
+    import('./setup.js').then(m => m.updateBearingStartHint?.()).catch(() => {});
+  }
+}
+
+/** Возраст последнего GPS-fix, мс (для пеленга и предупреждений). */
+export function getGpsFixAgeMs(){
+  if(!S.gps) return Infinity;
+  if(_lastGpsRcvMs > 0) return Math.max(0, Date.now() - _lastGpsRcvMs);
+  if(S.gps.ts) return Math.max(0, Date.now() - S.gps.ts);
+  return Infinity;
+}
+
+export function isGpsFixStale(maxMs = 5000){
+  return getGpsFixAgeMs() > maxMs;
 }
 
 function onGpsError(){
@@ -216,6 +237,7 @@ export function applyGpsFix(next){
       S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
     }
   }
+  _lastGpsRcvMs = Date.now();
   S.lastPos = next;
   S.gps = next;
   if(!S._gpsSpreadBuf) S._gpsSpreadBuf = [];

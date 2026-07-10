@@ -242,7 +242,7 @@ function tryReturnOnRoute(feed){
 }
 
 export function tickOffRouteMachine(feed){
-  if(isBearingMode() || S.compassMode || feed.lateral == null || !S.route) return;
+  if(isBearingMode() || feed.lateral == null || !S.route) return;
 
   const now = Date.now();
   const dtMs = _ctx.lastFeedMs ? Math.min(3000, simScaledDelta(now - _ctx.lastFeedMs)) : 0;

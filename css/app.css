@@ -989,6 +989,9 @@ html[data-file-protocol="1"] .headrow::after{
 }
 .bearing-view.hidden{display:none!important}
 #hud.nav-bearing .block-path{display:none!important}
+#hud.nav-bearing .street-turn,
+#hud.nav-bearing .street-current{display:none!important}
+#hud.nav-bearing .bearing-label.bearing-label--warn{color:var(--sem-warn)}
 #hud.nav-bearing #camAlert,#hud.nav-bearing #offRouteWarn{display:none!important}
 .finish-info.bearing-hide-eta #fi-eta-line{display:none}
 .bearing-mode-badge{

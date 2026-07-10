@@ -6,7 +6,9 @@ import { S } from './state.js';
 import { $ } from './util.js';
 import { bearing, haversine } from './geo.js';
 import { setViewMode } from './view-mode.js';
-import { getSensorHeading, fuseHeading, getHeadingHealth } from './heading.js';
+import { getSensorHeading, fuseHeading, getHeadingHealth, getCompassCalibrationAgeMs } from './heading.js';
+import { isGpsFixStale } from './gps.js';
+import { speak } from './voice.js';
 import telemetry from './telemetry.js';
 
 const ARRIVED_M = 30;
@@ -16,10 +18,13 @@ const GPS_HEADING_MIN_KMH = 8;
 const COMPASS_PREF_MAX_KMH = 5;
 const COMPASS_PREF_ACC_M = 20;
 const ARROW_SMOOTH = 0.18;
+const GPS_LOST_MS = 5000;
+const CAL_WARN_MS = 7 * 86400000;
 
 let _smoothRel = 0;
 let _bound = false;
 let _lastTickLog = 0;
+let _arrivedSpoken = false;
 
 const BEARING_ICON_SVG =
   '<svg class="bearing-icon-svg" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">' +
@@ -144,6 +149,13 @@ export function syncNavButtons(){
   bearingBtn?.classList.toggle('hud-btn--active', isBearingMode());
 }
 
+export function maybeShowCalibrationBanner(){
+  const banner = $('bearing-cal-banner');
+  if(!banner) return;
+  const stale = getCompassCalibrationAgeMs() > CAL_WARN_MS;
+  banner.classList.toggle('hidden', !isBearingMode() || !stale);
+}
+
 export function enterBearingMode(opts = {}){
   const quiet = !!opts.quiet;
   if(!S.finish){
@@ -154,17 +166,15 @@ export function enterBearingMode(opts = {}){
     if(!quiet) alert('Нет GPS');
     return false;
   }
-  if(!S.route){
-    if(!quiet) alert('Сначала постройте маршрут или укажите финиш');
-    return false;
-  }
   S.navMode = 'bearing';
   setViewMode('hud');
   _smoothRel = 0;
+  _arrivedSpoken = false;
   applyBearingLayout(true);
   syncNavButtons();
+  maybeShowCalibrationBanner();
   if(telemetry.isActive?.()){
-    telemetry.log('nav', { sub: 'bearing_enter' });
+    telemetry.log('nav', { sub: 'bearing_enter', has_route: !!(S.route?.coords?.length) });
   }
   return true;
 }
@@ -172,8 +182,10 @@ export function enterBearingMode(opts = {}){
 export function exitBearingMode(){
   if(S.navMode !== 'bearing') return;
   S.navMode = 'route';
+  _arrivedSpoken = false;
   applyBearingLayout(false);
   syncNavButtons();
+  $('bearing-cal-banner')?.classList.add('hidden');
   if(telemetry.isActive?.()){
     telemetry.log('nav', { sub: 'bearing_exit' });
   }
@@ -209,14 +221,23 @@ export function tickBearing(now, kmh){
   const gps = S.gps;
   const target = getBearingTarget();
   const hdg = getEffectiveHeading(gps);
+  const gpsLost = isGpsFixStale(GPS_LOST_MS);
   const mid = $('mid-info');
   const tStr = S.startTs ? 'T+' + fmtRideTime((Date.now() - S.startTs) / 1000) : '—';
-  if(mid) mid.textContent = tStr + ' · ПЕЛЕНГ';
+  if(mid){
+    mid.textContent = tStr + ' · ПЕЛЕНГ' + (gpsLost ? ' · GPS?' : '');
+  }
+  maybeShowCalibrationBanner();
 
-  if(!target || !gps){
-    renderBearingArrow(0, '—', { dim: true });
+  if(!target || !gps || gpsLost){
+    renderBearingArrow(0, gpsLost ? 'GPS потерян' : '—', { dim: true });
     const distEl = $('bearing-distance');
     if(distEl) distEl.textContent = '—';
+    const labelEl = $('bearing-label');
+    if(labelEl){
+      labelEl.textContent = gpsLost ? 'НЕТ GPS' : '—';
+      labelEl.classList.toggle('bearing-label--warn', gpsLost);
+    }
     return;
   }
 
@@ -225,7 +246,10 @@ export function tickBearing(now, kmh){
 
   _smoothRel += (res.bearingRel - _smoothRel) * ARROW_SMOOTH;
   const labelEl = $('bearing-label');
-  if(labelEl) labelEl.textContent = res.state.label;
+  if(labelEl){
+    labelEl.textContent = res.state.label;
+    labelEl.classList.toggle('bearing-label--warn', res.state.uTurn || gpsLost);
+  }
 
   renderBearingArrow(_smoothRel, res.state.uTurn ? 'РАЗВОРОТ' : '', {
     uTurn: res.state.uTurn,
@@ -238,6 +262,11 @@ export function tickBearing(now, kmh){
     distEl.innerHTML = fmt.u
       ? '<span class="bearing-dist-val">' + fmt.v + '</span><span class="bearing-dist-u">' + fmt.u + '</span>'
       : fmt.v;
+  }
+
+  if(res.state.arrived && !_arrivedSpoken){
+    _arrivedSpoken = true;
+    speak('Вы у цели');
   }
 
   const meta = $('bearing-heading-meta');
@@ -254,7 +283,8 @@ export function tickBearing(now, kmh){
       sub: 'bearing_tick',
       dist_m: Math.round(res.distanceM),
       rel: Math.round(_smoothRel),
-      hdg: hdg != null ? Math.round(hdg) : null
+      hdg: hdg != null ? Math.round(hdg) : null,
+      gps_lost: gpsLost
     });
   }
 }

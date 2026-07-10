@@ -31,6 +31,8 @@ let forceGps = false;
 let disagreeSince = 0;
 let calibratingUntil = 0;
 
+const COMPASS_CAL_KEY = 'moto-hud-compass-cal-ts';
+
 const DISAGREE_DEG = 55;
 const DISAGREE_MS = 4500;
 const RECOVER_DEG = 28;
@@ -106,7 +108,21 @@ export function startCompassCalibration(durationMs = 15000){
   calibratingUntil = Date.now() + durationMs;
   forceGps = false;
   disagreeSince = 0;
+  recordCompassCalibration();
   startHeadingSensors();
+}
+
+/** Запись времени последней калибровки компаса (localStorage). */
+export function recordCompassCalibration(){
+  try{ localStorage.setItem(COMPASS_CAL_KEY, String(Date.now())); }catch(e){}
+}
+
+/** Возраст последней калибровки, мс; Infinity если не было. */
+export function getCompassCalibrationAgeMs(){
+  try{
+    const ts = parseInt(localStorage.getItem(COMPASS_CAL_KEY) || '0', 10);
+    return ts > 0 ? Date.now() - ts : Infinity;
+  }catch(e){ return Infinity; }
 }
 
 export function isCalibrating(){

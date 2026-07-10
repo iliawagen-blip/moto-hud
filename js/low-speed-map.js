@@ -18,7 +18,7 @@ let _userPinned = false;
 let _offRoadSince = 0;
 
 function canUseLowSpeedMap(waitConverge){
-  return !!$('hud')?.classList.contains('on') && !!S.route && !waitConverge && !S.compassMode && !isBearingMode();
+  return !!$('hud')?.classList.contains('on') && !!S.route && !waitConverge && !isBearingMode();
 }
 
 /**

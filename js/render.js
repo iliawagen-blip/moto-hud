@@ -482,7 +482,7 @@ export function renderPathway(){
   const waitConverge = !hasEverConverged() && S.gpsConverged === false;
   const pathCtx = { lateral: S.navLateral };
 
-  if(!S.showPath || waitConverge || S.compassMode || isBearingMode()){
+  if(!S.showPath || waitConverge || isBearingMode()){
     block.classList.add('hidden');
     hud.classList.add('no-path');
     svg.innerHTML = '';

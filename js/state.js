@@ -29,7 +29,6 @@ export const S = {
   routeQuality: 'OK',
   /** 'route' | 'bearing' — пеленг вне цикла viewMode */
   navMode: 'route',
-  compassMode: false,
   routerBackend: 'osrm',
   rerouting: false,
   rerouteBackoffStep: 0,

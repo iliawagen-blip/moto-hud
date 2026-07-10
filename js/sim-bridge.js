@@ -133,8 +133,8 @@ export async function simBuildRoute(){
 export async function simNavAction(kind){
   const hud = $('hud');
   if(!hud?.classList.contains('on')){
-    if(!S.route){
-      return { ok: false, error: 'Постройте маршрут в меню и нажмите «ПОЕХАЛИ»' };
+    if(!S.gps || !S.finish){
+      return { ok: false, error: 'Дождитесь GPS и укажите финиш в меню' };
     }
     await startHud();
     if(!$('hud')?.classList.contains('on')){
@@ -153,8 +153,7 @@ export async function simNavAction(kind){
       exitBearingMode();
     }else{
       if(!S.finish) return { ok: false, error: 'Укажите финиш' };
-      if(!S.gps) return { ok: false, error: 'Нет GPS — нажмите «ПОЕХАЛИ»' };
-      if(!S.route) return { ok: false, error: 'Нет маршрута' };
+      if(!S.gps) return { ok: false, error: 'Нет GPS' };
       if(!enterBearingMode({ quiet: true })){
         return { ok: false, error: 'Пеленг недоступен' };
       }
