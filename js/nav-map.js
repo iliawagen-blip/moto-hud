@@ -9,7 +9,8 @@ import { curPos } from './gps.js';
 import { geometryToLatLngs, latLngsSliceByS, getNavSnap } from './route-geometry.js';
 import { getMapProviderId, resolveMapLayers } from './map-providers.js';
 import { findNextManeuver } from './route.js';
-import { LOW_SPEED_MAP_ZOOM } from './nav-constants.js';
+import { LOW_SPEED_MAP_ZOOM, OFF_ROUTE_EXIT_M } from './nav-constants.js';
+import { SnapQuality } from './snap-quality.js';
 
 let _map = null;
 let _tileLayer = null;
@@ -24,6 +25,17 @@ let _lastMapSync = 0;
 
 function livePos(){
   return curPos() || S.gps;
+}
+
+/** Маркер на карте: snap к линии маршрута, если на дороге (GPS часто +6–12 м вбок). */
+function mapDisplayPos(){
+  const raw = livePos();
+  if(!raw || !S.route?.geometry) return raw;
+  const snap = getNavSnap(S.smoothedHeading);
+  if(!snap?.lat || snap.lon == null) return raw;
+  if(S.snapQuality === SnapQuality.LOST) return raw;
+  if((snap.lateral ?? 999) > OFF_ROUTE_EXIT_M) return raw;
+  return { ...raw, lat: snap.lat, lon: snap.lon };
 }
 
 function routeLatLngs(){
@@ -78,7 +90,7 @@ function fitOverview(){
   const map = ensureMap();
   if(!map) return;
   const pts = remainingLatLngs();
-  const pos = curPos();
+  const pos = mapDisplayPos();
   if(pos) pts.push([pos.lat, pos.lon]);
   if(S.finish) pts.push([S.finish.lat, S.finish.lon]);
   if(pts.length < 1) return;
@@ -96,7 +108,7 @@ export function syncNavMap(mode){
 
   _routeLayer.setLatLngs(routeLatLngs());
 
-  const pos = livePos();
+  const pos = mapDisplayPos();
   if(pos){
     _posMarker.setLatLng([pos.lat, pos.lon]);
     if(typeof _posMarker.redraw === 'function') _posMarker.redraw();

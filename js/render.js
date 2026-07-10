@@ -16,7 +16,7 @@ import {
 } from './route-geometry.js';
 import { hasEverConverged } from './gps-converge.js';
 import { PATH_SKIP_DS_M, PATH_SKIP_FRAMES } from './nav-constants.js';
-import { getPathMinSpeedKmh, tickLowSpeedMap } from './low-speed-map.js';
+import { tickLowSpeedMap, isAutoMapActive } from './low-speed-map.js';
 
 let _pathLastS = null;
 let _pathSkipFrames = 0;
@@ -479,15 +479,25 @@ export function renderPathway(){
   const hud = $('hud');
   const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
   const waitConverge = !hasEverConverged() && S.gpsConverged === false;
-  const pathMinKmh = getPathMinSpeedKmh();
-  if(!S.showPath || kmh < pathMinKmh || waitConverge || S.compassMode){
+  const pathCtx = { lateral: S.navLateral };
+
+  if(!S.showPath || waitConverge || S.compassMode){
     block.classList.add('hidden');
     hud.classList.add('no-path');
     svg.innerHTML = '';
-    tickLowSpeedMap(kmh, waitConverge);
+    tickLowSpeedMap(kmh, waitConverge, pathCtx);
     return;
   }
-  tickLowSpeedMap(kmh, waitConverge);
+
+  tickLowSpeedMap(kmh, waitConverge, pathCtx);
+
+  if(isAutoMapActive()){
+    block.classList.add('hidden');
+    hud.classList.add('no-path');
+    svg.innerHTML = '';
+    return;
+  }
+
   block.classList.remove('hidden');
   hud.classList.remove('no-path');
 

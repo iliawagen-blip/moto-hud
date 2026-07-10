@@ -200,6 +200,8 @@ var init_state = __esm({
       rerouting: false,
       rerouteBackoffStep: 0,
       rerouteBackoffUntil: 0,
+      /** Lateral offset from route snap, м (для автокарты во дворах) */
+      navLateral: null,
       viewMode: "hud",
       lastAppliedClipboardHash: "",
       watchId: null,
@@ -219,8 +221,9 @@ var init_state = __esm({
       showPathChevrons: true,
       pathChevronLabels: true,
       pathChevronMax: DEFAULT_PATH_CHEVRON_MAX,
-      /** Мин. скорость для прогноз-дорожки (км/ч); ниже — карта во дворах */
+      /** @deprecated сохранено для старых настроек */
       pathMinSpeedKmh: DEFAULT_PATH_MIN_SPEED_KMH,
+      /** Автокарта вне маршрута (дворы) */
       lowSpeedMap: true,
       showElevProfile: true,
       elevExag: 1.8,
@@ -1402,7 +1405,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, LOW_SPEED_MAP_EXIT_PAD_KMH, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, OFF_ROAD_MAP_ENTER_MS, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1466,15 +1469,14 @@ var init_nav_constants = __esm({
     ROUTE_LOW_MANEUVER_PER_KM = 25;
     FUSION_GPS_WEIGHT_MIN = 0.02;
     FUSION_GPS_WEIGHT_SPAN = 25;
+    OFF_ROAD_MAP_ENTER_MS = 1500;
     LOW_SPEED_MAP_ZOOM = 18;
-    LOW_SPEED_MAP_EXIT_PAD_KMH = 2;
     PATH_SKIP_DS_M = 2;
     PATH_SKIP_FRAMES = 2;
     GPS_INVALIDATE_ACC_M = 50;
     GPS_LOST_RECONVERGE_MS = 6e4;
     GPS_SPEED_MAX_MPS = 55;
     GPS_SPEED_ACC_TRUST_M = 25;
-    GPS_SPEED_STATIONARY_DIST_M = 12;
     GPS_SPEED_MEAS_MIN_DIST_M = 1.5;
     GPS_SPEED_DEVICE_MEAS_RATIO = 2.5;
     SPEED_LIMIT_LOOKAHEAD_M = 300;
@@ -2196,7 +2198,7 @@ var init_telemetry = __esm({
       /** @param {object} fix */
       logFix(fix) {
         if (!_active) return;
-        log("fix", {
+        const ev = {
           lat: r6(fix.lat),
           lon: r6(fix.lon),
           acc: r2(fix.acc),
@@ -2205,7 +2207,14 @@ var init_telemetry = __esm({
           alt: fix.alt != null ? r2(fix.alt) : null,
           ts: fix.ts,
           rcv: fix.rcv ?? Date.now()
-        });
+        };
+        if (fix.dev != null && Number.isFinite(fix.dev)) ev.dev = r2(fix.dev);
+        if (fix.meas != null && Number.isFinite(fix.meas)) ev.meas = r2(fix.meas);
+        if (fix.spdSrc) ev.spd_src = fix.spdSrc;
+        if (fix.stepM != null && Number.isFinite(fix.stepM)) ev.step_m = r2(fix.stepM);
+        if (fix.driftM != null && Number.isFinite(fix.driftM)) ev.drift_m = r2(fix.driftM);
+        if (fix.stepDt != null && Number.isFinite(fix.stepDt)) ev.step_dt = r2(fix.stepDt);
+        log("fix", ev);
       }
     };
     telemetry_default = telemetry;
@@ -16383,6 +16392,15 @@ var init_map_providers = __esm({
 function livePos() {
   return curPos() || S.gps;
 }
+function mapDisplayPos() {
+  const raw = livePos();
+  if (!raw || !S.route?.geometry) return raw;
+  const snap = getNavSnap(S.smoothedHeading);
+  if (!snap?.lat || snap.lon == null) return raw;
+  if (S.snapQuality === SnapQuality.LOST) return raw;
+  if ((snap.lateral ?? 999) > OFF_ROUTE_EXIT_M) return raw;
+  return { ...raw, lat: snap.lat, lon: snap.lon };
+}
 function routeLatLngs() {
   const route = S.route;
   if (!route) return [];
@@ -16447,7 +16465,7 @@ function fitOverview() {
   const map = ensureMap();
   if (!map) return;
   const pts = remainingLatLngs();
-  const pos = curPos();
+  const pos = mapDisplayPos();
   if (pos) pts.push([pos.lat, pos.lon]);
   if (S.finish) pts.push([S.finish.lat, S.finish.lon]);
   if (pts.length < 1) return;
@@ -16460,7 +16478,7 @@ function syncNavMap(mode) {
   map.invalidateSize();
   if (typeof map.start === "function") map.start();
   _routeLayer.setLatLngs(routeLatLngs());
-  const pos = livePos();
+  const pos = mapDisplayPos();
   if (pos) {
     _posMarker.setLatLng([pos.lat, pos.lon]);
     if (typeof _posMarker.redraw === "function") _posMarker.redraw();
@@ -16524,6 +16542,7 @@ var init_nav_map = __esm({
     init_map_providers();
     init_route();
     init_nav_constants();
+    init_snap_quality();
     _map = null;
     _tileLayer = null;
     _overlayLayer = null;
@@ -16943,25 +16962,32 @@ function resolveGpsSpeed(next, prev) {
   const device = next.speed != null && !isNaN(next.speed) && next.speed >= 0 ? next.speed : null;
   let meas = 0;
   let dist = 0;
+  let dt = 0;
   if (prev) {
-    const dt = (next.ts - prev.ts) / 1e3;
+    dt = (next.ts - prev.ts) / 1e3;
     if (dt > 0.15 && dt < 12) {
       dist = haversine(prev, next);
-      if (dist >= GPS_SPEED_MEAS_MIN_DIST_M && dist < 500) meas = dist / dt;
+      const measFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
+      if (dist >= measFloor && dist < 500) meas = dist / dt;
     }
   }
-  const noiseRadius = Math.max(GPS_SPEED_STATIONARY_DIST_M, acc * 0.55);
-  if (prev && dist < noiseRadius) return 0;
-  if (device != null && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
+  const driftFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
+  const driftM = acc <= GPS_SPEED_ACC_TRUST_M ? driftFloor : Math.max(driftFloor, acc * 0.55);
+  const base = { device, meas, dist, driftM, dt };
+  if (prev && dist < driftM && (device == null || device < 0.5)) {
+    return { ...base, mps: 0, src: "drift" };
+  }
+  if (device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
     if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
-      return device;
+      return { ...base, mps: device, src: "device" };
     }
   }
   if (meas > GPS_SPEED_MAX_MPS) meas = 0;
   if (meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)) {
-    return S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+    const mps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+    return { ...base, meas, mps, src: "meas" };
   }
-  return 0;
+  return { ...base, mps: 0, src: "zero" };
 }
 function initGps(callbacks) {
   _onTick = callbacks.onTick || _onTick;
@@ -17046,9 +17072,9 @@ function applyGpsFix(next) {
       next.heading = bearing(S.lastPos, next);
     }
   }
-  const resolved = resolveGpsSpeed(next, S.lastPos);
-  S.measSpeed = resolved;
-  next.speed = resolved;
+  const speedRes = resolveGpsSpeed(next, S.lastPos);
+  S.measSpeed = speedRes.mps;
+  next.speed = speedRes.mps;
   updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
   const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
   if (fused != null && !isNaN(fused)) next.heading = fused;
@@ -17078,6 +17104,7 @@ function applyGpsFix(next) {
     navSnap = getNavSnap(S.smoothedHeading);
     if (navSnap) telSnap = { lateral: navSnap.lateral, quality: S.snapQuality };
   }
+  S.navLateral = navSnap?.lateral ?? null;
   const telCtx = { fix: next, snap: telSnap };
   feedGpsConverge(next, telCtx);
   const effAcc = effectiveAccM(next.acc, S._gpsSpreadBuf);
@@ -17109,7 +17136,13 @@ function applyGpsFix(next) {
     heading: next.heading,
     alt: next.alt,
     ts: next.ts,
-    rcv
+    rcv,
+    dev: speedRes.device,
+    meas: speedRes.meas,
+    spdSrc: speedRes.src,
+    stepM: speedRes.dist,
+    driftM: speedRes.driftM,
+    stepDt: speedRes.dt
   });
   telemetry_default.logTrackPoint({
     lat: next.lat,
@@ -17202,6 +17235,263 @@ var init_gps = __esm({
     _onTick = () => {
     };
     _onVisual = () => {
+    };
+  }
+});
+
+// js/sim-time-scale.js
+function getSimTimeScale() {
+  if (typeof globalThis === "undefined") return DEFAULT_SCALE;
+  const w = globalThis;
+  const s2 = w.SIM_TIME_SCALE;
+  if (s2 == null || s2 === "" || Number(s2) <= 0) return DEFAULT_SCALE;
+  return Number(s2);
+}
+function simScaledDelta(realDeltaMs) {
+  return realDeltaMs * getSimTimeScale();
+}
+function resetSimTimeEpoch() {
+  _simEpochReal = null;
+  _simEpochSim = null;
+}
+var DEFAULT_SCALE, _simEpochReal, _simEpochSim;
+var init_sim_time_scale = __esm({
+  "js/sim-time-scale.js"() {
+    DEFAULT_SCALE = 1;
+    _simEpochReal = null;
+    _simEpochSim = null;
+  }
+});
+
+// js/offroute.js
+function clearOffRouteWarn() {
+  const el = $2("offRouteWarn");
+  if (!el) return;
+  el.classList.remove("on");
+  el.textContent = OFF_ROUTE_WARN_OK;
+}
+function showRerouteOk() {
+  const el = $2("offRouteWarn");
+  if (!el) return;
+  el.textContent = OFF_ROUTE_WARN_OK;
+  el.classList.add("on");
+  setTimeout(() => clearOffRouteWarn(), 2e3);
+}
+function showOfflineWarn() {
+  const el = $2("offRouteWarn");
+  if (!el) return;
+  el.textContent = OFF_ROUTE_WARN_FAIL;
+  el.classList.add("on");
+}
+function resetBackoff() {
+  S.rerouteBackoffStep = 0;
+  S.rerouteBackoffUntil = 0;
+}
+function resetSuspectCtx() {
+  _ctx.confirmMs = 0;
+  _ctx.suspectDistM = 0;
+  _ctx.headingDivergeSince = 0;
+}
+function resetOfflineCtx() {
+  _ctx.offlineEntryVoice = false;
+  _ctx.offlineVoiceBucket = null;
+}
+function resetCtx() {
+  resetSuspectCtx();
+  resetOfflineCtx();
+  _ctx.lastFeedMs = 0;
+  _ctx.rerouteBusy = false;
+}
+function resetOffRouteMachine() {
+  S.offRouteState = OffRouteState.ON_ROUTE;
+  resetBackoff();
+  resetCtx();
+  clearOffRouteWarn();
+}
+function isOfflineGuide() {
+  return S.offRouteState === OffRouteState.OFFLINE_GUIDE;
+}
+function transition(from, to, meta) {
+  S.offRouteState = to;
+  telemetry_default.log("nav", {
+    sub: "offroute_state",
+    from,
+    to,
+    lateral: meta.lateral,
+    spd: meta.spd,
+    trigger: meta.trigger || void 0
+  });
+}
+function metaFromFeed(feed) {
+  return {
+    lateral: feed.lateral,
+    spd: feed.spdKmh,
+    trigger: feed.trigger
+  };
+}
+function confirmDistForSpeed(spdMps) {
+  return spdMps > OFF_ROUTE_HIGH_SPD_MPS ? OFF_ROUTE_CONFIRM_DIST_HIGH_M : OFF_ROUTE_CONFIRM_DIST_M;
+}
+function confirmMsForSpeed(spdMps) {
+  return spdMps > OFF_ROUTE_HIGH_SPD_MPS ? OFF_ROUTE_CONFIRM_MS_HIGH_SPD : OFF_ROUTE_CONFIRM_MS;
+}
+function headingDiverged(feed, now) {
+  if (feed.spdMps <= OFF_ROUTE_HEADING_MIN_SPD) return false;
+  if (feed.heading == null || isNaN(feed.heading)) return false;
+  if (feed.tangent == null || isNaN(feed.tangent)) return false;
+  if (angleDiff(feed.heading, feed.tangent) <= OFF_ROUTE_HEADING_DIVERGE_DEG) return false;
+  if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
+  return simScaledDelta(now - _ctx.headingDivergeSince) >= OFF_ROUTE_HEADING_DIVERGE_MS;
+}
+function canTriggerReroute(feed, now) {
+  const distNeed = confirmDistForSpeed(feed.spdMps);
+  const msNeed = confirmMsForSpeed(feed.spdMps);
+  const distOk = _ctx.suspectDistM >= distNeed;
+  const timeOk = _ctx.confirmMs >= msNeed;
+  const hdgOk = headingDiverged(feed, now);
+  const snapBad = S.snapQuality !== SnapQuality.GOOD || feed.lateral != null && feed.lateral > 80;
+  if (!snapBad) return null;
+  if (distOk && hdgOk) return "dist_heading";
+  if (distOk && timeOk && hdgOk) return "conjunct";
+  if (timeOk && hdgOk && feed.lateral > OFF_ROUTE_ENTER_M) return "time_heading";
+  return null;
+}
+function enterOfflineGuide(feed) {
+  showOfflineWarn();
+  resetSuspectCtx();
+  resetOfflineCtx();
+  tickOfflineGuideVoice(feed.lateral);
+}
+function tickOfflineGuideVoice(lateral) {
+  if (!S.voice || lateral == null) return;
+  if (!_ctx.offlineEntryVoice) {
+    _ctx.offlineEntryVoice = true;
+    _ctx.offlineVoiceBucket = Math.ceil(lateral / OFFLINE_VOICE_STEP_M) * OFFLINE_VOICE_STEP_M;
+    speak("\u041D\u0435\u0442 \u0441\u0432\u044F\u0437\u0438. \u0412\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u044E \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
+    S.lastVoiceTs = Date.now();
+    return;
+  }
+  const bucket = Math.ceil(lateral / OFFLINE_VOICE_STEP_M) * OFFLINE_VOICE_STEP_M;
+  if (_ctx.offlineVoiceBucket == null) _ctx.offlineVoiceBucket = bucket;
+  if (bucket <= _ctx.offlineVoiceBucket - OFFLINE_VOICE_STEP_M) {
+    _ctx.offlineVoiceBucket = bucket;
+    if (Date.now() - S.lastVoiceTs < 3e3) return;
+    speak("\u0414\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 " + Math.round(lateral) + " \u043C\u0435\u0442\u0440\u043E\u0432");
+    S.lastVoiceTs = Date.now();
+  }
+}
+function beginReroute(fromState, feed, trigger) {
+  if (globalThis.__REGRESSION_SIM__?.disableReroute) {
+    transition(fromState, OffRouteState.OFFLINE_GUIDE, { ...metaFromFeed(feed), trigger });
+    enterOfflineGuide(feed);
+    return;
+  }
+  if (_ctx.rerouteBusy || S.offRouteState === OffRouteState.REROUTING) return;
+  _ctx.rerouteBusy = true;
+  transition(fromState, OffRouteState.REROUTING, { ...metaFromFeed(feed), trigger });
+  recalcRoute().then((ok) => {
+    _ctx.rerouteBusy = false;
+    if (ok) {
+      transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, metaFromFeed(feed));
+      resetBackoff();
+      resetSuspectCtx();
+      showRerouteOk();
+    } else {
+      transition(OffRouteState.REROUTING, OffRouteState.OFFLINE_GUIDE, metaFromFeed(feed));
+      enterOfflineGuide(feed);
+    }
+  });
+}
+function tickSuspectConfirm(feed, inDeadZone) {
+  if (inDeadZone) return;
+  const now = Date.now();
+  const dtMs = feed.dtMs || 0;
+  _ctx.confirmMs += dtMs;
+  if (feed.spdMps > 0) _ctx.suspectDistM += feed.spdMps * (dtMs / 1e3);
+  if (feed.spdMps > OFF_ROUTE_HEADING_MIN_SPD && feed.heading != null && !isNaN(feed.heading) && feed.tangent != null && !isNaN(feed.tangent)) {
+    if (angleDiff(feed.heading, feed.tangent) > OFF_ROUTE_HEADING_DIVERGE_DEG) {
+      if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
+    } else {
+      _ctx.headingDivergeSince = 0;
+    }
+  } else {
+    _ctx.headingDivergeSince = 0;
+  }
+  const trigger = canTriggerReroute(feed, now);
+  if (!trigger) return;
+  if (S.rerouteBackoffUntil && Date.now() < S.rerouteBackoffUntil) return;
+  beginReroute(OffRouteState.SUSPECT, { ...feed, trigger }, trigger);
+}
+function tryReturnOnRoute(feed) {
+  if (feed.lateral >= OFF_ROUTE_EXIT_M) return false;
+  const from = S.offRouteState;
+  transition(from, OffRouteState.ON_ROUTE, metaFromFeed(feed));
+  resetBackoff();
+  resetCtx();
+  clearOffRouteWarn();
+  return true;
+}
+function tickOffRouteMachine(feed) {
+  if (S.compassMode || feed.lateral == null || !S.route) return;
+  const now = Date.now();
+  const dtMs = _ctx.lastFeedMs ? Math.min(3e3, simScaledDelta(now - _ctx.lastFeedMs)) : 0;
+  _ctx.lastFeedMs = now;
+  feed = { ...feed, dtMs };
+  if (S.offRouteState === OffRouteState.REROUTING || _ctx.rerouteBusy) return;
+  if (S.offRouteState === OffRouteState.SUSPECT || S.offRouteState === OffRouteState.OFFLINE_GUIDE) {
+    if (tryReturnOnRoute(feed)) return;
+  }
+  if (S.offRouteState === OffRouteState.OFFLINE_GUIDE) {
+    tickOfflineGuideVoice(feed.lateral);
+    if (S.rerouteBackoffUntil && now >= S.rerouteBackoffUntil) {
+      transition(OffRouteState.OFFLINE_GUIDE, OffRouteState.SUSPECT, metaFromFeed(feed));
+      beginReroute(OffRouteState.SUSPECT, { ...feed, trigger: "backoff_retry" }, "backoff_retry");
+    }
+    return;
+  }
+  if (feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
+  const enterM = Math.max(OFF_ROUTE_ENTER_M, OFF_ROUTE_ACC_FACTOR * feed.acc);
+  const inDeadZone = feed.lateral >= OFF_ROUTE_EXIT_M && feed.lateral <= OFF_ROUTE_ENTER_M;
+  if (S.offRouteState === OffRouteState.ON_ROUTE) {
+    if (feed.lateral > enterM) {
+      resetSuspectCtx();
+      transition(OffRouteState.ON_ROUTE, OffRouteState.SUSPECT, metaFromFeed(feed));
+    }
+    return;
+  }
+  if (S.offRouteState === OffRouteState.SUSPECT) {
+    tickSuspectConfirm(feed, inDeadZone);
+  }
+}
+var OffRouteState, OFFLINE_VOICE_STEP_M, OFF_ROUTE_WARN_OK, OFF_ROUTE_WARN_FAIL, _ctx;
+var init_offroute = __esm({
+  "js/offroute.js"() {
+    init_state();
+    init_util();
+    init_geo();
+    init_route();
+    init_voice();
+    init_telemetry();
+    init_snap_quality();
+    init_sim_time_scale();
+    init_nav_constants();
+    OffRouteState = {
+      ON_ROUTE: "ON_ROUTE",
+      SUSPECT: "SUSPECT",
+      REROUTING: "REROUTING",
+      OFFLINE_GUIDE: "OFFLINE_GUIDE"
+    };
+    OFFLINE_VOICE_STEP_M = 200;
+    OFF_ROUTE_WARN_OK = "\u25C6 \u041F\u0415\u0420\u0415\u0421\u0427\u0401\u0422 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0410 \u25C6";
+    OFF_ROUTE_WARN_FAIL = "\u25C6 \u041D\u0415\u0422 \u0421\u0412\u042F\u0417\u0418 \u2014 \u0412\u0415\u0420\u041D\u0418\u0422\u0415\u0421\u042C \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422 \u25C6";
+    _ctx = {
+      confirmMs: 0,
+      suspectDistM: 0,
+      headingDivergeSince: 0,
+      lastFeedMs: 0,
+      rerouteBusy: false,
+      offlineEntryVoice: false,
+      offlineVoiceBucket: null
     };
   }
 });
@@ -17372,61 +17662,97 @@ var init_view_mode = __esm({
 });
 
 // js/low-speed-map.js
-function clampPathMinSpeedKmh(n) {
-  const v = parseInt(n, 10);
-  if (!Number.isFinite(v)) return DEFAULT_PATH_MIN_SPEED_KMH;
-  return Math.max(0, Math.min(MAX_PATH_MIN_SPEED_KMH, v));
-}
-function getPathMinSpeedKmh() {
-  return clampPathMinSpeedKmh(S.pathMinSpeedKmh);
-}
 function canUseLowSpeedMap(waitConverge) {
   return !!$2("hud")?.classList.contains("on") && !!S.route && !waitConverge && !S.compassMode;
 }
-function shouldEnterLowSpeedMap(kmh, waitConverge) {
-  return S.lowSpeedMap !== false && canUseLowSpeedMap(waitConverge) && kmh < getPathMinSpeedKmh();
+function isNavOnRoad(ctx = {}) {
+  if (!S.route?.geometry) return false;
+  const lat = ctx.lateral;
+  if (S.offRouteState === OffRouteState.OFFLINE_GUIDE) return false;
+  if (S.offRouteState === OffRouteState.SUSPECT) return false;
+  if (S.snapQuality === SnapQuality.LOST) return false;
+  if (lat != null && lat > OFF_ROUTE_EXIT_M) return false;
+  if (S.snapQuality === SnapQuality.GOOD) return true;
+  if (S.snapQuality === SnapQuality.DEGRADED && lat != null && lat <= OFF_ROUTE_EXIT_M) return true;
+  return false;
 }
-function shouldExitLowSpeedMap(kmh) {
-  return kmh >= getPathMinSpeedKmh() + LOW_SPEED_MAP_EXIT_PAD_KMH;
+function shouldEnterOffRoadMap(ctx, waitConverge) {
+  if (S.lowSpeedMap === false || !canUseLowSpeedMap(waitConverge) || _userPinned) return false;
+  if (isNavOnRoad(ctx)) {
+    _offRoadSince = 0;
+    return false;
+  }
+  const now = Date.now();
+  if (!_offRoadSince) _offRoadSince = now;
+  return now - _offRoadSince >= OFF_ROAD_MAP_ENTER_MS;
 }
-function tickLowSpeedMap(kmh, waitConverge) {
-  if (!S.lowSpeedMap) {
+function shouldExitOffRoadMap(ctx) {
+  return isNavOnRoad(ctx);
+}
+function logAutoMap(on, ctx) {
+  if (!telemetry_default.isActive?.()) return;
+  telemetry_default.log("nav", {
+    sub: "view_auto_map",
+    on,
+    lateral: ctx.lateral != null ? Math.round(ctx.lateral) : null,
+    snap: S.snapQuality,
+    off: S.offRouteState
+  });
+}
+function tickLowSpeedMap(kmh, waitConverge, ctx = {}) {
+  if (S.lowSpeedMap === false) {
     if (_autoActive) {
       _autoActive = false;
+      _offRoadSince = 0;
       setViewMode("hud");
     }
     return;
   }
-  if (shouldEnterLowSpeedMap(kmh, waitConverge) && !_userPinned) {
+  if (shouldEnterOffRoadMap(ctx, waitConverge)) {
     if (S.viewMode === "hud" || _autoActive) {
       setViewMode("map_zoom");
+      if (!_autoActive) logAutoMap(true, ctx);
       _autoActive = true;
     }
-  } else if (_autoActive && shouldExitLowSpeedMap(kmh)) {
+  } else if (_autoActive && shouldExitOffRoadMap(ctx)) {
     setViewMode("hud");
+    logAutoMap(false, ctx);
     _autoActive = false;
     _userPinned = false;
+    _offRoadSince = 0;
   }
   if (S.viewMode !== "hud") tickNavMap();
 }
 function onUserViewModeChange() {
   if (_autoActive) _userPinned = true;
 }
+function isAutoMapActive() {
+  return _autoActive;
+}
 function resetLowSpeedMap() {
   _autoActive = false;
   _userPinned = false;
+  _offRoadSince = 0;
 }
-var _autoActive, _userPinned;
+function clampPathMinSpeedKmh(n) {
+  const v = parseInt(n, 10);
+  if (!Number.isFinite(v)) return DEFAULT_PATH_MIN_SPEED_KMH;
+  return Math.max(0, Math.min(MAX_PATH_MIN_SPEED_KMH, v));
+}
+var _autoActive, _userPinned, _offRoadSince;
 var init_low_speed_map = __esm({
   "js/low-speed-map.js"() {
     init_state();
     init_util();
-    init_state();
     init_nav_constants();
+    init_snap_quality();
+    init_offroute();
     init_view_mode();
     init_nav_map();
+    init_telemetry();
     _autoActive = false;
     _userPinned = false;
+    _offRoadSince = 0;
   }
 });
 
@@ -17806,15 +18132,21 @@ function renderPathway() {
   const hud = $2("hud");
   const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
   const waitConverge = !hasEverConverged() && S.gpsConverged === false;
-  const pathMinKmh = getPathMinSpeedKmh();
-  if (!S.showPath || kmh < pathMinKmh || waitConverge || S.compassMode) {
+  const pathCtx = { lateral: S.navLateral };
+  if (!S.showPath || waitConverge || S.compassMode) {
     block.classList.add("hidden");
     hud.classList.add("no-path");
     svg.innerHTML = "";
-    tickLowSpeedMap(kmh, waitConverge);
+    tickLowSpeedMap(kmh, waitConverge, pathCtx);
     return;
   }
-  tickLowSpeedMap(kmh, waitConverge);
+  tickLowSpeedMap(kmh, waitConverge, pathCtx);
+  if (isAutoMapActive()) {
+    block.classList.add("hidden");
+    hud.classList.add("no-path");
+    svg.innerHTML = "";
+    return;
+  }
   block.classList.remove("hidden");
   hud.classList.remove("no-path");
   const gpsHdg = S.smoothedHeading;
@@ -18764,7 +19096,7 @@ function loadAppOptsFromStorage() {
     setCheck("opt-chevron-labels", o.pathChevronLabels !== false);
     setVal("opt-chevron-max", o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
     setCheck("opt-low-speed-map", o.lowSpeedMap !== false);
-    setVal("opt-path-min-speed", o.pathMinSpeedKmh != null ? o.pathMinSpeedKmh : DEFAULT_PATH_MIN_SPEED_KMH);
+    if (o.pathMinSpeedKmh != null) S.pathMinSpeedKmh = clampPathMinSpeedKmh(o.pathMinSpeedKmh);
     setCheck("opt-heading", o.showCompass);
     setCheck("opt-cams", o.cams);
     setCheck("opt-back-only", o.backOnly);
@@ -19020,56 +19352,124 @@ var yandex_link_exports = {};
 __export(yandex_link_exports, {
   YANDEX_PARSER_REV: () => YANDEX_PARSER_REV,
   YANDEX_URL_RE: () => YANDEX_URL_RE,
+  buildYandexRouteUrl: () => buildYandexRouteUrl,
+  decodeQueryComponent: () => decodeQueryComponent,
+  extractRtextParam: () => extractRtextParam,
   extractYandexUrl: () => extractYandexUrl,
   isYandexMapsUrl: () => isYandexMapsUrl,
-  parseYandexRouteLink: () => parseYandexRouteLink
+  normalizePastedText: () => normalizePastedText,
+  parseRtextWaypoints: () => parseRtextWaypoints,
+  parseYandexRouteLink: () => parseYandexRouteLink,
+  resolveYandexShortLink: () => resolveYandexShortLink
 });
+function decodeQueryComponent(raw) {
+  if (raw == null) return "";
+  let s2 = String(raw).trim();
+  if (!s2) return "";
+  try {
+    s2 = decodeURIComponent(s2.replace(/\+/g, "%20"));
+  } catch {
+    s2 = s2.replace(/\+/g, " ");
+  }
+  return s2;
+}
+function normalizePastedText(text) {
+  return String(text || "").replace(/&amp;/gi, "&").replace(/&#0*38;/g, "&").replace(/^[\s"'«»]+|[\s"'«»]+$/g, "").trim();
+}
 function extractYandexUrl(text) {
-  const s2 = String(text || "").trim();
+  const s2 = normalizePastedText(text);
   if (!s2) return null;
-  if (YANDEX_URL_RE.test(s2)) return s2.match(YANDEX_URL_RE)[0];
+  if (/^https?:\/\//i.test(s2)) {
+    const one = s2.match(YANDEX_URL_RE);
+    if (one) return one[0];
+  }
   const m = s2.match(YANDEX_URL_RE);
   return m ? m[0] : null;
 }
-function parseRtextPoint(part) {
+function extractRtextParam(url) {
+  const m = String(url || "").match(RTEXT_RE);
+  return m ? decodeQueryComponent(m[1]) : null;
+}
+function parseRtextPoint(part, index, total) {
   const s2 = String(part || "").trim();
   if (!s2) return null;
-  const coord = s2.match(/^(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)$/);
+  const coord = s2.match(/^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
   if (coord) {
     const lat = parseFloat(coord[1]);
     const lon = parseFloat(coord[2]);
-    if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon, label: s2 };
+    if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+      return { lat, lon, label: DEFAULT_LABELS(index, total) };
+    }
   }
   return null;
 }
-async function parseYandexRouteLink(rawUrl) {
-  let url = String(rawUrl || "").trim();
-  if (!url) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
-  if (!extractYandexUrl(url)) throw new Error("\u041D\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442");
-  if (SHORT_RE.test(url)) {
-    try {
-      const res = await fetch(url, { redirect: "follow", method: "HEAD", mode: "cors" });
-      if (res.url) url = res.url;
-    } catch {
-    }
+function parseRtextWaypoints(rtext) {
+  const parts = String(rtext || "").split("~").map((p) => p.trim()).filter(Boolean);
+  const waypoints = parts.map((part, i) => parseRtextPoint(part, i, parts.length)).filter(Boolean);
+  if (waypoints.length < 2) {
+    throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652 \u0441 \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u0430\u043C\u0438 lat,lon)");
   }
-  const m = url.match(RTEXT_RE);
-  if (!m) throw new Error("\u0412 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (rtext). \u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB.");
-  const parts = decodeURIComponent(m[1]).split("~");
-  const waypoints = parts.map(parseRtextPoint).filter(Boolean);
-  if (waypoints.length < 2) throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652)");
   return waypoints;
 }
-function isYandexMapsUrl(raw) {
-  return !!extractYandexUrl(raw);
+async function resolveYandexShortLink(url, opts = {}) {
+  const fetchFn = opts.fetchFn || globalThis.fetch;
+  if (!fetchFn) return url;
+  if (!SHORT_RE.test(url)) return url;
+  const tryFetch = async (method) => {
+    const res = await fetchFn(url, {
+      redirect: "follow",
+      method,
+      signal: AbortSignal.timeout?.(15e3)
+    });
+    return res.url && res.url !== url ? res.url : url;
+  };
+  try {
+    return await tryFetch("HEAD");
+  } catch {
+    try {
+      return await tryFetch("GET");
+    } catch {
+      return url;
+    }
+  }
 }
-var YANDEX_PARSER_REV, YANDEX_URL_RE, SHORT_RE, RTEXT_RE;
+function buildYandexRouteUrl(waypoints, opts = {}) {
+  const rtext = waypoints.map((w) => `${w.lat},${w.lon}`).join("~");
+  const rtt = opts.rtt || "auto";
+  return `https://yandex.ru/maps/?rtext=${encodeURIComponent(rtext)}&rtt=${rtt}`;
+}
+async function parseYandexRouteLink(rawUrl, opts = {}) {
+  let url = normalizePastedText(rawUrl);
+  if (!url) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
+  const extracted = extractYandexUrl(url);
+  if (extracted) url = extracted;
+  else if (!/yandex\.|ya\.ru/i.test(url)) {
+    throw new Error("\u041D\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442");
+  }
+  url = await resolveYandexShortLink(url, opts);
+  const rtext = extractRtextParam(url);
+  if (!rtext) {
+    throw new Error(
+      "\u0412 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (rtext). \u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u2192 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB \u2192 \u0441\u043A\u043E\u043F\u0438\u0440\u0443\u0439\u0442\u0435 \u0434\u043B\u0438\u043D\u043D\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443."
+    );
+  }
+  return parseRtextWaypoints(rtext);
+}
+function isYandexMapsUrl(raw) {
+  return !!extractYandexUrl(raw) || /yandex\.(?:ru|com)|ya\.ru\/maps/i.test(normalizePastedText(raw));
+}
+var YANDEX_PARSER_REV, YANDEX_URL_RE, SHORT_RE, RTEXT_RE, DEFAULT_LABELS;
 var init_yandex_link = __esm({
   "js/yandex-link.js"() {
-    YANDEX_PARSER_REV = 1;
-    YANDEX_URL_RE = /https?:\/\/(?:yandex\.ru|ya\.ru)\/maps[^\s"'<>]*/i;
-    SHORT_RE = /^https?:\/\/(?:yandex\.ru|ya\.ru)\/maps\/-/i;
-    RTEXT_RE = /[?&]rtext=([^&]+)/i;
+    YANDEX_PARSER_REV = 2;
+    YANDEX_URL_RE = /https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/(?:maps|navi)[^\s"'<>]*/gi;
+    SHORT_RE = /^https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/maps\/-/i;
+    RTEXT_RE = /[?&#]rtext=([^&#]+)/i;
+    DEFAULT_LABELS = (i, total) => {
+      if (i === 0) return "\u0421\u0442\u0430\u0440\u0442";
+      if (i === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
+      return `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
+    };
   }
 });
 
@@ -19963,13 +20363,6 @@ function bindSetupUI() {
   });
   $2("opt-low-speed-map")?.addEventListener("change", (e) => {
     S.lowSpeedMap = e.target.checked;
-    const spd = $2("opt-path-min-speed");
-    if (spd) spd.disabled = !S.lowSpeedMap;
-    saveAppOptsToStorage();
-  });
-  $2("opt-path-min-speed")?.addEventListener("change", (e) => {
-    S.pathMinSpeedKmh = clampPathMinSpeedKmh(e.target.value);
-    if ($2("opt-path-min-speed")) $2("opt-path-min-speed").value = String(S.pathMinSpeedKmh);
     saveAppOptsToStorage();
   });
   $2("opt-chevron-labels")?.addEventListener("change", (e) => {
@@ -20172,9 +20565,6 @@ function syncOptionsFromDom() {
     parseInt($2("opt-chevron-max")?.value, 10) || DEFAULT_PATH_CHEVRON_MAX
   ));
   S.lowSpeedMap = $2("opt-low-speed-map")?.checked !== false;
-  S.pathMinSpeedKmh = clampPathMinSpeedKmh($2("opt-path-min-speed")?.value);
-  if ($2("opt-path-min-speed")) $2("opt-path-min-speed").value = String(S.pathMinSpeedKmh);
-  if ($2("opt-path-min-speed")) $2("opt-path-min-speed").disabled = !S.lowSpeedMap;
   if ($2("opt-chevron-max")) $2("opt-chevron-max").value = String(S.pathChevronMax);
   if ($2("opt-chevron-labels")) $2("opt-chevron-labels").disabled = !S.showPathChevrons;
   if ($2("opt-chevron-max")) $2("opt-chevron-max").disabled = !S.showPathChevrons;
@@ -20255,7 +20645,6 @@ var init_setup = __esm({
     init_elevation();
     init_curve_speed();
     init_hud_opts();
-    init_low_speed_map();
     init_hud_chrome();
     init_app_opts();
     init_platform();
@@ -20690,233 +21079,6 @@ var init_wake_lock = __esm({
     init_platform();
     init_telemetry();
     _nativeAwake = false;
-  }
-});
-
-// js/offroute.js
-function clearOffRouteWarn() {
-  const el = $2("offRouteWarn");
-  if (!el) return;
-  el.classList.remove("on");
-  el.textContent = OFF_ROUTE_WARN_OK;
-}
-function showRerouteOk() {
-  const el = $2("offRouteWarn");
-  if (!el) return;
-  el.textContent = OFF_ROUTE_WARN_OK;
-  el.classList.add("on");
-  setTimeout(() => clearOffRouteWarn(), 2e3);
-}
-function showOfflineWarn() {
-  const el = $2("offRouteWarn");
-  if (!el) return;
-  el.textContent = OFF_ROUTE_WARN_FAIL;
-  el.classList.add("on");
-}
-function resetBackoff() {
-  S.rerouteBackoffStep = 0;
-  S.rerouteBackoffUntil = 0;
-}
-function resetSuspectCtx() {
-  _ctx.confirmMs = 0;
-  _ctx.suspectDistM = 0;
-  _ctx.headingDivergeSince = 0;
-}
-function resetOfflineCtx() {
-  _ctx.offlineEntryVoice = false;
-  _ctx.offlineVoiceBucket = null;
-}
-function resetCtx() {
-  resetSuspectCtx();
-  resetOfflineCtx();
-  _ctx.lastFeedMs = 0;
-  _ctx.rerouteBusy = false;
-}
-function resetOffRouteMachine() {
-  S.offRouteState = OffRouteState.ON_ROUTE;
-  resetBackoff();
-  resetCtx();
-  clearOffRouteWarn();
-}
-function isOfflineGuide() {
-  return S.offRouteState === OffRouteState.OFFLINE_GUIDE;
-}
-function transition(from, to, meta) {
-  S.offRouteState = to;
-  telemetry_default.log("nav", {
-    sub: "offroute_state",
-    from,
-    to,
-    lateral: meta.lateral,
-    spd: meta.spd,
-    trigger: meta.trigger || void 0
-  });
-}
-function metaFromFeed(feed) {
-  return {
-    lateral: feed.lateral,
-    spd: feed.spdKmh,
-    trigger: feed.trigger
-  };
-}
-function confirmDistForSpeed(spdMps) {
-  return spdMps > OFF_ROUTE_HIGH_SPD_MPS ? OFF_ROUTE_CONFIRM_DIST_HIGH_M : OFF_ROUTE_CONFIRM_DIST_M;
-}
-function confirmMsForSpeed(spdMps) {
-  return spdMps > OFF_ROUTE_HIGH_SPD_MPS ? OFF_ROUTE_CONFIRM_MS_HIGH_SPD : OFF_ROUTE_CONFIRM_MS;
-}
-function headingDiverged(feed, now) {
-  if (feed.spdMps <= OFF_ROUTE_HEADING_MIN_SPD) return false;
-  if (feed.heading == null || isNaN(feed.heading)) return false;
-  if (feed.tangent == null || isNaN(feed.tangent)) return false;
-  if (angleDiff(feed.heading, feed.tangent) <= OFF_ROUTE_HEADING_DIVERGE_DEG) return false;
-  if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
-  return now - _ctx.headingDivergeSince >= OFF_ROUTE_HEADING_DIVERGE_MS;
-}
-function canTriggerReroute(feed, now) {
-  const distNeed = confirmDistForSpeed(feed.spdMps);
-  const msNeed = confirmMsForSpeed(feed.spdMps);
-  const distOk = _ctx.suspectDistM >= distNeed;
-  const timeOk = _ctx.confirmMs >= msNeed;
-  const hdgOk = headingDiverged(feed, now);
-  const snapBad = S.snapQuality !== SnapQuality.GOOD || feed.lateral != null && feed.lateral > 80;
-  if (!snapBad) return null;
-  if (distOk && hdgOk) return "dist_heading";
-  if (distOk && timeOk && hdgOk) return "conjunct";
-  if (timeOk && hdgOk && feed.lateral > OFF_ROUTE_ENTER_M) return "time_heading";
-  return null;
-}
-function enterOfflineGuide(feed) {
-  showOfflineWarn();
-  resetSuspectCtx();
-  resetOfflineCtx();
-  tickOfflineGuideVoice(feed.lateral);
-}
-function tickOfflineGuideVoice(lateral) {
-  if (!S.voice || lateral == null) return;
-  if (!_ctx.offlineEntryVoice) {
-    _ctx.offlineEntryVoice = true;
-    _ctx.offlineVoiceBucket = Math.ceil(lateral / OFFLINE_VOICE_STEP_M) * OFFLINE_VOICE_STEP_M;
-    speak("\u041D\u0435\u0442 \u0441\u0432\u044F\u0437\u0438. \u0412\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u044E \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
-    S.lastVoiceTs = Date.now();
-    return;
-  }
-  const bucket = Math.ceil(lateral / OFFLINE_VOICE_STEP_M) * OFFLINE_VOICE_STEP_M;
-  if (_ctx.offlineVoiceBucket == null) _ctx.offlineVoiceBucket = bucket;
-  if (bucket <= _ctx.offlineVoiceBucket - OFFLINE_VOICE_STEP_M) {
-    _ctx.offlineVoiceBucket = bucket;
-    if (Date.now() - S.lastVoiceTs < 3e3) return;
-    speak("\u0414\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 " + Math.round(lateral) + " \u043C\u0435\u0442\u0440\u043E\u0432");
-    S.lastVoiceTs = Date.now();
-  }
-}
-function beginReroute(fromState, feed, trigger) {
-  if (_ctx.rerouteBusy || S.offRouteState === OffRouteState.REROUTING) return;
-  _ctx.rerouteBusy = true;
-  transition(fromState, OffRouteState.REROUTING, { ...metaFromFeed(feed), trigger });
-  recalcRoute().then((ok) => {
-    _ctx.rerouteBusy = false;
-    if (ok) {
-      transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, metaFromFeed(feed));
-      resetBackoff();
-      resetSuspectCtx();
-      showRerouteOk();
-    } else {
-      transition(OffRouteState.REROUTING, OffRouteState.OFFLINE_GUIDE, metaFromFeed(feed));
-      enterOfflineGuide(feed);
-    }
-  });
-}
-function tickSuspectConfirm(feed, inDeadZone) {
-  if (inDeadZone) return;
-  const now = Date.now();
-  const dtMs = feed.dtMs || 0;
-  _ctx.confirmMs += dtMs;
-  if (feed.spdMps > 0) _ctx.suspectDistM += feed.spdMps * (dtMs / 1e3);
-  if (feed.spdMps > OFF_ROUTE_HEADING_MIN_SPD && feed.heading != null && !isNaN(feed.heading) && feed.tangent != null && !isNaN(feed.tangent)) {
-    if (angleDiff(feed.heading, feed.tangent) > OFF_ROUTE_HEADING_DIVERGE_DEG) {
-      if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
-    } else {
-      _ctx.headingDivergeSince = 0;
-    }
-  } else {
-    _ctx.headingDivergeSince = 0;
-  }
-  const trigger = canTriggerReroute(feed, now);
-  if (!trigger) return;
-  if (S.rerouteBackoffUntil && Date.now() < S.rerouteBackoffUntil) return;
-  beginReroute(OffRouteState.SUSPECT, { ...feed, trigger }, trigger);
-}
-function tryReturnOnRoute(feed) {
-  if (feed.lateral >= OFF_ROUTE_EXIT_M) return false;
-  const from = S.offRouteState;
-  transition(from, OffRouteState.ON_ROUTE, metaFromFeed(feed));
-  resetBackoff();
-  resetCtx();
-  clearOffRouteWarn();
-  return true;
-}
-function tickOffRouteMachine(feed) {
-  if (S.compassMode || feed.lateral == null || !S.route) return;
-  const now = Date.now();
-  const dtMs = _ctx.lastFeedMs ? Math.min(3e3, now - _ctx.lastFeedMs) : 0;
-  _ctx.lastFeedMs = now;
-  feed = { ...feed, dtMs };
-  if (S.offRouteState === OffRouteState.REROUTING || _ctx.rerouteBusy) return;
-  if (S.offRouteState === OffRouteState.SUSPECT || S.offRouteState === OffRouteState.OFFLINE_GUIDE) {
-    if (tryReturnOnRoute(feed)) return;
-  }
-  if (S.offRouteState === OffRouteState.OFFLINE_GUIDE) {
-    tickOfflineGuideVoice(feed.lateral);
-    if (S.rerouteBackoffUntil && now >= S.rerouteBackoffUntil) {
-      transition(OffRouteState.OFFLINE_GUIDE, OffRouteState.SUSPECT, metaFromFeed(feed));
-      beginReroute(OffRouteState.SUSPECT, { ...feed, trigger: "backoff_retry" }, "backoff_retry");
-    }
-    return;
-  }
-  if (feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
-  const enterM = Math.max(OFF_ROUTE_ENTER_M, OFF_ROUTE_ACC_FACTOR * feed.acc);
-  const inDeadZone = feed.lateral >= OFF_ROUTE_EXIT_M && feed.lateral <= OFF_ROUTE_ENTER_M;
-  if (S.offRouteState === OffRouteState.ON_ROUTE) {
-    if (feed.lateral > enterM) {
-      resetSuspectCtx();
-      transition(OffRouteState.ON_ROUTE, OffRouteState.SUSPECT, metaFromFeed(feed));
-    }
-    return;
-  }
-  if (S.offRouteState === OffRouteState.SUSPECT) {
-    tickSuspectConfirm(feed, inDeadZone);
-  }
-}
-var OffRouteState, OFFLINE_VOICE_STEP_M, OFF_ROUTE_WARN_OK, OFF_ROUTE_WARN_FAIL, _ctx;
-var init_offroute = __esm({
-  "js/offroute.js"() {
-    init_state();
-    init_util();
-    init_geo();
-    init_route();
-    init_voice();
-    init_telemetry();
-    init_snap_quality();
-    init_nav_constants();
-    OffRouteState = {
-      ON_ROUTE: "ON_ROUTE",
-      SUSPECT: "SUSPECT",
-      REROUTING: "REROUTING",
-      OFFLINE_GUIDE: "OFFLINE_GUIDE"
-    };
-    OFFLINE_VOICE_STEP_M = 200;
-    OFF_ROUTE_WARN_OK = "\u25C6 \u041F\u0415\u0420\u0415\u0421\u0427\u0401\u0422 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0410 \u25C6";
-    OFF_ROUTE_WARN_FAIL = "\u25C6 \u041D\u0415\u0422 \u0421\u0412\u042F\u0417\u0418 \u2014 \u0412\u0415\u0420\u041D\u0418\u0422\u0415\u0421\u042C \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422 \u25C6";
-    _ctx = {
-      confirmMs: 0,
-      suspectDistM: 0,
-      headingDivergeSince: 0,
-      lastFeedMs: 0,
-      rerouteBusy: false,
-      offlineEntryVoice: false,
-      offlineVoiceBucket: null
-    };
   }
 });
 
@@ -25167,14 +25329,12 @@ var STEPPER_IDS = [
   "opt-elev-profile-len",
   "opt-elev-exag",
   "opt-fuel-count",
-  "opt-chevron-max",
-  "opt-path-min-speed"
+  "opt-chevron-max"
 ];
 var HELP_TEXTS = {
   "opt-voice": "\u0413\u043E\u043B\u043E\u0441\u043E\u0432\u044B\u0435 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u0430\u043D\u0451\u0432\u0440\u043E\u0432 \u0438 \u043A\u0430\u043C\u0435\u0440. \u0420\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0447\u0435\u0440\u0435\u0437 \u0441\u0438\u043D\u0442\u0435\u0437 \u0440\u0435\u0447\u0438 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430.",
-  "opt-path": "\u041F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430 \u043D\u0430 HUD: \u0440\u0435\u043B\u044C\u0435\u0444, \u0448\u0435\u0432\u0440\u043E\u043D\u044B, \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u043F\u0435\u0440\u0435\u043A\u0440\u0451\u0441\u0442\u043A\u043E\u0432.",
-  "opt-low-speed-map": "\u041D\u0438\u0436\u0435 \u043F\u043E\u0440\u043E\u0433\u0430 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u0438 \u0432\u043C\u0435\u0441\u0442\u043E \u0434\u043E\u0440\u043E\u0436\u043A\u0438 \u2014 \u043A\u0430\u0440\u0442\u0430 \u043A\u0440\u0443\u043F\u043D\u044B\u043C \u043F\u043B\u0430\u043D\u043E\u043C (\u0434\u0432\u043E\u0440\u044B, \u043F\u0430\u0440\u043A\u043E\u0432\u043A\u0438).",
-  "opt-path-min-speed": "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F: \u0432\u044B\u0448\u0435 \u2014 \u043F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430, \u043D\u0438\u0436\u0435 \u2014 \u043A\u0430\u0440\u0442\u0430. \u041F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E 8 \u043A\u043C/\u0447.",
+  "opt-path": "\u041F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430 \u043D\u0430 HUD: \u0440\u0435\u043B\u044C\u0435\u0444, \u0448\u0435\u0432\u0440\u043E\u043D\u044B, \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u043F\u0435\u0440\u0435\u043A\u0440\u0451\u0441\u0442\u043A\u043E\u0432. \u041D\u0430 \u0434\u043E\u0440\u043E\u0433\u0435 \u2014 \u043F\u0440\u0438 \u043B\u044E\u0431\u043E\u0439 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u0438.",
+  "opt-low-speed-map": "\u0412\u043D\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (\u0434\u0432\u043E\u0440, \u043F\u0430\u0440\u043A\u043E\u0432\u043A\u0430): \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u043A\u0430\u0440\u0442\u0430 \u043A\u0440\u0443\u043F\u043D\u044B\u043C \u043F\u043B\u0430\u043D\u043E\u043C. \u041D\u0430 \u0434\u043E\u0440\u043E\u0433\u0435 \u043A\u0430\u0440\u0442\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u0440\u0443\u0447\u043D\u0443\u044E (\u0434\u0432\u043E\u0439\u043D\u043E\u0439 \u0442\u0430\u043F).",
   "opt-limit": "\u041B\u0438\u043C\u0438\u0442 \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E, \u043A\u043E\u0433\u0434\u0430 OSM \u043D\u0435 \u0437\u043D\u0430\u0435\u0442 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0438\u0435. \u041F\u0440\u0438 \u0434\u0438\u043D\u0430\u043C\u0438\u043A\u0435 \u2014 fallback.",
   "opt-speed-limit-dynamic": "\u0414\u0438\u043D\u0430\u043C\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u043B\u0438\u043C\u0438\u0442 \u043F\u043E \u0442\u0435\u0433\u0443 maxspeed OSM \u0432\u0434\u043E\u043B\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430. \u0412\u044B\u043A\u043B. \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u0435\u0444\u043E\u043B\u0442 \u0438\u0437 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438.",
   "opt-speed-limit-fallback": "\u0415\u0441\u043B\u0438 OSM \u0438 implicit \u043D\u0435 \u0434\u0430\u043B\u0438 \u043B\u0438\u043C\u0438\u0442: \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0432\u0430\u0448 \u0434\u0435\u0444\u043E\u043B\u0442 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u0437\u043D\u0430\u043A.",
@@ -25380,6 +25540,116 @@ init_trip_refuel_hud();
 init_hud_chrome();
 init_settings_ui();
 init_hud_settings_sheet();
+
+// js/regression-sim-bridge.js
+init_state();
+init_geo();
+init_route();
+init_offroute();
+init_route_geometry();
+init_sim_time_scale();
+function minimalSteps(waypoints, distanceM) {
+  const last = waypoints[waypoints.length - 1];
+  const first = waypoints[0];
+  return [
+    {
+      lat: first.lat,
+      lon: first.lon,
+      type: "depart",
+      modifier: "",
+      name: first.label || "",
+      distance: 0,
+      intersections: []
+    },
+    {
+      lat: last.lat,
+      lon: last.lon,
+      type: "arrive",
+      modifier: "",
+      name: last.label || "",
+      distance: distanceM,
+      intersections: []
+    }
+  ];
+}
+function routeFromCache(cache, waypoints) {
+  const coords = cache.polyline || [];
+  const n = Math.max(0, coords.length - 1);
+  return {
+    coords,
+    steps: minimalSteps(waypoints, cache.distance_m || 0),
+    distance: cache.distance_m || 0,
+    duration: cache.duration_s || 0,
+    maxspeeds: new Array(n).fill({ unknown: true }),
+    segmentSpeeds: new Array(n).fill(0)
+  };
+}
+function prepareRegressionHud(opts) {
+  const { waypoints, cache, timeScale = 1 } = opts || {};
+  if (!waypoints?.length || !cache?.polyline?.length) {
+    throw new Error("regression: \u043D\u0443\u0436\u043D\u044B waypoints \u0438 polyline");
+  }
+  if (typeof globalThis !== "undefined") {
+    globalThis.SIM_TIME_SCALE = timeScale;
+    globalThis.__REGRESSION_SIM__ = { active: true, disableReroute: true };
+  }
+  resetSimTimeEpoch();
+  const start2 = waypoints[0];
+  const route = routeFromCache(cache, waypoints);
+  attachRouteFromImport(route, waypoints);
+  const next = waypoints[1] || waypoints[0];
+  const hdg = bearing(start2, next);
+  S.gps = {
+    lat: start2.lat,
+    lon: start2.lon,
+    acc: 5,
+    speed: 0,
+    heading: hdg,
+    ts: Date.now()
+  };
+  S.fixPos = { lat: start2.lat, lon: start2.lon };
+  S.fixAt = Date.now();
+  S.smoothedHeading = hdg;
+  S.gpsConverged = true;
+  S.gpsFixCount = 12;
+  S.compassMode = false;
+  S.voice = false;
+  S.cams = false;
+  S.showElevProfile = false;
+  resetOffRouteMachine();
+  resetRouteSnap();
+  return { distance_m: route.distance, duration_s: route.duration };
+}
+function sampleRegressionState(extra = {}) {
+  let lateral = null;
+  let maneuverType = null;
+  if (S.route && S.gps) {
+    const snap = getNavSnap(S.smoothedHeading);
+    lateral = snap?.lateral ?? null;
+    if (lateral != null && (!Number.isFinite(lateral) || lateral > 300)) lateral = null;
+    const steps = S.route.steps || [];
+    for (let i = 1; i < steps.length; i++) {
+      const st = steps[i];
+      if (haversine(S.gps, st) < 120) {
+        maneuverType = st.type;
+        break;
+      }
+    }
+  }
+  return {
+    ts: Date.now(),
+    type: "regression_tick",
+    lateral_m: lateral != null ? Math.round(lateral * 10) / 10 : null,
+    snap_quality: S.snapQuality,
+    off_route_state: S.offRouteState,
+    maneuver_type: maneuverType,
+    gps_acc: S.gps?.acc ?? null,
+    ...extra
+  };
+}
+
+// js/main.js
+init_route();
 applyThemeCss();
 initYandexImportUi();
 initYandexClipboard();
@@ -25442,6 +25712,9 @@ window.__motoHUD = {
   doBuildRoute,
   doAddressSearch,
   onTick,
+  findNearestOnRoute,
+  prepareRegressionHud,
+  sampleRegressionState,
   _searchBusy: false,
   _finishFocused: false
 };

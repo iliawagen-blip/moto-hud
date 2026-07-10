@@ -2,7 +2,7 @@
   "fixture_id": "491d8990-7bca-46da-a4c0-da97c8b4e2d8",
   "corpus_version": 1,
   "created_at": "2026-07-09T07:37:33.061Z",
-  "last_verified_at": "2026-07-09T07:49:52.967Z",
+  "last_verified_at": "2026-07-09T12:18:40.644Z",
   "source": "auto_generator",
   "category": "mountain",
   "region": "caucasus_serpentines",
@@ -50,7 +50,17 @@
         "profile": "car"
       }
     },
-    "openrouteservice": null,
+    "openrouteservice": {
+      "distance_m": 141838,
+      "duration_s": 10977,
+      "maneuver_count": 23,
+      "roundabout_count": 4,
+      "fetched_at": "2026-07-09T12:16:55.439Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
     "yandex_web": null
   },
   "motohud": {
@@ -80,20 +90,55 @@
         0
       ]
     },
-    "ors_vs_motohud": null,
+    "ors_vs_motohud": {
+      "hausdorff_m": 2084.259109362803,
+      "avg_lateral_m": 37.5281661218536,
+      "p50_lateral_m": 1.7168117125044786,
+      "p95_lateral_m": 24.17703249333391,
+      "max_lateral_m": 2084.259109362803,
+      "length_diff_pct": 3.1511816077512926,
+      "duration_diff_pct": 12.52689457327277,
+      "maneuver_count_diff": 21,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.32833690221270523,
+      "waypoint_deviations_m": [
+        0,
+        0.37005767616164503,
+        0,
+        0
+      ]
+    },
     "yandex_vs_motohud": null,
-    "graphhopper_vs_ors": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 646.9559002452057,
+      "avg_lateral_m": 3.2756440126266226,
+      "p50_lateral_m": 1.0273717658445984,
+      "p95_lateral_m": 12.624873496759884,
+      "max_lateral_m": 84.36076997308018,
+      "length_diff_pct": 0.08523587796476448,
+      "duration_diff_pct": 4.2054300360736665,
+      "maneuver_count_diff": 1,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.18005041411595246,
+      "waypoint_deviations_m": [
+        0,
+        0.37005767616164503,
+        0,
+        0
+      ]
+    },
     "graphhopper_vs_yandex": null,
     "ors_vs_yandex": null,
     "consensus_deviation": {
-      "refs_agree": false,
+      "refs_agree": true,
       "motohud_vs_consensus_p95_m": 45.67699634525911,
-      "motohud_vs_consensus_avg_m": 60.87060071873097,
-      "signal": "insufficient_refs"
+      "motohud_vs_consensus_avg_m": 49.199383420292286,
+      "signal": "warn"
     },
     "coverage": {
       "references_available": [
-        "graphhopper"
+        "graphhopper",
+        "openrouteservice"
       ]
     }
   },

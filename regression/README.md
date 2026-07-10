@@ -58,7 +58,43 @@ regression/
 
 Содержит `polyline`, `steps`, `distance_m`, `duration_s` — нужен для sim и `review-worst`.
 
-## Симуляция времени (10×)
+## Playwright sim (этап 7)
+
+```bash
+npm run build
+npm run regression:sim -- --id <fixture-uuid> --force
+npm run regression:sim -- --mode on_route --headed   # с окном браузера
+```
+
+Требуется `regression/cache/motohud/{id}.json` (см. `regression:fetch:motohud`).
+
+Режимы (`config/sim.json`): `on_route`, `deviation`, `noise_stress`.  
+Результаты: `regression/results/{date}/sim/` + `sim-summary.json`.  
+Checkpoint: `regression/cache/checkpoints/{date}-sim.json` (пропуск обработанных; `--force` — заново).
+
+Пороги CI — `config/thresholds.json` (калибруются на smoke fixtures).
+
+## Отчёт и review (этап 8)
+
+```bash
+npm run regression:report
+npm run regression:review -- --open
+npm run regression:review -- --tag-candidates
+```
+
+Артефакты: `regression/reports/{date}/summary.md`, `summary.json`, `trend.json`, `review-worst.html`.
+
+## Nightly (этап 9)
+
+```bash
+npm run regression:nightly
+npm run regression:smoke
+npm run regression:nightly -- --skip-sim --skip-fetch
+npm run regression:nightly -- --dry-run
+npm run regression:nightly -- --from sim
+```
+
+Checkpoint: `regression/cache/checkpoints/{date}-nightly.json`.
 
 Playwright-прогон использует **ускоренное время 10×**:
 
@@ -82,15 +118,28 @@ Playwright-прогон использует **ускоренное время 1
 | `regression:fetch:motohud` | 2 | Fetch OSRM |
 | `regression:fetch:gh` | 3 | Fetch GraphHopper |
 | `regression:fetch:ors` | 4 | Fetch ORS |
+| `regression:import:yandex` | — | Fixture из ссылки Яндекс (rtext) |
+| `regression:fetch:yandex` | 5 | Яндекс web-scrape (ручной, `--force-enable`) |
 | `regression:metrics` | 6 | Метрики сравнения |
 | `regression:sim` | 7 | Playwright sim |
-| `regression:report` | 8 | Markdown-отчёт |
-| `regression:nightly` | 9 | Оркестратор |
-| `regression:smoke` | — | 5 fixtures, без Yandex |
+| `regression:report` | 8 | Markdown + summary.json + trend.json |
+| `regression:review` | 8 | HTML worst-case + `--open` |
+| `regression:nightly` | 9 | Оркестратор (fetch → metrics → sim → report) |
+| `regression:smoke` | — | nightly на 5 fixtures, без Yandex |
 
 ## GraphHopper — лимиты
 
 См. [docs/graphhopper-limits.md](docs/graphhopper-limits.md).
+
+## Яндекс web-scrape (фаза 5, опционально)
+
+Ручной запуск, **не** в `regression:nightly` / `regression:smoke`.
+
+```bash
+npm run regression:fetch:yandex -- --force-enable --id <fixture-uuid>
+```
+
+См. [docs/yandex-web-spike.md](docs/yandex-web-spike.md) — ограничения, captcha, `polyline_not_extracted`.
 
 ## Troubleshooting
 

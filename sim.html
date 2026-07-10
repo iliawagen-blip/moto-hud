@@ -476,6 +476,7 @@
     const gpxQ = new URLSearchParams(location.search).get('gpx');
     if(gpxQ) url += '&gpx=' + encodeURIComponent(gpxQ);
     if(new URLSearchParams(location.search).get('loop') === '1') url += '&loop=1';
+    if(new URLSearchParams(location.search).get('regression') === '1') url += '&regression=1&telemetry=1';
     return url + '&t=' + Date.now();
   }
 

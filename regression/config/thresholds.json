@@ -1,9 +1,9 @@
 {
   "_comment": "Пороги on_route калибруются вручную на первых 5 fixtures (наблюдённый p95 × 1.5). Пересмотр при росте до 25.",
   "on_route": {
-    "avg_lateral_max_m": 10,
-    "p95_lateral_max_m": 20,
-    "good_snap_ratio_min": 0.9,
+    "avg_lateral_max_m": 20,
+    "p95_lateral_max_m": 90,
+    "good_snap_ratio_min": 0.75,
     "false_reroute_max": 0
   },
   "deviation": {

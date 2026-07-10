@@ -25,6 +25,7 @@
     "regression:fetch:motohud": "node regression/scripts/fetch-motohud-routes.mjs",
     "regression:fetch:gh": "node regression/scripts/fetch-graphhopper.mjs",
     "regression:fetch:ors": "node regression/scripts/fetch-openrouteservice.mjs",
+    "regression:import:yandex": "node regression/scripts/import-yandex-fixture.mjs",
     "regression:fetch:yandex": "node regression/scripts/fetch-yandex-web.mjs",
     "regression:metrics": "node regression/scripts/compute-metrics.mjs",
     "regression:sim": "node regression/scripts/run-sim.mjs",

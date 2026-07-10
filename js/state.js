@@ -8,7 +8,7 @@ export const MAX_FUEL_PLANNER_COUNT = 10;
 export const DEFAULT_CAM_SPEED_TOL = 15;
 /** Макс. шевронов на прогноз-дорожке по умолчанию */
 export const DEFAULT_PATH_CHEVRON_MAX = 3;
-/** Порог скорости: выше — прогноз-дорожка, ниже — карта крупным планом */
+/** @deprecated — дорожка на дороге всегда; см. low-speed-map off-road */
 export const DEFAULT_PATH_MIN_SPEED_KMH = 8;
 export const MAX_PATH_MIN_SPEED_KMH = 30;
 
@@ -32,6 +32,8 @@ export const S = {
   rerouting: false,
   rerouteBackoffStep: 0,
   rerouteBackoffUntil: 0,
+  /** Lateral offset from route snap, м (для автокарты во дворах) */
+  navLateral: null,
   viewMode: 'hud',
   lastAppliedClipboardHash: '',
   watchId: null,
@@ -51,8 +53,9 @@ export const S = {
   showPathChevrons: true,
   pathChevronLabels: true,
   pathChevronMax: DEFAULT_PATH_CHEVRON_MAX,
-  /** Мин. скорость для прогноз-дорожки (км/ч); ниже — карта во дворах */
+  /** @deprecated сохранено для старых настроек */
   pathMinSpeedKmh: DEFAULT_PATH_MIN_SPEED_KMH,
+  /** Автокарта вне маршрута (дворы) */
   lowSpeedMap: true,
   showElevProfile: true,
   elevExag: 1.8,

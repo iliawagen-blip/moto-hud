@@ -483,6 +483,14 @@
         sim.running = false;
         emit();
       },
+      /** Регрессия: остановить таймер GPS, оставить injectFix. */
+      freezeGps() {
+        sim.running = false;
+        if (sim.timer) {
+          clearInterval(sim.timer);
+          sim.timer = null;
+        }
+      },
       boot() {
         const inp = document.getElementById("finish-input");
         const hud = window.__motoHUD;
