@@ -5,10 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Мото ИЛС — эмулятор</title>
 <style>
-  :root{ --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --dim:#8b949e; --accent:#ffd400; --ok:#39d353; }
+  :root{
+    --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --dim:#8b949e; --accent:#ffd400; --ok:#39d353;
+    --sim-pad:6px; --sim-gap:6px; --sim-r:8px
+  }
   *{box-sizing:border-box}
+  html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;gap:14px}
+  body.is-desktop,body.sim-wide{
+    height:100vh;max-height:100vh;overflow:hidden;padding:var(--sim-pad);gap:var(--sim-gap);align-items:stretch
+  }
+  @media (min-width:768px){
+    body.sim-wide .sim-map-panel{display:flex!important;flex:1 1 0!important;min-width:0!important;min-height:0!important}
+  }
   body.is-mobile{padding:0;gap:0}
   h1{font-size:18px;margin:4px 0}
   .sub{color:var(--dim);font-size:13px;margin-bottom:4px;text-align:center;line-height:1.45}
@@ -19,44 +29,121 @@
     padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer}
   button.act{background:var(--accent);color:#000;border-color:var(--accent)}
   button.ok{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  button.secondary{background:transparent}
   input[type=range]{width:min(160px,42vw)}
   .val{color:var(--accent);font-weight:800}
-  .frame-wrap{display:flex;align-items:center;justify-content:center;flex:1;width:100%}
-  .sim-stage{display:flex;flex-direction:column;align-items:center;width:100%;flex:1;min-height:0}
-  body.is-desktop .sim-stage{
-    flex-direction:row;align-items:stretch;justify-content:center;gap:16px;
-    max-width:min(96vw,1440px);padding:0 12px 12px
+  .frame-wrap{display:flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:0;min-width:0}
+  .sim-stage{display:flex;flex-direction:column;align-items:center;width:100%;flex:1;min-height:0;overflow:hidden}
+  body.is-desktop .sim-phase-app{
+    flex:1;min-height:0;display:flex;flex-direction:column;width:100%;max-width:none;align-items:stretch;overflow:hidden
   }
-  body.is-desktop .frame-wrap{flex:0 0 auto;align-items:center}
+  body.sim-wide .sim-phase-app{
+    flex:1;min-height:0;overflow:hidden;
+    display:grid;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"top" "stage"
+  }
+  .sim-top{grid-area:top}
+  body.sim-wide .sim-top{
+    display:flex;flex-wrap:nowrap;align-items:center;gap:3px 8px;
+    padding:3px 8px;background:var(--panel);border:1px solid var(--border);border-radius:var(--sim-r);
+    flex-shrink:0;overflow-x:auto;overflow-y:hidden;position:relative;z-index:5;
+    scrollbar-width:thin
+  }
+  body.sim-wide .sim-controls-dock,
+  body.sim-wide .theme-bar,
+  body.sim-wide .nav-bar{
+    display:flex;flex-wrap:nowrap;align-items:center;gap:3px 6px;
+    background:transparent;border:none;padding:0;max-width:none;width:auto!important;flex:0 0 auto
+  }
+  body.sim-wide .theme-bar,
+  body.sim-wide .nav-bar{border-left:1px solid var(--border);padding-left:6px;margin-left:2px}
+  body.sim-wide .sim-controls-dock .bar{
+    display:flex;flex-wrap:nowrap;align-items:center;gap:3px 6px;
+    background:transparent;border:none;padding:0;max-width:none;width:auto!important
+  }
+  body.is-desktop.sim-wide .sim-controls-dock,
+  body.is-desktop.sim-wide .theme-bar,
+  body.is-desktop.sim-wide .nav-bar{width:auto!important}
+  body.sim-wide .tel-replay-bar.hidden,
+  body.sim-wide .hint{display:none!important}
+  body.sim-wide .theme-bar .title,
+  body.sim-wide .nav-bar .title,
+  body.sim-wide .page-title,
+  body.sim-wide .hint,
+  body.sim-wide .device-size-lbl,
+  body.sim-wide .app-state{display:none!important}
+  body.sim-wide .sim-nav-group{display:inline-flex;gap:3px;flex-wrap:nowrap;flex-shrink:0}
+  body.sim-wide #btn-sim-path,
+  body.sim-wide #btn-sim-map,
+  body.sim-wide #btn-sim-bearing{min-width:42px;padding:2px 5px;font-weight:800}
+  body.sim-wide #btn-sim-path.nav-on{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  body.sim-wide #btn-sim-map.nav-on{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  body.sim-wide #btn-sim-bearing.bearing-on{background:#6e40c9;border-color:#6e40c9;color:#fff}
+  body.sim-wide button,body.sim-wide select{min-height:24px;height:24px;padding:2px 6px;font-size:10px;border-radius:5px}
+  body.sim-wide label{font-size:9px;gap:1px}
+  body.sim-wide input[type=range]{width:72px}
+  body.sim-wide .sim-check{min-height:24px;font-size:9px}
+  body.sim-wide #sim-spd-live,body.sim-wide #theme-status,body.sim-wide #hud-nav-debug{
+    font-size:10px;font-weight:700;color:var(--ok);white-space:nowrap
+  }
+  body.is-desktop .sim-controls-dock,
+  body.is-desktop .theme-bar,
+  body.is-desktop .nav-bar,
+  body.is-desktop .tel-bar{max-width:none;flex-shrink:0;width:100%}
+  body.is-desktop .page-title{display:none}
+  .sim-phone-col{
+    flex:0 0 auto;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:0;min-width:280px;align-self:stretch;padding:4px;position:relative;z-index:2
+  }
+  body.sim-wide .sim-stage{
+    grid-area:stage;display:flex;flex-direction:row;align-items:stretch;justify-content:flex-start;
+    gap:var(--sim-gap);max-width:none;width:100%;padding:0;flex:1;min-height:0;overflow:hidden;
+    isolation:isolate
+  }
+  body.sim-wide .sim-map-panel{position:relative;z-index:1;flex:1 1 0;min-width:0}
+  body.sim-wide label:has(#gpx-file){display:none!important}
   .sim-map-panel{
-    display:none;flex:1 1 380px;min-width:280px;max-width:620px;
-    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    display:none;flex:1 1 0;min-width:0;min-height:0;
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--sim-r);
     overflow:hidden;flex-direction:column
   }
-  body.is-desktop .sim-map-panel{display:flex}
-  .sim-map-head{
-    font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;
-    color:var(--dim);padding:10px 12px;border-bottom:1px solid var(--border);
-    display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between
+  body.is-desktop .sim-map-panel,body.sim-wide .sim-map-panel{display:flex}
+  .sim-map-toolbar{
+    flex-shrink:0;display:flex;flex-wrap:nowrap;align-items:center;gap:3px 6px;
+    padding:2px 6px;border-bottom:1px solid var(--border);font-size:10px;min-height:0;overflow:hidden
   }
-  .sim-map-head-title{flex:1;min-width:120px}
-  .sim-map-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%}
-  .sim-map-controls label{font-size:11px;color:var(--dim);display:flex;flex-direction:column;gap:3px;flex:1;min-width:120px}
-  .sim-map-controls select{min-height:36px;font-size:12px;padding:6px 8px}
-  .sim-map-controls button{min-height:36px;font-size:12px;padding:6px 10px}
-  .sim-map-controls button.pick-on{background:#238636;border-color:#238636;color:#fff}
-  .sim-start-coords{font-size:11px;color:var(--ok);font-weight:700;flex:1 1 100%}
-  #sim-map{flex:1;min-height:360px;background:#0a0f16}
+  .sim-map-toolbar label{color:var(--dim);display:inline-flex;flex-direction:row;align-items:center;gap:4px;
+    font-size:9px;flex-shrink:0;white-space:nowrap}
+  .sim-map-toolbar select,.sim-map-toolbar input[type=text],.sim-map-toolbar button{
+    min-height:22px;height:22px;padding:1px 5px;font-size:10px;border-radius:5px;line-height:1.1
+  }
+  .sim-map-toolbar input[type=text]{min-width:80px;flex:1 1 100px;max-width:180px;
+    background:#21262d;color:var(--fg);border:1px solid var(--border)}
+  body.sim-wide .sim-map-toolbar label:has(#sim-start-address){flex:1 1 auto;min-width:0;max-width:220px}
+  body.sim-wide .sim-map-toolbar .sim-start-status{max-width:100px;font-size:9px;color:var(--dim);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.sim-wide .sim-map-toolbar .sim-start-coords{max-width:140px;font-size:9px;color:var(--ok);font-weight:700;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sim-map-toolbar .sim-start-status.err{color:#f0883e}
+  .sim-map-toolbar button.pick-on{background:#238636;border-color:#238636;color:#fff}
+  .sim-map-head{display:none}
+  .sim-start-coords{font-size:11px;color:var(--ok);font-weight:700}
+  .sim-start-status{font-size:11px;color:var(--dim)}
+  .sim-start-status.err{color:#f0883e}
+  #sim-map{flex:1 1 0;min-height:0;height:auto!important;background:#0a0f16}
   #sim-map .leaflet-container{background:#0a0f16;font-family:inherit}
   #sim-map .leaflet-control-attribution{display:none!important}
   .phone{
-    position:relative;background:#000;border:14px solid #1c1c1e;border-radius:44px;
-    box-shadow:0 20px 60px rgba(0,0,0,.6), inset 0 0 0 2px #333;
-    transition:width .25s, height .25s;overflow:hidden
+    position:relative;background:#000;border:10px solid #1c1c1e;border-radius:32px;
+    box-shadow:0 10px 32px rgba(0,0,0,.5), inset 0 0 0 2px #333;
+    transition:width .2s, height .2s;overflow:hidden;flex-shrink:0
   }
-  .phone::before{content:"";position:absolute;top:10px;left:50%;transform:translateX(-50%);
-    width:120px;height:22px;background:#1c1c1e;border-radius:0 0 16px 16px;z-index:10}
+  .phone::before{content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);
+    width:88px;height:16px;background:#1c1c1e;border-radius:0 0 12px 12px;z-index:10;pointer-events:none}
+  .phone.landscape::before{top:50%;left:7px;width:16px;height:72px;transform:translateY(-50%);border-radius:0 12px 12px 0}
+  .phone-fit{overflow:hidden;position:relative;contain:layout paint}
+  .phone-screen{transform-origin:0 0;will-change:transform}
   .phone iframe{width:100%;height:100%;border:0;display:block;background:#000}
+  .device-size-lbl{font-size:11px;color:var(--dim);text-align:center;margin-top:6px;min-height:16px}
   .hint{color:var(--dim);font-size:12px;max-width:760px;text-align:center;line-height:1.5;padding:0 12px 16px}
   code{background:#21262d;padding:1px 5px;border-radius:4px}
   .theme-bar{
@@ -67,7 +154,17 @@
   .theme-bar .title{font-size:13px;font-weight:800;color:var(--accent);width:100%;text-align:center;margin:0 0 2px}
   .theme-bar .status{font-size:12px;color:var(--ok);font-weight:700;min-width:140px;text-align:center}
   .theme-bar select{min-width:120px}
-  .theme-bar button.theme-demo{background:#238636;border-color:#238636;color:#fff}
+  .nav-bar{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#152238,#0d1520);border:2px solid #1f6feb;
+    border-radius:12px;padding:12px 14px;max-width:900px;width:100%
+  }
+  .nav-bar .title{font-size:13px;font-weight:800;color:#74c0fc;width:100%;text-align:center;margin:0 0 2px}
+  .nav-bar .sim-nav-group{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center}
+  .nav-bar button.nav-on{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  .nav-bar button.bearing-on{background:#6e40c9;border-color:#6e40c9;color:#fff}
+  .nav-bar .status{font-size:12px;color:var(--ok);font-weight:700;min-width:140px;text-align:center}
+  .nav-bar .app-state{font-size:11px;color:var(--dim);flex:1 1 100%;text-align:center}
   .tel-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
     background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 12px;
     max-width:900px;width:100%}
@@ -113,6 +210,10 @@
   }
   body.is-mobile.phase-app .theme-bar,
   body.is-mobile.phase-app .tel-bar{display:none}
+  body.is-mobile.phase-app .nav-bar{
+    display:flex;width:100%;max-width:none;margin:0;border-radius:0;border-left:none;border-right:none;
+    border-top:none;padding:8px 10px;gap:8px
+  }
   body.is-mobile.phase-app .frame-wrap{
     flex:1;min-height:0;padding:0
   }
@@ -129,7 +230,15 @@
   body.is-mobile .desktop-only{display:none!important}
   body.is-mobile .mobile-only{display:flex!important}
   body.is-desktop .mobile-only{display:none!important}
-  body.is-desktop .sim-controls-dock{position:relative;width:100%;max-width:900px}
+  body.is-desktop .sim-controls-dock{position:relative;width:100%;max-width:none}
+  body.is-desktop:not(.sim-wide) .sim-top{
+    display:flex;flex-direction:column;gap:var(--sim-gap);width:100%
+  }
+  .sim-protocol-warn{
+    width:100%;max-width:900px;background:#3d1f1f;border:1px solid #f0883e;color:#ffd4a8;
+    border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.45;text-align:center
+  }
+  .sim-protocol-warn code{background:#2a1515;padding:1px 5px;border-radius:4px}
 </style>
 </head>
 <body>
@@ -158,14 +267,12 @@
             <option value="auto">Авто</option>
           </select>
         </label>
-        <label>Старт маршрута (GPS)
-          <select id="setup-start-preset">
-            <option value="kremlin">Кремль (демо)</option>
-            <option value="vdnh">ВДНХ</option>
-            <option value="sokolniki">Сокольники</option>
-            <option value="tverskaya">Тверская</option>
-          </select>
+        <label>Адрес старта GPS
+          <input type="text" id="setup-start-address" placeholder="Город, улица, дом" autocomplete="street-address"
+            value="Москва, Красная площадь">
         </label>
+        <button type="button" id="btn-setup-start-search" class="ok">🔎 Найти старт</button>
+        <p class="sim-start-status" id="setup-start-status"></p>
         <button type="button" id="setup-gpx-demo">📍 GPX демо-трек</button>
         <label>Или свой GPX
           <input type="file" id="setup-gpx-file" accept=".gpx,application/gpx+xml" style="font-size:12px">
@@ -177,13 +284,11 @@
   </div>
 
   <div class="sim-phase sim-phase-app" id="sim-phase-app">
-    <h1 class="page-title">🏍 Мото ИЛС — эмулятор экрана и движения</h1>
-    <div class="sub page-title">Тестирование HUD без реальной поездки. На ПК панель симулятора доступна во время поездки.</div>
-
+    <div class="sim-top" id="sim-top">
     <div class="sim-controls-dock" id="sim-controls-dock">
       <div class="bar">
-        <button id="btn-orient" class="act desktop-only">📱 Портрет</button>
-        <label class="desktop-only">Устройство
+        <button id="btn-orient" class="act desktop-only" title="Портрет / альбом">📱</button>
+        <label class="desktop-only">Тел.
           <select id="sel-device">
             <option value="390x844">iPhone 14 (390×844)</option>
             <option value="360x800">Android (360×800)</option>
@@ -192,33 +297,34 @@
             <option value="430x932">iPhone Pro Max (430×932)</option>
           </select>
         </label>
-        <label>Макс. на прямой: <span class="val" id="spd-val">90</span> км/ч
+        <label>км/ч <span class="val" id="spd-val">90</span>
           <input type="range" id="spd" min="20" max="120" value="90" step="5">
         </label>
         <span class="status" id="sim-spd-live" title="Текущая скорость симуляции">GPS: —</span>
         <button id="btn-play" class="ok">▶ Пуск</button>
         <button id="btn-reset">↺ Сброс</button>
         <button id="btn-reload">⟳ Меню</button>
-        <button id="btn-gpx-demo" class="desktop-only" title="Демо-трек с timestamps">📍 GPX демо</button>
+        <button type="button" id="btn-sim-build-route" class="ok desktop-only" title="Построить маршрут">↻</button>
+        <button id="btn-gpx-demo" class="desktop-only" title="GPX демо">GPX</button>
         <label class="desktop-only">GPX файл
           <input type="file" id="gpx-file" accept=".gpx,application/gpx+xml" style="max-width:180px;font-size:11px">
         </label>
-        <label class="mobile-only">Старт GPS
-          <select id="mobile-start-preset" style="min-height:auto;padding:6px 8px">
-            <option value="kremlin">Кремль</option>
-            <option value="vdnh">ВДНХ</option>
-            <option value="sokolniki">Сокольники</option>
-            <option value="tverskaya">Тверская</option>
-          </select>
+        <label class="mobile-only sim-start-mobile">Старт GPS
+          <input type="text" id="mobile-start-address" placeholder="Адрес старта" autocomplete="street-address"
+            style="min-height:36px;padding:6px 8px;font-size:13px;background:#21262d;color:var(--fg);border:1px solid var(--border);border-radius:8px">
         </label>
+        <button type="button" class="mobile-only" id="btn-mobile-start-search">🔎 Старт</button>
         <label class="sim-check desktop-only" title="Только для быстрого регресса на ПК">
           <input type="checkbox" id="chk-autohud"> Авто-HUD
+        </label>
+        <label class="sim-check desktop-only" title="Запись JSONL в iframe">
+          <input type="checkbox" id="chk-telemetry"> Телеметрия
         </label>
       </div>
     </div>
 
     <div class="theme-bar" id="theme-bar">
-      <div class="title">🎨 Проверка тем HUD (6 × день/ночь)</div>
+      <div class="title">Тема</div>
       <label>Тема
         <select id="sim-theme">
           <option value="avionics">Авионика</option>
@@ -236,10 +342,19 @@
           <option value="auto">Авто</option>
         </select>
       </label>
-      <button type="button" id="btn-theme-hitech" class="theme-demo" title="Быстрый тест: оранжевый хайтек">⚡ Хайтек</button>
-      <button type="button" id="btn-theme-vintage" class="theme-demo" title="Быстрый тест: VFD винтаж">📟 Винтаж</button>
       <span class="status" id="theme-status">HUD: …</span>
-      <span class="status" id="offroute-debug" title="S.offRouteState из iframe">offRoute: —</span>
+    </div>
+
+    <div class="nav-bar" id="nav-bar">
+      <div class="title">Навигация</div>
+      <div class="sim-nav-group" title="Кнопки как в HUD: ДОР / КАРТ / ПЕЛЕНГ">
+        <button type="button" id="btn-sim-path" title="Дорожка / маршрут">ДОР</button>
+        <button type="button" id="btn-sim-map" title="Карта в HUD">КАРТ</button>
+        <button type="button" id="btn-sim-bearing" title="Пеленг к финишу">ПЕЛЕНГ</button>
+      </div>
+      <span class="status" id="hud-nav-debug" title="navMode · viewMode · offRoute">nav: —</span>
+      <div class="app-state" id="app-state">состояние: …</div>
+    </div>
     </div>
 
     <div class="tel-bar hidden" id="tel-replay-bar">
@@ -259,68 +374,90 @@
     </div>
 
     <div class="sim-stage" id="sim-stage">
+      <div class="sim-phone-col" id="sim-phone-col">
       <div class="frame-wrap">
         <div class="phone" id="phone">
-          <iframe id="frame" allow="fullscreen; geolocation" title="Мото ИЛС"></iframe>
+          <div class="phone-fit" id="phone-fit">
+            <div class="phone-screen" id="phone-screen">
+              <iframe id="frame" allow="fullscreen; geolocation" title="Мото ИЛС"></iframe>
+            </div>
+          </div>
         </div>
+        <div class="device-size-lbl desktop-only" id="device-size-lbl">—</div>
+      </div>
       </div>
       <aside class="sim-map-panel" id="sim-map-panel" aria-label="Карта маршрута">
-        <div class="sim-map-head">
-          <span class="sim-map-head-title">🗺 Карта · маршрут и GPS</span>
-          <div class="sim-map-controls">
-            <label>Подложка
-              <select id="sim-map-provider" aria-label="Провайдер карты"></select>
-            </label>
-            <label>Старт маршрута
-              <select id="sim-start-preset" aria-label="Точка старта">
-                <option value="kremlin">Кремль (демо)</option>
-                <option value="vdnh">ВДНХ</option>
-                <option value="sokolniki">Сокольники</option>
-                <option value="tverskaya">Тверская / Пушкинская</option>
-                <option value="custom">Своя (клик на карте)</option>
-              </select>
-            </label>
-            <button type="button" id="btn-sim-pick-start" title="Клик по карте — новая точка старта">📍 На карте</button>
-            <button type="button" id="btn-sim-rebuild-route" class="secondary" title="Перестроить маршрут от нового старта">↻ Маршрут</button>
-            <span class="sim-start-coords" id="sim-start-coords">Старт: 55.75700, 37.61600</span>
-          </div>
+        <div class="sim-map-toolbar">
+          <label>Подложка
+            <select id="sim-map-provider" aria-label="Провайдер карты"></select>
+          </label>
+          <label>Старт
+            <input type="text" id="sim-start-address" placeholder="Адрес" autocomplete="street-address"
+              value="Москва, Красная площадь">
+          </label>
+          <button type="button" id="btn-sim-start-search" class="ok" title="Nominatim">🔎</button>
+          <button type="button" id="btn-sim-pick-start" title="Клик по карте">📍</button>
+          <button type="button" id="btn-sim-rebuild-route" class="secondary" title="Перестроить маршрут">↻</button>
+          <span class="sim-start-status" id="sim-start-status"></span>
+          <span class="sim-start-coords" id="sim-start-coords">—</span>
         </div>
         <div id="sim-map"></div>
       </aside>
     </div>
 
-    <div class="hint">
+    <div class="hint desktop-only-hidden" hidden aria-hidden="true">
       Порядок: настройки симулятора → меню (финиш, маршрут) → <strong>▶ ПОЕХАЛИ</strong> в приложении.
       Движение GPS начинается только после «ПОЕХАЛИ»; пауза/скорость — в панели выше (на ПК — в любой момент).
-      <strong>На ПК</strong> справа от телефона — карта маршрута, позиции и сим-трека.
+      <strong>Навигация:</strong> <strong>ДОР / КАРТ / ПЕЛЕНГ</strong> — как в HUD; нужен маршрут и «ПОЕХАЛИ» (HUD запустится автоматически).
+      <strong>Тема:</strong> селекты синхронизированы с приложением и localStorage <code>moto-hud-theme</code>.
+      <strong>На ПК</strong> справа — карта на всё свободное место; старт GPS — поиск адреса (Nominatim).
       <strong>Адрес:</strong> «НАСТР.» → очистите поле финиша → «🔎 Найти».
-      URL с авто-HUD: <code>?autohud=1</code> · GPX: <code>?gpx=fixtures/serpentine-demo.gpx</code>.
+      URL: <code>?autohud=1</code> · <code>?telemetry=1</code> · <code>?gpx=fixtures/serpentine-demo.gpx</code> · <code>?regression=1</code>.
+      Replay JSONL — загрузите файл сессии в панели ниже (fix: spd, dev, meas, spd_src).
       Ссылка: <code id="share-link">…</code>
     </div>
   </div>
 
 <script>
-  const isMobile = window.matchMedia('(max-width:720px)').matches ||
+  const isMobile = window.matchMedia('(max-width:767px)').matches &&
     /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  let portrait = true;
+  function syncSimLayoutClass(){
+    const wide = window.matchMedia('(min-width:768px)').matches;
+    document.body.classList.toggle('sim-wide', wide);
+    const orientBtn = document.getElementById('btn-orient');
+    if(orientBtn){
+      orientBtn.textContent = wide ? (portrait ? '📱' : '🖥') : (portrait ? '📱 Портрет' : '🖥 Альбом');
+    }
+    if(wide) setTimeout(() => { window.SimMap?.invalidateSize?.(); applySize(); }, 80);
+  }
   document.body.classList.add(isMobile ? 'is-mobile' : 'is-desktop');
   document.body.classList.add(isMobile ? 'phase-setup' : 'phase-app');
+  document.body.classList.toggle('sim-wide', window.matchMedia('(min-width:768px)').matches);
 
   const phone = document.getElementById('phone');
+  const phoneFit = document.getElementById('phone-fit');
+  const phoneScreen = document.getElementById('phone-screen');
+  const deviceSizeLbl = document.getElementById('device-size-lbl');
   const frame = document.getElementById('frame');
   const selDevice = document.getElementById('sel-device');
   const btnOrient = document.getElementById('btn-orient');
   const btnPlay = document.getElementById('btn-play');
   const btnReset = document.getElementById('btn-reset');
   const btnReload = document.getElementById('btn-reload');
+  const btnSimBuildRoute = document.getElementById('btn-sim-build-route');
   const btnGpxDemo = document.getElementById('btn-gpx-demo');
   const gpxFile = document.getElementById('gpx-file');
   const chkAutohud = document.getElementById('chk-autohud');
+  const chkTelemetry = document.getElementById('chk-telemetry');
   const simTheme = document.getElementById('sim-theme');
   const simMode = document.getElementById('sim-mode');
   const themeStatus = document.getElementById('theme-status');
-  const offrouteDebug = document.getElementById('offroute-debug');
-  const btnThemeHitech = document.getElementById('btn-theme-hitech');
-  const btnThemeVintage = document.getElementById('btn-theme-vintage');
+  const hudNavDebug = document.getElementById('hud-nav-debug');
+  const appStateEl = document.getElementById('app-state');
+  const btnSimPath = document.getElementById('btn-sim-path');
+  const btnSimMap = document.getElementById('btn-sim-map');
+  const btnSimBearing = document.getElementById('btn-sim-bearing');
   const spd = document.getElementById('spd');
   const spdVal = document.getElementById('spd-val');
   const setupSpd = document.getElementById('setup-spd');
@@ -332,23 +469,108 @@
   const setupGpxFile = document.getElementById('setup-gpx-file');
   const setupGpxNote = document.getElementById('setup-gpx-note');
 
-  const START_PRESETS = {
-    kremlin:   { lat: 55.75700, lon: 37.61600, label: 'Кремль' },
-    vdnh:      { lat: 55.829430, lon: 37.632140, label: 'ВДНХ' },
-    sokolniki: { lat: 55.803200, lon: 37.672500, label: 'Сокольники' },
-    tverskaya: { lat: 55.765200, lon: 37.605600, label: 'Тверская' }
+  const SIM_START_QUERY_KEY = 'moto-hud-sim-start-query';
+  const SIM_START_KEY = 'moto-hud-sim-start';
+
+  const THEME_IDS = ['avionics', 'hitech', 'space', 'sport', 'chopper', 'vintage'];
+  const THEME_LABELS = {
+    avionics: 'Авионика', hitech: 'Хайтек', space: 'Космос',
+    sport: 'Спорт', chopper: 'Чоппер', vintage: 'Винтаж'
   };
+  const MODE_PREFS = ['day', 'night', 'auto'];
 
   const simMapProvider = document.getElementById('sim-map-provider');
-  const simStartPreset = document.getElementById('sim-start-preset');
+  const simStartAddress = document.getElementById('sim-start-address');
+  const simStartStatus = document.getElementById('sim-start-status');
+  const btnSimStartSearch = document.getElementById('btn-sim-start-search');
   const btnSimPickStart = document.getElementById('btn-sim-pick-start');
   const btnSimRebuildRoute = document.getElementById('btn-sim-rebuild-route');
   const simStartCoords = document.getElementById('sim-start-coords');
+  const setupStartAddress = document.getElementById('setup-start-address');
+  const setupStartStatus = document.getElementById('setup-start-status');
+  const btnSetupStartSearch = document.getElementById('btn-setup-start-search');
+  const mobileStartAddress = document.getElementById('mobile-start-address');
+  const btnMobileStartSearch = document.getElementById('btn-mobile-start-search');
   let pickStartActive = false;
 
-  function updateStartCoordsLabel(lat, lon){
+  function syncStartAddressInputs(q){
+    if(!q) return;
+    if(simStartAddress) simStartAddress.value = q;
+    if(setupStartAddress) setupStartAddress.value = q;
+    if(mobileStartAddress) mobileStartAddress.value = q;
+  }
+
+  function setStartStatus(el, text, isErr){
+    if(!el) return;
+    el.textContent = text || '';
+    el.classList.toggle('err', !!isErr);
+  }
+
+  async function searchSimAddress(query){
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ru&q=' +
+      encodeURIComponent(query.trim()) + '&email=moto-hud-dev@users.noreply.github.com';
+    const r = await fetch(url, { headers: { Accept: 'application/json' }, referrerPolicy: 'no-referrer' });
+    if(!r.ok) throw new Error('Поиск: HTTP ' + r.status);
+    const list = await r.json();
+    if(!list?.length) throw new Error('Адрес не найден');
+    return list[0];
+  }
+
+  function updateStartCoordsLabel(lat, lon, label){
     if(!simStartCoords || lat == null) return;
-    simStartCoords.textContent = 'Старт: ' + lat.toFixed(5) + ', ' + lon.toFixed(5);
+    const head = label ? (label + ' · ') : '';
+    simStartCoords.textContent = 'Старт: ' + head + lat.toFixed(5) + ', ' + lon.toFixed(5);
+  }
+
+  function applySimStartCoords(lat, lon, label, query){
+    const payload = { lat, lon, label: label || '' };
+    try{
+      localStorage.setItem(SIM_START_KEY, JSON.stringify(payload));
+      if(query) localStorage.setItem(SIM_START_QUERY_KEY, query);
+    }catch(e){}
+    updateStartCoordsLabel(lat, lon, label);
+    window.SimMap?.setStartMarker?.(lat, lon);
+    window.SimMap?.flyToStart?.(lat, lon, 14);
+    applySimStart(lat, lon, { rebuildRoute: false });
+  }
+
+  async function searchAndApplyStart(query, statusEl){
+    const q = (query || '').trim();
+    if(!q){
+      setStartStatus(statusEl, 'Введите адрес', true);
+      return false;
+    }
+    setStartStatus(statusEl, 'Ищем…', false);
+    try{
+      const hit = await searchSimAddress(q);
+      const lat = parseFloat(hit.lat);
+      const lon = parseFloat(hit.lon);
+      if(!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('Некорректные координаты');
+      const label = (hit.display_name || q).split(',')[0].trim();
+      syncStartAddressInputs(q);
+      applySimStartCoords(lat, lon, label, q);
+      setStartStatus(statusEl, label, false);
+      return true;
+    }catch(e){
+      setStartStatus(statusEl, e.message || String(e), true);
+      return false;
+    }
+  }
+
+  async function bootstrapSimStart(){
+    try{
+      const q = localStorage.getItem(SIM_START_QUERY_KEY);
+      if(q) syncStartAddressInputs(q);
+      const saved = JSON.parse(localStorage.getItem(SIM_START_KEY) || 'null');
+      if(saved?.lat != null && saved?.lon != null){
+        updateStartCoordsLabel(saved.lat, saved.lon, saved.label);
+        window.SimMap?.setStartMarker?.(saved.lat, saved.lon);
+        if(frameLoaded) applySimStart(saved.lat, saved.lon, { rebuildRoute: false });
+        return;
+      }
+    }catch(e){}
+    const q = simStartAddress?.value || setupStartAddress?.value || 'Москва, Красная площадь';
+    await searchAndApplyStart(q, simStartStatus || setupStartStatus);
   }
 
   function applySimStart(lat, lon, opts){
@@ -382,27 +604,28 @@
     }
 
     try{
-      const saved = JSON.parse(localStorage.getItem('moto-hud-sim-start') || 'null');
+      const saved = JSON.parse(localStorage.getItem(SIM_START_KEY) || 'null');
       if(saved?.lat != null){
-        updateStartCoordsLabel(saved.lat, saved.lon);
+        updateStartCoordsLabel(saved.lat, saved.lon, saved.label);
         window.SimMap?.setStartMarker?.(saved.lat, saved.lon);
       }
     }catch(e){}
 
-    simStartPreset?.addEventListener('change', () => {
-      const key = simStartPreset.value;
-      syncStartPresetSelects(key);
-      if(key === 'custom') return;
-      onStartPresetChange(key);
+    btnSimStartSearch?.addEventListener('click', () => {
+      void searchAndApplyStart(simStartAddress?.value, simStartStatus);
+    });
+    simStartAddress?.addEventListener('keydown', e => {
+      if(e.key === 'Enter'){ e.preventDefault(); void searchAndApplyStart(simStartAddress.value, simStartStatus); }
     });
 
     btnSimPickStart?.addEventListener('click', () => {
       pickStartActive = !pickStartActive;
       btnSimPickStart.classList.toggle('pick-on', pickStartActive);
       btnSimPickStart.textContent = pickStartActive ? '✓ Кликните…' : '📍 На карте';
-      if(simStartPreset && pickStartActive) simStartPreset.value = 'custom';
       window.SimMap?.setPickStartMode?.(pickStartActive, (lat, lon) => {
         applySimStart(lat, lon, { rebuildRoute: false });
+        updateStartCoordsLabel(lat, lon, 'На карте');
+        try{ localStorage.setItem(SIM_START_KEY, JSON.stringify({ lat, lon, label: 'На карте' })); }catch(e){}
         pickStartActive = false;
         btnSimPickStart.classList.remove('pick-on');
         btnSimPickStart.textContent = '📍 На карте';
@@ -410,49 +633,27 @@
       });
     });
 
-    btnSimRebuildRoute?.addEventListener('click', async () => {
-      try{
-        const win = frame.contentWindow;
-        const api = win?.__SIM__;
-        const start = api?.start;
-        if(start) applySimStart(start[0], start[1], { rebuildRoute: true, forceSynthetic: false });
-        else if(win?.__motoHUD?.doBuildRoute) await win.__motoHUD.doBuildRoute();
-      }catch(e){ alert('Маршрут: ' + (e.message || e)); }
-    });
+    btnSimRebuildRoute?.addEventListener('click', () => { void buildRouteInFrame(); });
   }
 
-  const setupStartPreset = document.getElementById('setup-start-preset');
-  const mobileStartPreset = document.getElementById('mobile-start-preset');
+  btnSetupStartSearch?.addEventListener('click', () => {
+    void searchAndApplyStart(setupStartAddress?.value, setupStartStatus);
+  });
+  setupStartAddress?.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); void searchAndApplyStart(setupStartAddress.value, setupStartStatus); }
+  });
+  btnMobileStartSearch?.addEventListener('click', () => {
+    void searchAndApplyStart(mobileStartAddress?.value, null);
+  });
+  mobileStartAddress?.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); void searchAndApplyStart(mobileStartAddress.value, null); }
+  });
 
-  function syncStartPresetSelects(key){
-    if(simStartPreset && key !== 'custom') simStartPreset.value = key;
-    if(setupStartPreset) setupStartPreset.value = key;
-    if(mobileStartPreset) mobileStartPreset.value = key;
-  }
-
-  function onStartPresetChange(key){
-    if(key === 'custom') return;
-    const p = START_PRESETS[key];
-    if(!p) return;
-    syncStartPresetSelects(key);
-    try{ localStorage.setItem('moto-hud-sim-start-preset', key); }catch(e){}
-    if(frameLoaded) applySimStart(p.lat, p.lon, { rebuildRoute: false });
-    else try{ localStorage.setItem('moto-hud-sim-start', JSON.stringify({ lat: p.lat, lon: p.lon })); }catch(e){}
-  }
-
-  setupStartPreset?.addEventListener('change', () => onStartPresetChange(setupStartPreset.value));
-  mobileStartPreset?.addEventListener('change', () => onStartPresetChange(mobileStartPreset.value));
-
-  try{
-    const savedPreset = localStorage.getItem('moto-hud-sim-start-preset');
-    if(savedPreset && START_PRESETS[savedPreset]) syncStartPresetSelects(savedPreset);
-  }catch(e){}
-
-  let portrait = true;
   let playing = false;
   let pendingGpxText = null;
   let pendingGpxLoop = false;
   let frameLoaded = false;
+  let lastLayoutKey = '';
 
   function syncThemeControlsFromSetup(){
     if(setupTheme && simTheme) simTheme.value = setupTheme.value;
@@ -477,20 +678,71 @@
     if(gpxQ) url += '&gpx=' + encodeURIComponent(gpxQ);
     if(new URLSearchParams(location.search).get('loop') === '1') url += '&loop=1';
     if(new URLSearchParams(location.search).get('regression') === '1') url += '&regression=1&telemetry=1';
+    if(chkTelemetry?.checked || new URLSearchParams(location.search).get('telemetry') === '1'){
+      url += '&telemetry=1';
+    }
     return url + '&t=' + Date.now();
   }
 
-  function readHudThemeStatus(){
+  function readFrameThemePrefs(){
     try{
-      const doc = frame.contentDocument;
+      const win = frame.contentWindow;
+      const doc = win?.document;
       const html = doc?.documentElement;
       if(!html) return null;
-      const names = { avionics:'Авионика', hitech:'Хайтек', space:'Космос', sport:'Спорт', chopper:'Чоппер', vintage:'Винтаж' };
-      const id = ['avionics','hitech','space','sport','chopper','vintage'].find(x => html.classList.contains('theme-' + x)) || '?';
-      const mode = html.getAttribute('data-mode') || '?';
-      const pref = simMode?.value || '?';
-      return (names[id] || id) + ' · ' + mode + (pref === 'auto' ? ' (авто)' : '');
+      let modePref = simMode?.value || 'night';
+      try{
+        const o = JSON.parse(win.localStorage.getItem('moto-hud-theme') || '{}');
+        if(MODE_PREFS.includes(o.modePref)) modePref = o.modePref;
+      }catch(e){}
+      const theme = THEME_IDS.find(id => html.classList.contains('theme-' + id)) || (simTheme?.value || 'avionics');
+      const resolved = html.getAttribute('data-mode') || '?';
+      return { theme, modePref, resolved };
     }catch(e){ return null; }
+  }
+
+  /** Дождаться __motoHUD в iframe (app.js грузится после load). */
+  function waitForFrameApi(maxMs){
+    const deadline = Date.now() + (maxMs || 12000);
+    return new Promise(resolve => {
+      const tick = () => {
+        try{
+          const api = frame.contentWindow?.__motoHUD;
+          if(api?.simApplyTheme) return resolve(api);
+        }catch(e){}
+        if(Date.now() >= deadline) return resolve(null);
+        setTimeout(tick, 80);
+      };
+      tick();
+    });
+  }
+
+  /** Синхронизация темы: sim-панель → iframe (не откатывать select при гонке load). */
+  function syncThemeToFrame(){
+    if(_applyingTheme) return false;
+    const prefs = readFrameThemePrefs();
+    if(!prefs) return false;
+    const wantTheme = simTheme?.value || setupTheme?.value || 'avionics';
+    const wantMode = simMode?.value || setupMode?.value || 'night';
+    if(prefs.theme === wantTheme && prefs.modePref === wantMode) return false;
+    applyThemeInFrame(wantTheme, wantMode);
+    return true;
+  }
+
+  function readHudThemeStatus(){
+    const prefs = readFrameThemePrefs();
+    if(!prefs) return null;
+    const name = THEME_LABELS[prefs.theme] || prefs.theme;
+    const modeLbl = prefs.modePref === 'auto'
+      ? prefs.resolved + ' (авто)'
+      : prefs.resolved;
+    const selTheme = simTheme?.value;
+    const selMode = simMode?.value;
+    const mismatch = (selTheme && selTheme !== prefs.theme) || (selMode && selMode !== prefs.modePref);
+    return {
+      text: name + ' · ' + modeLbl + (mismatch ? ' ⚠' : ''),
+      mismatch
+    };
   }
 
   function updateLiveSpeed(){
@@ -504,21 +756,181 @@
     }catch(e){ el.textContent = 'GPS: —'; }
   }
 
-  function updateOffRouteDebug(){
-    if(!offrouteDebug) return;
+  function updateHudNavDebug(){
+    if(!hudNavDebug) return;
     try{
-      const st = frame.contentWindow?.__motoHUD?.S?.offRouteState;
-      offrouteDebug.textContent = 'offRoute: ' + (st || '—');
+      const S = frame.contentWindow?.__motoHUD?.S;
+      const nav = S?.navMode || '—';
+      const view = S?.viewMode || '—';
+      const ors = S?.offRouteState || '—';
+      hudNavDebug.textContent = 'nav: ' + nav + ' · view:' + view + ' · off:' + ors;
     }catch(e){
-      offrouteDebug.textContent = 'offRoute: —';
+      hudNavDebug.textContent = 'nav: —';
+    }
+    const bearing = (() => {
+      try{ return frame.contentWindow?.__motoHUD?.isBearingMode?.(); }catch(e){ return false; }
+    })();
+    const view = (() => {
+      try{ return frame.contentWindow?.__motoHUD?.S?.viewMode || 'hud'; }catch(e){ return 'hud'; }
+    })();
+    const onHud = view === 'hud';
+    btnSimPath?.classList.toggle('nav-on', !bearing && onHud);
+    btnSimMap?.classList.toggle('nav-on', !bearing && !onHud);
+    btnSimBearing?.classList.toggle('bearing-on', bearing);
+  }
+
+  function updateAppState(){
+    if(!appStateEl) return;
+    try{
+      const win = frame.contentWindow;
+      const S = win?.__motoHUD?.S;
+      const doc = win?.document;
+      const hudOn = doc?.getElementById('hud')?.classList.contains('on');
+      const parts = [
+        hudOn ? 'HUD вкл' : 'меню',
+        S?.route ? 'маршрут' : 'без маршрута',
+        S?.finish ? 'финиш' : 'без финиша',
+        S?.gps ? (Math.round(S.dispSpeed || 0) + ' км/ч') : 'нет GPS'
+      ];
+      if(win?.__SIM__?.isRunning?.()) parts.push('сим ▶');
+      if(_navErr) parts.push('⚠ ' + _navErr);
+      appStateEl.textContent = 'состояние: ' + parts.join(' · ');
+    }catch(e){
+      appStateEl.textContent = 'состояние: —';
+    }
+  }
+
+  let _navBusy = false;
+  let _navErr = '';
+
+  function showNavErr(msg){
+    _navErr = msg || '';
+    if(appStateEl && _navErr){
+      appStateEl.textContent = 'навигация: ' + _navErr;
+      appStateEl.style.color = '#f0883e';
+    }else if(appStateEl){
+      appStateEl.style.color = '';
+    }
+  }
+
+  async function clickNavInFrame(kind){
+    if(_navBusy) return;
+    if(!frameLoaded){
+      showNavErr('iframe ещё загружается');
+      return;
+    }
+    const api = await waitForFrameApi(12000);
+    if(!api?.simNavAction){
+      showNavErr('Обновите страницу (нет simNavAction) — нужен npm run build');
+      return;
+    }
+    _navBusy = true;
+    [btnSimPath, btnSimMap, btnSimBearing].forEach(b => { if(b) b.disabled = true; });
+    try{
+      const res = await api.simNavAction(kind);
+      if(!res?.ok){
+        showNavErr(res?.error || 'не удалось переключить');
+      }else{
+        _navErr = '';
+        if(appStateEl) appStateEl.style.color = '';
+      }
+    }catch(e){
+      showNavErr(e?.message || String(e));
+    }finally{
+      _navBusy = false;
+      [btnSimPath, btnSimMap, btnSimBearing].forEach(b => { if(b) b.disabled = false; });
+      setTimeout(() => { updateHudNavDebug(); updateAppState(); }, 100);
     }
   }
 
   function updateThemeStatus(){
     if(!themeStatus) return;
     const s = readHudThemeStatus();
-    themeStatus.textContent = s ? ('HUD: ' + s) : 'HUD: загрузка…';
-    themeStatus.style.color = s ? 'var(--ok)' : 'var(--dim)';
+    themeStatus.textContent = s ? ('HUD: ' + s.text) : 'HUD: загрузка…';
+    themeStatus.style.color = s ? (s.mismatch ? '#f0883e' : 'var(--ok)') : 'var(--dim)';
+  }
+
+  let _applyingTheme = false;
+
+  async function applyThemeInFrame(theme, mode){
+    if(!THEME_IDS.includes(theme)) theme = 'avionics';
+    if(!MODE_PREFS.includes(mode)) mode = 'night';
+    _applyingTheme = true;
+    const api = await waitForFrameApi(12000);
+    if(!api?.simApplyTheme){
+      _applyingTheme = false;
+      if(themeStatus){
+        themeStatus.textContent = 'HUD: ⚠ API не загрузился — перезагрузите iframe';
+        themeStatus.style.color = '#f0883e';
+      }
+      return;
+    }
+    try{
+      const res = api.simApplyTheme(theme, mode);
+      if(res?.theme && simTheme) simTheme.value = res.theme;
+      if(res?.theme && setupTheme) setupTheme.value = res.theme;
+      if(!res?.ok && themeStatus){
+        themeStatus.textContent = 'HUD: ⚠ тема не применилась';
+        themeStatus.style.color = '#f0883e';
+      }
+    }catch(e){
+      if(themeStatus){
+        themeStatus.textContent = 'HUD: ⚠ ' + (e.message || e);
+        themeStatus.style.color = '#f0883e';
+      }
+    }finally{
+      setTimeout(() => { _applyingTheme = false; updateThemeStatus(); }, 120);
+    }
+  }
+
+  async function bootstrapIframeApp(){
+    try{
+      const win = frame.contentWindow;
+      const doc = win?.document;
+      if(!win || !doc) return;
+      try{
+        win.localStorage.setItem('moto-hud-legal-consent', JSON.stringify({ version: 1, ts: new Date().toISOString() }));
+        doc.getElementById('legalModal')?.classList.remove('on');
+        doc.body?.classList.remove('legal-gate', 'legal-blocked');
+      }catch(e){}
+      const api = await waitForFrameApi(15000);
+      if(!api) return;
+      api.simKickGps?.();
+      api.simEnsureDemoFinish?.();
+      const theme = simTheme?.value || setupTheme?.value || 'avionics';
+      const mode = simMode?.value || setupMode?.value || 'night';
+      api.simApplyTheme?.(theme, mode);
+      if(chkAutohud?.checked || new URLSearchParams(location.search).get('autohud') === '1'){
+        await api.simBuildRoute?.();
+      }
+    }catch(e){ console.warn('sim bootstrap', e); }
+  }
+
+  async function buildRouteInFrame(){
+    const api = await waitForFrameApi(12000);
+    if(!api?.simBuildRoute){
+      showNavErr('Нет API маршрута — npm run build и откройте через http://localhost:3456/sim.html');
+      return;
+    }
+    if(btnSimBuildRoute) btnSimBuildRoute.disabled = true;
+    if(themeStatus) themeStatus.textContent = 'HUD: строим маршрут…';
+    try{
+      const res = await api.simBuildRoute();
+      if(res?.ok){
+        if(res.warn) showNavErr(res.warn);
+        else showNavErr('');
+        window.SimMap?.resetFit?.();
+        try{ window.SimMap?.update?.(frame.contentWindow); }catch(e){}
+      }else{
+        showNavErr(res?.error || 'маршрут не построен');
+      }
+    }catch(e){
+      showNavErr(e?.message || String(e));
+    }finally{
+      if(btnSimBuildRoute) btnSimBuildRoute.disabled = false;
+      updateThemeStatus();
+      updateAppState();
+    }
   }
 
   function syncPlayButton(){
@@ -529,56 +941,78 @@
     }
   }
 
-  function applyThemeInFrame(theme, mode){
-    try{
-      localStorage.setItem('moto-hud-theme', JSON.stringify({ theme, modePref: mode }));
-    }catch(e){}
-    try{
-      const doc = frame.contentDocument;
-      const html = doc?.documentElement;
-      if(html){
-        ['avionics','hitech','space','sport','chopper','vintage'].forEach(id => html.classList.remove('theme-' + id));
-        html.classList.add('theme-' + theme);
-        if(mode === 'day' || mode === 'night') html.setAttribute('data-mode', mode);
-        else {
-          const h = new Date().getHours();
-          html.setAttribute('data-mode', (h >= 7 && h < 21) ? 'day' : 'night');
-        }
-      }
-    }catch(e){}
-    let tries = 0;
-    const tick = () => {
-      tries++;
-      const win = frame.contentWindow;
-      if(win?.applyTheme){
-        win.applyTheme(theme, mode);
-        updateThemeStatus();
-        return;
-      }
-      if(tries < 48) setTimeout(tick, 250);
-      else if(frameLoaded) frame.src = frameUrl();
-    };
-    tick();
+  const PHONE_BEZEL = 20;
+
+  function measureStage(){
+    const stage = document.getElementById('sim-stage');
+    const topEl = document.getElementById('sim-top');
+    const topH = topEl?.offsetHeight || 72;
+    let availH = stage?.clientHeight || 0;
+    if(availH < 280){
+      const pad = document.body.classList.contains('is-desktop') ? 12 : 0;
+      availH = window.innerHeight - topH - pad;
+    }
+    return Math.max(360, availH);
   }
 
   function applySize(){
-    if(isMobile) return;
-    const mapEl = document.getElementById('sim-map');
-    const stageH = Math.min(window.innerHeight - 360, 760);
-    if(mapEl) mapEl.style.height = Math.max(360, stageH) + 'px';
+    if(isMobile && !document.body.classList.contains('sim-wide')) return;
     window.SimMap?.invalidateSize?.();
 
-    const [w, h] = selDevice.value.split('x').map(Number);
-    let pw = portrait ? w : h;
-    let ph = portrait ? h : w;
-    const maxH = stageH;
-    const maxW = Math.min(window.innerWidth * 0.42, 520);
-    let scale = Math.min(1, maxH / ph, maxW / pw);
-    phone.style.width = Math.round(pw * scale) + 'px';
-    phone.style.height = Math.round(ph * scale) + 'px';
+    const availH = measureStage();
+
+    const [devW, devH] = (selDevice?.value || '390x844').split('x').map(Number);
+    const nativeW = portrait ? devW : devH;
+    const nativeH = portrait ? devH : devW;
+    let scale = Math.min(1, (availH - PHONE_BEZEL) / nativeH);
+    if(!portrait){
+      const stage = document.getElementById('sim-stage');
+      const stageW = stage?.clientWidth || window.innerWidth;
+      const maxOuter = Math.min(stageW * 0.44, 960);
+      scale = Math.min(scale, (maxOuter - PHONE_BEZEL) / nativeW);
+    }
+    scale = Math.max(0.65, Math.min(1, scale));
+    const scaledW = Math.round(nativeW * scale);
+    const scaledH = Math.round(nativeH * scale);
+    const outerW = scaledW + PHONE_BEZEL;
+    const outerH = scaledH + PHONE_BEZEL;
+
+    if(phoneScreen){
+      phoneScreen.style.width = nativeW + 'px';
+      phoneScreen.style.height = nativeH + 'px';
+      phoneScreen.style.transform = 'scale(' + scale + ')';
+    }
+    if(phoneFit){
+      phoneFit.style.width = scaledW + 'px';
+      phoneFit.style.height = scaledH + 'px';
+    }
+    if(phone){
+      phone.style.width = outerW + 'px';
+      phone.style.height = outerH + 'px';
+      phone.classList.toggle('landscape', !portrait);
+    }
+    const phoneCol = document.getElementById('sim-phone-col');
+    if(phoneCol){
+      phoneCol.style.width = outerW + 'px';
+      phoneCol.style.flex = '0 0 ' + outerW + 'px';
+    }
+    if(deviceSizeLbl){
+      const pct = Math.round(scale * 100);
+      deviceSizeLbl.textContent = nativeW + '×' + nativeH + (portrait ? '' : ' ⟲') +
+        ' · ' + pct + '%';
+    }
+
+    const layoutKey = (selDevice?.value || '') + ':' + (portrait ? 'p' : 'l');
+    const layoutChanged = layoutKey !== lastLayoutKey;
+    if(layoutChanged) lastLayoutKey = layoutKey;
+
     setTimeout(() => {
       try{ frame.contentWindow?.__motoHUD?.onTick?.(); }catch(e){}
       window.SimMap?.invalidateSize?.();
+      if(layoutChanged){
+        window.SimMap?.resetFit?.();
+        try{ window.SimMap?.update?.(frame.contentWindow); }catch(e){}
+      }
     }, 300);
   }
 
@@ -610,12 +1044,16 @@
 
   btnOrient?.addEventListener('click', () => {
     portrait = !portrait;
-    btnOrient.textContent = portrait ? '📱 Портрет' : '🖥 Альбом';
+    const wide = document.body.classList.contains('sim-wide');
+    btnOrient.textContent = wide ? (portrait ? '📱' : '🖥') : (portrait ? '📱 Портрет' : '🖥 Альбом');
     btnOrient.classList.toggle('act', portrait);
     applySize();
   });
   selDevice?.addEventListener('change', applySize);
-  window.addEventListener('resize', applySize);
+  window.addEventListener('resize', () => {
+    syncSimLayoutClass();
+    applySize();
+  });
 
   btnPlay?.addEventListener('click', () => {
     const s = sim();
@@ -655,9 +1093,11 @@
 
   setupTheme?.addEventListener('change', () => {
     if(simTheme) simTheme.value = setupTheme.value;
+    if(frameLoaded) applyThemeInFrame(setupTheme.value, simMode?.value || setupMode?.value || 'night');
   });
   setupMode?.addEventListener('change', () => {
     if(simMode) simMode.value = setupMode.value;
+    if(frameLoaded) applyThemeInFrame(simTheme?.value || setupTheme?.value || 'avionics', setupMode.value);
   });
 
   simTheme?.addEventListener('change', () => {
@@ -668,22 +1108,16 @@
     if(setupMode) setupMode.value = simMode.value;
     applyThemeInFrame(simTheme.value, simMode.value);
   });
-  btnThemeHitech?.addEventListener('click', () => {
-    simTheme.value = 'hitech';
-    simMode.value = 'day';
-    if(setupTheme) setupTheme.value = 'hitech';
-    if(setupMode) setupMode.value = 'day';
-    applyThemeInFrame('hitech', 'day');
-  });
-  btnThemeVintage?.addEventListener('click', () => {
-    simTheme.value = 'vintage';
-    simMode.value = 'night';
-    if(setupTheme) setupTheme.value = 'vintage';
-    if(setupMode) setupMode.value = 'night';
-    applyThemeInFrame('vintage', 'night');
+  btnSimPath?.addEventListener('click', () => { void clickNavInFrame('path'); });
+  btnSimMap?.addEventListener('click', () => { void clickNavInFrame('map'); });
+  btnSimBearing?.addEventListener('click', () => { void clickNavInFrame('bearing'); });
+
+  chkTelemetry?.addEventListener('change', () => {
+    if(frameLoaded) frame.src = frameUrl();
   });
 
   btnReload?.addEventListener('click', () => { frame.src = frameUrl(); frameLoaded = false; });
+  btnSimBuildRoute?.addEventListener('click', () => { void buildRouteInFrame(); });
 
   async function applyGpxInFrame(text, loop){
     const s = sim();
@@ -753,12 +1187,14 @@
   frame.addEventListener('load', async () => {
     frameLoaded = true;
     syncThemeControlsFromSetup();
+    await bootstrapIframeApp();
     const theme = simTheme?.value || setupTheme?.value || 'avionics';
     const mode = simMode?.value || setupMode?.value || 'night';
-    applyThemeInFrame(theme, mode);
+    await applyThemeInFrame(theme, mode);
     window.SimMap?.resetFit?.();
     setTimeout(updateThemeStatus, 300);
-    setTimeout(updateOffRouteDebug, 300);
+    setTimeout(updateHudNavDebug, 300);
+    setTimeout(updateAppState, 300);
     setTimeout(() => {
       applySpeedToSim();
       syncPlayButton();
@@ -769,16 +1205,21 @@
       }catch(e){}
     }, 800);
     await applyPendingGpx();
+    setTimeout(() => {
+      window.SimMap?.resetFit?.();
+      try{ window.SimMap?.update?.(frame.contentWindow); }catch(e){}
+    }, 1200);
   });
 
-  function openAppPhase(){
+  async function openAppPhase(){
     syncThemeControlsFromSetup();
     if(spd && setupSpd){
       spd.value = setupSpd.value;
       spdVal.textContent = setupSpd.value;
     }
-    const startKey = setupStartPreset?.value || mobileStartPreset?.value || 'kremlin';
-    onStartPresetChange(startKey);
+    if(setupStartAddress?.value?.trim()){
+      await searchAndApplyStart(setupStartAddress.value, setupStartStatus);
+    }
     document.body.classList.remove('phase-setup');
     document.body.classList.add('phase-app');
     if(!frameLoaded){
@@ -789,11 +1230,13 @@
   btnOpenMenu?.addEventListener('click', openAppPhase);
 
   setInterval(() => {
+    if(frameLoaded) syncThemeToFrame();
     updateThemeStatus();
-    updateOffRouteDebug();
+    updateHudNavDebug();
+    updateAppState();
     updateLiveSpeed();
     syncPlayButton();
-    if(!isMobile && frameLoaded){
+    if(document.body.classList.contains('sim-wide') && frameLoaded){
       try{ window.SimMap?.update?.(frame.contentWindow); }catch(e){}
     }
   }, 500);
@@ -801,8 +1244,20 @@
   if(new URLSearchParams(location.search).get('autohud') === '1' && chkAutohud){
     chkAutohud.checked = true;
   }
+  if(new URLSearchParams(location.search).get('telemetry') === '1' && chkTelemetry){
+    chkTelemetry.checked = true;
+  }
 
   applySize();
+  requestAnimationFrame(() => requestAnimationFrame(applySize));
+  syncSimLayoutClass();
+  window.addEventListener('resize', syncSimLayoutClass);
+  if(location.protocol === 'file:'){
+    const warn = document.createElement('div');
+    warn.className = 'sim-protocol-warn';
+    warn.innerHTML = '⚠ Для тем и маршрутов откройте через <strong>preview.bat</strong> или <code>npm run dev</code> → <a href="http://localhost:3456/sim.html" style="color:#ffd400">http://localhost:3456/sim.html</a> (file:// блокирует OSRM).';
+    document.body.prepend(warn);
+  }
   if(!isMobile){
     frame.src = frameUrl();
   }
@@ -817,6 +1272,10 @@
     const mapBox = document.getElementById('sim-map');
     if(mapBox && window.SimMap) window.SimMap.init(mapBox);
     initSimMapControls();
+    void bootstrapSimStart();
+    requestAnimationFrame(() => {
+      try{ window.dispatchEvent(new Event('resize')); }catch(e){}
+    });
   })();
 </script>
 <script src="js/sim-replay.js"></script>

@@ -7,6 +7,7 @@ import { $ } from './util.js';
 import { onHudTap } from './hud-chrome.js';
 import { syncNavMap, pauseNavMap, tickNavMap, destroyNavMap } from './nav-map.js';
 import { onUserViewModeChange, resetLowSpeedMap } from './low-speed-map.js';
+import { isBearingMode, syncNavButtons } from './bearing-mode.js';
 
 const DBL_TAP_MS = 400;
 const DBL_TAP_MAX_PX = 40;
@@ -51,9 +52,11 @@ export function setViewMode(mode){
   const m = VIEW_ORDER.includes(mode) ? mode : 'hud';
   S.viewMode = m;
   applyViewLayout(m);
+  syncNavButtons();
 }
 
 export function cycleViewMode(){
+  if(isBearingMode()) return;
   onUserViewModeChange();
   const i = VIEW_ORDER.indexOf(S.viewMode || 'hud');
   setViewMode(VIEW_ORDER[(i + 1) % VIEW_ORDER.length]);

@@ -130,7 +130,14 @@ export function tickAutoMode(){
 export function themeLabel(id){ return LABELS[id] || id; }
 
 export function initThemeManager(){
-  const cur = loadThemePrefs();
+  let cur = loadThemePrefs();
+  if(new URLSearchParams(location.search).get('sim') === '1'){
+    const q = new URLSearchParams(location.search);
+    const qt = q.get('theme');
+    const qm = q.get('mode');
+    if(THEME_IDS.includes(qt)) cur = { ...cur, theme: qt };
+    if(MODE_PREFS.includes(qm)) cur = { ...cur, modePref: qm };
+  }
   applyTheme(cur.theme, cur.modePref, false);
   $('opt-theme')?.addEventListener('change', e => {
     applyTheme(e.target.value, loadThemePrefs().modePref);

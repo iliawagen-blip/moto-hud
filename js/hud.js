@@ -1,10 +1,10 @@
 import { S } from './state.js';
-import { $, fmtClock, fmtTime, fmtRemainDur, formatStreetLabel } from './util.js';
+import { $, fmtClock, fmtTime, fmtRemainDur, formatStreetLabel, requestAppFullscreen } from './util.js';
 import { haversine, bearing, angleDiff } from './geo.js';
 import { curPos, getGpsDisplayAcc } from './gps.js';
 import {
   buildRoute, loadCameras, saveLastRun, findNearestOnRoute,
-  findNextManeuver, getRemainingDistance, seedSnapFromGps
+  findNextManeuver, getRemainingDistance, seedSnapFromGps, getCurrentRouteStepAtS
 } from './route.js';
 import { speak, maneuverText, isTurnStep, isCameraBehind } from './voice.js';
 import { buildArrowSVG, buildTurnArrowSVG } from './render.js';
@@ -37,6 +37,7 @@ import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide } from './off
 import telemetry from './telemetry.js';
 import { logFunnel } from './telemetry-funnel.js';
 import { tickNavMap, resetViewMode } from './view-mode.js';
+import { isBearingMode, tickBearing, resetBearingMode, syncNavButtons } from './bearing-mode.js';
 import { syncTripHudBadge } from './trip-ui.js';
 import { formatTripHudExtraLine } from './trip-hud-context.js';
 import { syncTripRefuelHud } from './trip-refuel-hud.js';
@@ -73,6 +74,40 @@ function logManeuverContext(nm, snap, shown, filterReason){
   };
   telemetry.log('nav', { sub: 'maneuver_context', ..._lastMarkCtx });
 }
+
+/** Текущая улица (под стрелкой). */
+function hudCurrentStreetLabel(snap){
+  const cur = snap?.s != null ? getCurrentRouteStepAtS(snap.s) : null;
+  if(cur?.name?.trim()) return formatStreetLabel(cur.name);
+  return '—';
+}
+
+/** Улица поворота (над стрелкой). */
+function hudTurnStreetLabel(nm, rbCtx, displayStep){
+  if(rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null){
+    return roundaboutManeuverText(displayStep, rbCtx);
+  }
+  if(isRoundaboutStep(displayStep)){
+    const mini = rbCtx?.isMini ? ' · мини-круг' : '';
+    return (roundaboutManeuverText(displayStep, rbCtx) ||
+      formatStreetLabel(nm?.step?.name || displayStep?.name)) + mini;
+  }
+  if(nm && isTurnStep(nm.step) && nm.step.name?.trim()){
+    return formatStreetLabel(nm.step.name);
+  }
+  if(nm?.step?.type === 'arrive' && nm.step.name?.trim()){
+    return formatStreetLabel(nm.step.name);
+  }
+  return '—';
+}
+
+function setHudStreetLabels(top, bottom){
+  const topEl = $('street');
+  const curEl = $('street-current');
+  if(topEl) topEl.textContent = top ?? '—';
+  if(curEl) curEl.textContent = bottom ?? '—';
+}
+
 function maneuverVoiceThresholds(kmh){
   const mps = Math.max(kmh / 3.6, 4);
   return {
@@ -230,6 +265,12 @@ export function onTick(){
     return;
   }
 
+  if(isBearingMode()){
+    tickBearing(now, kmh);
+    updateFinishInfo(haversine(S.gps, S.finish), kmh, now);
+    return;
+  }
+
   tickSpeedLimit(getNavSnap(S.smoothedHeading));
 
   const gpsOk = hasEverConverged() || S.gpsConverged !== false;
@@ -250,14 +291,14 @@ export function onTick(){
   }
 
   if(hudOn && !gpsOk){
-    $('street').textContent = 'GPS СХОДИТСЯ';
+    setHudStreetLabels('GPS СХОДИТСЯ', '—');
     $('v-mdist').textContent = '—';
     $('arrow-box').innerHTML = buildTurnArrowSVG(0);
     updateFinishInfo(getRemainingDistance(), kmh, now);
   }
 
   if(snapLostBlocksNav(snap)){
-    $('street').textContent = 'НЕТ ПРИВЯЗКИ';
+    setHudStreetLabels('НЕТ ПРИВЯЗКИ', '—');
     $('v-mdist').textContent = '—';
     $('v-mdist-u').textContent = '';
     $('arrow-box').innerHTML = buildTurnArrowSVG(0);
@@ -285,7 +326,7 @@ export function onTick(){
       $('v-mdist').textContent = (dFin / 1000).toFixed(1);
       $('v-mdist-u').textContent = 'км';
     }
-    $('street').textContent = 'К ФИНИШУ';
+    setHudStreetLabels('К ФИНИШУ', hudCurrentStreetLabel(snap));
     $('rb-exit-label')?.classList.add('hidden');
     const mid = $('mid-info');
     const tStr = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
@@ -317,7 +358,7 @@ export function onTick(){
       $('v-mdist').textContent = (dSnap / 1000).toFixed(1);
       $('v-mdist-u').textContent = 'км';
     }
-    $('street').textContent = 'ВОЗВРАТ НА МАРШРУТ';
+    setHudStreetLabels('ВОЗВРАТ НА МАРШРУТ', hudCurrentStreetLabel(snap));
     $('rb-exit-label')?.classList.add('hidden');
   } else {
     let nm = isSnapDegraded() ? getCachedManeuver() : null;
@@ -332,15 +373,10 @@ export function onTick(){
       $('arrow-box').innerHTML = buildArrowSVG(displayStep, { snap, ctx: rbCtx });
       const rbEl = $('rb-exit-label');
       if(rbEl) rbEl.classList.add('hidden');
-      if(rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null){
-        $('street').textContent = roundaboutManeuverText(displayStep, rbCtx);
-      } else if(isRoundaboutStep(displayStep)){
-        const mini = rbCtx?.isMini ? ' · мини-круг' : '';
-        $('street').textContent = (roundaboutManeuverText(displayStep, rbCtx) ||
-          formatStreetLabel(nm.step.name || displayStep.name)) + mini;
-      } else {
-        $('street').textContent = formatStreetLabel(nm.step.name);
-      }
+      setHudStreetLabels(
+        hudTurnStreetLabel(nm, rbCtx, displayStep),
+        hudCurrentStreetLabel(snap)
+      );
       if(rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null){
         const dm = Math.max(10, Math.round(rbCtx.distanceToExit / 10) * 10);
         if(dm < 1000){
@@ -403,6 +439,8 @@ export function onTick(){
           console.warn('maneuver voice:', e);
         }
       }
+    }else{
+      setHudStreetLabels('—', hudCurrentStreetLabel(snap));
     }
   }
   updateFinishInfo(remaining, kmh, now);
@@ -482,11 +520,11 @@ export async function startHud(){
   acquireWakeLock();
   try{ await startNavigationGps(); }catch(e){ console.warn('FGS GPS:', e); }
   if(window.__SIM__?.onNavigationStart) window.__SIM__.onNavigationStart();
-  if(!window.__SIM__){
-    try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }catch(e){}
-  }
+  requestAppFullscreen();
   speak('Маршрут построен. В пути ' + Math.round(S.route.duration / 60) + ' минут');
   S.dispSpeed = S.gps?.speed > 0 ? Math.min(S.gps.speed * 3.6, 198) : 0;
+  S.navMode = 'route';
+  syncNavButtons();
   tickSpeedLimit(getNavSnap(S.smoothedHeading));
   onTick();
   startVisualLoop();
@@ -524,6 +562,7 @@ export async function stopHud(){
   resetSpeedLimitState();
   resetRoundaboutState();
   resetViewMode();
+  resetBearingMode();
   syncTripHudBadge();
   try{ document.exitFullscreen && document.exitFullscreen(); }catch(e){}
 }

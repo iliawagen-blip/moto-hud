@@ -428,7 +428,9 @@ body.legal-blocked #hud{display:none!important}
   --hud-statusbar-h:56px;
   --hud-status-font:20px;
   --hud-finish-font:clamp(14px,4.2vw,22px);
-  --hud-btns-col:88px;
+  --hud-btns-col:64px;
+  --hud-nav-btns-col:64px;
+  --hud-rail-col:64px;
   position:fixed;inset:0;display:none;background:var(--bg);overflow:hidden;
   font-family:var(--font-label);color:var(--fg);
   padding-top:var(--hud-safe-top);
@@ -473,37 +475,59 @@ body.legal-blocked #hud{display:none!important}
 .block-arrow .no-heading.on{display:block}
 
 /* блоки HUD */
-.block{position:relative;overflow:hidden;background:var(--bg);display:flex;
-  flex-direction:column;align-items:center;justify-content:center;padding:2px}
-.block-arrow{grid-area:ar;min-height:0;position:relative}
+.block{position:relative;overflow:hidden;background:var(--bg);padding:2px}
+.block-arrow{
+  grid-area:ar;min-height:0;position:relative;overflow:hidden;
+  display:grid;grid-template-columns:1fr;grid-template-areas:"body";align-items:stretch
+}
+#hud.chrome-btns-on .block-arrow{
+  grid-template-columns:var(--hud-rail-col) 1fr;grid-template-areas:"btns body"
+}
+.block-arrow-body{
+  grid-area:body;min-height:0;display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"turn" "main" "current";
+  align-items:stretch;position:relative;overflow:hidden;width:100%
+}
+.nav-main-stack{
+  grid-area:main;min-height:0;min-width:0;width:100%;
+  display:grid;grid-template-columns:1fr;grid-template-rows:1fr;overflow:hidden;position:relative
+}
+.nav-main-stack > #route-nav-view,
+.nav-main-stack > #bearing-view,
+.nav-main-stack > #nav-map-pane{grid-area:1/1;min-height:0;min-width:0;width:100%}
 .block-speed{
-  grid-area:sp;overflow:hidden;padding:0 0 calc(env(safe-area-inset-bottom) + 2px);z-index:1;min-height:0;
+  grid-area:sp;overflow:visible;padding:0 0 calc(env(safe-area-inset-bottom) + 2px);z-index:1;min-height:0;
   display:grid;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;
-  grid-template-areas:"stack" "info"
+  grid-template-areas:"stack" "info";align-items:stretch
 }
 #hud.chrome-btns-on .block-speed{
-  grid-template-columns:var(--hud-btns-col) 1fr;
-  grid-template-areas:"btns stack" "info info";
-  grid-template-rows:minmax(0,1fr) auto
+  grid-template-columns:var(--hud-rail-col) 1fr;
+  grid-template-areas:"btns stack" "info info"
 }
+.hud-nav-rail{
+  grid-area:btns;display:none;flex-direction:column;align-items:stretch;justify-content:flex-start;
+  gap:0;padding:8px 4px;border-right:1px solid var(--line);
+  min-width:0;min-height:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain
+}
+#hud.chrome-btns-on .hud-nav-rail{display:flex}
 .speed-btns,
 .hud-btn-panel{
   grid-area:btns;display:none;flex-direction:column;align-items:stretch;justify-content:flex-start;
-  gap:0;border-right:1px solid var(--line);padding:10px 6px calc(env(safe-area-inset-bottom) + 6px);
-  min-height:0;max-height:100%;min-width:var(--hud-btns-col);
-  overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain
+  gap:0;padding:8px 4px;border-right:1px solid var(--line);
+  min-width:0;min-height:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain
 }
 #hud.chrome-btns-on .speed-btns,
 #hud.chrome-btns-on .hud-btn-panel{display:flex}
-@media (orientation:landscape){
-  #hud.chrome-btns-on .hud-btn-panel{justify-content:center}
-}
-
+.hud-nav-rail .hud-btn-group{margin:0;padding:0;border:none;gap:8px}
+.hud-nav-rail .hud-btn-group + .hud-btn-group{display:none}
 .hud-btn-group{
-  display:flex;flex-direction:column;align-items:stretch;gap:16px;flex-shrink:0
+  display:flex;flex-direction:column;align-items:stretch;gap:8px;flex-shrink:0
 }
-.hud-btn-group + .hud-btn-group{
-  margin-top:32px;padding-top:16px;border-top:1px solid var(--line)
+#hud.chrome-btns-on .speed-btns .hud-btn-group + .hud-btn-group,
+#hud.chrome-btns-on .hud-btn-panel .hud-btn-group + .hud-btn-group{
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--line)
 }
 .hud-btn-group--telemetry:empty,
 .hud-btn-group--telemetry:not(:has(.hud-btn:not(.hidden))){display:none;margin:0;padding:0;border:none}
@@ -512,17 +536,19 @@ body.legal-blocked #hud{display:none!important}
 .speed-btns .corner-btn{
   position:relative;flex-shrink:0;cursor:pointer;touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
-  min-width:56px;min-height:56px;width:100%;padding:6px 4px;
+  min-width:0;min-height:52px;width:100%;padding:4px 2px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   background:transparent;border:none;border-radius:8px;box-shadow:none;color:var(--fg);font-weight:800
 }
 .hud-btn::before,
 .speed-btns .corner-btn::before{content:"";position:absolute;inset:-2px}
 .hud-btn__icon,
-.speed-btns .cb-icon{font-size:32px;line-height:1;position:relative;z-index:1}
+.speed-btns .cb-icon,
+.hud-nav-rail .cb-icon{font-size:22px;line-height:1;position:relative;z-index:1}
 .hud-btn__lbl,
-.speed-btns .cb-lbl{
-  font-size:11px;letter-spacing:.45px;color:var(--fg-dim);font-weight:700;line-height:1.15;
+.speed-btns .cb-lbl,
+.hud-nav-rail .cb-lbl{
+  font-size:8px;letter-spacing:.35px;color:var(--fg-dim);font-weight:700;line-height:1.15;
   position:relative;z-index:1;text-transform:uppercase
 }
 .hud-btn--active{background:color-mix(in srgb, var(--sem-ok) 22%, transparent)}
@@ -575,30 +601,45 @@ body.legal-blocked #hud{display:none!important}
 .fi-v{color:var(--fg);font-weight:var(--num-weight);font-family:var(--font-num);
   font-size:var(--hud-finish-font);letter-spacing:-0.01em}
 .block-path{grid-area:pa;align-items:stretch;justify-content:stretch;
-  border-top:1px solid var(--line);overflow:hidden;padding:0}
+  border-top:1px solid var(--line);overflow:hidden;padding:0;display:flex}
 .block-path.hidden{display:none}
 .path-svg{width:100%;height:100%;display:block;shape-rendering:geometricPrecision}
 .elev-profile{pointer-events:none}
 
+#route-nav-view{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:0;width:100%;max-width:100%;position:relative;gap:0;overflow:hidden
+}
+.arrow-wrap{
+  position:relative;flex:1 1 0;min-height:clamp(72px,16vh,220px);width:100%;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;padding:6px 10px
+}
 .street{font-size:clamp(12px,3.2vw,15px);color:var(--fg-dim);letter-spacing:1px;text-transform:var(--label-transform);
   font-family:var(--font-label);
-  text-align:center;padding:2px 8px;max-width:100%;width:100%;
+  text-align:center;padding:4px 10px;max-width:100%;width:100%;
   white-space:normal;overflow-wrap:break-word;word-break:break-word;
-  line-height:1.2;flex-shrink:1;min-height:0}
-#arrow-box{flex:1;min-height:0;width:100%;max-height:clamp(96px,min(28vw,24vh),220px);
-  display:flex;align-items:center;justify-content:center;overflow:hidden}
-#arrow-box svg{width:auto;height:100%;max-width:100%;max-height:100%;display:block}
-#arrow-box svg.rb-schema{max-height:clamp(110px,min(32vw,28vh),240px)}
+  line-height:1.2;flex:0 0 auto;min-height:0;max-height:2.6em;overflow:hidden}
+.street-turn{
+  grid-area:turn;flex-shrink:0;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)
+}
+.street-current{
+  grid-area:current;color:var(--fg);font-weight:700;max-height:2.6em;
+  flex-shrink:0;border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)
+}
+#arrow-box{width:100%;height:100%;max-width:100%;max-height:100%;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;flex:1 1 0;min-height:0}
+#arrow-box svg{width:auto;height:auto;max-width:min(100%,78vw);max-height:100%;display:block}
+#arrow-box svg.rb-schema{max-height:100%;max-width:100%}
 .rb-exit-label{
-  position:absolute;right:6%;top:58%;
+  position:absolute;right:4%;bottom:8%;
   font-family:var(--font-num);font-weight:var(--num-weight);
-  font-size:clamp(28px,min(10vw,9vh),72px);color:var(--accent);
-  line-height:1;pointer-events:none;text-shadow:0 0 8px rgba(0,0,0,.6)
+  font-size:clamp(22px,min(8vw,7vh),56px);color:var(--accent);
+  line-height:1;pointer-events:none;text-shadow:0 0 8px rgba(0,0,0,.6);z-index:2
 }
 .rb-exit-label.hidden{display:none}
-.mdist{font-size:clamp(48px,min(18vw,16vh),140px);color:var(--accent);font-family:var(--font-num);font-weight:var(--num-weight);
+.mdist{font-size:clamp(40px,min(16vw,14vh),120px);color:var(--accent);font-family:var(--font-num);font-weight:var(--num-weight);
   font-style:var(--num-style);font-variant-numeric:tabular-nums;font-feature-settings:var(--font-feature-num);
-  line-height:1;text-align:center;padding:2px;flex-shrink:0}
+  line-height:1;text-align:center;padding:2px;flex:0 0 auto}
 .mdist-ghost{display:none;pointer-events:none;user-select:none}
 .mdist .u{font-size:clamp(18px,min(6vw,5vh),40px);color:var(--fg-dim);font-weight:700;margin-left:6px}
 .speed-val{font-size:clamp(48px,min(32vw,28vh),200px);color:var(--fg);font-family:var(--font-num);font-weight:var(--num-weight);
@@ -616,44 +657,44 @@ body.legal-blocked #hud{display:none!important}
 
 /* Знак ограничения скорости — правый верхний угол блока скорости */
 .speed-limit-sign{
-  position:absolute;z-index:4;pointer-events:none;
-  width:clamp(34px,min(11vw,10vh),58px);height:clamp(34px,min(11vw,10vh),58px);
-  top:4px;right:4px;left:auto;bottom:auto;transform:none
+  position:absolute;z-index:6;pointer-events:none;
+  width:clamp(68px,min(22vw,20vh),116px);height:clamp(68px,min(22vw,20vh),116px);
+  top:6px;right:6px;left:auto;bottom:auto;transform:none
 }
 .speed-limit-sign .sls-svg{width:100%;height:100%;display:block}
 .speed-limit-sign .sls-num{
-  font-family:var(--font-num);font-weight:900;font-size:clamp(22px,5.5vw,34px);fill:#111;stroke:none
+  font-family:var(--font-num);font-weight:900;font-size:clamp(44px,11vw,68px);fill:#111;stroke:none
 }
 .speed-limit-sign .sls-tilde{fill:var(--fg-dim);font-weight:900}
 .speed-limit-sign .sls-none{font-family:var(--font-label);font-weight:800;fill:#111}
 .speed-limit-sign.sls-default .sls-ring{stroke:#888}
 .speed-limit-sign.sls-implicit{opacity:.7}
 .speed-limit-sign.sls-none .sls-ring{stroke:#666}
-.speed-limit-sign.sls-none .sls-none{font-size:16px}
+.speed-limit-sign.sls-none .sls-none{font-size:32px}
 .speed-limit-sign.sls-preview-down .sls-ring{
   stroke:var(--sem-warn);transition:stroke .4s ease
 }
 .speed-limit-sign .sls-preview{
-  position:absolute;right:-6px;bottom:-4px;
-  font-size:11px;font-weight:800;color:var(--sem-warn);
-  background:color-mix(in srgb,var(--bg) 80%,transparent);border-radius:4px;padding:1px 3px
+  position:absolute;right:-8px;bottom:-6px;
+  font-size:14px;font-weight:800;color:var(--sem-warn);
+  background:color-mix(in srgb,var(--bg) 80%,transparent);border-radius:4px;padding:2px 4px
 }
 .speed-limit-grace{
-  position:absolute;z-index:5;top:4px;left:4px;right:auto;transform:none;
+  position:absolute;z-index:7;top:6px;left:6px;right:auto;transform:none;
   font-size:clamp(10px,2.8vw,13px);font-weight:800;color:#1a1a1a;
   background:var(--sem-warn);border:1px solid color-mix(in srgb,var(--sem-warn) 70%,#000);
   padding:3px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;
-  box-shadow:0 2px 8px rgba(0,0,0,.25);max-width:calc(100% - 70px);overflow:hidden;text-overflow:ellipsis
+  box-shadow:0 2px 8px rgba(0,0,0,.25);max-width:calc(100% - 130px);overflow:hidden;text-overflow:ellipsis
 }
 
 /* Компактный HUD внутри короткого #hud (landscape телефон, симулятор) */
 @container hud (max-height: 280px){
-  .hud-btn-panel{overflow-y:hidden;padding:6px 4px 4px}
-  .hud-btn-group{gap:10px}
-  .hud-btn-group + .hud-btn-group{margin-top:20px;padding-top:10px}
-  .hud-btn,.speed-btns .corner-btn{min-height:48px;padding:4px 2px}
-  .hud-btn__icon,.speed-btns .cb-icon{font-size:24px}
-  .hud-btn__lbl,.speed-btns .cb-lbl{font-size:9px;letter-spacing:.3px}
+  .hud-nav-rail,.speed-btns,.hud-btn-panel{padding:6px 4px 4px}
+  .hud-btn-group{gap:6px}
+  .hud-btn-group + .hud-btn-group{margin-top:8px;padding-top:8px}
+  .hud-btn,.speed-btns .corner-btn{min-height:48px;padding:3px 2px}
+  .hud-btn__icon,.speed-btns .cb-icon,.hud-nav-rail .cb-icon{font-size:20px}
+  .hud-btn__lbl,.speed-btns .cb-lbl,.hud-nav-rail .cb-lbl{font-size:7px;letter-spacing:.3px}
   .finish-info{padding:4px 6px calc(env(safe-area-inset-bottom) + 2px)}
   .fi-line{font-size:clamp(12px,3.2vw,16px)}
   .block-speed{min-height:64px}
@@ -680,21 +721,24 @@ body.legal-blocked #hud{display:none!important}
   #hud.on.no-path.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) 1fr}
 }
 
-/* HUD ↔ карта (dbltap): карта ⅔, скорость ⅓ */
-.nav-map-pane{grid-area:mp;display:none;min-height:0;background:var(--map-bg);z-index:0}
+/* HUD ↔ карта: навигация + дорожка в одном блоке ar */
+.nav-map-pane{display:none;flex:1 1 0;min-height:0;width:100%;background:var(--map-bg);z-index:0}
 .nav-map-pane .leaflet-container{background:var(--map-bg);font-family:inherit}
-#hud.on.view-map .block-arrow,
-#hud.on.view-map .block-path,
+#hud.on.view-map .block-path{display:none!important}
+#hud.on.view-map .block-arrow #route-nav-view,
+#hud.on.view-map .block-arrow #bearing-view{display:none!important}
+#hud.on.view-map .block-arrow .street-turn,
+#hud.on.view-map .block-arrow .street-current{display:block}
 #hud.on.view-map .compass-slot{display:none!important}
 #hud.on.view-map .nav-map-pane{display:block}
 @media (orientation:portrait){
-  #hud.on.view-map{grid-template-areas:"st" "mp" "sp";grid-template-columns:1fr;
+  #hud.on.view-map{grid-template-areas:"st" "ar" "sp";grid-template-columns:1fr;
     grid-template-rows:0 minmax(0,2fr) minmax(0,1fr)}
   #hud.on.view-map.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,2fr) minmax(0,1fr)}
   #hud.on.view-map.no-path{grid-template-rows:24px minmax(0,2fr) minmax(0,1fr)}
 }
 @media (orientation:landscape){
-  #hud.on.view-map{grid-template-areas:"st st" "mp sp";grid-template-columns:2fr 1fr;grid-template-rows:0 1fr}
+  #hud.on.view-map{grid-template-areas:"st st" "ar sp";grid-template-columns:2fr 1fr;grid-template-rows:0 1fr}
   #hud.on.view-map.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) 1fr}
 }
 
@@ -841,8 +885,23 @@ body.legal-blocked #hud{display:none!important}
 .speed-btns .btn-telemetry-mark.critical-flash .cb-icon{color:var(--sem-danger);filter:drop-shadow(0 0 4px var(--sem-danger))}
 
 /* ---------- Телеметрия: список сессий ---------- */
+.tel-bulk-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;
+  margin:8px 0;padding:8px 0;border-bottom:1px solid var(--border)}
+.tel-bulk-bar.hidden{display:none!important}
+.tel-select-all{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;
+  min-height:44px;cursor:pointer;user-select:none}
+.tel-select-all input{width:20px;height:20px;accent-color:var(--accent)}
+.tel-select-count{font-size:12px;color:var(--dim);flex:1;min-width:120px}
+.tel-bulk-actions{display:flex;flex-wrap:wrap;gap:6px}
+.tel-bulk-btn{min-height:44px;padding:8px 12px;font-size:13px;font-weight:700}
+.tel-bulk-btn:disabled{opacity:.45;pointer-events:none}
 .tel-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:10px 0;border-bottom:1px solid var(--border)}
+.tel-row--selected{background:color-mix(in srgb, var(--accent) 8%, transparent);
+  margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px}
+.tel-check{display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  min-width:44px;min-height:44px;cursor:pointer;margin:0}
+.tel-check input{width:20px;height:20px;accent-color:var(--accent);cursor:pointer}
 .tel-main{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
 
 /* ---------- Планировщик поездок (фаза 6) ---------- */
@@ -919,7 +978,48 @@ html[data-file-protocol="1"] .headrow::after{
   content:"file:// — локальный режим";
   display:block;width:100%;font-size:11px;color:var(--warn);margin-top:4px;font-weight:700
 }
-.tel-meta{font-size:12px;color:var(--dim)}
+.hud-btn--bearing .bearing-icon-svg{color:var(--sem-ok)}
+.hud-btn--bearing.hud-btn--active{background:color-mix(in srgb, var(--sem-ok) 28%, transparent)}
+.hud-btn--bearing.hud-btn--active .bearing-icon-svg{color:var(--sem-ok)}
+
+/* ---------- Пеленг (#bearing-view) ---------- */
+.bearing-view{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;width:100%;flex:1 1 0;min-height:0;padding:8px 12px 12px
+}
+.bearing-view.hidden{display:none!important}
+#hud.nav-bearing .block-path{display:none!important}
+#hud.nav-bearing #camAlert,#hud.nav-bearing #offRouteWarn{display:none!important}
+.finish-info.bearing-hide-eta #fi-eta-line{display:none}
+.bearing-mode-badge{
+  font-size:11px;font-weight:900;letter-spacing:.12em;color:var(--sem-ok);
+  padding:2px 10px;border:1px solid color-mix(in srgb, var(--sem-ok) 45%, transparent);border-radius:999px
+}
+.bearing-label{font-size:clamp(18px,4vw,28px);font-weight:900;color:var(--fg);letter-spacing:.06em}
+.bearing-arrow-box{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:120px;width:100%;max-height:min(42vh,320px)
+}
+.bearing-arrow-wrap{
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .12s linear;color:var(--sem-ok)
+}
+.bearing-arrow-wrap.bearing-arrow--dim{opacity:.45}
+.bearing-arrow-wrap .bearing-icon-svg{width:min(38vw,140px);height:min(38vw,140px)}
+.bearing-arrow-caption{
+  margin-top:8px;font-size:clamp(16px,3.5vw,22px);font-weight:900;color:var(--sem-warn);letter-spacing:.08em
+}
+.bearing-distance{
+  display:flex;align-items:baseline;justify-content:center;gap:6px;
+  font-family:var(--font-num,monospace);font-weight:900;line-height:1
+}
+.bearing-dist-val{font-size:clamp(36px,10vw,56px);color:var(--sem-ok)}
+.bearing-dist-u{font-size:clamp(16px,4vw,22px);color:var(--fg-dim)}
+.bearing-heading-meta{font-size:12px;color:var(--fg-dim);text-align:center}
+.bearing-heading-meta--warn{color:var(--sem-warn)}
+.bearing-cal-banner{font-size:12px;color:var(--sem-warn);text-align:center;padding:4px 8px}
+.bearing-cal-banner.hidden{display:none!important}
+
 .tel-dirty{color:var(--sem-warn);font-size:11px;font-weight:800}
 .tel-actions{display:flex;gap:6px;flex-shrink:0}
 .tel-btn{min-width:44px;min-height:44px;padding:8px;border-radius:8px;

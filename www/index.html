@@ -305,6 +305,14 @@
           <p class="opt-hint">URL: <code>?telemetry=1</code> · <code>?track=1</code></p>
           <div class="hint" id="telemetry-stats" style="margin:8px 0">—</div>
           <p class="hint telemetry-pending-hint hidden" id="telemetry-pending-share-hint"></p>
+          <div class="tel-bulk-bar hidden" id="telemetry-bulk-bar">
+            <label class="tel-select-all"><input type="checkbox" id="telemetry-select-all"> Все</label>
+            <span class="tel-select-count" id="telemetry-select-count">Ничего не выбрано</span>
+            <div class="tel-bulk-actions">
+              <button type="button" class="secondary tel-bulk-btn" id="btn-telemetry-export-selected" disabled>📤 Выбранные</button>
+              <button type="button" class="secondary tel-bulk-btn" id="btn-telemetry-delete-selected" disabled>🗑 Выбранные</button>
+            </div>
+          </div>
           <div id="telemetry-sessions"></div>
           <button type="button" class="secondary opt-full-btn" id="btn-telemetry-export-all">📤 Экспорт всех сессий</button>
           <button type="button" class="secondary opt-full-btn hidden" id="btn-track-gpx">📤 GPX последней поездки</button>
@@ -409,7 +417,7 @@
         <b>HUD в пути</b>
         Крупная стрелка, скорость, прогноз-дорожка (рельеф, шевроны). Карты в движении нет — только визор.<br>
         <b>Тап по экрану</b> (не по кнопкам) — показать кнопки и строки статуса на 15 с (или «всегда» в настройках).<br>
-        <b>Кнопки:</b> ЭКРАН — полный экран · НАСТР. — быстрые настройки <em>на остановке</em> (≤15 км/ч) ·
+        <b>Кнопки:</b> НАСТР. — быстрые настройки <em>на остановке</em> (≤15 км/ч) ·
         ⛽ ЗАПР. — цикл: по маршруту → перестроение к ближайшей → отмена ·
         📍 МЕТКА — при включённой телеметрии (см. ниже) ·
         СТОП — два тапа подряд, затем подтверждение.
@@ -769,30 +777,62 @@
   <div id="trip-hud-badge" class="trip-hud-badge hidden" aria-live="polite"></div>
   <div id="trip-hud-extra" class="trip-hud-extra hidden" aria-live="polite"></div>
 
-  <div id="nav-map-pane" class="nav-map-pane" aria-hidden="true"></div>
-
-  <!-- манёвр: улица + крупная стрелка + расстояние -->
+  <!-- навигация: манёвр + ДОР/КАРТ/ПЕЛЕНГ; в режиме карты — карта вместо стрелки -->
   <div class="block block-arrow">
-    <div class="compass compass-slot"><svg id="compass-svg" viewBox="0 0 400 36" preserveAspectRatio="xMidYMid meet"></svg></div>
-    <div class="no-heading" id="heading-warn">⚠ Помехи компаса — курс по GPS</div>
-    <div class="street" id="street">—</div>
-    <div class="arrow-svg" id="arrow-box"></div>
-    <div class="rb-exit-label hidden" id="rb-exit-label" aria-hidden="true"></div>
-    <div class="mdist">
-      <span class="mdist-ghost" aria-hidden="true">888</span>
-      <span class="mdist-inner"><span id="v-mdist">–</span><span class="u" id="v-mdist-u">м</span></span>
+    <aside class="hud-nav-rail" id="hud-nav-btns" aria-label="Навигация">
+      <div class="hud-btn-group hud-btn-group--nav" role="group" aria-label="Режим навигации">
+        <button type="button" class="hud-btn hud-btn--path" id="btn-nav-path" title="Дорожка / маршрут"><span class="hud-btn__icon cb-icon" aria-hidden="true">🛣</span><span class="hud-btn__lbl cb-lbl">ДОР</span></button>
+        <button type="button" class="hud-btn hud-btn--map" id="btn-nav-map" title="Карта"><span class="hud-btn__icon cb-icon" aria-hidden="true">🗺</span><span class="hud-btn__lbl cb-lbl">КАРТ</span></button>
+        <button type="button" class="hud-btn hud-btn--bearing" id="btn-nav-bearing" title="Пеленг к финишу"><span class="hud-btn__icon bearing-icon" aria-hidden="true"><svg class="bearing-icon-svg" viewBox="0 0 32 32" width="22" height="22"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,5 21,23 16,19 11,23" fill="currentColor"/><circle cx="16" cy="16" r="2.2" fill="currentColor"/></svg></span><span class="hud-btn__lbl cb-lbl">ПЕЛЕНГ</span></button>
+      </div>
+    </aside>
+    <div class="block-arrow-body">
+      <div class="street street-turn" id="street">—</div>
+      <div class="nav-main-stack">
+      <div id="route-nav-view">
+      <div class="compass compass-slot"><svg id="compass-svg" viewBox="0 0 400 36" preserveAspectRatio="xMidYMid meet"></svg></div>
+      <div class="no-heading" id="heading-warn">⚠ Помехи компаса — курс по GPS</div>
+      <div class="arrow-wrap">
+        <div class="arrow-svg" id="arrow-box"></div>
+        <div class="rb-exit-label hidden" id="rb-exit-label" aria-hidden="true"></div>
+      </div>
+      <div class="mdist">
+        <span class="mdist-ghost" aria-hidden="true">888</span>
+        <span class="mdist-inner"><span id="v-mdist">–</span><span class="u" id="v-mdist-u">м</span></span>
+      </div>
+      </div>
+      <div id="bearing-view" class="bearing-view hidden" aria-hidden="true">
+        <div class="bearing-mode-badge">ПЕЛЕНГ</div>
+        <div class="bearing-label" id="bearing-label">К ЦЕЛИ</div>
+        <div id="bearing-arrow-box" class="bearing-arrow-box"></div>
+        <div id="bearing-distance" class="bearing-distance">—</div>
+        <div id="bearing-heading-meta" class="bearing-heading-meta"></div>
+        <div id="bearing-cal-banner" class="bearing-cal-banner hidden">🧭 Калибровка компаса &gt; 7 дней</div>
+      </div>
+      <div id="nav-map-pane" class="nav-map-pane" aria-hidden="true"></div>
+      </div>
+      <div class="street street-current" id="street-current">—</div>
     </div>
   </div>
 
   <!-- скорость -->
   <div class="block block-speed">
-    <div class="speed-btns hud-btn-panel" id="hud-side-btns">
+    <div class="speed-limit-sign hidden" id="speed-limit-sign" aria-hidden="true">
+      <svg class="sls-svg" viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="sls-ring" cx="50" cy="50" r="44" fill="#fff" stroke="#e02020" stroke-width="9"/>
+        <text class="sls-num" id="sls-num" x="50" y="58" text-anchor="middle">60</text>
+        <text class="sls-tilde hidden" id="sls-tilde" x="78" y="28" font-size="44">~</text>
+        <text class="sls-none hidden" id="sls-none" x="50" y="54" text-anchor="middle" font-size="28">нет</text>
+      </svg>
+      <span class="sls-preview hidden" id="sls-preview" aria-hidden="true"></span>
+    </div>
+    <div class="speed-limit-grace hidden" id="speed-limit-grace" aria-live="polite"></div>
+    <aside class="speed-btns hud-btn-panel" id="hud-side-btns" aria-label="Управление скоростью">
       <div class="hud-btn-group hud-btn-group--session" role="group" aria-label="Сессия">
         <button type="button" class="hud-btn hud-btn--stop corner-btn stop btn-stop" id="btn-stop"><span class="hud-btn__icon cb-icon" aria-hidden="true">■</span><span class="hud-btn__lbl cb-lbl">СТОП</span></button>
       </div>
       <div class="hud-btn-group hud-btn-group--quick" role="group" aria-label="Быстрый доступ">
         <button type="button" class="hud-btn hud-btn--fuel corner-btn fuel btn-fuel" id="btn-fuel"><span class="hud-btn__icon cb-icon" aria-hidden="true">⛽</span><span class="hud-btn__lbl cb-lbl">ЗАПР.</span></button>
-        <button type="button" class="hud-btn hud-btn--fs corner-btn btn-fs" id="btn-fs"><span class="hud-btn__icon cb-icon" aria-hidden="true">⛶</span><span class="hud-btn__lbl cb-lbl">ЭКРАН</span></button>
       </div>
       <div class="hud-btn-group hud-btn-group--settings" role="group" aria-label="Настройки">
         <button type="button" class="hud-btn hud-btn--gear corner-btn btn-gear" id="btn-gear"><span class="hud-btn__icon cb-icon" aria-hidden="true">⚙</span><span class="hud-btn__lbl cb-lbl">НАСТР.</span></button>
@@ -800,18 +840,8 @@
       <div class="hud-btn-group hud-btn-group--telemetry" role="group" aria-label="Телеметрия">
         <button type="button" class="hud-btn hud-btn--mark corner-btn btn-telemetry-mark hidden" id="btn-telemetry-mark" title="Метка: 1× — метка, 2× — critical, 3× — ложный поворот" aria-label="Метка"><span class="hud-btn__icon cb-icon" aria-hidden="true">📍</span><span class="hud-btn__lbl cb-lbl">МЕТКА</span></button>
       </div>
-    </div>
+    </aside>
     <div class="speed-stack">
-      <div class="speed-limit-sign hidden" id="speed-limit-sign" aria-hidden="true">
-        <svg class="sls-svg" viewBox="0 0 100 100" aria-hidden="true">
-          <circle class="sls-ring" cx="50" cy="50" r="44" fill="#fff" stroke="#e02020" stroke-width="9"/>
-          <text class="sls-num" id="sls-num" x="50" y="58" text-anchor="middle">60</text>
-          <text class="sls-tilde hidden" id="sls-tilde" x="78" y="28" font-size="22">~</text>
-          <text class="sls-none hidden" id="sls-none" x="50" y="54" text-anchor="middle" font-size="14">нет</text>
-        </svg>
-        <span class="sls-preview hidden" id="sls-preview" aria-hidden="true"></span>
-      </div>
-      <div class="speed-limit-grace hidden" id="speed-limit-grace" aria-live="polite"></div>
       <div class="speed-ghost" id="speed-ghost" aria-hidden="true">888</div>
       <div class="speed-val" id="v-speed">0</div>
       <div class="speed-unit">км/ч</div>
@@ -901,8 +931,8 @@
   ⚠ Не удалось загрузить JS. Для полной работы запустите <strong>preview.bat</strong> или <code>npm run dev</code> — откроется <code>http://localhost:3456</code>.
 </div>
 
-<script>window.__BUILD_ID__='mreiowec';</script>
-<script src="js/sim.js?v=mrdaivrx"></script>
+<script>window.__BUILD_ID__='mreucd06';</script>
+<script src="js/sim.js?v=mreucd06"></script>
 <script>
 (function(){
   var v = window.__BUILD_ID__ || '';

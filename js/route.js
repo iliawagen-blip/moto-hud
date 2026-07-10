@@ -19,7 +19,8 @@ import {
 } from './maneuver-filter.js';
 
 import {
-  MANEUVER_PASSED_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG
+  MANEUVER_PASSED_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG,
+  STREET_LABEL_MANEUVER_M
 } from './nav-constants.js';
 import { buildRouteRequestUrl, parseRouteResponse } from './router.js';
 import { HIGHWAY_CLASSES } from './maneuver-filter.js';
@@ -58,6 +59,7 @@ export function ensureRouteGeometry(route){
     return route.geometry;
   }
   try{
+    delete route._stepSList;
     route.geometry = buildRouteGeometry(route);
     if(route.geometry){
       const { crossings, roundabouts } = buildCrossingsData(route.steps, route.geometry);
@@ -75,6 +77,7 @@ export function ensureRouteGeometry(route){
 }
 
 function attachRouteGeometry(route){
+  delete route._stepSList;
   ensureRouteGeometry(route);
   S.routeQuality = assessRouteQuality(route);
   S.compassMode = false;
@@ -487,6 +490,34 @@ export function stepCoordIndex(step){
   }
   step._ci = bi;
   return bi;
+}
+
+function getStepSList(route){
+  if(!route?.geometry || !route.steps?.length) return [];
+  if(route._stepSList) return route._stepSList;
+  const geom = route.geometry;
+  const list = route.steps.map(st => ({
+    step: st,
+    s: findSForLatLon(geom, st.lat, st.lon)
+  })).sort((a, b) => a.s - b.s);
+  route._stepSList = list;
+  return list;
+}
+
+/** OSRM-step, на котором находится curS (имя дороги «сейчас»). */
+export function getCurrentRouteStepAtS(curS){
+  if(curS == null || !S.route) return null;
+  const list = getStepSList(S.route);
+  if(!list.length) return null;
+  let idx = 0;
+  for(let i = 0; i < list.length; i++){
+    if(curS + 1 >= list[i].s) idx = i;
+    else break;
+  }
+  for(let i = idx; i >= 0; i--){
+    if(list[i].step.name?.trim()) return list[i].step;
+  }
+  return list[idx]?.step || null;
 }
 
 export function findNextManeuver(){

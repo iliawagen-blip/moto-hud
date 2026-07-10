@@ -72,6 +72,9 @@ export const MANEUVER_MIN_ANGLE_DEG = 12;
 export const MANEUVER_COLLAPSE_SEG_M = 30;
 export const MANEUVER_COLLAPSE_GAP_M = 45;
 export const MANEUVER_PASSED_M = 8;
+
+/** Дальше этого расстояния до манёвра на HUD показывается текущая улица, не улица поворота */
+export const STREET_LABEL_MANEUVER_M = 400;
 export const MANEUVER_FORK_DROP_ANGLE_DEG = 20;
 export const MANEUVER_FORK_MIN_SEG_M = 200;
 

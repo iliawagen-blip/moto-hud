@@ -86,6 +86,15 @@
       '<div><strong>offRouteState</strong> ' + (ors ?? '—') + '</div>' +
       '<div><strong>snap.s0</strong> ' + (snap?.s0 ?? '—') + ' · <strong>lat_off</strong> ' + (snap?.lat_off ?? '—') + '</div>' +
       '<div><strong>fix.hdg</strong> ' + (fix?.hdg ?? '—') + ' · <strong>smoothed</strong> ' + sm + '</div>' +
+      '<div><strong>fix.spd</strong> ' + (fix?.spd ?? '—') +
+        (fix?.dev != null ? ' · <strong>dev</strong> ' + fix.dev : '') +
+        (fix?.meas != null ? ' · <strong>meas</strong> ' + fix.meas : '') +
+        (fix?.spd_src ? ' · <strong>src</strong> ' + fix.spd_src : '') + '</div>' +
+      '<div><strong>navMode</strong> ' + (() => {
+        try{ return document.getElementById('frame')?.contentWindow?.__motoHUD?.S?.navMode; }catch(e){ return null; }
+      })() + ' · <strong>view</strong> ' + (() => {
+        try{ return document.getElementById('frame')?.contentWindow?.__motoHUD?.S?.viewMode; }catch(e){ return null; }
+      })() + '</div>' +
       '<div><strong>Δ hdg</strong> ' + (fix?.hdg != null && sm !== '—' ? Math.abs(((fix.hdg - sm + 540) % 360) - 180).toFixed(1) : '—') + '°</div>';
   }
 

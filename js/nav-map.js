@@ -98,6 +98,10 @@ function fitOverview(){
   _overviewFit = true;
 }
 
+export function getMapDisplayPos(){
+  return mapDisplayPos();
+}
+
 /** @param {'map_overview'|'map_zoom'} mode */
 export function syncNavMap(mode){
   const map = ensureMap();

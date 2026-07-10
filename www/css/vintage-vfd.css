@@ -33,6 +33,7 @@ html.theme-vintage .statusbar #clock,
 html.theme-vintage .statusbar #gps-txt,
 html.theme-vintage .statusbar #cam-txt,
 html.theme-vintage .street,
+html.theme-vintage .street-current,
 html.theme-vintage .speed-unit,
 html.theme-vintage .cb-lbl,
 html.theme-vintage .fi-k,
@@ -114,7 +115,8 @@ html.theme-vintage .mdist-inner .u{
 }
 
 html.theme-vintage .fi-k,
-html.theme-vintage .street{
+html.theme-vintage .street,
+html.theme-vintage .street-current{
   color:var(--fg-label);
 }
 html.theme-vintage .fi-v{

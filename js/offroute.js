@@ -5,6 +5,7 @@ import { recalcRoute } from './route.js';
 import { speak } from './voice.js';
 import telemetry from './telemetry.js';
 import { SnapQuality } from './snap-quality.js';
+import { isBearingMode } from './bearing-mode.js';
 import { simScaledDelta } from './sim-time-scale.js';
 import {
   OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS,
@@ -241,7 +242,7 @@ function tryReturnOnRoute(feed){
 }
 
 export function tickOffRouteMachine(feed){
-  if(S.compassMode || feed.lateral == null || !S.route) return;
+  if(isBearingMode() || S.compassMode || feed.lateral == null || !S.route) return;
 
   const now = Date.now();
   const dtMs = _ctx.lastFeedMs ? Math.min(3000, simScaledDelta(now - _ctx.lastFeedMs)) : 0;

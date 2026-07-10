@@ -234,26 +234,61 @@
   }
 
   // js/sim-map-module.js
+  function geometryToLatLngs(geom) {
+    if (!geom?.n) return [];
+    const out = [];
+    for (let i = 0; i < geom.n; i++) out.push([geom.lat[i], geom.lon[i]]);
+    return out;
+  }
   var map = null;
   var tileLayer = null;
   var overlayLayer = null;
   var routeLayer = null;
   var simPathLayer = null;
+  var traveledLayer = null;
   var posMarker = null;
   var finishMarker = null;
   var startMarker = null;
   var lastRouteKey = "";
   var lastSimPathKey = "";
+  var lastTraveledKey = "";
   var lastStartKey = "";
   var fittedOnce = false;
   var pickStartMode = false;
   var onStartPicked = null;
   var currentProviderId = DEFAULT_MAP_PROVIDER;
-  function routeKey(coords) {
-    if (!coords?.length) return "";
-    const a = coords[0];
-    const b = coords[coords.length - 1];
-    return coords.length + ":" + a[0].toFixed(4) + "," + a[1].toFixed(4) + ":" + b[0].toFixed(4) + "," + b[1].toFixed(4);
+  function routeLatLngsFromState(S) {
+    const route = S?.route;
+    if (!route) return [];
+    if (route.geometry?.n > 1) return geometryToLatLngs(route.geometry);
+    return (route.coords || []).map((c) => [c[0], c[1]]);
+  }
+  function routeKey(S) {
+    const pts = routeLatLngsFromState(S);
+    if (pts.length < 2) return "";
+    const a = pts[0];
+    const b = pts[pts.length - 1];
+    return pts.length + ":" + a[0].toFixed(4) + "," + a[1].toFixed(4) + ":" + b[0].toFixed(4) + "," + b[1].toFixed(4);
+  }
+  function displayPos(frameWin) {
+    try {
+      const pos = frameWin?.__motoHUD?.getMapDisplayPos?.();
+      if (pos?.lat != null && pos?.lon != null) return pos;
+    } catch (e) {
+    }
+    try {
+      const gps = frameWin?.__motoHUD?.S?.gps;
+      if (gps?.lat != null && gps?.lon != null) return gps;
+    } catch (e) {
+    }
+    return null;
+  }
+  function extendBounds(bounds, lat, lon) {
+    if (lat == null || lon == null) return;
+    try {
+      bounds.extend([lat, lon]);
+    } catch (e) {
+    }
   }
   function ensureLayers() {
     if (!map) return;
@@ -261,7 +296,10 @@
       routeLayer = L.polyline([], { color: "#4dabf7", weight: 5, opacity: 0.85 }).addTo(map);
     }
     if (!simPathLayer) {
-      simPathLayer = L.polyline([], { color: "#8b949e", weight: 3, opacity: 0.45, dashArray: "6 8" }).addTo(map);
+      simPathLayer = L.polyline([], { color: "#8b949e", weight: 3, opacity: 0.35, dashArray: "6 8" }).addTo(map);
+    }
+    if (!traveledLayer) {
+      traveledLayer = L.polyline([], { color: "#ffd400", weight: 4, opacity: 0.75 }).addTo(map);
     }
     if (!posMarker) {
       posMarker = L.circleMarker([0, 0], {
@@ -302,17 +340,38 @@
     startMarker.setStyle({ opacity: 1, fillOpacity: 0.85 });
     lastStartKey = lat.toFixed(5) + "," + lon.toFixed(5);
   }
-  function fitToContent() {
+  function flyToStart(lat, lon, zoom = 14) {
+    if (!map || lat == null || lon == null) return;
+    map.setView([lat, lon], zoom, { animate: true });
+  }
+  function fitToContent(frameWin) {
     if (!map || !window.L) return;
     const bounds = L.latLngBounds([]);
-    [routeLayer, simPathLayer, posMarker, finishMarker, startMarker].forEach((layer) => {
-      if (!layer) return;
-      try {
-        const b = layer.getBounds?.();
-        if (b?.isValid()) bounds.extend(b);
-      } catch (e) {
-      }
-    });
+    let S = null;
+    try {
+      S = frameWin?.__motoHUD?.S;
+    } catch (e) {
+    }
+    const routePts = routeLatLngsFromState(S);
+    routePts.forEach((p) => extendBounds(bounds, p[0], p[1]));
+    let simPath = null;
+    try {
+      simPath = frameWin?.__SIM__?.path;
+    } catch (e) {
+    }
+    if (simPath?.length >= 2) {
+      simPath.forEach((p) => extendBounds(bounds, p[0], p[1]));
+    }
+    const pos = displayPos(frameWin);
+    extendBounds(bounds, pos?.lat, pos?.lon);
+    const fin = S?.finish;
+    extendBounds(bounds, fin?.lat, fin?.lon);
+    let start = null;
+    try {
+      start = frameWin?.__SIM__?.start;
+    } catch (e) {
+    }
+    if (start) extendBounds(bounds, start[0], start[1]);
     if (bounds.isValid()) {
       map.fitBounds(bounds.pad(0.12), { animate: false, maxZoom: 15 });
       fittedOnce = true;
@@ -364,12 +423,12 @@
       return;
     }
     ensureLayers();
-    const coords = S?.route?.coords;
-    const rk = routeKey(coords);
+    const rk = routeKey(S);
     if (rk !== lastRouteKey) {
       lastRouteKey = rk;
-      if (coords?.length >= 2) {
-        routeLayer.setLatLngs(coords.map((c) => [c[0], c[1]]));
+      const pts = routeLatLngsFromState(S);
+      if (pts.length >= 2) {
+        routeLayer.setLatLngs(pts);
         routeLayer.setStyle({ opacity: 0.85 });
       } else {
         routeLayer.setLatLngs([]);
@@ -381,7 +440,7 @@
       simPath = simApi?.path;
     } catch (e) {
     }
-    const spk = simPath?.length ? simPath.length + ":" + simPath[0][0].toFixed(4) : "";
+    const spk = simPath?.length ? simPath.length + ":" + simPath[0][0].toFixed(4) + ":" + simPath[simPath.length - 1][0].toFixed(4) : "";
     if (spk !== lastSimPathKey) {
       lastSimPathKey = spk;
       if (simPath?.length >= 2) {
@@ -391,6 +450,20 @@
       }
       fittedOnce = false;
     }
+    let traveled = null;
+    try {
+      traveled = simApi?.traveledPath;
+    } catch (e) {
+    }
+    const tpk = traveled?.length ? traveled.length + ":" + traveled[traveled.length - 1][0].toFixed(5) + "," + traveled[traveled.length - 1][1].toFixed(5) : "";
+    if (tpk !== lastTraveledKey) {
+      lastTraveledKey = tpk;
+      if (traveled?.length >= 2) {
+        traveledLayer.setLatLngs(traveled.map((p) => [p[0], p[1]]));
+      } else {
+        traveledLayer.setLatLngs([]);
+      }
+    }
     let start = null;
     try {
       start = simApi?.start;
@@ -398,9 +471,9 @@
     }
     const sk = start ? start[0].toFixed(5) + "," + start[1].toFixed(5) : "";
     if (sk && sk !== lastStartKey) setStartMarker(start[0], start[1]);
-    const gps = S?.gps;
-    if (gps?.lat != null && gps?.lon != null) {
-      posMarker.setLatLng([gps.lat, gps.lon]);
+    const pos = displayPos(frameWin);
+    if (pos?.lat != null && pos?.lon != null) {
+      posMarker.setLatLng([pos.lat, pos.lon]);
       posMarker.setStyle({ opacity: 1, fillOpacity: 0.9 });
     } else {
       posMarker.setStyle({ opacity: 0, fillOpacity: 0 });
@@ -412,11 +485,12 @@
     } else {
       finishMarker.setStyle({ opacity: 0, fillOpacity: 0 });
     }
-    if (!fittedOnce && (coords?.length >= 2 || simPath?.length >= 2 || gps || start)) {
-      fitToContent();
-    } else if (gps && S?.route && fittedOnce) {
+    const hasContent = rk || simPath?.length >= 2 || pos || start;
+    if (!fittedOnce && hasContent) {
+      fitToContent(frameWin);
+    } else if (pos && fittedOnce) {
       const z = map.getZoom();
-      if (z >= 10) map.panTo([gps.lat, gps.lon], { animate: true, duration: 0.35 });
+      if (z >= 10) map.panTo([pos.lat, pos.lon], { animate: true, duration: 0.35 });
     }
   }
   function invalidateSize() {
@@ -424,6 +498,9 @@
   }
   function resetFit() {
     fittedOnce = false;
+    lastRouteKey = "";
+    lastSimPathKey = "";
+    lastTraveledKey = "";
   }
   function setPickStartMode(on, cb) {
     pickStartMode = !!on;
@@ -432,6 +509,19 @@
       map.getContainer().style.cursor = pickStartMode ? "crosshair" : "";
     }
   }
+  function getDebugState() {
+    const routePts = routeLayer?.getLatLngs?.() || [];
+    const simPts = simPathLayer?.getLatLngs?.() || [];
+    const traveledPts = traveledLayer?.getLatLngs?.() || [];
+    const pos = posMarker?.getLatLng?.();
+    return {
+      routePts: routePts.length,
+      simPts: simPts.length,
+      traveledPts: traveledPts.length,
+      pos: pos ? { lat: pos.lat, lon: pos.lng } : null,
+      fittedOnce
+    };
+  }
   window.SimMap = {
     init,
     update,
@@ -439,7 +529,9 @@
     resetFit,
     setMapProvider,
     setStartMarker,
+    flyToStart,
     setPickStartMode,
+    getDebugState,
     getProviderIds: listMapProviderIds,
     getProviderName: getMapProviderName,
     getCurrentProviderId: () => currentProviderId,
