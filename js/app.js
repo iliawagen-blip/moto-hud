@@ -195,6 +195,8 @@ var init_state = __esm({
       gpsFixCount: 0,
       lastReliableHeadingTs: 0,
       routeQuality: "OK",
+      /** 'route' | 'bearing' — пеленг вне цикла viewMode */
+      navMode: "route",
       compassMode: false,
       routerBackend: "osrm",
       rerouting: false,
@@ -441,6 +443,17 @@ function newId() {
   } catch (e) {
   }
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+function requestAppFullscreen() {
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement) return;
+    if (window !== window.top) return;
+    if (new URLSearchParams(location.search).get("sim") === "1") return;
+    const el = document.documentElement;
+    (el.requestFullscreen || el.webkitRequestFullscreen || function() {
+    }).call(el);
+  } catch (e) {
+  }
 }
 var $2;
 var init_util = __esm({
@@ -1603,6 +1616,9 @@ function fuseHeading(gpsHeading, speedMps) {
     return blendSensor;
   }
   return blendAngles(gpsHeading, blendSensor, 1 - gpsWeight);
+}
+function getSensorHeading() {
+  return sensorHeading;
 }
 var sensorHeading, sensorTs, listening, motionListening, gyroHeading, gyroTs, lastMotionTs, forceGps, disagreeSince, calibratingUntil, DISAGREE_DEG, DISAGREE_MS, RECOVER_DEG;
 var init_heading = __esm({
@@ -4826,6 +4842,7 @@ function ensureRouteGeometry(route) {
     return route.geometry;
   }
   try {
+    delete route._stepSList;
     route.geometry = buildRouteGeometry(route);
     if (route.geometry) {
       const { crossings, roundabouts } = buildCrossingsData(route.steps, route.geometry);
@@ -4842,6 +4859,7 @@ function ensureRouteGeometry(route) {
   }
 }
 function attachRouteGeometry(route) {
+  delete route._stepSList;
   ensureRouteGeometry(route);
   S.routeQuality = assessRouteQuality(route);
   S.compassMode = false;
@@ -5262,6 +5280,31 @@ function stepCoordIndex(step) {
   }
   step._ci = bi;
   return bi;
+}
+function getStepSList(route) {
+  if (!route?.geometry || !route.steps?.length) return [];
+  if (route._stepSList) return route._stepSList;
+  const geom = route.geometry;
+  const list = route.steps.map((st) => ({
+    step: st,
+    s: findSForLatLon(geom, st.lat, st.lon)
+  })).sort((a, b) => a.s - b.s);
+  route._stepSList = list;
+  return list;
+}
+function getCurrentRouteStepAtS(curS) {
+  if (curS == null || !S.route) return null;
+  const list = getStepSList(S.route);
+  if (!list.length) return null;
+  let idx = 0;
+  for (let i = 0; i < list.length; i++) {
+    if (curS + 1 >= list[i].s) idx = i;
+    else break;
+  }
+  for (let i = idx; i >= 0; i--) {
+    if (list[i].step.name?.trim()) return list[i].step;
+  }
+  return list[idx]?.step || null;
 }
 function findNextManeuver() {
   if (!S.route || !S.route.steps.length) return null;
@@ -16392,6 +16435,15 @@ var init_map_providers = __esm({
 function livePos() {
   return curPos() || S.gps;
 }
+function mapDisplayPos() {
+  const raw = livePos();
+  if (!raw || !S.route?.geometry) return raw;
+  const snap = getNavSnap(S.smoothedHeading);
+  if (!snap?.lat || snap.lon == null) return raw;
+  if (S.snapQuality === SnapQuality.LOST) return raw;
+  if ((snap.lateral ?? 999) > OFF_ROUTE_EXIT_M) return raw;
+  return { ...raw, lat: snap.lat, lon: snap.lon };
+}
 function routeLatLngs() {
   const route = S.route;
   if (!route) return [];
@@ -16456,12 +16508,15 @@ function fitOverview() {
   const map = ensureMap();
   if (!map) return;
   const pts = remainingLatLngs();
-  const pos = curPos();
+  const pos = mapDisplayPos();
   if (pos) pts.push([pos.lat, pos.lon]);
   if (S.finish) pts.push([S.finish.lat, S.finish.lon]);
   if (pts.length < 1) return;
   map.fitBounds(import_leaflet.default.latLngBounds(pts).pad(0.12), { padding: [40, 40], animate: false });
   _overviewFit = true;
+}
+function getMapDisplayPos() {
+  return mapDisplayPos();
 }
 function syncNavMap(mode) {
   const map = ensureMap();
@@ -16469,7 +16524,7 @@ function syncNavMap(mode) {
   map.invalidateSize();
   if (typeof map.start === "function") map.start();
   _routeLayer.setLatLngs(routeLatLngs());
-  const pos = livePos();
+  const pos = mapDisplayPos();
   if (pos) {
     _posMarker.setLatLng([pos.lat, pos.lon]);
     if (typeof _posMarker.redraw === "function") _posMarker.redraw();
@@ -17230,6 +17285,416 @@ var init_gps = __esm({
   }
 });
 
+// js/hud-chrome.js
+function normalizeChromeMode(v) {
+  return v === "always" || v === "off" ? v : "tap";
+}
+function chromeShown(mode) {
+  const m = normalizeChromeMode(mode);
+  if (m === "off") return false;
+  if (m === "always") return true;
+  return $2("hud")?.classList.contains("chrome-reveal");
+}
+function revealHudChrome() {
+  const hud = $2("hud");
+  if (!hud?.classList.contains("on")) return;
+  hud.classList.add("chrome-reveal");
+  applyHudChrome();
+  const nav = $2("hud-nav-btns");
+  if (nav) nav.scrollTop = 0;
+  const btns = $2("hud-side-btns");
+  if (btns) btns.scrollTop = 0;
+  clearTimeout(_revealTimer);
+  _revealTimer = setTimeout(() => {
+    hud.classList.remove("chrome-reveal");
+    applyHudChrome();
+  }, HUD_CHROME_TAP_MS);
+}
+function onHudTap() {
+  revealHudChrome();
+}
+function clearHudChromeReveal() {
+  clearTimeout(_revealTimer);
+  _revealTimer = null;
+  $2("hud")?.classList.remove("chrome-reveal");
+  applyHudChrome();
+}
+function applyHudChrome() {
+  const hud = $2("hud");
+  if (!hud) return;
+  const reveal = hud.classList.contains("chrome-reveal");
+  const statusOn = chromeShown(S.hudStatusMode);
+  const finishFields = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
+  const finishOn = finishFields && chromeShown(S.hudFinishMode);
+  hud.classList.toggle("chrome-btns-on", reveal);
+  hud.classList.toggle("chrome-status-on", statusOn);
+  hud.classList.toggle("chrome-finish-on", finishOn);
+  if (reveal) {
+    const nav = $2("hud-nav-btns");
+    if (nav) nav.scrollTop = 0;
+    const btns = $2("hud-side-btns");
+    if (btns) btns.scrollTop = 0;
+  }
+  const panel = $2("finish-info");
+  if (panel) {
+    panel.classList.toggle("hidden", !finishOn);
+    $2("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
+    $2("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
+    $2("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
+  }
+}
+function initHudChrome() {
+  if (_bound) return;
+  _bound = true;
+  applyHudChrome();
+}
+var HUD_CHROME_TAP_MS, _revealTimer, _bound;
+var init_hud_chrome = __esm({
+  "js/hud-chrome.js"() {
+    init_state();
+    init_util();
+    HUD_CHROME_TAP_MS = 15e3;
+    _revealTimer = null;
+    _bound = false;
+  }
+});
+
+// js/view-mode.js
+function isExcludedTarget(el) {
+  if (!el || !(el instanceof Element)) return true;
+  return !!el.closest(
+    ".hud-btn, .corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #hud-settings-sheet, .hud-settings-sheet"
+  );
+}
+function isChromeTapTarget(el) {
+  if (!el || !(el instanceof Element)) return false;
+  if (isExcludedTarget(el)) return false;
+  if (window.matchMedia("(pointer: fine)").matches && el.closest(".speed-stack, .mdist, .block-path, .block-arrow")) {
+    return false;
+  }
+  return true;
+}
+function applyViewLayout(mode) {
+  const hud = $2("hud");
+  if (!hud) return;
+  hud.classList.remove("view-map", "view-map-overview", "view-map-zoom");
+  if (mode === "hud") {
+    pauseNavMap();
+    return;
+  }
+  hud.classList.add("view-map");
+  hud.classList.add(mode === "map_zoom" ? "view-map-zoom" : "view-map-overview");
+  syncNavMap(mode);
+}
+function setViewMode(mode) {
+  const m = VIEW_ORDER.includes(mode) ? mode : "hud";
+  S.viewMode = m;
+  applyViewLayout(m);
+  syncNavButtons();
+}
+function cycleViewMode() {
+  if (isBearingMode()) return;
+  onUserViewModeChange();
+  const i = VIEW_ORDER.indexOf(S.viewMode || "hud");
+  setViewMode(VIEW_ORDER[(i + 1) % VIEW_ORDER.length]);
+}
+function registerTap(clientX, clientY, target, preventDefault) {
+  if (!document.getElementById("hud")?.classList.contains("on")) return false;
+  if (isExcludedTarget(target)) return false;
+  const now = Date.now();
+  const dt = now - _lastTap.t;
+  const dist = Math.hypot(clientX - _lastTap.x, clientY - _lastTap.y);
+  if (dt < DBL_TAP_MS && dist < DBL_TAP_MAX_PX) {
+    cycleViewMode();
+    _lastTap.t = 0;
+    if (preventDefault) preventDefault();
+    return true;
+  }
+  _lastTap = { t: now, x: clientX, y: clientY };
+  if (isChromeTapTarget(target)) onHudTap();
+  return false;
+}
+function onTouchEnd(e) {
+  const t = e.changedTouches?.[0];
+  if (!t) return;
+  _lastTouchEnd = Date.now();
+  if (registerTap(t.clientX, t.clientY, t.target, () => e.preventDefault())) return;
+}
+function onClick(e) {
+  if (e.button !== 0) return;
+  if (Date.now() - _lastTouchEnd < 500) return;
+  registerTap(e.clientX, e.clientY, e.target, null);
+}
+function initViewMode() {
+  if (_bound2) return;
+  const hud = $2("hud");
+  if (!hud) return;
+  hud.addEventListener("touchend", onTouchEnd, { passive: false });
+  hud.addEventListener("click", onClick);
+  _bound2 = true;
+  S.viewMode = "hud";
+}
+function resetViewMode() {
+  resetLowSpeedMap();
+  setViewMode("hud");
+  destroyNavMap();
+}
+var DBL_TAP_MS, DBL_TAP_MAX_PX, VIEW_ORDER, _lastTap, _lastTouchEnd, _bound2;
+var init_view_mode = __esm({
+  "js/view-mode.js"() {
+    init_state();
+    init_util();
+    init_hud_chrome();
+    init_nav_map();
+    init_low_speed_map();
+    init_bearing_mode();
+    DBL_TAP_MS = 400;
+    DBL_TAP_MAX_PX = 40;
+    VIEW_ORDER = ["hud", "map_overview", "map_zoom"];
+    _lastTap = { t: 0, x: 0, y: 0 };
+    _lastTouchEnd = 0;
+    _bound2 = false;
+  }
+});
+
+// js/bearing-mode.js
+function isBearingMode() {
+  return S.navMode === "bearing";
+}
+function getBearingTarget() {
+  return S.finish || null;
+}
+function headingSourceLabel(gps, spdKmh2) {
+  const acc = gps?.acc ?? 999;
+  if (acc <= GPS_HEADING_ACC_M && spdKmh2 > GPS_HEADING_MIN_KMH) return "GPS";
+  if (spdKmh2 < COMPASS_PREF_MAX_KMH || acc > COMPASS_PREF_ACC_M) return "\u043A\u043E\u043C\u043F\u0430\u0441";
+  return "GPS+\u043A\u043E\u043C\u043F\u0430\u0441";
+}
+function getEffectiveHeading(gps) {
+  if (!gps) return S.smoothedHeading ?? null;
+  const spd = gps.speed ?? 0;
+  const spdKmh2 = spd * 3.6;
+  const acc = gps.acc ?? 999;
+  const gpsHdg = gps.heading;
+  const fused = fuseHeading(gpsHdg, spd);
+  if (acc <= GPS_HEADING_ACC_M && spdKmh2 > GPS_HEADING_MIN_KMH) {
+    return fused ?? S.smoothedHeading ?? gpsHdg ?? null;
+  }
+  if (spdKmh2 < COMPASS_PREF_MAX_KMH || acc > COMPASS_PREF_ACC_M) {
+    const sensor = getSensorHeading();
+    if (sensor != null && spdKmh2 < COMPASS_PREF_MAX_KMH) return fused ?? sensor;
+  }
+  return S.smoothedHeading ?? fused ?? gpsHdg ?? null;
+}
+function bearingDisplayState(bearingRel, distanceM) {
+  if (distanceM != null && distanceM < ARRIVED_M) {
+    return { label: "\u0412\u044B \u0443 \u0446\u0435\u043B\u0438", uTurn: false, arrived: true };
+  }
+  if (Math.abs(bearingRel) > U_TURN_DEG) {
+    return { label: "\u0420\u0410\u0417\u0412\u041E\u0420\u041E\u0422", uTurn: true, arrived: false };
+  }
+  return { label: "\u041A \u0426\u0415\u041B\u0418", uTurn: false, arrived: false };
+}
+function formatBearingDistance(distanceM) {
+  if (distanceM == null || !isFinite(distanceM)) {
+    return { v: "\u2014", u: "" };
+  }
+  if (distanceM < 1e3) {
+    return { v: String(Math.max(0, Math.round(distanceM / 10) * 10)), u: "\u043C" };
+  }
+  return { v: (distanceM / 1e3).toFixed(1), u: "\u043A\u043C" };
+}
+function renderBearingArrow(rotationDeg, label, opts = {}) {
+  const box = $2("bearing-arrow-box");
+  if (!box) return;
+  const dim = opts.dim ? " bearing-arrow--dim" : "";
+  const uTurn = opts.uTurn ? " bearing-arrow--uturn" : "";
+  const rot = opts.uTurn ? rotationDeg + 180 : rotationDeg;
+  box.innerHTML = '<div class="bearing-arrow-wrap' + dim + uTurn + '" style="transform:rotate(' + rot.toFixed(1) + 'deg)">' + BEARING_ICON_SVG + "</div>" + (label ? '<div class="bearing-arrow-caption">' + label + "</div>" : "");
+}
+function updateBearing(gps, target, headingDeg) {
+  if (!gps || !target) return null;
+  const distanceM = haversine(gps, target);
+  const bearingAbs = bearing(gps, target);
+  let bearingRel = 0;
+  if (headingDeg != null && !isNaN(headingDeg)) {
+    bearingRel = (bearingAbs - headingDeg + 540) % 360 - 180;
+  }
+  const state = bearingDisplayState(bearingRel, distanceM);
+  return { distanceM, bearingAbs, bearingRel, state };
+}
+function applyBearingLayout(on) {
+  const hud = $2("hud");
+  hud?.classList.toggle("nav-bearing", on);
+  $2("route-nav-view")?.classList.toggle("hidden", on);
+  const bv = $2("bearing-view");
+  bv?.classList.toggle("hidden", !on);
+  bv?.setAttribute("aria-hidden", on ? "false" : "true");
+  if (on) {
+    $2("block-path")?.classList.add("hidden");
+    $2("finish-info")?.classList.add("bearing-hide-eta");
+    $2("camAlert")?.classList.remove("on");
+    $2("offRouteWarn")?.classList.remove("on");
+  } else {
+    $2("finish-info")?.classList.remove("bearing-hide-eta");
+    if (S.showPath !== false) $2("block-path")?.classList.remove("hidden");
+  }
+}
+function syncNavButtons() {
+  const pathBtn = $2("btn-nav-path");
+  const mapBtn = $2("btn-nav-map");
+  const bearingBtn = $2("btn-nav-bearing");
+  const routeView = !isBearingMode();
+  const onHud = (S.viewMode || "hud") === "hud";
+  pathBtn?.classList.toggle("hud-btn--active", routeView && onHud);
+  mapBtn?.classList.toggle("hud-btn--active", routeView && !onHud);
+  mapBtn?.classList.toggle("hidden", isBearingMode());
+  bearingBtn?.classList.toggle("hud-btn--active", isBearingMode());
+}
+function enterBearingMode(opts = {}) {
+  const quiet = !!opts.quiet;
+  if (!S.finish) {
+    if (!quiet) alert("\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448 \u043D\u0430 \u043A\u0430\u0440\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438");
+    return false;
+  }
+  if (!S.gps) {
+    if (!quiet) alert("\u041D\u0435\u0442 GPS");
+    return false;
+  }
+  if (!S.route) {
+    if (!quiet) alert("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u043B\u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448");
+    return false;
+  }
+  S.navMode = "bearing";
+  setViewMode("hud");
+  _smoothRel = 0;
+  applyBearingLayout(true);
+  syncNavButtons();
+  if (telemetry_default.isActive?.()) {
+    telemetry_default.log("nav", { sub: "bearing_enter" });
+  }
+  return true;
+}
+function exitBearingMode() {
+  if (S.navMode !== "bearing") return;
+  S.navMode = "route";
+  applyBearingLayout(false);
+  syncNavButtons();
+  if (telemetry_default.isActive?.()) {
+    telemetry_default.log("nav", { sub: "bearing_exit" });
+  }
+}
+function toggleBearingMode() {
+  if (isBearingMode()) exitBearingMode();
+  else enterBearingMode();
+}
+function resetBearingMode() {
+  S.navMode = "route";
+  _smoothRel = 0;
+  applyBearingLayout(false);
+  syncNavButtons();
+}
+function onNavPathButton() {
+  if (isBearingMode()) exitBearingMode();
+  setViewMode("hud");
+  syncNavButtons();
+}
+function onNavMapButton() {
+  if (isBearingMode()) return;
+  const mode = S.viewMode === "hud" ? "map_zoom" : "hud";
+  setViewMode(mode);
+  syncNavButtons();
+}
+function tickBearing(now, kmh) {
+  const gps = S.gps;
+  const target = getBearingTarget();
+  const hdg = getEffectiveHeading(gps);
+  const mid = $2("mid-info");
+  const tStr = S.startTs ? "T+" + fmtRideTime((Date.now() - S.startTs) / 1e3) : "\u2014";
+  if (mid) mid.textContent = tStr + " \xB7 \u041F\u0415\u041B\u0415\u041D\u0413";
+  if (!target || !gps) {
+    renderBearingArrow(0, "\u2014", { dim: true });
+    const distEl2 = $2("bearing-distance");
+    if (distEl2) distEl2.textContent = "\u2014";
+    return;
+  }
+  const res = updateBearing(gps, target, hdg);
+  if (!res) return;
+  _smoothRel += (res.bearingRel - _smoothRel) * ARROW_SMOOTH;
+  const labelEl = $2("bearing-label");
+  if (labelEl) labelEl.textContent = res.state.label;
+  renderBearingArrow(_smoothRel, res.state.uTurn ? "\u0420\u0410\u0417\u0412\u041E\u0420\u041E\u0422" : "", {
+    uTurn: res.state.uTurn,
+    dim: false
+  });
+  const fmt = formatBearingDistance(res.distanceM);
+  const distEl = $2("bearing-distance");
+  if (distEl) {
+    distEl.innerHTML = fmt.u ? '<span class="bearing-dist-val">' + fmt.v + '</span><span class="bearing-dist-u">' + fmt.u + "</span>" : fmt.v;
+  }
+  const meta = $2("bearing-heading-meta");
+  if (meta) {
+    const src = headingSourceLabel(gps, kmh);
+    const hh = getHeadingHealth();
+    meta.textContent = hdg != null ? "\u043A\u0443\u0440\u0441 " + Math.round(hdg) + "\xB0 \xB7 " + src : "\u043A\u0443\u0440\u0441 \u2014 \xB7 " + src;
+    meta.classList.toggle("bearing-heading-meta--warn", !!hh.interference);
+  }
+  if (telemetry_default.isActive?.() && Date.now() - _lastTickLog > 15e3) {
+    _lastTickLog = Date.now();
+    telemetry_default.log("nav", {
+      sub: "bearing_tick",
+      dist_m: Math.round(res.distanceM),
+      rel: Math.round(_smoothRel),
+      hdg: hdg != null ? Math.round(hdg) : null
+    });
+  }
+}
+function fmtRideTime(s2) {
+  const m = Math.floor(s2 / 60);
+  const h = Math.floor(m / 60);
+  if (h > 0) return h + "\u0447" + m % 60 + "\u043C";
+  return m + "\u043C" + Math.floor(s2 % 60) + "\u0441";
+}
+function initBearingMode() {
+  if (_bound3) return;
+  _bound3 = true;
+  $2("btn-nav-path")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onNavPathButton();
+  });
+  $2("btn-nav-map")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onNavMapButton();
+  });
+  $2("btn-nav-bearing")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleBearingMode();
+  });
+  syncNavButtons();
+}
+var ARRIVED_M, U_TURN_DEG, GPS_HEADING_ACC_M, GPS_HEADING_MIN_KMH, COMPASS_PREF_MAX_KMH, COMPASS_PREF_ACC_M, ARROW_SMOOTH, _smoothRel, _bound3, _lastTickLog, BEARING_ICON_SVG;
+var init_bearing_mode = __esm({
+  "js/bearing-mode.js"() {
+    init_state();
+    init_util();
+    init_geo();
+    init_view_mode();
+    init_heading();
+    init_telemetry();
+    ARRIVED_M = 30;
+    U_TURN_DEG = 170;
+    GPS_HEADING_ACC_M = 15;
+    GPS_HEADING_MIN_KMH = 8;
+    COMPASS_PREF_MAX_KMH = 5;
+    COMPASS_PREF_ACC_M = 20;
+    ARROW_SMOOTH = 0.18;
+    _smoothRel = 0;
+    _bound3 = false;
+    _lastTickLog = 0;
+    BEARING_ICON_SVG = '<svg class="bearing-icon-svg" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,5 21,23 16,19 11,23" fill="currentColor"/><circle cx="16" cy="16" r="2.2" fill="currentColor"/></svg>';
+  }
+});
+
 // js/sim-time-scale.js
 function getSimTimeScale() {
   if (typeof globalThis === "undefined") return DEFAULT_SCALE;
@@ -17423,7 +17888,7 @@ function tryReturnOnRoute(feed) {
   return true;
 }
 function tickOffRouteMachine(feed) {
-  if (S.compassMode || feed.lateral == null || !S.route) return;
+  if (isBearingMode() || S.compassMode || feed.lateral == null || !S.route) return;
   const now = Date.now();
   const dtMs = _ctx.lastFeedMs ? Math.min(3e3, simScaledDelta(now - _ctx.lastFeedMs)) : 0;
   _ctx.lastFeedMs = now;
@@ -17464,6 +17929,7 @@ var init_offroute = __esm({
     init_voice();
     init_telemetry();
     init_snap_quality();
+    init_bearing_mode();
     init_sim_time_scale();
     init_nav_constants();
     OffRouteState = {
@@ -17487,174 +17953,9 @@ var init_offroute = __esm({
   }
 });
 
-// js/hud-chrome.js
-function normalizeChromeMode(v) {
-  return v === "always" || v === "off" ? v : "tap";
-}
-function chromeShown(mode) {
-  const m = normalizeChromeMode(mode);
-  if (m === "off") return false;
-  if (m === "always") return true;
-  return $2("hud")?.classList.contains("chrome-reveal");
-}
-function revealHudChrome() {
-  const hud = $2("hud");
-  if (!hud?.classList.contains("on")) return;
-  hud.classList.add("chrome-reveal");
-  applyHudChrome();
-  const btns = $2("hud-side-btns");
-  if (btns) btns.scrollTop = 0;
-  clearTimeout(_revealTimer);
-  _revealTimer = setTimeout(() => {
-    hud.classList.remove("chrome-reveal");
-    applyHudChrome();
-  }, HUD_CHROME_TAP_MS);
-}
-function onHudTap() {
-  revealHudChrome();
-}
-function clearHudChromeReveal() {
-  clearTimeout(_revealTimer);
-  _revealTimer = null;
-  $2("hud")?.classList.remove("chrome-reveal");
-  applyHudChrome();
-}
-function applyHudChrome() {
-  const hud = $2("hud");
-  if (!hud) return;
-  const reveal = hud.classList.contains("chrome-reveal");
-  const statusOn = chromeShown(S.hudStatusMode);
-  const finishFields = !!(S.showFinishDist || S.showFinishTime || S.showFinishEta);
-  const finishOn = finishFields && chromeShown(S.hudFinishMode);
-  hud.classList.toggle("chrome-btns-on", reveal);
-  hud.classList.toggle("chrome-status-on", statusOn);
-  hud.classList.toggle("chrome-finish-on", finishOn);
-  if (reveal) {
-    const btns = $2("hud-side-btns");
-    if (btns) btns.scrollTop = 0;
-  }
-  const panel = $2("finish-info");
-  if (panel) {
-    panel.classList.toggle("hidden", !finishOn);
-    $2("fi-dist-line")?.classList.toggle("hidden", !S.showFinishDist);
-    $2("fi-time-line")?.classList.toggle("hidden", !S.showFinishTime);
-    $2("fi-eta-line")?.classList.toggle("hidden", !S.showFinishEta);
-  }
-}
-function initHudChrome() {
-  if (_bound) return;
-  _bound = true;
-  applyHudChrome();
-}
-var HUD_CHROME_TAP_MS, _revealTimer, _bound;
-var init_hud_chrome = __esm({
-  "js/hud-chrome.js"() {
-    init_state();
-    init_util();
-    HUD_CHROME_TAP_MS = 15e3;
-    _revealTimer = null;
-    _bound = false;
-  }
-});
-
-// js/view-mode.js
-function isExcludedTarget(el) {
-  if (!el || !(el instanceof Element)) return true;
-  return !!el.closest(
-    ".hud-btn, .corner-btn, .statusbar, #camAlert, #fuelPanel, #quickFinish, #offRouteWarn, #gps-converge, .legal-modal, #hud-settings-sheet, .hud-settings-sheet"
-  );
-}
-function isChromeTapTarget(el) {
-  if (!el || !(el instanceof Element)) return false;
-  if (isExcludedTarget(el)) return false;
-  if (window.matchMedia("(pointer: fine)").matches && el.closest(".speed-stack, .mdist, .block-path, .block-arrow")) {
-    return false;
-  }
-  return true;
-}
-function applyViewLayout(mode) {
-  const hud = $2("hud");
-  if (!hud) return;
-  hud.classList.remove("view-map", "view-map-overview", "view-map-zoom");
-  if (mode === "hud") {
-    pauseNavMap();
-    return;
-  }
-  hud.classList.add("view-map");
-  hud.classList.add(mode === "map_zoom" ? "view-map-zoom" : "view-map-overview");
-  syncNavMap(mode);
-}
-function setViewMode(mode) {
-  const m = VIEW_ORDER.includes(mode) ? mode : "hud";
-  S.viewMode = m;
-  applyViewLayout(m);
-}
-function cycleViewMode() {
-  onUserViewModeChange();
-  const i = VIEW_ORDER.indexOf(S.viewMode || "hud");
-  setViewMode(VIEW_ORDER[(i + 1) % VIEW_ORDER.length]);
-}
-function registerTap(clientX, clientY, target, preventDefault) {
-  if (!document.getElementById("hud")?.classList.contains("on")) return false;
-  if (isExcludedTarget(target)) return false;
-  const now = Date.now();
-  const dt = now - _lastTap.t;
-  const dist = Math.hypot(clientX - _lastTap.x, clientY - _lastTap.y);
-  if (dt < DBL_TAP_MS && dist < DBL_TAP_MAX_PX) {
-    cycleViewMode();
-    _lastTap.t = 0;
-    if (preventDefault) preventDefault();
-    return true;
-  }
-  _lastTap = { t: now, x: clientX, y: clientY };
-  if (isChromeTapTarget(target)) onHudTap();
-  return false;
-}
-function onTouchEnd(e) {
-  const t = e.changedTouches?.[0];
-  if (!t) return;
-  _lastTouchEnd = Date.now();
-  if (registerTap(t.clientX, t.clientY, t.target, () => e.preventDefault())) return;
-}
-function onClick(e) {
-  if (e.button !== 0) return;
-  if (Date.now() - _lastTouchEnd < 500) return;
-  registerTap(e.clientX, e.clientY, e.target, null);
-}
-function initViewMode() {
-  if (_bound2) return;
-  const hud = $2("hud");
-  if (!hud) return;
-  hud.addEventListener("touchend", onTouchEnd, { passive: false });
-  hud.addEventListener("click", onClick);
-  _bound2 = true;
-  S.viewMode = "hud";
-}
-function resetViewMode() {
-  resetLowSpeedMap();
-  setViewMode("hud");
-  destroyNavMap();
-}
-var DBL_TAP_MS, DBL_TAP_MAX_PX, VIEW_ORDER, _lastTap, _lastTouchEnd, _bound2;
-var init_view_mode = __esm({
-  "js/view-mode.js"() {
-    init_state();
-    init_util();
-    init_hud_chrome();
-    init_nav_map();
-    init_low_speed_map();
-    DBL_TAP_MS = 400;
-    DBL_TAP_MAX_PX = 40;
-    VIEW_ORDER = ["hud", "map_overview", "map_zoom"];
-    _lastTap = { t: 0, x: 0, y: 0 };
-    _lastTouchEnd = 0;
-    _bound2 = false;
-  }
-});
-
 // js/low-speed-map.js
 function canUseLowSpeedMap(waitConverge) {
-  return !!$2("hud")?.classList.contains("on") && !!S.route && !waitConverge && !S.compassMode;
+  return !!$2("hud")?.classList.contains("on") && !!S.route && !waitConverge && !S.compassMode && !isBearingMode();
 }
 function isNavOnRoad(ctx = {}) {
   if (!S.route?.geometry) return false;
@@ -17738,6 +18039,7 @@ var init_low_speed_map = __esm({
     init_nav_constants();
     init_snap_quality();
     init_offroute();
+    init_bearing_mode();
     init_view_mode();
     init_nav_map();
     init_telemetry();
@@ -18124,7 +18426,7 @@ function renderPathway() {
   const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
   const waitConverge = !hasEverConverged() && S.gpsConverged === false;
   const pathCtx = { lateral: S.navLateral };
-  if (!S.showPath || waitConverge || S.compassMode) {
+  if (!S.showPath || waitConverge || S.compassMode || isBearingMode()) {
     block.classList.add("hidden");
     hud.classList.add("no-path");
     svg.innerHTML = "";
@@ -18460,6 +18762,7 @@ var init_render = __esm({
     init_gps_converge();
     init_nav_constants();
     init_low_speed_map();
+    init_bearing_mode();
     init_elevation();
     init_curve_speed();
     init_theme_tokens();
@@ -18767,7 +19070,14 @@ function themeLabel(id) {
   return LABELS[id] || id;
 }
 function initThemeManager() {
-  const cur = loadThemePrefs();
+  let cur = loadThemePrefs();
+  if (new URLSearchParams(location.search).get("sim") === "1") {
+    const q = new URLSearchParams(location.search);
+    const qt = q.get("theme");
+    const qm = q.get("mode");
+    if (THEME_IDS.includes(qt)) cur = { ...cur, theme: qt };
+    if (MODE_PREFS.includes(qm)) cur = { ...cur, modePref: qm };
+  }
   applyTheme(cur.theme, cur.modePref, false);
   $3("opt-theme")?.addEventListener("change", (e) => {
     applyTheme(e.target.value, loadThemePrefs().modePref);
@@ -20232,22 +20542,6 @@ async function applyCoordsOrLink(opts = {}) {
   if (hideSearch) $2("search-results").style.display = "none";
   invalidateRoute();
 }
-function isFullscreen() {
-  return document.fullscreenElement || document.webkitFullscreenElement;
-}
-function toggleFullscreen() {
-  try {
-    if (isFullscreen()) {
-      (document.exitFullscreen || document.webkitExitFullscreen || function() {
-      }).call(document);
-    } else {
-      const el = document.documentElement;
-      (el.requestFullscreen || el.webkitRequestFullscreen || function() {
-      }).call(el);
-    }
-  } catch (e) {
-  }
-}
 function looksLikeCoordsOrLink(s2) {
   return /-?\d{1,2}\.\d+.*-?\d{1,3}\.\d+/.test(s2) || /[?&](ll|pt)=/.test(s2) || isYandexMapsUrl(s2);
 }
@@ -20501,7 +20795,10 @@ function bindSetupUI() {
     e.target.value = String(S.camSpeedTol);
     saveAppOptsToStorage();
   });
-  $2("btn-start").addEventListener("click", startHud);
+  $2("btn-start").addEventListener("click", () => {
+    requestAppFullscreen();
+    startHud();
+  });
   let stopArmed = false;
   let stopArmTimer = null;
   let stopLastTap = 0;
@@ -20532,7 +20829,6 @@ function bindSetupUI() {
     else openSettingsPanel();
   });
   $2("qf-close").addEventListener("click", () => $2("quickFinish").classList.remove("on"));
-  $2("btn-fs").addEventListener("click", toggleFullscreen);
   window.addEventListener("orientationchange", () => {
     invalidateRouteMapSize();
     setTimeout(() => {
@@ -23843,6 +24139,81 @@ function fmtDate(ts) {
   const p = (n) => String(n).padStart(2, "0");
   return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
 }
+function getSessionIds() {
+  const list = $2("telemetry-sessions");
+  if (!list) return [];
+  return [...list.querySelectorAll(".tel-row[data-id]")].map((r) => r.dataset.id).filter(Boolean);
+}
+function updateBulkBar() {
+  const bar = $2("telemetry-bulk-bar");
+  const countEl = $2("telemetry-select-count");
+  const exportBtn = $2("btn-telemetry-export-selected");
+  const deleteBtn = $2("btn-telemetry-delete-selected");
+  const selectAll = $2("telemetry-select-all");
+  const ids = getSessionIds();
+  const n = _selected.size;
+  const hasSessions = ids.length > 0;
+  if (bar) bar.classList.toggle("hidden", !hasSessions);
+  if (countEl) countEl.textContent = n ? "\u0412\u044B\u0431\u0440\u0430\u043D\u043E: " + n : "\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0432\u044B\u0431\u0440\u0430\u043D\u043E";
+  if (exportBtn) exportBtn.disabled = n === 0;
+  if (deleteBtn) deleteBtn.disabled = n === 0;
+  if (selectAll) {
+    selectAll.indeterminate = n > 0 && n < ids.length;
+    selectAll.checked = ids.length > 0 && n === ids.length;
+  }
+}
+function toggleSelected(id, on) {
+  if (on) _selected.add(id);
+  else _selected.delete(id);
+  const row = $2("telemetry-sessions")?.querySelector('.tel-row[data-id="' + id + '"]');
+  row?.classList.toggle("tel-row--selected", on);
+  const cb = row?.querySelector('input[type="checkbox"]');
+  if (cb) cb.checked = on;
+  updateBulkBar();
+}
+function setAllSelected(on) {
+  const ids = getSessionIds();
+  _selected.clear();
+  if (on) ids.forEach((id) => _selected.add(id));
+  const list = $2("telemetry-sessions");
+  if (list) {
+    list.querySelectorAll(".tel-row[data-id]").forEach((row) => {
+      const checked = _selected.has(row.dataset.id);
+      row.classList.toggle("tel-row--selected", checked);
+      const cb = row.querySelector('input[type="checkbox"]');
+      if (cb) cb.checked = checked;
+    });
+  }
+  updateBulkBar();
+}
+async function exportSessions(ids) {
+  for (const id of ids) {
+    try {
+      await telemetry_default.export(id);
+    } catch (e) {
+      console.warn(e);
+    }
+    await new Promise((r) => setTimeout(r, 300));
+  }
+}
+async function deleteSessions(ids) {
+  for (const id of ids) {
+    await telemetry_default.deleteSession(id);
+    _selected.delete(id);
+  }
+  await refreshSessionsList();
+}
+function renderSessionRow(s2) {
+  const dirty = s2.dirty ? ' <span class="tel-dirty">dirty</span>' : "";
+  let shareBadge = "";
+  if (s2.sharePendingConfirm) {
+    shareBadge = ' <span class="tel-share-pending">Share ?</span>';
+  } else if ((s2.shareAttempts || 0) > 0) {
+    shareBadge = ' <span class="tel-share-done">\u043F\u0435\u0440\u0435\u0434\u0430\u043D\u043E</span>';
+  }
+  const checked = _selected.has(s2.id);
+  return '<div class="tel-row' + (checked ? " tel-row--selected" : "") + '" data-id="' + s2.id + '"><label class="tel-check" title="\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E"><input type="checkbox" data-act="select" data-id="' + s2.id + '"' + (checked ? " checked" : "") + '></label><div class="tel-main"><strong>' + fmtDate(s2.startedAt) + "</strong>" + dirty + shareBadge + '<span class="tel-meta">' + fmtDur(s2.durationMs) + " \xB7 " + s2.eventCount + " \u0441\u043E\u0431. \xB7 \u043C\u0435\u0442\u043E\u043A " + s2.markCount + '</span></div><div class="tel-actions"><button type="button" class="tel-btn" data-act="export" data-id="' + s2.id + '" title="\u042D\u043A\u0441\u043F\u043E\u0440\u0442">\u{1F4E4}</button><button type="button" class="tel-btn" data-act="delete" data-id="' + s2.id + '" title="\u0423\u0434\u0430\u043B\u0438\u0442\u044C">\u{1F5D1}</button></div></div>';
+}
 async function refreshSessionsList() {
   const list = $2("telemetry-sessions");
   const stats = $2("telemetry-stats");
@@ -23850,25 +24221,25 @@ async function refreshSessionsList() {
   try {
     const sessions = await telemetry_default.listSessions();
     const st = await telemetry_default.storageStats();
+    const ids = new Set(sessions.map((s2) => s2.id));
+    for (const id of _selected) {
+      if (!ids.has(id)) _selected.delete(id);
+    }
     if (stats) {
       stats.textContent = "\u0421\u0435\u0441\u0441\u0438\u0439: " + st.sessions + " / " + st.maxSessions + " \xB7 \u0441\u043E\u0431\u044B\u0442\u0438\u0439: ~" + st.events;
     }
     if (!sessions.length) {
       list.innerHTML = '<div class="hint">\u0417\u0430\u043F\u0438\u0441\u0435\u0439 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442. \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u0442\u0435\u043B\u0435\u043C\u0435\u0442\u0440\u0438\u044E \u0438 \u043D\u0430\u0447\u043D\u0438\u0442\u0435 \u043F\u043E\u0435\u0437\u0434\u043A\u0443.</div>';
+      _selected.clear();
+      updateBulkBar();
       return;
     }
-    list.innerHTML = sessions.map((s2) => {
-      const dirty = s2.dirty ? ' <span class="tel-dirty">dirty</span>' : "";
-      let shareBadge = "";
-      if (s2.sharePendingConfirm) {
-        shareBadge = ' <span class="tel-share-pending">Share ?</span>';
-      } else if ((s2.shareAttempts || 0) > 0) {
-        shareBadge = ' <span class="tel-share-done">\u043F\u0435\u0440\u0435\u0434\u0430\u043D\u043E</span>';
-      }
-      return '<div class="tel-row" data-id="' + s2.id + '"><div class="tel-main"><strong>' + fmtDate(s2.startedAt) + "</strong>" + dirty + shareBadge + '<span class="tel-meta">' + fmtDur(s2.durationMs) + " \xB7 " + s2.eventCount + " \u0441\u043E\u0431. \xB7 \u043C\u0435\u0442\u043E\u043A " + s2.markCount + '</span></div><div class="tel-actions"><button type="button" class="tel-btn" data-act="export" data-id="' + s2.id + '">\u{1F4E4}</button><button type="button" class="tel-btn" data-act="delete" data-id="' + s2.id + '">\u{1F5D1}</button></div></div>';
-    }).join("");
+    list.innerHTML = sessions.map(renderSessionRow).join("");
+    updateBulkBar();
   } catch (e) {
     list.innerHTML = '<div class="hint err">IndexedDB: ' + e.message + "</div>";
+    _selected.clear();
+    updateBulkBar();
   }
 }
 function bindSessionsList() {
@@ -23876,8 +24247,13 @@ function bindSessionsList() {
   if (!list || list.dataset.bound) return;
   list.dataset.bound = "1";
   list.addEventListener("click", async (e) => {
+    const selectCb = e.target.closest('input[data-act="select"]');
+    if (selectCb) {
+      toggleSelected(selectCb.dataset.id, selectCb.checked);
+      return;
+    }
     const btn = e.target.closest("[data-act]");
-    if (!btn) return;
+    if (!btn || btn.dataset.act === "select") return;
     const id = btn.dataset.id;
     if (btn.dataset.act === "export") {
       try {
@@ -23887,20 +24263,28 @@ function bindSessionsList() {
       }
     } else if (btn.dataset.act === "delete") {
       if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F?")) return;
+      _selected.delete(id);
       await telemetry_default.deleteSession(id);
       await refreshSessionsList();
     }
   });
+  $2("telemetry-select-all")?.addEventListener("change", (e) => {
+    setAllSelected(e.target.checked);
+  });
+  $2("btn-telemetry-export-selected")?.addEventListener("click", async () => {
+    const ids = [..._selected];
+    if (!ids.length) return;
+    await exportSessions(ids);
+  });
+  $2("btn-telemetry-delete-selected")?.addEventListener("click", async () => {
+    const ids = [..._selected];
+    if (!ids.length) return;
+    if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C " + ids.length + " \u0441\u0435\u0441\u0441\u0438\u0439 \u0438 \u0432\u0441\u0435 \u0438\u0445 \u0441\u043E\u0431\u044B\u0442\u0438\u044F?")) return;
+    await deleteSessions(ids);
+  });
   $2("btn-telemetry-export-all")?.addEventListener("click", async () => {
     const sessions = await telemetry_default.listSessions();
-    for (const s2 of sessions) {
-      try {
-        await telemetry_default.export(s2.id);
-      } catch (e) {
-        console.warn(e);
-      }
-      await new Promise((r) => setTimeout(r, 300));
-    }
+    await exportSessions(sessions.map((s2) => s2.id));
   });
 }
 function initTelemetryUI() {
@@ -23922,7 +24306,7 @@ function initTelemetryUI() {
   refreshSessionsList();
   telemetry_default.updateMarkButtonVisibility();
 }
-var _tapCount, _tapTimer, MARK_TAP_MS;
+var _tapCount, _tapTimer, MARK_TAP_MS, _selected;
 var init_telemetry_ui = __esm({
   "js/telemetry-ui.js"() {
     init_telemetry();
@@ -23932,6 +24316,7 @@ var init_telemetry_ui = __esm({
     _tapCount = 0;
     _tapTimer = null;
     MARK_TAP_MS = 450;
+    _selected = /* @__PURE__ */ new Set();
   }
 });
 
@@ -24521,6 +24906,33 @@ function logManeuverContext(nm, snap, shown, filterReason) {
   };
   telemetry_default.log("nav", { sub: "maneuver_context", ..._lastMarkCtx });
 }
+function hudCurrentStreetLabel(snap) {
+  const cur = snap?.s != null ? getCurrentRouteStepAtS(snap.s) : null;
+  if (cur?.name?.trim()) return formatStreetLabel(cur.name);
+  return "\u2014";
+}
+function hudTurnStreetLabel(nm, rbCtx, displayStep) {
+  if (rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null) {
+    return roundaboutManeuverText(displayStep, rbCtx);
+  }
+  if (isRoundaboutStep(displayStep)) {
+    const mini = rbCtx?.isMini ? " \xB7 \u043C\u0438\u043D\u0438-\u043A\u0440\u0443\u0433" : "";
+    return (roundaboutManeuverText(displayStep, rbCtx) || formatStreetLabel(nm?.step?.name || displayStep?.name)) + mini;
+  }
+  if (nm && isTurnStep(nm.step) && nm.step.name?.trim()) {
+    return formatStreetLabel(nm.step.name);
+  }
+  if (nm?.step?.type === "arrive" && nm.step.name?.trim()) {
+    return formatStreetLabel(nm.step.name);
+  }
+  return "\u2014";
+}
+function setHudStreetLabels(top, bottom) {
+  const topEl = $2("street");
+  const curEl = $2("street-current");
+  if (topEl) topEl.textContent = top ?? "\u2014";
+  if (curEl) curEl.textContent = bottom ?? "\u2014";
+}
 function maneuverVoiceThresholds(kmh) {
   const mps = Math.max(kmh / 3.6, 4);
   return {
@@ -24656,6 +25068,11 @@ function onTick() {
     updateFinishInfo(0, kmh, now);
     return;
   }
+  if (isBearingMode()) {
+    tickBearing(now, kmh);
+    updateFinishInfo(haversine(S.gps, S.finish), kmh, now);
+    return;
+  }
   tickSpeedLimit(getNavSnap(S.smoothedHeading));
   const gpsOk = hasEverConverged() || S.gpsConverged !== false;
   const hudOn2 = $2("hud").classList.contains("on");
@@ -24673,13 +25090,13 @@ function onTick() {
     });
   }
   if (hudOn2 && !gpsOk) {
-    $2("street").textContent = "GPS \u0421\u0425\u041E\u0414\u0418\u0422\u0421\u042F";
+    setHudStreetLabels("GPS \u0421\u0425\u041E\u0414\u0418\u0422\u0421\u042F", "\u2014");
     $2("v-mdist").textContent = "\u2014";
     $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
     updateFinishInfo(getRemainingDistance(), kmh, now);
   }
   if (snapLostBlocksNav(snap)) {
-    $2("street").textContent = "\u041D\u0415\u0422 \u041F\u0420\u0418\u0412\u042F\u0417\u041A\u0418";
+    setHudStreetLabels("\u041D\u0415\u0422 \u041F\u0420\u0418\u0412\u042F\u0417\u041A\u0418", "\u2014");
     $2("v-mdist").textContent = "\u2014";
     $2("v-mdist-u").textContent = "";
     $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
@@ -24704,7 +25121,7 @@ function onTick() {
       $2("v-mdist").textContent = (dFin / 1e3).toFixed(1);
       $2("v-mdist-u").textContent = "\u043A\u043C";
     }
-    $2("street").textContent = "\u041A \u0424\u0418\u041D\u0418\u0428\u0423";
+    setHudStreetLabels("\u041A \u0424\u0418\u041D\u0418\u0428\u0423", hudCurrentStreetLabel(snap));
     $2("rb-exit-label")?.classList.add("hidden");
     const mid = $2("mid-info");
     const tStr = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
@@ -24732,7 +25149,7 @@ function onTick() {
       $2("v-mdist").textContent = (dSnap / 1e3).toFixed(1);
       $2("v-mdist-u").textContent = "\u043A\u043C";
     }
-    $2("street").textContent = "\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422";
+    setHudStreetLabels("\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422", hudCurrentStreetLabel(snap));
     $2("rb-exit-label")?.classList.add("hidden");
   } else {
     let nm = isSnapDegraded() ? getCachedManeuver() : null;
@@ -24746,14 +25163,10 @@ function onTick() {
       $2("arrow-box").innerHTML = buildArrowSVG(displayStep, { snap, ctx: rbCtx });
       const rbEl = $2("rb-exit-label");
       if (rbEl) rbEl.classList.add("hidden");
-      if (rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null) {
-        $2("street").textContent = roundaboutManeuverText(displayStep, rbCtx);
-      } else if (isRoundaboutStep(displayStep)) {
-        const mini = rbCtx?.isMini ? " \xB7 \u043C\u0438\u043D\u0438-\u043A\u0440\u0443\u0433" : "";
-        $2("street").textContent = (roundaboutManeuverText(displayStep, rbCtx) || formatStreetLabel(nm.step.name || displayStep.name)) + mini;
-      } else {
-        $2("street").textContent = formatStreetLabel(nm.step.name);
-      }
+      setHudStreetLabels(
+        hudTurnStreetLabel(nm, rbCtx, displayStep),
+        hudCurrentStreetLabel(snap)
+      );
       if (rbCtx?.isOnRoundabout && rbCtx.distanceToExit != null) {
         const dm = Math.max(10, Math.round(rbCtx.distanceToExit / 10) * 10);
         if (dm < 1e3) {
@@ -24815,6 +25228,8 @@ function onTick() {
           console.warn("maneuver voice:", e);
         }
       }
+    } else {
+      setHudStreetLabels("\u2014", hudCurrentStreetLabel(snap));
     }
   }
   updateFinishInfo(remaining, kmh, now);
@@ -24896,14 +25311,11 @@ async function startHud() {
     console.warn("FGS GPS:", e);
   }
   if (window.__SIM__?.onNavigationStart) window.__SIM__.onNavigationStart();
-  if (!window.__SIM__) {
-    try {
-      document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
-    } catch (e) {
-    }
-  }
+  requestAppFullscreen();
   speak("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D. \u0412 \u043F\u0443\u0442\u0438 " + Math.round(S.route.duration / 60) + " \u043C\u0438\u043D\u0443\u0442");
   S.dispSpeed = S.gps?.speed > 0 ? Math.min(S.gps.speed * 3.6, 198) : 0;
+  S.navMode = "route";
+  syncNavButtons();
   tickSpeedLimit(getNavSnap(S.smoothedHeading));
   onTick();
   startVisualLoop();
@@ -24945,6 +25357,7 @@ async function stopHud() {
   resetSpeedLimitState();
   resetRoundaboutState();
   resetViewMode();
+  resetBearingMode();
   syncTripHudBadge();
   try {
     document.exitFullscreen && document.exitFullscreen();
@@ -25175,6 +25588,7 @@ var init_hud = __esm({
     init_telemetry();
     init_telemetry_funnel();
     init_view_mode();
+    init_bearing_mode();
     init_trip_ui();
     init_trip_hud_context();
     init_trip_refuel_hud();
@@ -25524,6 +25938,8 @@ function initYandexShare() {
 
 // js/main.js
 init_view_mode();
+init_bearing_mode();
+init_nav_map();
 init_yandex_export();
 init_track_recorder();
 init_trip_ui();
@@ -25639,6 +26055,156 @@ function sampleRegressionState(extra = {}) {
   };
 }
 
+// js/sim-bridge.js
+init_state();
+init_util();
+init_hud();
+init_hud_chrome();
+init_bearing_mode();
+init_theme_manager();
+init_setup();
+init_route();
+var DEMO_FINISH = [55.827099, 37.632066];
+function isSimPage() {
+  return new URLSearchParams(location.search).get("sim") === "1";
+}
+function syncSimPathFromRoute() {
+  if (window.__SIM__?.setRoutePath && S.route?.coords?.length) {
+    window.__SIM__.setRoutePath(S.route.coords);
+  }
+}
+function simKickGps() {
+  if (S.gps?.lat != null && S.gps?.lon != null) return true;
+  const sim = window.__SIM__;
+  if (!sim) return false;
+  if (!sim.cb) {
+    try {
+      window.__motoHUD?.startGps?.();
+    } catch (e) {
+    }
+  }
+  try {
+    const [lat, lon] = sim.start || [];
+    if (lat != null && sim.injectFix) {
+      sim.injectFix({ lat, lon, speed: 0, heading: 0, acc: 5 });
+    }
+  } catch (e) {
+  }
+  return !!(S.gps?.lat != null && S.gps?.lon != null);
+}
+function simEnsureDemoFinish() {
+  if (S.finish?.lat != null) return { ok: true, existed: true };
+  const inp = $2("finish-input");
+  if (inp?.dataset.userEdited === "1") return { ok: false, error: "\u0424\u0438\u043D\u0438\u0448 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D" };
+  if (inp && !inp.value.trim()) {
+    inp.value = DEMO_FINISH[0].toFixed(5) + ", " + DEMO_FINISH[1].toFixed(5);
+  }
+  setFinishQuiet(DEMO_FINISH[0], DEMO_FINISH[1], "\u0414\u0435\u043C\u043E");
+  return { ok: !!S.finish, demo: true };
+}
+function simApplyTheme(theme, modePref) {
+  const tid = THEME_IDS.includes(theme) ? theme : "avionics";
+  const mp = MODE_PREFS.includes(modePref) ? modePref : "night";
+  applyTheme(tid, mp);
+  const html = document.documentElement;
+  const active = THEME_IDS.find((id) => html.classList.contains("theme-" + id)) || tid;
+  return {
+    ok: active === tid,
+    theme: active,
+    modePref: mp,
+    resolved: html.getAttribute("data-mode") || "?"
+  };
+}
+function applyDirectSimRoute() {
+  if (!S.gps?.lat || !S.finish?.lat) return null;
+  const wps = [
+    { lat: S.gps.lat, lon: S.gps.lon, label: "\u0421\u0442\u0430\u0440\u0442" },
+    { lat: S.finish.lat, lon: S.finish.lon, label: S.finish.label || "\u0424\u0438\u043D\u0438\u0448" }
+  ];
+  const route = buildDirectRouteFromWaypoints(wps);
+  attachRouteFromImport(route, wps);
+  refreshRouteUi();
+  setGoBarVisible(true);
+  syncSimPathFromRoute();
+  if (S.routeAlternatives?.length) {
+    scheduleGeometryBuild(S.routeAlternatives, () => refreshRouteUi());
+  }
+  return route;
+}
+async function simBuildRoute() {
+  simKickGps();
+  const fin = simEnsureDemoFinish();
+  if (!S.gps?.lat) return { ok: false, error: "\u041D\u0435\u0442 GPS \u2014 \u043F\u043E\u0434\u043E\u0436\u0434\u0438\u0442\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0441\u0438\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u0430" };
+  if (!S.finish?.lat) return { ok: false, error: fin.error || "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448 \u0432 \u043C\u0435\u043D\u044E" };
+  try {
+    await doBuildRoute();
+    if (S.route?.coords?.length >= 2) {
+      syncSimPathFromRoute();
+      return { ok: true, via: "osrm", pts: S.route.coords.length };
+    }
+  } catch (e) {
+    if (!isSimPage()) return { ok: false, error: e.message || String(e) };
+  }
+  if (isSimPage()) {
+    const direct = applyDirectSimRoute();
+    if (direct?.coords?.length >= 2) {
+      return {
+        ok: true,
+        via: "direct",
+        pts: direct.coords.length,
+        warn: "OSRM \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u2014 \u043F\u0440\u044F\u043C\u0430\u044F \u043B\u0438\u043D\u0438\u044F (sim)"
+      };
+    }
+  }
+  const errText = ($2("route-info")?.textContent || $2("s-finish")?.textContent || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D").replace(/^❌\s*/, "");
+  return { ok: false, error: errText };
+}
+async function simNavAction(kind) {
+  const hud = $2("hud");
+  if (!hud?.classList.contains("on")) {
+    if (!S.route) {
+      return { ok: false, error: "\u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u043C\u0435\u043D\u044E \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB" };
+    }
+    await startHud();
+    if (!$2("hud")?.classList.contains("on")) {
+      return { ok: false, error: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C HUD" };
+    }
+  }
+  revealHudChrome();
+  if (kind === "path") {
+    onNavPathButton();
+  } else if (kind === "map") {
+    onNavMapButton();
+  } else if (kind === "bearing") {
+    if (isBearingMode()) {
+      exitBearingMode();
+    } else {
+      if (!S.finish) return { ok: false, error: "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448" };
+      if (!S.gps) return { ok: false, error: "\u041D\u0435\u0442 GPS \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB" };
+      if (!S.route) return { ok: false, error: "\u041D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430" };
+      if (!enterBearingMode({ quiet: true })) {
+        return { ok: false, error: "\u041F\u0435\u043B\u0435\u043D\u0433 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D" };
+      }
+    }
+  } else {
+    return { ok: false, error: "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C: " + kind };
+  }
+  onTick();
+  return { ok: true, navMode: S.navMode, viewMode: S.viewMode };
+}
+function simGetStatus() {
+  const html = document.documentElement;
+  const theme = THEME_IDS.find((id) => html.classList.contains("theme-" + id)) || "?";
+  return {
+    theme,
+    mode: html.getAttribute("data-mode"),
+    gps: !!S.gps?.lat,
+    finish: !!S.finish?.lat,
+    routePts: S.route?.geometry?.n || S.route?.coords?.length || 0,
+    hudOn: !!$2("hud")?.classList.contains("on")
+  };
+}
+
 // js/main.js
 init_route();
 applyThemeCss();
@@ -25646,6 +26212,7 @@ initYandexImportUi();
 initYandexClipboard();
 initYandexShare();
 initViewMode();
+initBearingMode();
 initYandexExportUi();
 initTrackRecorderUi();
 initTripPlannerUi();
@@ -25706,6 +26273,20 @@ window.__motoHUD = {
   findNearestOnRoute,
   prepareRegressionHud,
   sampleRegressionState,
+  toggleBearingMode,
+  isBearingMode,
+  enterBearingMode,
+  exitBearingMode,
+  onNavPathButton,
+  onNavMapButton,
+  setViewMode,
+  getMapDisplayPos,
+  simNavAction,
+  simApplyTheme,
+  simBuildRoute,
+  simGetStatus,
+  simKickGps,
+  simEnsureDemoFinish,
   _searchBusy: false,
   _finishFocused: false
 };

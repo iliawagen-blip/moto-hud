@@ -352,6 +352,10 @@ import { parseGpxTrack, buildGpxReplay } from './gpx.js';
 
   window.__SIM__ = {
     get path(){ return PATH; },
+    get traveledPath(){
+      const end = Math.min(sim.idx + 2, PATH.length);
+      return PATH.slice(0, Math.max(2, end));
+    },
     get start(){ return [START[0], START[1]]; },
     get gpxMeta(){ return gpxMeta; },
     get speedKmh(){ return Math.round(segSpeedNow() * 3.6); },

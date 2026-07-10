@@ -46,3 +46,14 @@ export function newId(){
   }catch(e){}
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
+
+/** Запрос полноэкранного режима (только вход; без user gesture браузер может отклонить). */
+export function requestAppFullscreen(){
+  try{
+    if(document.fullscreenElement || document.webkitFullscreenElement) return;
+    if(window !== window.top) return;
+    if(new URLSearchParams(location.search).get('sim') === '1') return;
+    const el = document.documentElement;
+    (el.requestFullscreen || el.webkitRequestFullscreen || function(){}).call(el);
+  }catch(e){}
+}

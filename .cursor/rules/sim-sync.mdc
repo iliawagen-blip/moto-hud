@@ -1,0 +1,50 @@
+---
+description: После изменений HUD — обновлять sim.html и связанные файлы эмулятора
+alwaysApply: true
+---
+
+# Sim: синхронизация с HUD
+
+**После каждого изменения**, затрагивающего UI, навигацию, GPS, карту, темы, телеметрию или сим-GPS — **в том же PR/сессии обновить эмулятор**, не оставляя sim на старой версии.
+
+## Файлы sim
+
+| Файл | Назначение |
+|------|------------|
+| `sim.html` | UI эмулятора, iframe, устройства, панель тем |
+| `js/sim-main.js` | GPS-сим (`__SIM__`), старт, GPX, путь |
+| `js/sim-map-module.js` | Карта рядом с телефоном (`SimMap`) |
+| `js/sim-replay.js` | Replay JSONL-телеметрии |
+| `index.html` | `?sim=1`, cache-bust `sim.js?v=%%BUILD_ID%%` |
+
+Сборка: `sim-main.js` → `sim.js`, `sim-map-module.js` → `sim-map.js` (`npm run build`).
+
+## Когда обновлять sim
+
+- Новые кнопки/режимы HUD (`viewMode`, `navMode`, пеленг, карта)
+- Изменения `__motoHUD` API — экспортировать в `js/main.js` для iframe
+- Телеметрия: новые поля fix/snap/nav → `sim-replay.js` debug
+- Маршрут/GPS/карта: позиция, geometry, snap → `sim-map-module.js`
+- Темы, пресеты, URL-параметры (`?telemetry=1`, `?autohud=1`)
+- Разметка/брейкпоинты — проверить **все пресеты устройств** в `sim.html`
+
+## Чеклист перед завершением задачи
+
+1. **Устройства**: iframe = нативное W×H пресета; portrait/landscape; подпись `#device-size-lbl`
+2. **Карта**: маршрут (`route.geometry` или `coords`), маркер GPS (`getMapDisplayPos`), старт/финиш, пройденный трек
+3. **Панель sim**: селекты темы/режима (без отдельных кнопок-пресетов); **ДОР / КАРТ / ПЕЛЕНГ**; строка `состояние:`; подсказки в `.hint`
+4. Тема: только `#sim-theme` + `#sim-mode` → `applyTheme()` в iframe; обратная синхронизация из `moto-hud-theme` / HUD-настроек
+4. `npm run build` — пересобрать `sim.js`, `sim-map.js`, `app-iife.js`
+5. При сомнении: `node scripts/sim-e2e.mjs http://127.0.0.1:3456`
+
+## Инварианты (не ломать)
+
+- Движение GPS только после **▶ ПОЕХАЛИ** в iframe (`onNavigationStart`)
+- `frameUrl()` — cache-bust `&t=`; проброс `telemetry`, `autohud`, `gpx`
+- Десктоп: `SimMap.update(frame.contentWindow)` в интервале / после load
+- Не тянуть тяжёлые модули в `sim-map-module.js` — только лёгкие хелперы inline
+
+## Запрещено
+
+- Завершать фичу HUD без правок sim, если фича видна или тестируется в симуляторе
+- Хардкодить устаревший `sim.js?v=` в `index.html` (только `%%BUILD_ID%%`)

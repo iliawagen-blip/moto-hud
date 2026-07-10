@@ -103,6 +103,8 @@ async function checkHudLayout(page){
     const hud = doc.getElementById('hud');
     if(!hud?.classList.contains('on')) return { ok: false, detail: 'hud off' };
     hud.classList.add('chrome-reveal', 'chrome-btns-on', 'chrome-status-on', 'chrome-finish-on');
+    const nav = doc.getElementById('hud-nav-btns');
+    if(nav) nav.scrollTop = 0;
     const btns = doc.getElementById('hud-side-btns');
     if(btns) btns.scrollTop = 0;
 
@@ -139,6 +141,25 @@ async function checkHudLayout(page){
     const limitEl = doc.getElementById('speed-limit-sign');
     const limitVisible = limitEl && !limitEl.classList.contains('hidden');
     const limitText = doc.getElementById('sls-num')?.textContent?.trim() || '';
+
+    const arrowBox = visibleRect(doc.getElementById('arrow-box'));
+    const navBody = visibleRect(doc.querySelector('.block-arrow-body'));
+    const turnStreet = visibleRect(doc.getElementById('street'));
+    const curStreet = visibleRect(doc.getElementById('street-current'));
+    const mdistEl = visibleRect(doc.querySelector('.mdist'));
+    if(arrowBox && navBody){
+      if(arrowBox.top < navBody.top + 2) issues.push('стрелка обрезана сверху');
+      if(arrowBox.bottom > navBody.bottom - 2) issues.push('стрелка обрезана снизу');
+    }
+    if(turnStreet && arrowBox && turnStreet.bottom > arrowBox.top + 1){
+      issues.push('улица поворота перекрывает стрелку');
+    }
+    if(curStreet && mdistEl && curStreet.top < mdistEl.bottom - 1){
+      issues.push('текущая улица выше дистанции');
+    }
+    if(turnStreet && curStreet && turnStreet.top >= curStreet.top){
+      issues.push('порядок улиц: поворот не выше текущей');
+    }
 
     return {
       ok: issues.length === 0,
@@ -183,23 +204,22 @@ async function runDesktop(page){
   let api = await getFrameApi(page);
   log(!!api.hasHud, 'iframe: __motoHUD доступен', JSON.stringify(api));
 
-  // Тема
-  await page.click('#btn-theme-hitech');
-  await page.waitForTimeout(800);
-  const themeH = await page.evaluate(() => document.getElementById('theme-status')?.textContent || '');
-  log(/Хайтек/i.test(themeH), 'Тема: Хайтек', themeH);
-
-  await page.click('#btn-theme-vintage');
-  await page.waitForTimeout(800);
-  const themeV = await page.evaluate(() => document.getElementById('theme-status')?.textContent || '');
-  log(/Винтаж/i.test(themeV), 'Тема: Винтаж', themeV);
-
-  // Тема через select
-  await page.selectOption('#sim-theme', 'space');
+  // Тема: все 6 через select
+  for(const tid of ['avionics', 'hitech', 'space', 'sport', 'chopper', 'vintage']){
+    await page.selectOption('#sim-theme', tid);
+    await page.waitForTimeout(450);
+    const ok = await page.evaluate((id) => {
+      try{
+        const html = document.getElementById('frame')?.contentWindow?.document?.documentElement;
+        return html?.classList.contains('theme-' + id) || false;
+      }catch(e){ return false; }
+    }, tid);
+    log(ok, 'Тема: ' + tid, ok ? 'OK' : 'класс не применился');
+  }
   await page.selectOption('#sim-mode', 'day');
-  await page.waitForTimeout(600);
-  const themeSpace = await page.evaluate(() => document.getElementById('theme-status')?.textContent || '');
-  log(/Космос/i.test(themeSpace), 'Тема: select Космос', themeSpace);
+  await page.waitForTimeout(400);
+  const themeDay = await page.evaluate(() => document.getElementById('theme-status')?.textContent || '');
+  log(/day/i.test(themeDay), 'Режим: день', themeDay);
 
   // Устройство / ориентация
   await page.selectOption('#sel-device', '412x915');
@@ -208,18 +228,52 @@ async function runDesktop(page){
   const phoneW = await page.evaluate(() => document.getElementById('phone')?.style.width || '');
   log(phoneW.includes('px'), 'Смена устройства и ориентации', phoneW);
 
+  const deviceLayout = await page.evaluate(() => {
+    const screen = document.getElementById('phone-screen');
+    const lbl = document.getElementById('device-size-lbl')?.textContent || '';
+    const sw = parseInt(screen?.style.width || '0', 10);
+    const sh = parseInt(screen?.style.height || '0', 10);
+    const frame = document.getElementById('frame');
+    const fw = frame?.clientWidth || 0;
+    const fh = frame?.clientHeight || 0;
+    return { sw, sh, fw, fh, lbl, portrait: sw < sh };
+  });
+  log(deviceLayout.sw === 915 && deviceLayout.sh === 412, 'Экран: нативные px (альбом Pixel 7)',
+    `${deviceLayout.sw}×${deviceLayout.sh} iframe=${deviceLayout.fw}×${deviceLayout.fh} ${deviceLayout.lbl}`);
+  log(Math.abs(deviceLayout.fw - deviceLayout.sw) <= 2 && Math.abs(deviceLayout.fh - deviceLayout.sh) <= 2,
+    'iframe = нативное разрешение устройства');
+
+  await page.click('#btn-orient');
+  await page.waitForTimeout(300);
+
+  for(const dev of ['390x844', '360x800', '430x932']){
+    await page.selectOption('#sel-device', dev);
+    await page.waitForTimeout(250);
+    const ok = await page.evaluate((v) => {
+      const [w, h] = v.split('x').map(Number);
+      const sw = parseInt(document.getElementById('phone-screen')?.style.width || '0', 10);
+      const sh = parseInt(document.getElementById('phone-screen')?.style.height || '0', 10);
+      return sw === w && sh === h;
+    }, dev);
+    log(ok, `Устройство ${dev}`, ok ? 'OK' : 'размер не совпал');
+  }
+  await page.selectOption('#sel-device', '390x844');
+  await page.click('#btn-orient');
+  await page.waitForTimeout(250);
+
   // Скорость
   await page.locator('#spd').evaluate(el => { el.value = '60'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.waitForTimeout(200);
   const spdLive = await page.evaluate(() => document.getElementById('sim-spd-live')?.textContent || '');
   log(spdLive.includes('GPS'), 'Слайдер скорости', spdLive);
 
-  // Карта: пресет старта
+  // Карта: поиск адреса старта
   if(await page.locator('#sim-map-provider').count()){
-    await page.selectOption('#sim-start-preset', 'vdnh');
-    await page.waitForTimeout(500);
+    await page.fill('#sim-start-address', 'ВДНХ, Москва');
+    await page.click('#btn-sim-start-search');
+    await page.waitForTimeout(2500);
     const coords = await page.evaluate(() => document.getElementById('sim-start-coords')?.textContent || '');
-    log(/55\.82/.test(coords), 'Карта: пресет ВДНХ', coords);
+    log(/55\.8/.test(coords), 'Карта: поиск старта ВДНХ', coords);
 
     const providers = await page.locator('#sim-map-provider option').count();
     if(providers > 1){
@@ -231,6 +285,19 @@ async function runDesktop(page){
   }
 
   // Построить маршрут в iframe
+  try{
+    await page.click('#btn-sim-build-route');
+    await page.waitForTimeout(3000);
+    const routeRes = await page.evaluate(() => {
+      const S = document.getElementById('frame')?.contentWindow?.__motoHUD?.S;
+      return { pts: S?.route?.coords?.length || S?.route?.geometry?.n || 0 };
+    });
+    log(routeRes.pts >= 2, 'Кнопка ↻ Маршрут (sim)', 'pts=' + routeRes.pts);
+  }catch(e){
+    log(false, 'Кнопка ↻ Маршрут (sim)', e.message);
+  }
+
+  // Построить маршрут в iframe (legacy path if button failed)
   try{
     await buildRouteInFrame(page);
     api = await getFrameApi(page);
@@ -251,6 +318,38 @@ async function runDesktop(page){
     }
   }
 
+  const mapState = await page.evaluate(() => {
+    const win = document.getElementById('frame')?.contentWindow;
+    const S = win?.__motoHUD?.S;
+    const routePts = S?.route?.geometry?.n || S?.route?.coords?.length || 0;
+    let simMapPts = 0;
+    let pos = null;
+    try{
+      const layers = window.SimMap;
+      if(layers){
+        const mapEl = document.getElementById('sim-map');
+        const leaflet = mapEl?._leaflet_id != null;
+        simMapPts = routePts;
+      }
+    }catch(e){}
+    const gps = S?.gps;
+    if(gps) pos = { lat: gps.lat, lon: gps.lon };
+    return { routePts, pos, hasSimMap: !!window.SimMap };
+  });
+  log(mapState.routePts >= 2, 'Карта: маршрут в state', `pts=${mapState.routePts}`);
+  log(mapState.hasSimMap, 'Карта: SimMap инициализирован');
+
+  await page.waitForTimeout(800);
+  const mapLayers = await page.evaluate(() => {
+    try{
+      const win = document.getElementById('frame')?.contentWindow;
+      window.SimMap?.update?.(win);
+      return window.SimMap?.getDebugState?.() || {};
+    }catch(e){ return {}; }
+  });
+  log((mapLayers.routePts || 0) >= 2, 'Карта: маршрут на polyline', `pts=${mapLayers.routePts || 0}`);
+  log(!!mapLayers.pos, 'Карта: маркер позиции', mapLayers.pos ? `${mapLayers.pos.lat?.toFixed(5)}, ${mapLayers.pos.lon?.toFixed(5)}` : '—');
+
   // Пуск симуляции (до HUD — движение может не идти)
   await page.click('#btn-play');
   await page.waitForTimeout(600);
@@ -262,7 +361,42 @@ async function runDesktop(page){
   api = await getFrameApi(page);
   log(api.running === false, '⏸ Пауза симуляции');
 
-  // Старт HUD (ПОЕХАЛИ)
+  // Навигация: ДОР / КАРТ (нужен HUD)
+  await startHudInFrame(page);
+  await page.click('#btn-sim-path');
+  await page.waitForTimeout(300);
+  let navDbg = await page.evaluate(() => document.getElementById('hud-nav-debug')?.textContent || '');
+  log(/view:hud/.test(navDbg), 'Нав: ДОР → view:hud', navDbg);
+
+  await page.click('#btn-sim-map');
+  await page.waitForTimeout(400);
+  navDbg = await page.evaluate(() => document.getElementById('hud-nav-debug')?.textContent || '');
+  log(/view:map/.test(navDbg), 'Нав: КАРТ → карта', navDbg);
+
+  const mapStreets = await page.evaluate(() => {
+    const doc = document.getElementById('frame')?.contentWindow?.document;
+    const hud = doc?.getElementById('hud');
+    const turn = doc?.getElementById('street');
+    const cur = doc?.getElementById('street-current');
+    const mapPane = doc?.getElementById('nav-map-pane');
+    const stTurn = turn && doc.defaultView.getComputedStyle(turn).display !== 'none';
+    const stCur = cur && doc.defaultView.getComputedStyle(cur).display !== 'none';
+    const mapOn = mapPane && doc.defaultView.getComputedStyle(mapPane).display !== 'none';
+    return {
+      viewMap: hud?.classList.contains('view-map'),
+      streetsVisible: stTurn && stCur,
+      mapVisible: mapOn,
+      turnText: turn?.textContent?.trim(),
+      curText: cur?.textContent?.trim()
+    };
+  });
+  log(mapStreets.viewMap && mapStreets.streetsVisible && mapStreets.mapVisible,
+    'КАРТ: улицы + карта', JSON.stringify(mapStreets));
+
+  await page.click('#btn-sim-path');
+  await page.waitForTimeout(200);
+
+  // Старт HUD (ПОЕХАЛИ) — повторная проверка
   try{
     await startHudInFrame(page);
     api = await getFrameApi(page);
@@ -277,6 +411,15 @@ async function runDesktop(page){
   await page.waitForTimeout(1200);
   api = await getFrameApi(page);
   log(api.running && api.hudOn, 'Движение GPS в HUD', `speed=${api.speedKmh} running=${api.running}`);
+
+  const mapMove = await page.evaluate(() => {
+    const win = document.getElementById('frame')?.contentWindow;
+    window.SimMap?.update?.(win);
+    const a = window.SimMap?.getDebugState?.() || {};
+    return { traveled: a.traveledPts || 0, pos: a.pos };
+  });
+  log(mapMove.traveled >= 2, 'Карта: пройденный трек', `pts=${mapMove.traveled}`);
+  log(!!mapMove.pos, 'Карта: позиция обновляется при движении');
 
   await page.click('#btn-reset');
   await page.waitForTimeout(400);
@@ -312,11 +455,13 @@ async function runMobile(page){
   const setupVisible = await page.locator('#sim-phase-setup').isVisible();
   log(setupVisible, 'Mobile: фаза настройки видна');
 
-  await page.selectOption('#setup-start-preset', 'sokolniki');
+  await page.fill('#setup-start-address', 'Сокольники, Москва');
   await page.locator('#setup-spd').evaluate(el => { el.value = '70'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.selectOption('#setup-theme', 'sport');
   await page.selectOption('#setup-mode', 'night');
 
+  await page.click('#btn-setup-start-search');
+  await page.waitForTimeout(500);
   await page.click('#btn-open-menu');
   await page.waitForTimeout(500);
   const appVisible = await page.locator('#sim-phase-app').isVisible();
@@ -327,8 +472,9 @@ async function runMobile(page){
   }, { timeout: 45000 });
   await acceptLegalInFrame(page);
 
-  await page.selectOption('#mobile-start-preset', 'tverskaya');
-  await page.waitForTimeout(400);
+  await page.fill('#mobile-start-address', 'Тверская, Москва');
+  await page.click('#btn-mobile-start-search');
+  await page.waitForTimeout(2000);
 
   try{
     await buildRouteInFrame(page);

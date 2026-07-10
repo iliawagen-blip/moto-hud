@@ -8,6 +8,7 @@ import { $ } from './util.js';
 import { OFF_ROUTE_EXIT_M, OFF_ROAD_MAP_ENTER_MS } from './nav-constants.js';
 import { SnapQuality } from './snap-quality.js';
 import { OffRouteState } from './offroute.js';
+import { isBearingMode } from './bearing-mode.js';
 import { setViewMode } from './view-mode.js';
 import { tickNavMap } from './nav-map.js';
 import telemetry from './telemetry.js';
@@ -17,7 +18,7 @@ let _userPinned = false;
 let _offRoadSince = 0;
 
 function canUseLowSpeedMap(waitConverge){
-  return !!$('hud')?.classList.contains('on') && !!S.route && !waitConverge && !S.compassMode;
+  return !!$('hud')?.classList.contains('on') && !!S.route && !waitConverge && !S.compassMode && !isBearingMode();
 }
 
 /**

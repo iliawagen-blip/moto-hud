@@ -27,6 +27,8 @@ export const S = {
   gpsFixCount: 0,
   lastReliableHeadingTs: 0,
   routeQuality: 'OK',
+  /** 'route' | 'bearing' — пеленг вне цикла viewMode */
+  navMode: 'route',
   compassMode: false,
   routerBackend: 'osrm',
   rerouting: false,

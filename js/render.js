@@ -17,6 +17,7 @@ import {
 import { hasEverConverged } from './gps-converge.js';
 import { PATH_SKIP_DS_M, PATH_SKIP_FRAMES } from './nav-constants.js';
 import { tickLowSpeedMap, isAutoMapActive } from './low-speed-map.js';
+import { isBearingMode } from './bearing-mode.js';
 
 let _pathLastS = null;
 let _pathSkipFrames = 0;
@@ -481,7 +482,7 @@ export function renderPathway(){
   const waitConverge = !hasEverConverged() && S.gpsConverged === false;
   const pathCtx = { lateral: S.navLateral };
 
-  if(!S.showPath || waitConverge || S.compassMode){
+  if(!S.showPath || waitConverge || S.compassMode || isBearingMode()){
     block.classList.add('hidden');
     hud.classList.add('no-path');
     svg.innerHTML = '';

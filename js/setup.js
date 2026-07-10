@@ -1,6 +1,6 @@
 import { S, DEFAULT_ELEV_EXAG, DEFAULT_ELEV_PROFILE_H, MIN_ELEV_PROFILE_H, MAX_ELEV_PROFILE_H, DEFAULT_ELEV_PROFILE_LEN_KM, MIN_ELEV_PROFILE_LEN_KM, MAX_ELEV_PROFILE_LEN_KM, DEFAULT_CAM_SPEED_TOL, DEFAULT_PATH_CHEVRON_MAX } from './state.js';
 
-import { $, escapeHtml } from './util.js';
+import { $, escapeHtml, requestAppFullscreen } from './util.js';
 import { parseInput } from './geo.js';
 import { isYandexMapsUrl } from './yandex-link.js';
 import { importYandexFromText } from './yandex-import.js';
@@ -417,32 +417,6 @@ export async function applyCoordsOrLink(opts = {}){
 
 
 
-function isFullscreen(){ return document.fullscreenElement || document.webkitFullscreenElement; }
-
-
-
-function toggleFullscreen(){
-
-  try{
-
-    if(isFullscreen()){
-
-      (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
-
-    } else {
-
-      const el = document.documentElement;
-
-      (el.requestFullscreen || el.webkitRequestFullscreen || function(){}).call(el);
-
-    }
-
-  }catch(e){}
-
-}
-
-
-
 function looksLikeCoordsOrLink(s){
   return /-?\d{1,2}\.\d+.*-?\d{1,3}\.\d+/.test(s) || /[?&](ll|pt)=/.test(s) || isYandexMapsUrl(s);
 }
@@ -783,7 +757,10 @@ export function bindSetupUI(){
 
 
 
-  $('btn-start').addEventListener('click', startHud);
+  $('btn-start').addEventListener('click', () => {
+    requestAppFullscreen();
+    startHud();
+  });
 
 
 
@@ -824,10 +801,6 @@ export function bindSetupUI(){
   });
 
   $('qf-close').addEventListener('click', () => $('quickFinish').classList.remove('on'));
-
-
-
-  $('btn-fs').addEventListener('click', toggleFullscreen);
 
 
 

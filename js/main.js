@@ -24,7 +24,9 @@ import { initOptControls } from './opt-controls.js';
 import { initYandexImportUi } from './yandex-import.js';
 import { initYandexClipboard } from './yandex-clipboard.js';
 import { initYandexShare } from './yandex-share.js';
-import { initViewMode } from './view-mode.js';
+import { initViewMode, setViewMode } from './view-mode.js';
+import { initBearingMode, toggleBearingMode, isBearingMode, enterBearingMode, exitBearingMode, onNavPathButton, onNavMapButton } from './bearing-mode.js';
+import { getMapDisplayPos } from './nav-map.js';
 import { initYandexExportUi } from './yandex-export.js';
 import { initTrackRecorderUi } from './track-recorder.js';
 import { initTripPlannerUi } from './trip-ui.js';
@@ -33,6 +35,7 @@ import { initHudChrome } from './hud-chrome.js';
 import { initSettingsUi } from './settings-ui.js';
 import { initHudSettingsSheet } from './hud-settings-sheet.js';
 import { prepareRegressionHud, sampleRegressionState } from './regression-sim-bridge.js';
+import { simNavAction, simApplyTheme, simBuildRoute, simGetStatus, simKickGps, simEnsureDemoFinish } from './sim-bridge.js';
 import { findNearestOnRoute } from './route.js';
 
 applyThemeCss();
@@ -40,6 +43,7 @@ initYandexImportUi();
 initYandexClipboard();
 initYandexShare();
 initViewMode();
+initBearingMode();
 initYandexExportUi();
 initTrackRecorderUi();
 initTripPlannerUi();
@@ -96,6 +100,8 @@ initTtsHealth();
 window.__motoHUD = {
   S, applyCoordsOrLink, setFinishQuiet, startHud, startGps, doBuildRoute, doAddressSearch, onTick,
   findNearestOnRoute, prepareRegressionHud, sampleRegressionState,
+  toggleBearingMode, isBearingMode, enterBearingMode, exitBearingMode, onNavPathButton, onNavMapButton, setViewMode, getMapDisplayPos,
+  simNavAction, simApplyTheme, simBuildRoute, simGetStatus, simKickGps, simEnsureDemoFinish,
   _searchBusy: false, _finishFocused: false
 };
 
