@@ -1,0 +1,156 @@
+{
+  "fixture_id": "d8ddb711-d5c5-4d38-a58c-a93963c31d85",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T23:02:32.799Z",
+  "last_verified_at": "2026-07-12T07:01:58.847Z",
+  "source": "auto_generator",
+  "category": "city",
+  "region": "moscow_center",
+  "tags": [
+    "auto_v1",
+    "city",
+    "moscow_center"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.745252,
+      "lon": 37.567892,
+      "label": "start"
+    },
+    {
+      "lat": 55.760522,
+      "lon": 37.570323,
+      "label": "via_1"
+    },
+    {
+      "lat": 55.75387,
+      "lon": 37.627553,
+      "label": "via_2"
+    },
+    {
+      "lat": 55.73514,
+      "lon": 37.610323,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 14470,
+      "duration_s": 1800,
+      "maneuver_count": 22,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:02:58.548Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 4,
+        "points_original": 4,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 14105,
+      "duration_s": 1844,
+      "maneuver_count": 25,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:08:40.130Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 14864,
+    "duration_s": 1605,
+    "step_count": 50,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:31:40.319Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 68.51641261645943,
+      "avg_lateral_m": 1.23834721645516,
+      "p50_lateral_m": 0.06641966915897018,
+      "p95_lateral_m": 1.5119528420376436,
+      "max_lateral_m": 68.51641261645943,
+      "length_diff_pct": 2.6506996770721205,
+      "duration_diff_pct": 12.149532710280374,
+      "maneuver_count_diff": 28,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.23529411764705882,
+      "waypoint_deviations_m": [
+        0,
+        0,
+        0,
+        0.06260497537960276
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 197.8520773066626,
+      "avg_lateral_m": 7.638200438144462,
+      "p50_lateral_m": 0.04334861214702402,
+      "p95_lateral_m": 85.28849476881368,
+      "max_lateral_m": 147.12239404086526,
+      "length_diff_pct": 5.106297093649085,
+      "duration_diff_pct": 14.890965732087228,
+      "maneuver_count_diff": 25,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.33687943262411346,
+      "waypoint_deviations_m": [
+        0.5698930199557388,
+        0,
+        82.5725068126664,
+        0.06260497537960276
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 197.82874054918852,
+      "avg_lateral_m": 5.608219420285704,
+      "p50_lateral_m": 0.0518979051762443,
+      "p95_lateral_m": 48.13499791243492,
+      "max_lateral_m": 121.038191442607,
+      "length_diff_pct": 2.5224602626123014,
+      "duration_diff_pct": 2.4444444444444446,
+      "maneuver_count_diff": -3,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.2127659574468085,
+      "waypoint_deviations_m": [
+        0.5698930199557388,
+        0,
+        82.5725068126664,
+        0.06260497537960276
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 85.28849476881368,
+      "motohud_vs_consensus_avg_m": 4.4382738272998115,
+      "signal": "warn"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Москва — центр · city · OSRM 14.9 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

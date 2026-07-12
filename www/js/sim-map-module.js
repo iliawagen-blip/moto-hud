@@ -21,14 +21,31 @@ let overlayLayer = null;
 let routeLayer = null;
 let simPathLayer = null;
 let traveledLayer = null;
+let telemetryTrackGroup = null;
+let telemetryIncidentGroup = null;
+let regressionMotohudLayer = null;
+let regressionGhLayer = null;
+let regressionOrsLayer = null;
+let regressionWaypointGroup = null;
+let regressionVisibility = {
+  motohud: true,
+  graphhopper: false,
+  openrouteservice: false,
+  track: true
+};
+let replayMarker = null;
 let posMarker = null;
 let finishMarker = null;
 let startMarker = null;
+let onTelemetrySegmentClick = null;
+let mapMode = 'synth';
 let lastRouteKey = '';
 let lastSimPathKey = '';
 let lastTraveledKey = '';
 let lastStartKey = '';
 let fittedOnce = false;
+/** Центрирование карты по текущей позиции (синтетика); по умолчанию выкл. */
+let positionFollow = false;
 let pickStartMode = false;
 let onStartPicked = null;
 let currentProviderId = DEFAULT_MAP_PROVIDER;
@@ -179,8 +196,32 @@ function init(container){
   setTimeout(() => map.invalidateSize(), 120);
 }
 
+function applySynthLayerVisibility(){
+  const show = mapMode === 'synth';
+  routeLayer?.setStyle({ opacity: show ? 0.85 : 0 });
+  simPathLayer?.setStyle({ opacity: show ? 0.35 : 0 });
+  traveledLayer?.setStyle({ opacity: show ? 0.75 : 0 });
+  posMarker?.setStyle({ opacity: show ? 1 : 0, fillOpacity: show ? 0.9 : 0 });
+  finishMarker?.setStyle({ opacity: show ? 1 : 0, fillOpacity: show ? 0.75 : 0 });
+  startMarker?.setStyle({ opacity: show ? 1 : 0, fillOpacity: show ? 0.85 : 0 });
+}
+
+function clearModeLayers(){
+  clearRegressionLayers();
+}
+
+function setMode(mode){
+  mapMode = mode || 'synth';
+  if(mapMode === 'synth') fittedOnce = false;
+  applySynthLayerVisibility();
+}
+
+function getMode(){
+  return mapMode;
+}
+
 function update(frameWin){
-  if(!map || !frameWin) return;
+  if(!map || !frameWin || mapMode !== 'synth') return;
   let S = null;
   let simApi = null;
   try{
@@ -256,7 +297,7 @@ function update(frameWin){
   const hasContent = rk || simPath?.length >= 2 || pos || start;
   if(!fittedOnce && hasContent){
     fitToContent(frameWin);
-  } else if(pos && fittedOnce){
+  } else if(pos && fittedOnce && positionFollow){
     const z = map.getZoom();
     if(z >= 10) map.panTo([pos.lat, pos.lon], { animate: true, duration: 0.35 });
   }
@@ -271,6 +312,14 @@ function resetFit(){
   lastRouteKey = '';
   lastSimPathKey = '';
   lastTraveledKey = '';
+}
+
+function setPositionFollow(on){
+  positionFollow = !!on;
+}
+
+function getPositionFollow(){
+  return positionFollow;
 }
 
 function setPickStartMode(on, cb){
@@ -295,16 +344,264 @@ function getDebugState(){
   };
 }
 
+function ensureTelemetryLayers(){
+  if(!map) return;
+  if(!telemetryTrackGroup){
+    telemetryTrackGroup = L.layerGroup().addTo(map);
+  }
+  if(!telemetryIncidentGroup){
+    telemetryIncidentGroup = L.layerGroup().addTo(map);
+  }
+  if(!replayMarker){
+    replayMarker = L.circleMarker([0, 0], {
+      radius: 11, color: '#ffd400', weight: 4, fillColor: '#ffd400', fillOpacity: 0.35
+    }).addTo(map);
+    replayMarker.setStyle({ opacity: 0, fillOpacity: 0 });
+  }
+}
+
+function clearTelemetryTrack(){
+  telemetryTrackGroup?.clearLayers();
+  telemetryIncidentGroup?.clearLayers();
+  if(replayMarker) replayMarker.setStyle({ opacity: 0, fillOpacity: 0 });
+}
+
+function ensureRegressionLayers(){
+  if(!map) return;
+  if(!regressionMotohudLayer){
+    regressionMotohudLayer = L.polyline([], {
+      color: '#4dabf7', weight: 5, opacity: 0.72
+    }).addTo(map);
+  }
+  if(!regressionGhLayer){
+    regressionGhLayer = L.polyline([], {
+      color: '#a371f7', weight: 3, opacity: 0.55, dashArray: '8 6'
+    }).addTo(map);
+  }
+  if(!regressionOrsLayer){
+    regressionOrsLayer = L.polyline([], {
+      color: '#f778ba', weight: 3, opacity: 0.55, dashArray: '4 8'
+    }).addTo(map);
+  }
+  if(!regressionWaypointGroup){
+    regressionWaypointGroup = L.layerGroup().addTo(map);
+  }
+}
+
+function applyRegressionRouteVisibility(){
+  if(regressionMotohudLayer){
+    regressionMotohudLayer.setStyle({
+      opacity: regressionVisibility.motohud ? 0.72 : 0
+    });
+  }
+  if(regressionGhLayer){
+    regressionGhLayer.setStyle({
+      opacity: regressionVisibility.graphhopper ? 0.55 : 0
+    });
+  }
+  if(regressionOrsLayer){
+    regressionOrsLayer.setStyle({
+      opacity: regressionVisibility.openrouteservice ? 0.55 : 0
+    });
+  }
+}
+
+function clearRegressionLayers(){
+  clearTelemetryTrack();
+  regressionMotohudLayer?.setLatLngs([]);
+  regressionGhLayer?.setLatLngs([]);
+  regressionOrsLayer?.setLatLngs([]);
+  regressionWaypointGroup?.clearLayers();
+}
+
+function setRegressionRouteVisibility(vis){
+  if(vis && typeof vis === 'object'){
+    regressionVisibility = { ...regressionVisibility, ...vis };
+  }
+  applyRegressionRouteVisibility();
+  if(regressionVisibility.track === false){
+    clearTelemetryTrack();
+  }
+}
+
+function setRegressionContext(ctx){
+  if(!map) return;
+  ensureRegressionLayers();
+  regressionWaypointGroup.clearLayers();
+  const wps = ctx?.waypoints || [];
+  wps.forEach((wp, i) => {
+    if(wp.lat == null || wp.lon == null) return;
+    const isStart = wp.label === 'start' || i === 0;
+    const isFinish = wp.label === 'finish' || i === wps.length - 1;
+    const color = isStart ? '#39d353' : isFinish ? '#ff6b6b' : '#8b949e';
+    const m = L.circleMarker([wp.lat, wp.lon], {
+      radius: isStart || isFinish ? 8 : 6,
+      color,
+      weight: 2,
+      fillColor: color,
+      fillOpacity: 0.75
+    });
+    m.bindTooltip(wp.label || ('wp_' + i), { direction: 'top' });
+    regressionWaypointGroup.addLayer(m);
+  });
+}
+
+function setReferenceRoutes(routes){
+  if(!map) return;
+  ensureRegressionLayers();
+  const mh = routes?.motohud;
+  const gh = routes?.graphhopper;
+  const ors = routes?.openrouteservice;
+  if(mh?.length >= 2) regressionMotohudLayer.setLatLngs(mh);
+  else regressionMotohudLayer.setLatLngs([]);
+  if(gh?.length >= 2) regressionGhLayer.setLatLngs(gh);
+  else regressionGhLayer.setLatLngs([]);
+  if(ors?.length >= 2) regressionOrsLayer.setLatLngs(ors);
+  else regressionOrsLayer.setLatLngs([]);
+  applyRegressionRouteVisibility();
+  fittedOnce = false;
+}
+
+function setRegressionTrack(segments){
+  if(!regressionVisibility.track){
+    clearTelemetryTrack();
+    return;
+  }
+  setTelemetryTrack(segments);
+}
+
+function fitRegressionBounds(routes, segments, waypoints){
+  if(!map || !window.L) return;
+  const bounds = L.latLngBounds([]);
+  const addPts = pts => {
+    for(const p of pts || []){
+      extendBounds(bounds, p[0], p[1]);
+    }
+  };
+  if(regressionVisibility.motohud) addPts(routes?.motohud);
+  if(regressionVisibility.graphhopper) addPts(routes?.graphhopper);
+  if(regressionVisibility.openrouteservice) addPts(routes?.openrouteservice);
+  if(regressionVisibility.track){
+    for(const seg of segments || []){
+      addPts(seg.latlngs);
+    }
+  }
+  for(const wp of waypoints || []){
+    extendBounds(bounds, wp.lat, wp.lon);
+  }
+  if(bounds.isValid()){
+    map.fitBounds(bounds.pad(0.08), { animate: false, maxZoom: 16 });
+    fittedOnce = true;
+  }
+}
+
+function setTelemetryTrack(segments){
+  if(!map) return;
+  ensureTelemetryLayers();
+  telemetryTrackGroup.clearLayers();
+  if(!segments?.length) return;
+
+  for(const seg of segments){
+    if(!seg.latlngs || seg.latlngs.length < 2) continue;
+    const line = L.polyline(seg.latlngs, {
+      color: seg.color || '#6e7681',
+      weight: 5,
+      opacity: 0.88
+    });
+    line.on('click', () => {
+      if(typeof onTelemetrySegmentClick === 'function'){
+        onTelemetrySegmentClick(seg.t0 ?? 0, seg);
+      }
+    });
+    telemetryTrackGroup.addLayer(line);
+  }
+  fittedOnce = false;
+}
+
+function setTelemetryIncidents(incidents){
+  if(!map) return;
+  ensureTelemetryLayers();
+  telemetryIncidentGroup.clearLayers();
+  if(!incidents?.length) return;
+
+  for(const inc of incidents){
+    if(inc.lat == null || inc.lon == null) continue;
+    const m = L.circleMarker([inc.lat, inc.lon], {
+      radius: 7,
+      color: inc.color || '#f85149',
+      weight: 2,
+      fillColor: inc.color || '#f85149',
+      fillOpacity: 0.65
+    });
+    m.bindTooltip(inc.label || inc.kind || 'incident', { direction: 'top' });
+    m.on('click', () => {
+      if(typeof onTelemetrySegmentClick === 'function'){
+        onTelemetrySegmentClick(inc.t ?? 0, inc);
+      }
+    });
+    telemetryIncidentGroup.addLayer(m);
+  }
+}
+
+function setReplayPosition(lat, lon, heading){
+  if(!map || lat == null || lon == null) return;
+  ensureTelemetryLayers();
+  replayMarker.setLatLng([lat, lon]);
+  replayMarker.setStyle({ opacity: 1, fillOpacity: 0.35 });
+}
+
+function panReplayTo(lat, lon){
+  if(!map || lat == null || lon == null) return;
+  const z = map.getZoom();
+  if(z >= 10) map.panTo([lat, lon], { animate: true, duration: 0.35 });
+}
+
+function fitTelemetryBounds(segments){
+  if(!map || !window.L || !segments?.length) return;
+  const bounds = L.latLngBounds([]);
+  for(const seg of segments){
+    for(const p of seg.latlngs || []){
+      extendBounds(bounds, p[0], p[1]);
+    }
+  }
+  if(bounds.isValid()){
+    map.fitBounds(bounds.pad(0.08), { animate: false, maxZoom: 16 });
+    fittedOnce = true;
+  }
+}
+
+function setOnTelemetrySegmentClick(cb){
+  onTelemetrySegmentClick = typeof cb === 'function' ? cb : null;
+}
+
 window.SimMap = {
   init,
   update,
   invalidateSize,
   resetFit,
+  setPositionFollow,
+  getPositionFollow,
   setMapProvider,
   setStartMarker,
   flyToStart,
   setPickStartMode,
   getDebugState,
+  clearTelemetryTrack,
+  setTelemetryTrack,
+  setTelemetryIncidents,
+  setReplayPosition,
+  panReplayTo,
+  fitTelemetryBounds,
+  setOnTelemetrySegmentClick,
+  setMode,
+  getMode,
+  clearModeLayers,
+  clearRegressionLayers,
+  setRegressionContext,
+  setReferenceRoutes,
+  setRegressionRouteVisibility,
+  setRegressionTrack,
+  fitRegressionBounds,
   getProviderIds: listMapProviderIds,
   getProviderName: getMapProviderName,
   getCurrentProviderId: () => currentProviderId,

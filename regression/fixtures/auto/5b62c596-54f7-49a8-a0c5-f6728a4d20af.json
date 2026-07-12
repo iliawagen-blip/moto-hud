@@ -1,0 +1,164 @@
+{
+  "fixture_id": "5b62c596-54f7-49a8-a0c5-f6728a4d20af",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:01:33.507Z",
+  "last_verified_at": "2026-07-12T06:50:44.136Z",
+  "source": "auto_generator",
+  "category": "city",
+  "region": "spb_center",
+  "tags": [
+    "auto_v1",
+    "city",
+    "spb_center"
+  ],
+  "waypoints": [
+    {
+      "lat": 59.992117,
+      "lon": 30.369313,
+      "label": "start"
+    },
+    {
+      "lat": 59.925003,
+      "lon": 30.392573,
+      "label": "via_1"
+    },
+    {
+      "lat": 59.904273,
+      "lon": 30.282368,
+      "label": "via_2"
+    },
+    {
+      "lat": 59.965812,
+      "lon": 30.390739,
+      "label": "via_3"
+    },
+    {
+      "lat": 59.910851,
+      "lon": 30.394906,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 44464,
+      "duration_s": 5075,
+      "maneuver_count": 53,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T10:54:46.254Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 5,
+        "points_original": 5,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 45601,
+      "duration_s": 4868,
+      "maneuver_count": 55,
+      "roundabout_count": 1,
+      "fetched_at": "2026-07-12T11:06:51.228Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 45284,
+    "duration_s": 4000,
+    "step_count": 81,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:29:57.977Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 939.3894603207618,
+      "avg_lateral_m": 117.0791376522171,
+      "p50_lateral_m": 0.927936465186975,
+      "p95_lateral_m": 644.5095322821271,
+      "max_lateral_m": 939.3894603207618,
+      "length_diff_pct": 1.8107940994611784,
+      "duration_diff_pct": 26.875,
+      "maneuver_count_diff": 28,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.34124293785310733,
+      "waypoint_deviations_m": [
+        0.11119507995279233,
+        84.26484450432262,
+        18.362800128841,
+        0,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 1272.5018204271223,
+      "avg_lateral_m": 86.55867905936726,
+      "p50_lateral_m": 0.4920622021550395,
+      "p95_lateral_m": 585.8523582514306,
+      "max_lateral_m": 1272.5018204271223,
+      "length_diff_pct": 0.7000264994258457,
+      "duration_diff_pct": 21.7,
+      "maneuver_count_diff": 26,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.3351893095768374,
+      "waypoint_deviations_m": [
+        39.239332963665696,
+        0,
+        37.82423424986487,
+        0.024317281903821555,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 1341.0196654926347,
+      "avg_lateral_m": 86.15828574558412,
+      "p50_lateral_m": 0.530709475658008,
+      "p95_lateral_m": 601.9902682104423,
+      "max_lateral_m": 1271.1801090999036,
+      "length_diff_pct": 2.557124865059374,
+      "duration_diff_pct": 4.078817733990148,
+      "maneuver_count_diff": -2,
+      "roundabout_count_diff": -1,
+      "direction_mismatch_ratio": 0.44519774011299434,
+      "waypoint_deviations_m": [
+        39.239332963665696,
+        0,
+        37.82423424986487,
+        0.024317281903821555,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 644.5095322821271,
+      "motohud_vs_consensus_avg_m": 101.81890835579219,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "СПб — центр · city · OSRM 45.3 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

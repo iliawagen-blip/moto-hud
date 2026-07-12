@@ -708,8 +708,8 @@ body.legal-blocked #hud{display:none!important}
 /* ---------- Компоновка: только grid-template (блоки ar/pa/sp — см. .cursor/rules/hud-grid-blocks.mdc) ---------- */
 @media (orientation:portrait){
   #hud.on{grid-template-areas:"st" "ar" "pa" "sp";grid-template-columns:1fr;
-    grid-template-rows:0 minmax(0,1fr) minmax(0,30vh) minmax(0,1fr)}
-  #hud.on.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,1fr) minmax(0,30vh) minmax(0,1fr)}
+    grid-template-rows:0 minmax(0,1fr) minmax(0,32vh) minmax(0,1fr)}
+  #hud.on.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,1fr) minmax(0,32vh) minmax(0,1fr)}
   #hud.on.no-path{grid-template-areas:"st" "ar" "sp";grid-template-columns:1fr;
     grid-template-rows:0 minmax(0,1.2fr) minmax(0,1fr)}
   #hud.on.no-path.chrome-status-on{grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,1.2fr) minmax(0,1fr)}
@@ -989,6 +989,9 @@ html[data-file-protocol="1"] .headrow::after{
 }
 .bearing-view.hidden{display:none!important}
 #hud.nav-bearing .block-path{display:none!important}
+#hud.nav-bearing .street-turn,
+#hud.nav-bearing .street-current{display:none!important}
+#hud.nav-bearing .bearing-label.bearing-label--warn{color:var(--sem-warn)}
 #hud.nav-bearing #camAlert,#hud.nav-bearing #offRouteWarn{display:none!important}
 .finish-info.bearing-hide-eta #fi-eta-line{display:none}
 .bearing-mode-badge{

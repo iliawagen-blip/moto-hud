@@ -1,0 +1,109 @@
+{
+  "fixture_id": "43d1a82a-b795-4457-b1f3-a9aa8593a716",
+  "corpus_version": 1,
+  "created_at": "2026-07-12T05:29:28.542Z",
+  "last_verified_at": "2026-07-12T06:47:48.957Z",
+  "source": "auto_generator",
+  "category": "many_waypoints",
+  "region": "sochi_adler",
+  "tags": [
+    "auto_v1",
+    "many_waypoints",
+    "sochi_adler"
+  ],
+  "waypoints": [
+    {
+      "lat": 43.634772,
+      "lon": 39.906663,
+      "label": "start"
+    },
+    {
+      "lat": 43.441457,
+      "lon": 40.024982,
+      "label": "via_1"
+    },
+    {
+      "lat": 43.539698,
+      "lon": 40.092366,
+      "label": "via_2"
+    },
+    {
+      "lat": 43.602552,
+      "lon": 40.040817,
+      "label": "via_3"
+    },
+    {
+      "lat": 43.611823,
+      "lon": 39.925536,
+      "label": "via_4"
+    },
+    {
+      "lat": 43.45413,
+      "lon": 39.902035,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 70
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 167642,
+      "duration_s": 13663,
+      "maneuver_count": 59,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T10:52:45.750Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 5,
+        "points_original": 6,
+        "downsampled": true
+      }
+    },
+    "openrouteservice": {
+      "distance_m": null,
+      "duration_s": null,
+      "maneuver_count": null,
+      "roundabout_count": null,
+      "fetched_at": "2026-07-12T11:06:25.064Z",
+      "fetch_error": "Could not find routable point within a radius of 350.0 meters of specified coordinate 0: 39.9066630 43.6347720."
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 223073,
+    "duration_s": 30269,
+    "step_count": 93,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:31:35.869Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": null,
+    "ors_vs_motohud": null,
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": null,
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": null,
+      "motohud_vs_consensus_avg_m": null,
+      "signal": "insufficient_refs"
+    },
+    "coverage": {
+      "references_available": []
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Сочи — Адлер · many_waypoints · OSRM 223.1 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

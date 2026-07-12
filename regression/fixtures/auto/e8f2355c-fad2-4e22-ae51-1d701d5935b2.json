@@ -1,0 +1,148 @@
+{
+  "fixture_id": "e8f2355c-fad2-4e22-ae51-1d701d5935b2",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:01:43.280Z",
+  "last_verified_at": "2026-07-12T07:03:04.350Z",
+  "source": "auto_generator",
+  "category": "roundabouts",
+  "region": "moscow_center",
+  "tags": [
+    "auto_v1",
+    "roundabouts",
+    "moscow_center"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.800992,
+      "lon": 49.104263,
+      "label": "start_ring"
+    },
+    {
+      "lat": 55.800089,
+      "lon": 49.109457,
+      "label": "via_ring_1"
+    },
+    {
+      "lat": 55.795478,
+      "lon": 49.109311,
+      "label": "finish_ring"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 6045,
+      "duration_s": 867,
+      "maneuver_count": 22,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:03:38.597Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 3,
+        "points_original": 3,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 3731,
+      "duration_s": 501,
+      "maneuver_count": 13,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:08:56.102Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 6680,
+    "duration_s": 777,
+    "step_count": 30,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:31:56.292Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 202.91802403655993,
+      "avg_lateral_m": 15.074710700347849,
+      "p50_lateral_m": 0.07279492431819601,
+      "p95_lateral_m": 103.26288113592068,
+      "max_lateral_m": 202.91802403655993,
+      "length_diff_pct": 9.505988023952096,
+      "duration_diff_pct": 11.583011583011583,
+      "maneuver_count_diff": 8,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.6528925619834711,
+      "waypoint_deviations_m": [
+        0,
+        0.05265334773799995,
+        3.1542050407749844
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 747.0775792151481,
+      "avg_lateral_m": 207.03909440324293,
+      "p50_lateral_m": 94.44184963065602,
+      "p95_lateral_m": 679.5792418820562,
+      "max_lateral_m": 747.0775792151481,
+      "length_diff_pct": 44.14670658682635,
+      "duration_diff_pct": 35.521235521235525,
+      "maneuver_count_diff": 17,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.5866666666666667,
+      "waypoint_deviations_m": [
+        0.05961147874085682,
+        25.692312900790217,
+        19.53033682293013
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 742.0078053585441,
+      "avg_lateral_m": 205.0737779791293,
+      "p50_lateral_m": 83.06260727957304,
+      "p95_lateral_m": 681.8000908936974,
+      "max_lateral_m": 742.0078053585441,
+      "length_diff_pct": 38.27956989247312,
+      "duration_diff_pct": 42.21453287197232,
+      "maneuver_count_diff": 9,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.37333333333333335,
+      "waypoint_deviations_m": [
+        0.05961147874085682,
+        25.692312900790217,
+        19.53033682293013
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 679.5792418820562,
+      "motohud_vs_consensus_avg_m": 111.05690255179539,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Москва — центр · roundabouts · OSRM 6.7 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

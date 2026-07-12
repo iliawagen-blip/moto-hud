@@ -1,0 +1,156 @@
+{
+  "fixture_id": "8162bbfd-5e59-4ccd-ad27-24f2c36bcba7",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:06:00.277Z",
+  "last_verified_at": "2026-07-12T06:52:43.142Z",
+  "source": "auto_generator",
+  "category": "many_waypoints",
+  "region": "mkad_ring",
+  "tags": [
+    "auto_v1",
+    "many_waypoints",
+    "mkad_ring"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.829133,
+      "lon": 37.385653,
+      "label": "start"
+    },
+    {
+      "lat": 55.69619,
+      "lon": 37.60126,
+      "label": "via_1"
+    },
+    {
+      "lat": 55.868828,
+      "lon": 37.550775,
+      "label": "via_2"
+    },
+    {
+      "lat": 55.772379,
+      "lon": 37.766572,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 70
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 75101,
+      "duration_s": 5884,
+      "maneuver_count": 36,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T10:55:31.310Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 4,
+        "points_original": 4,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 76454,
+      "duration_s": 5805,
+      "maneuver_count": 38,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:07:09.296Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 76649,
+    "duration_s": 5165,
+    "step_count": 81,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:30:12.329Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 3126.5502283174987,
+      "avg_lateral_m": 237.50643547812746,
+      "p50_lateral_m": 1.2453082285074075,
+      "p95_lateral_m": 2020.3630705704682,
+      "max_lateral_m": 3126.5502283174987,
+      "length_diff_pct": 2.019595819906326,
+      "duration_diff_pct": 13.920619554695064,
+      "maneuver_count_diff": 45,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.12566844919786097,
+      "waypoint_deviations_m": [
+        0,
+        0,
+        4.4547990314083235,
+        0.06254523422778192
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 1529.563262340257,
+      "avg_lateral_m": 59.60286994506416,
+      "p50_lateral_m": 0.8708330612263607,
+      "p95_lateral_m": 330.6471583004409,
+      "max_lateral_m": 1529.563262340257,
+      "length_diff_pct": 0.2544064501819984,
+      "duration_diff_pct": 12.39109390125847,
+      "maneuver_count_diff": 43,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.13075383589059372,
+      "waypoint_deviations_m": [
+        0,
+        123.72127806877677,
+        0,
+        0.12509046845556387
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 3129.764956058027,
+      "avg_lateral_m": 160.9790937655063,
+      "p50_lateral_m": 1.040765283627133,
+      "p95_lateral_m": 1271.9457525525452,
+      "max_lateral_m": 2545.990825840245,
+      "length_diff_pct": 1.8015738805075832,
+      "duration_diff_pct": 1.3426240652617267,
+      "maneuver_count_diff": -2,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.16243315508021391,
+      "waypoint_deviations_m": [
+        0,
+        123.72127806877677,
+        0,
+        0.12509046845556387
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 2020.3630705704682,
+      "motohud_vs_consensus_avg_m": 148.5546527115958,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "МКАД и ТТК · many_waypoints · OSRM 76.6 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

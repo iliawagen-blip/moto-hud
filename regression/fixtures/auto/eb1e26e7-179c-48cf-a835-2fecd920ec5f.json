@@ -1,0 +1,142 @@
+{
+  "fixture_id": "eb1e26e7-179c-48cf-a835-2fecd920ec5f",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T09:09:18.481Z",
+  "last_verified_at": "2026-07-12T07:03:24.968Z",
+  "source": "auto_generator",
+  "category": "mountain",
+  "region": "sochi_adler",
+  "tags": [
+    "auto_v1",
+    "mountain",
+    "sochi_adler"
+  ],
+  "waypoints": [
+    {
+      "lat": 43.414173,
+      "lon": 39.925738,
+      "label": "start"
+    },
+    {
+      "lat": 43.436078,
+      "lon": 40.07864,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 55
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 21353,
+      "duration_s": 2631,
+      "maneuver_count": 17,
+      "roundabout_count": 1,
+      "fetched_at": "2026-07-12T11:04:44.006Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 2,
+        "points_original": 2,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 4110977,
+      "duration_s": 647493,
+      "maneuver_count": 201,
+      "roundabout_count": 37,
+      "fetched_at": "2026-07-12T11:09:00.566Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 21817,
+    "duration_s": 4187,
+    "step_count": 20,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:32:00.307Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 2274.0271757639152,
+      "avg_lateral_m": 300.16106182114095,
+      "p50_lateral_m": 0.009376786830953613,
+      "p95_lateral_m": 1921.8883826947529,
+      "max_lateral_m": 2274.0271757639152,
+      "length_diff_pct": 2.1267818673511485,
+      "duration_diff_pct": 37.16264628612372,
+      "maneuver_count_diff": 3,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.24824355971896955,
+      "waypoint_deviations_m": [
+        24.068711179355837,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 1107520.2984712482,
+      "avg_lateral_m": 1502.0000495504903,
+      "p50_lateral_m": 1227.5719073952744,
+      "p95_lateral_m": 3646.559433978678,
+      "max_lateral_m": 3771.1652829675445,
+      "length_diff_pct": 18742.9985790897,
+      "duration_diff_pct": 15364.365894435155,
+      "maneuver_count_diff": -181,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.8715596330275229,
+      "waypoint_deviations_m": [
+        69.08407219230625,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 1107544.3453859775,
+      "avg_lateral_m": 1572.4273454509123,
+      "p50_lateral_m": 1192.7780289000668,
+      "p95_lateral_m": 3645.608821721394,
+      "max_lateral_m": 3770.1463636739336,
+      "length_diff_pct": 19152.45632932141,
+      "duration_diff_pct": 24510.148232611176,
+      "maneuver_count_diff": -184,
+      "roundabout_count_diff": -36,
+      "direction_mismatch_ratio": 0.8665105386416861,
+      "waypoint_deviations_m": [
+        69.08407219230625,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 3646.559433978678,
+      "motohud_vs_consensus_avg_m": 901.0805556858156,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Сочи — Адлер · mountain · OSRM 46.7 km",
+    "known_issues": [
+      "ors_bad_route: 4130km vs OSRM 47km"
+    ],
+    "compare_interpretation": "data_gap",
+    "priority": "normal"
+  },
+  "status": "valid"
+}

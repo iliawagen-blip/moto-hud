@@ -79,6 +79,31 @@ export function resetRouteSnap(opts){
   }
 }
 
+/**
+ * Якорь snap по пройденной дистанции вдоль маршрута (регрессия sim).
+ * Снижает скачки на параллельных участках polyline.
+ * @param {number} distM — расстояние от старта по cache-polyline, м
+ */
+export function primeRouteSnapFromDist(distM){
+  const geom = S.route?.geometry;
+  if(!geom || geom.n < 2) return;
+  const total = geom.s[geom.n - 1];
+  const s = Math.max(0, Math.min(total, distM));
+  const p = interpolateAtS(geom, s);
+  const gps = S.gps;
+  const lateral = gps ? haversine(gps, p) : 0;
+  const segIdx = findSegAtS(geom, s);
+  const tangent = avgTangentDeg(geom, s, 20);
+  if(_snap){
+    _snap = { ..._snap, s, segIdx, lat: p.lat, lon: p.lon, lateral, tangent };
+  }else{
+    _snap = { s, segIdx, lat: p.lat, lon: p.lon, lateral, tangent, confidence: 0.85 };
+    _disp.s = s;
+    _disp.inited = true;
+  }
+  _prevFixPos = gps ? { lat: gps.lat, lon: gps.lon } : _prevFixPos;
+}
+
 /** Текущий snap (или null) */
 export function getRouteSnap(){ return _snap; }
 

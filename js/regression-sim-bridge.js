@@ -4,9 +4,9 @@
  */
 import { S } from './state.js';
 import { bearing, haversine } from './geo.js';
-import { attachRouteFromImport } from './route.js';
+import { attachRouteFromImport, ensureRouteGeometry, seedSnapFromGps } from './route.js';
 import { resetOffRouteMachine } from './offroute.js';
-import { resetRouteSnap, getNavSnap } from './route-geometry.js';
+import { resetRouteSnap, getNavSnap, primeRouteSnapFromDist } from './route-geometry.js';
 import { resetSimTimeEpoch } from './sim-time-scale.js';
 
 function minimalSteps(waypoints, distanceM){
@@ -73,13 +73,23 @@ export function prepareRegressionHud(opts){
   S.smoothedHeading = hdg;
   S.gpsConverged = true;
   S.gpsFixCount = 12;
-  S.compassMode = false;
   S.voice = false;
   S.cams = false;
   S.showElevProfile = false;
   resetOffRouteMachine();
   resetRouteSnap();
+  ensureRouteGeometry(S.route);
+  seedSnapFromGps({ relaxed: true });
   return { distance_m: route.distance, duration_s: route.duration };
+}
+
+/**
+ * Перед injectFix: якорь snap по пройденной дистанции sim-walker.
+ * @param {number} distM
+ */
+export function regressionPrimeSnap(distM){
+  if(!globalThis.__REGRESSION_SIM__?.active) return;
+  if(distM != null && Number.isFinite(distM)) primeRouteSnapFromDist(distM);
 }
 
 /**
@@ -89,6 +99,9 @@ export function prepareRegressionHud(opts){
 export function sampleRegressionState(extra = {}){
   let lateral = null;
   let maneuverType = null;
+  const lat = S.gps?.lat ?? null;
+  const lon = S.gps?.lon ?? null;
+  const heading = S.smoothedHeading ?? S.gps?.heading ?? null;
   if(S.route && S.gps){
     const snap = getNavSnap(S.smoothedHeading);
     lateral = snap?.lateral ?? null;
@@ -106,6 +119,10 @@ export function sampleRegressionState(extra = {}){
   return {
     ts: Date.now(),
     type: 'regression_tick',
+    lat: lat != null ? Math.round(lat * 1e6) / 1e6 : null,
+    lon: lon != null ? Math.round(lon * 1e6) / 1e6 : null,
+    heading: heading != null ? Math.round(heading * 10) / 10 : null,
+    dist_m: extra.dist_m ?? extra.routeDistM ?? null,
     lateral_m: lateral != null ? Math.round(lateral * 10) / 10 : null,
     snap_quality: S.snapQuality,
     off_route_state: S.offRouteState,

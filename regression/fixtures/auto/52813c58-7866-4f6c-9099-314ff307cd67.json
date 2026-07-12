@@ -1,0 +1,148 @@
+{
+  "fixture_id": "52813c58-7866-4f6c-9099-314ff307cd67",
+  "corpus_version": 1,
+  "created_at": "2026-07-12T05:27:13.298Z",
+  "last_verified_at": "2026-07-12T06:50:14.916Z",
+  "source": "auto_generator",
+  "category": "roundabouts",
+  "region": "novosibirsk",
+  "tags": [
+    "auto_v1",
+    "roundabouts",
+    "novosibirsk"
+  ],
+  "waypoints": [
+    {
+      "lat": 43.454499,
+      "lon": 39.955908,
+      "label": "start_ring"
+    },
+    {
+      "lat": 43.45081,
+      "lon": 39.963145,
+      "label": "via_ring_1"
+    },
+    {
+      "lat": 43.445393,
+      "lon": 39.957913,
+      "label": "finish_ring"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 10831,
+      "duration_s": 1556,
+      "maneuver_count": 9,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T10:54:41.002Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 3,
+        "points_original": 3,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 17838,
+      "duration_s": 1883,
+      "maneuver_count": 19,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:06:47.780Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 11195,
+    "duration_s": 1293,
+    "step_count": 16,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:29:53.871Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 150.51272573671966,
+      "avg_lateral_m": 2.7717590165584083,
+      "p50_lateral_m": 0.0019999919071618678,
+      "p95_lateral_m": 0.3936757857100244,
+      "max_lateral_m": 150.51272573671966,
+      "length_diff_pct": 3.251451540866458,
+      "duration_diff_pct": 20.34029389017788,
+      "maneuver_count_diff": 7,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.018433179723502304,
+      "waypoint_deviations_m": [
+        0.2748081081885331,
+        0,
+        0.08073097480194874
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 1050.7116753684447,
+      "avg_lateral_m": 38.02058962027972,
+      "p50_lateral_m": 0.058204984935058476,
+      "p95_lateral_m": 237.73829588135058,
+      "max_lateral_m": 357.94983939572984,
+      "length_diff_pct": 59.33899062081286,
+      "duration_diff_pct": 45.630317092034026,
+      "maneuver_count_diff": -3,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.125,
+      "waypoint_deviations_m": [
+        0.2748081081885331,
+        61.8629745906084,
+        83.75140993489467
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 1050.7116753684447,
+      "avg_lateral_m": 35.38126419128425,
+      "p50_lateral_m": 0.027788950155010136,
+      "p95_lateral_m": 244.71880741305338,
+      "max_lateral_m": 358.11473134558474,
+      "length_diff_pct": 64.69393407810912,
+      "duration_diff_pct": 21.015424164524422,
+      "maneuver_count_diff": -10,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.1336405529953917,
+      "waypoint_deviations_m": [
+        0.2748081081885331,
+        61.8629745906084,
+        83.75140993489467
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 237.73829588135058,
+      "motohud_vs_consensus_avg_m": 20.396174318419064,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Новосибирск · roundabouts · OSRM 11.2 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

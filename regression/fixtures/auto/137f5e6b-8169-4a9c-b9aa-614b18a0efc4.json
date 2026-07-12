@@ -1,0 +1,156 @@
+{
+  "fixture_id": "137f5e6b-8169-4a9c-b9aa-614b18a0efc4",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:40:51.617Z",
+  "last_verified_at": "2026-07-12T11:11:51.248Z",
+  "source": "auto_generator",
+  "category": "mountain",
+  "region": "caucasus_serpentines",
+  "tags": [
+    "auto_v1",
+    "mountain",
+    "caucasus_serpentines"
+  ],
+  "waypoints": [
+    {
+      "lat": 44.065167,
+      "lon": 42.574362,
+      "label": "start"
+    },
+    {
+      "lat": 43.733022,
+      "lon": 42.012993,
+      "label": "via_1"
+    },
+    {
+      "lat": 43.568338,
+      "lon": 42.048182,
+      "label": "via_2"
+    },
+    {
+      "lat": 43.715783,
+      "lon": 41.648831,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 55
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 234717,
+      "duration_s": 26714,
+      "maneuver_count": 56,
+      "roundabout_count": 1,
+      "fetched_at": "2026-07-12T08:43:00.171Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 4,
+        "points_original": 4,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 233797,
+      "duration_s": 26291,
+      "maneuver_count": 55,
+      "roundabout_count": 1,
+      "fetched_at": "2026-07-12T11:05:39.071Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 236344,
+    "duration_s": 35365,
+    "step_count": 55,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:28:49.814Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 988.1951401746455,
+      "avg_lateral_m": 45.34388050731805,
+      "p50_lateral_m": 15.77446505495211,
+      "p95_lateral_m": 172.49100210135472,
+      "max_lateral_m": 988.1951401746455,
+      "length_diff_pct": 0.6884033442778323,
+      "duration_diff_pct": 24.46203873886611,
+      "maneuver_count_diff": -1,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.1954636424282855,
+      "waypoint_deviations_m": [
+        0,
+        2.3475042084963937,
+        194.08539638020252,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 1057.5619701574378,
+      "avg_lateral_m": 36.804072114784134,
+      "p50_lateral_m": 13.089441128745698,
+      "p95_lateral_m": 125.62712963328535,
+      "max_lateral_m": 1057.5619701574378,
+      "length_diff_pct": 1.0776664522898824,
+      "duration_diff_pct": 25.65813657571045,
+      "maneuver_count_diff": 0,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.2134756504336224,
+      "waypoint_deviations_m": [
+        0,
+        138.3224074727286,
+        194.08539638020252,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 896.4256067820066,
+      "avg_lateral_m": 35.26031029614583,
+      "p50_lateral_m": 11.536879264070222,
+      "p95_lateral_m": 127.63137674977634,
+      "max_lateral_m": 896.4256067820066,
+      "length_diff_pct": 0.391961383282847,
+      "duration_diff_pct": 1.5834393950737442,
+      "maneuver_count_diff": 1,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.1180787191460974,
+      "waypoint_deviations_m": [
+        0,
+        138.3224074727286,
+        194.08539638020252,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 172.49100210135472,
+      "motohud_vs_consensus_avg_m": 41.07397631105109,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Кавказ — серпантины · mountain · OSRM 236.3 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

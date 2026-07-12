@@ -1,0 +1,140 @@
+{
+  "fixture_id": "aa8fd1d3-8e2c-4ee2-b397-f622fce62d8e",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:06:33.426Z",
+  "last_verified_at": "2026-07-12T06:56:25.631Z",
+  "source": "auto_generator",
+  "category": "city",
+  "region": "m4_don_mid",
+  "tags": [
+    "auto_v1",
+    "city",
+    "m4_don_mid"
+  ],
+  "waypoints": [
+    {
+      "lat": 54.442236,
+      "lon": 38.907482,
+      "label": "start"
+    },
+    {
+      "lat": 54.356047,
+      "lon": 39.411564,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 69799,
+      "duration_s": 4318,
+      "maneuver_count": 10,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T10:58:42.079Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 2,
+        "points_original": 2,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 69786,
+      "duration_s": 5123,
+      "maneuver_count": 10,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:07:39.371Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 88258,
+    "duration_s": 6025,
+    "step_count": 13,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:30:42.033Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 20547.34783145635,
+      "avg_lateral_m": 7183.333815244675,
+      "p50_lateral_m": 6785.405555454388,
+      "p95_lateral_m": 19692.746531816007,
+      "max_lateral_m": 20547.34783145635,
+      "length_diff_pct": 20.91481792018854,
+      "duration_diff_pct": 28.331950207468882,
+      "maneuver_count_diff": 3,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.4899713467048711,
+      "waypoint_deviations_m": [
+        0,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 20547.34783145635,
+      "avg_lateral_m": 7183.3263391168675,
+      "p50_lateral_m": 6785.748333968536,
+      "p95_lateral_m": 19692.746531816007,
+      "max_lateral_m": 20547.34783145635,
+      "length_diff_pct": 20.92954746311949,
+      "duration_diff_pct": 14.970954356846471,
+      "maneuver_count_diff": 3,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.4899713467048711,
+      "waypoint_deviations_m": [
+        0,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 0.9702498222239152,
+      "avg_lateral_m": 0.05866210117041255,
+      "p50_lateral_m": 0.008867885516860118,
+      "p95_lateral_m": 0.27975911318238106,
+      "max_lateral_m": 0.9660156541340196,
+      "length_diff_pct": 0.01862490866631327,
+      "duration_diff_pct": 18.642890226956922,
+      "maneuver_count_diff": 0,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0,
+      "waypoint_deviations_m": [
+        0,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": true,
+      "motohud_vs_consensus_p95_m": 19692.746531816007,
+      "motohud_vs_consensus_avg_m": 7183.330077180772,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "М4 Дон — средний участок · city · OSRM 88.3 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

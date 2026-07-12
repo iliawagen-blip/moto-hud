@@ -2,7 +2,7 @@
   "fixture_id": "a6f82017-fc4d-4138-a3e8-21c3f48d5d52",
   "corpus_version": 1,
   "created_at": "2026-07-09T07:32:54.166Z",
-  "last_verified_at": "2026-07-09T12:21:57.423Z",
+  "last_verified_at": "2026-07-12T06:56:04.962Z",
   "source": "auto_generator",
   "category": "roundabouts",
   "region": "moscow_center",
@@ -39,10 +39,13 @@
       "duration_s": 644,
       "maneuver_count": 12,
       "roundabout_count": 0,
-      "fetched_at": "2026-07-09T07:37:56.970Z",
+      "fetched_at": "2026-07-12T10:57:36.847Z",
       "fetch_error": null,
       "provider_meta": {
-        "profile": "car"
+        "profile": "car",
+        "points_sent": 3,
+        "points_original": 3,
+        "downsampled": false
       }
     },
     "openrouteservice": {
@@ -50,7 +53,7 @@
       "duration_s": 556,
       "maneuver_count": 12,
       "roundabout_count": 0,
-      "fetched_at": "2026-07-09T12:17:01.078Z",
+      "fetched_at": "2026-07-12T11:07:37.320Z",
       "fetch_error": null,
       "provider_meta": {
         "profile": "driving-car"
@@ -63,7 +66,7 @@
     "duration_s": 543,
     "step_count": 18,
     "router": "osrm",
-    "fetched_at": "2026-07-09T07:37:48.293Z",
+    "fetched_at": "2026-07-12T05:30:40.039Z",
     "fetch_error": null
   },
   "metrics": {

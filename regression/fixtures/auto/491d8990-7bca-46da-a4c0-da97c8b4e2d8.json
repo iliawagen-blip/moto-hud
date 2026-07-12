@@ -2,7 +2,7 @@
   "fixture_id": "491d8990-7bca-46da-a4c0-da97c8b4e2d8",
   "corpus_version": 1,
   "created_at": "2026-07-09T07:37:33.061Z",
-  "last_verified_at": "2026-07-09T12:18:40.644Z",
+  "last_verified_at": "2026-07-12T06:48:50.855Z",
   "source": "auto_generator",
   "category": "mountain",
   "region": "caucasus_serpentines",
@@ -44,10 +44,13 @@
       "duration_s": 10534,
       "maneuver_count": 24,
       "roundabout_count": 4,
-      "fetched_at": "2026-07-09T07:37:51.333Z",
+      "fetched_at": "2026-07-12T10:53:05.749Z",
       "fetch_error": null,
       "provider_meta": {
-        "profile": "car"
+        "profile": "car",
+        "points_sent": 4,
+        "points_original": 4,
+        "downsampled": false
       }
     },
     "openrouteservice": {
@@ -55,7 +58,7 @@
       "duration_s": 10977,
       "maneuver_count": 23,
       "roundabout_count": 4,
-      "fetched_at": "2026-07-09T12:16:55.439Z",
+      "fetched_at": "2026-07-12T11:06:33.241Z",
       "fetch_error": null,
       "provider_meta": {
         "profile": "driving-car"
@@ -68,21 +71,21 @@
     "duration_s": 12549,
     "step_count": 44,
     "router": "osrm",
-    "fetched_at": "2026-07-09T07:37:42.655Z",
+    "fetched_at": "2026-07-12T05:29:41.991Z",
     "fetch_error": null
   },
   "metrics": {
     "graphhopper_vs_motohud": {
-      "hausdorff_m": 2746.8840302932776,
-      "avg_lateral_m": 60.87060071873097,
-      "p50_lateral_m": 1.8856140015560057,
+      "hausdorff_m": 2741.332224881985,
+      "avg_lateral_m": 60.81299178944201,
+      "p50_lateral_m": 1.9004012601628082,
       "p95_lateral_m": 45.67699634525911,
-      "max_lateral_m": 2746.8840302932776,
+      "max_lateral_m": 2741.332224881985,
       "length_diff_pct": 3.0685612449045085,
       "duration_diff_pct": 16.05705633915053,
       "maneuver_count_diff": 20,
       "roundabout_count_diff": null,
-      "direction_mismatch_ratio": 0.39755131436802305,
+      "direction_mismatch_ratio": 0.2635090060040027,
       "waypoint_deviations_m": [
         0,
         664.2078653786253,
@@ -91,16 +94,16 @@
       ]
     },
     "ors_vs_motohud": {
-      "hausdorff_m": 2084.259109362803,
-      "avg_lateral_m": 37.5281661218536,
-      "p50_lateral_m": 1.7168117125044786,
-      "p95_lateral_m": 24.17703249333391,
-      "max_lateral_m": 2084.259109362803,
+      "hausdorff_m": 2078.040119671525,
+      "avg_lateral_m": 37.510160448651064,
+      "p50_lateral_m": 1.7076246425211847,
+      "p95_lateral_m": 24.317183833159493,
+      "max_lateral_m": 2078.040119671525,
       "length_diff_pct": 3.1511816077512926,
       "duration_diff_pct": 12.52689457327277,
       "maneuver_count_diff": 21,
       "roundabout_count_diff": null,
-      "direction_mismatch_ratio": 0.32833690221270523,
+      "direction_mismatch_ratio": 0.2068045363575717,
       "waypoint_deviations_m": [
         0,
         0.37005767616164503,
@@ -110,16 +113,16 @@
     },
     "yandex_vs_motohud": null,
     "graphhopper_vs_ors": {
-      "hausdorff_m": 646.9559002452057,
-      "avg_lateral_m": 3.2756440126266226,
+      "hausdorff_m": 630.7228466800545,
+      "avg_lateral_m": 3.2170283933992003,
       "p50_lateral_m": 1.0273717658445984,
-      "p95_lateral_m": 12.624873496759884,
-      "max_lateral_m": 84.36076997308018,
+      "p95_lateral_m": 12.232575534047267,
+      "max_lateral_m": 74.01266965292798,
       "length_diff_pct": 0.08523587796476448,
       "duration_diff_pct": 4.2054300360736665,
       "maneuver_count_diff": 1,
       "roundabout_count_diff": 0,
-      "direction_mismatch_ratio": 0.18005041411595246,
+      "direction_mismatch_ratio": 0.11207471647765177,
       "waypoint_deviations_m": [
         0,
         0.37005767616164503,
@@ -132,7 +135,7 @@
     "consensus_deviation": {
       "refs_agree": true,
       "motohud_vs_consensus_p95_m": 45.67699634525911,
-      "motohud_vs_consensus_avg_m": 49.199383420292286,
+      "motohud_vs_consensus_avg_m": 49.161576119046536,
       "signal": "warn"
     },
     "coverage": {

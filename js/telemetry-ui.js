@@ -2,6 +2,7 @@
  * UI телеметрии: тумблер, кнопка «метка», список сессий, экспорт.
  */
 import telemetry from './telemetry.js';
+import { exportSessionsArchive } from './telemetry-export.js';
 import { getLastMarkContext } from './hud.js';
 import { $ } from './util.js';
 import { logFunnel } from './telemetry-funnel.js';
@@ -86,7 +87,13 @@ function updateBulkBar(){
 
   if(bar) bar.classList.toggle('hidden', !hasSessions);
   if(countEl) countEl.textContent = n ? ('Выбрано: ' + n) : 'Ничего не выбрано';
-  if(exportBtn) exportBtn.disabled = n === 0;
+  if(exportBtn){
+    exportBtn.disabled = n === 0;
+    exportBtn.textContent = n <= 1 ? '📥 JSONL выбранной' : '📦 ZIP (' + n + ' поездок)';
+    exportBtn.title = n <= 1
+      ? 'Скачать один файл JSONL для выбранной поездки'
+      : 'Скачать один ZIP — внутри отдельный JSONL на каждую поездку';
+  }
   if(deleteBtn) deleteBtn.disabled = n === 0;
 
   if(selectAll){
@@ -122,9 +129,12 @@ function setAllSelected(on){
 }
 
 async function exportSessions(ids){
-  for(const id of ids){
-    try{ await telemetry.export(id); }catch(e){ console.warn(e); }
-    await new Promise(r => setTimeout(r, 300));
+  if(!ids.length) return;
+  try{
+    await exportSessionsArchive(ids);
+  }catch(e){
+    console.warn(e);
+    alert(e.message || String(e));
   }
 }
 
@@ -155,7 +165,7 @@ function renderSessionRow(s){
     s.eventCount + ' соб. · меток ' + s.markCount + '</span>' +
     '</div>' +
     '<div class="tel-actions">' +
-    '<button type="button" class="tel-btn" data-act="export" data-id="' + s.id + '" title="Экспорт">📤</button>' +
+    '<button type="button" class="tel-btn" data-act="export" data-id="' + s.id + '" title="Скачать JSONL этой поездки">📥</button>' +
     '<button type="button" class="tel-btn" data-act="delete" data-id="' + s.id + '" title="Удалить">🗑</button>' +
     '</div></div>';
 }
@@ -182,6 +192,17 @@ async function refreshSessionsList(){
       return;
     }
     list.innerHTML = sessions.map(renderSessionRow).join('');
+    const exportAllBtn = $('btn-telemetry-export-all');
+    if(exportAllBtn){
+      const cnt = sessions.length;
+      exportAllBtn.classList.toggle('hidden', cnt === 0);
+      exportAllBtn.textContent = cnt <= 1
+        ? '📥 Скачать JSONL'
+        : '📦 ZIP всех поездок (' + cnt + ')';
+      exportAllBtn.title = cnt <= 1
+        ? 'Скачать JSONL единственной записи'
+        : 'Один ZIP-архив: внутри отдельный .jsonl на каждую поездку';
+    }
     updateBulkBar();
   }catch(e){
     list.innerHTML = '<div class="hint err">IndexedDB: ' + e.message + '</div>';
@@ -207,7 +228,7 @@ function bindSessionsList(){
     if(btn.dataset.act === 'export'){
       try{ await telemetry.export(id); }catch(err){ alert(err.message); }
     } else if(btn.dataset.act === 'delete'){
-      if(!confirm('Удалить сессию и все события?')) return;
+      if(!confirm('Удалить сессию и все события? Сначала скачайте JSONL — восстановить будет нельзя.')) return;
       _selected.delete(id);
       await telemetry.deleteSession(id);
       await refreshSessionsList();
@@ -227,7 +248,10 @@ function bindSessionsList(){
   $('btn-telemetry-delete-selected')?.addEventListener('click', async () => {
     const ids = [..._selected];
     if(!ids.length) return;
-    if(!confirm('Удалить ' + ids.length + ' сессий и все их события?')) return;
+    const msg = ids.length === 1
+      ? 'Удалить сессию и все события? Сначала скачайте JSONL/ZIP — восстановить будет нельзя.'
+      : 'Удалить ' + ids.length + ' сессий и все события? Сначала скачайте ZIP — восстановить будет нельзя.';
+    if(!confirm(msg)) return;
     await deleteSessions(ids);
   });
 

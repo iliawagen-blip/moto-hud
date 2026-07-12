@@ -13,8 +13,10 @@ import {
   incrementGraphhopperCounter,
   readGraphhopperCounter,
   updateResetFromHeaders,
-  graphhopperRemainingDaily
+  graphhopperRemainingDaily,
+  formatRateLimitText
 } from './lib/graphhopper-counter.mjs';
+import { waypointsForGraphhopper } from './lib/waypoints.mjs';
 
 const GH_URL = 'https://graphhopper.com/api/1/route';
 
@@ -68,6 +70,17 @@ function countSignificantManeuvers(maneuvers){
   return maneuvers.filter(m => !['continue', 'arrive', 'via'].includes(m.type)).length;
 }
 
+async function fetchGraphhopperWithRetry(waypoints, apiKey, retryPauseMs = 60000){
+  for(let attempt = 0; attempt < 2; attempt++){
+    const gh = await fetchGraphhopper(waypoints, apiKey);
+    incrementGraphhopperCounter(1);
+    if(gh.ok || gh.error !== 'rate_limit_429' || attempt === 1) return gh;
+    console.warn(`[graphhopper] 429 — ${gh.rateLimitText} — pause ${Math.round(retryPauseMs / 1000)}s, retry 1×`);
+    await new Promise(r => setTimeout(r, retryPauseMs));
+  }
+  return { ok: false, error: 'rate_limit_429' };
+}
+
 async function fetchGraphhopper(waypoints, apiKey){
   const points = waypoints.map(p => [p.lon, p.lat]);
   const url = `${GH_URL}?key=${encodeURIComponent(apiKey)}`;
@@ -84,11 +97,12 @@ async function fetchGraphhopper(waypoints, apiKey){
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
+  const rateLimitText = formatRateLimitText(res.headers);
   updateResetFromHeaders(res.headers);
-  if(res.status === 429) return { ok: false, error: 'rate_limit_429' };
+  if(res.status === 429) return { ok: false, error: 'rate_limit_429', rateLimitText };
   if(!res.ok){
     const txt = await res.text().catch(() => '');
-    return { ok: false, error: `http_${res.status}:${txt.slice(0, 120)}` };
+    return { ok: false, error: `http_${res.status}:${txt.slice(0, 120)}`, rateLimitText };
   }
   const json = await res.json();
   if(json.message && !json.paths?.length){
@@ -103,11 +117,12 @@ async function fetchGraphhopper(waypoints, apiKey){
     polyline,
     distance_m: Math.round(path0.distance ?? 0),
     duration_s: Math.round((path0.time ?? 0) / 1000),
-    maneuvers
+    maneuvers,
+    rateLimitText
   };
 }
 
-async function processFixture(fixture, apiKey, force){
+async function processFixture(fixture, apiKey, force, rateCfg){
   const cachePath = cacheReferencePath('graphhopper', fixture.fixture_id);
   if(!force && fixture.references?.graphhopper?.fetched_at && fs.existsSync(cachePath)){
     return { skipped: true };
@@ -116,8 +131,15 @@ async function processFixture(fixture, apiKey, force){
     return { limit: true };
   }
 
-  const gh = await fetchGraphhopper(fixture.waypoints, apiKey);
-  incrementGraphhopperCounter(1);
+  const maxPts = rateCfg.graphhopper?.max_points ?? 5;
+  const ghWaypoints = waypointsForGraphhopper(fixture.waypoints, maxPts);
+  const downsampled = ghWaypoints.length < fixture.waypoints.length;
+
+  const gh = await fetchGraphhopperWithRetry(
+    ghWaypoints,
+    apiKey,
+    rateCfg.graphhopper?.retry_pause_ms ?? 60000
+  );
 
   if(!gh.ok){
     fixture.references.graphhopper = {
@@ -129,7 +151,7 @@ async function processFixture(fixture, apiKey, force){
       fetch_error: gh.error
     };
     saveFixture(fixture);
-    return { error: gh.error };
+    return { error: gh.error, rateLimitText: gh.rateLimitText, downsampled };
   }
 
   const cache = {
@@ -139,7 +161,9 @@ async function processFixture(fixture, apiKey, force){
     polyline: gh.polyline,
     distance_m: gh.distance_m,
     duration_s: gh.duration_s,
-    maneuvers: gh.maneuvers
+    maneuvers: gh.maneuvers,
+    points_sent: ghWaypoints.length,
+    points_original: fixture.waypoints.length
   };
   saveJson(cachePath, cache);
 
@@ -150,10 +174,15 @@ async function processFixture(fixture, apiKey, force){
     roundabout_count: countRoundabouts(gh.maneuvers),
     fetched_at: cache.fetched_at,
     fetch_error: null,
-    provider_meta: { profile: 'car' }
+    provider_meta: {
+      profile: 'car',
+      points_sent: ghWaypoints.length,
+      points_original: fixture.waypoints.length,
+      downsampled
+    }
   };
   saveFixture(fixture);
-  return { ok: true, distance_m: gh.distance_m };
+  return { ok: true, distance_m: gh.distance_m, rateLimitText: gh.rateLimitText, downsampled };
 }
 
 async function main(){
@@ -165,7 +194,8 @@ async function main(){
 
   const { force, id } = parseArgs();
   const rateCfg = loadConfig('rate-limits');
-  const delayMs = rateCfg.graphhopper?.delay_between_req_ms ?? 2000;
+  const delayMs = rateCfg.graphhopper?.delay_between_req_ms ?? 5000;
+  const maxPts = rateCfg.graphhopper?.max_points ?? 5;
   const counter = readGraphhopperCounter();
 
   let files = listFixtureFiles();
@@ -184,16 +214,20 @@ async function main(){
     }
     const fx = loadFixtureFile(file);
     lastAt = await throttle(lastAt, delayMs);
-    const r = await processFixture(fx, apiKey, force);
+    const r = await processFixture(fx, apiKey, force, rateCfg);
     if(r.limit){ limitHit = true; break; }
     if(r.skipped){ skip++; continue; }
     if(r.error){
       err++;
-      console.log(`  ✗ ${fx.fixture_id.slice(0, 8)} ${r.error}`);
+      const rl = r.rateLimitText ? ` · ${r.rateLimitText}` : '';
+      const pts = r.downsampled ? ` · pts ${fx.waypoints.length}→${maxPts}` : '';
+      console.log(`  ✗ ${fx.fixture_id.slice(0, 8)} ${r.error}${pts}${rl}`);
     } else {
       ok++;
       const c = readGraphhopperCounter();
-      console.log(`  ✓ ${fx.fixture_id.slice(0, 8)} ${(r.distance_m / 1000).toFixed(1)} km (GH ${c.count}/500)`);
+      const rl = r.rateLimitText ? ` · ${r.rateLimitText}` : '';
+      const pts = r.downsampled ? ` · pts ${fx.waypoints.length}→${maxPts}` : '';
+      console.log(`  ✓ ${fx.fixture_id.slice(0, 8)} ${(r.distance_m / 1000).toFixed(1)} km (GH ${c.count}/500)${pts}${rl}`);
     }
   }
 

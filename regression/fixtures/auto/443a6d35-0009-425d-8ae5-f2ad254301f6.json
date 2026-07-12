@@ -1,0 +1,148 @@
+{
+  "fixture_id": "443a6d35-0009-425d-8ae5-f2ad254301f6",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:06:52.153Z",
+  "last_verified_at": "2026-07-12T06:47:55.003Z",
+  "source": "auto_generator",
+  "category": "city",
+  "region": "yekaterinburg",
+  "tags": [
+    "auto_v1",
+    "city",
+    "yekaterinburg"
+  ],
+  "waypoints": [
+    {
+      "lat": 56.845145,
+      "lon": 60.721712,
+      "label": "start"
+    },
+    {
+      "lat": 56.876828,
+      "lon": 60.5742,
+      "label": "via_1"
+    },
+    {
+      "lat": 56.832096,
+      "lon": 60.581607,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 21908,
+      "duration_s": 2871,
+      "maneuver_count": 17,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T10:52:50.676Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 3,
+        "points_original": 3,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 24730,
+      "duration_s": 2675,
+      "maneuver_count": 23,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:06:27.157Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 21977,
+    "duration_s": 2338,
+    "step_count": 27,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:29:35.814Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 534.0545860675132,
+      "avg_lateral_m": 27.716597868797486,
+      "p50_lateral_m": 0.05515048751828446,
+      "p95_lateral_m": 250.1420529067593,
+      "max_lateral_m": 529.846975480434,
+      "length_diff_pct": 0.31396459935386994,
+      "duration_diff_pct": 22.7972626176219,
+      "maneuver_count_diff": 10,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.0776255707762557,
+      "waypoint_deviations_m": [
+        0,
+        0,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 1556.899607962413,
+      "avg_lateral_m": 270.04894490680323,
+      "p50_lateral_m": 0.1721847016441687,
+      "p95_lateral_m": 1259.3881534942893,
+      "max_lateral_m": 1556.899607962413,
+      "length_diff_pct": 12.526732493060926,
+      "duration_diff_pct": 14.414029084687769,
+      "maneuver_count_diff": 4,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.4009111617312073,
+      "waypoint_deviations_m": [
+        0,
+        0,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 1751.8293537020777,
+      "avg_lateral_m": 295.6071566922406,
+      "p50_lateral_m": 0.10127046574464238,
+      "p95_lateral_m": 1372.5491118918042,
+      "max_lateral_m": 1751.8293537020777,
+      "length_diff_pct": 12.881139309841155,
+      "duration_diff_pct": 6.8268895855102745,
+      "maneuver_count_diff": -6,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.4155251141552511,
+      "waypoint_deviations_m": [
+        0,
+        0,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 1259.3881534942893,
+      "motohud_vs_consensus_avg_m": 148.88277138780035,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Екатеринбург · city · OSRM 22.0 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

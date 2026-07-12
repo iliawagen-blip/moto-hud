@@ -32,7 +32,9 @@ function buildMarkdown(ctx){
   lines.push('> Эталоны (GraphHopper, ORS) — средства сравнения, не «истина в последней инстанции».');
   lines.push('');
   lines.push(`**Git:** \`${ctx.git_head || 'unknown'}\`${ctx.prev_git ? ` (пред.: \`${ctx.prev_git.slice(0, 8)}\`)` : ''}`);
-  lines.push(`**CI gate:** ${ctx.ci_gate ? '✅ PASS' : '❌ FAIL'}`);
+  lines.push(`**Sim gate:** ${ctx.sim_gate ? '✅ PASS' : '❌ FAIL'} (${ctx.sim_pass}/${ctx.sim_total} runs)`);
+  lines.push(`**Consensus gate:** ${ctx.consensus_gate ? '✅ PASS' : '❌ FAIL'} (${ctx.consensus_fail} fail, ${ctx.consensus_warn} warn / ${ctx.fixture_count} fixtures)`);
+  lines.push(`**CI gate (full):** ${ctx.ci_gate ? '✅ PASS' : '❌ FAIL'} _(sim + consensus)_`);
   lines.push('');
 
   lines.push('## Сводка');
@@ -122,7 +124,9 @@ function main(){
   const simFail = simSummary?.fail ?? 0;
   const simTotal = simSummary?.total ?? 0;
 
-  const ciGate = simFail === 0 && consensusFail === 0;
+  const simGate = simFail === 0 && simTotal > 0;
+  const consensusGate = consensusFail === 0;
+  const ciGate = simGate && consensusGate;
 
   const gitHead = getGitHead(PROJECT_ROOT);
   const prevGit = prevReport?.git_head ?? null;
@@ -165,6 +169,8 @@ function main(){
     prev_git: prevGit,
     prev_date: prevDate,
     ci_gate: ciGate,
+    sim_gate: simGate,
+    consensus_gate: consensusGate,
     fixture_count: fixtures.length,
     with_metrics: fixtures.filter(f => f.metrics?.coverage).length,
     sim_total: simTotal,
@@ -196,6 +202,8 @@ function main(){
     prev_date: prevDate,
     prev_git_head: prevGit,
     ci_gate: ciGate,
+    sim_gate: simGate,
+    consensus_gate: consensusGate,
     fixture_count: fixtures.length,
     sim_pass: simPass,
     sim_fail: simFail,
@@ -227,7 +235,10 @@ function main(){
   };
   saveJson(path.join(outDir, 'trend.json'), trendJson);
 
-  console.log(`[report] CI gate: ${ciGate ? 'PASS' : 'FAIL'}`);
+  console.log(`[report] Sim gate: ${simGate ? 'PASS' : 'FAIL'} (${simPass}/${simTotal})`);
+  console.log(`[report] Consensus gate: ${consensusGate ? 'PASS' : 'FAIL'} (${consensusFail} fail)`);
+  console.log(`[report] CI gate (full): ${ciGate ? 'PASS' : 'FAIL'}`);
+
   console.log(`[report] ${mdPath}`);
   console.log(`[report] ${path.join(outDir, 'summary.json')}`);
 

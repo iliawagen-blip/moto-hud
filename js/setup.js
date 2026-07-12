@@ -52,6 +52,16 @@ export function setGoBarVisible(visible){
   $('setup')?.classList.toggle('has-go-bar', !!visible);
 }
 
+/** Подсказка: старт в пеленге без OSRM-маршрута. */
+export function updateBearingStartHint(){
+  const ri = $('route-info');
+  if(!ri || !S.gps || !S.finish || S.route?.coords?.length) return;
+  const txt = (ri.textContent || '').trim();
+  if(txt.startsWith('⏳') || txt.startsWith('❌')) return;
+  ri.textContent = '🧭 Без маршрута: «ПОЕХАЛИ» — пеленг к финишу';
+  ri.className = 'route-info ok';
+}
+
 /** Обновить карту/инфо после построения или импорта маршрута */
 export function refreshRouteUi(){
   if(!S.route) return;
@@ -82,10 +92,10 @@ export function invalidateRoute(){
 
   clearRouteMap();
 
-  setGoBarVisible(false);
   $('route-export-row')?.classList.add('hidden');
 
   checkStartReady();
+  updateBearingStartHint();
 
   const b = $('btn-build-route');
 
@@ -182,6 +192,7 @@ export async function doBuildRoute(){
     $('s-finish').className = 'status err';
 
     clearRouteMap();
+    updateBearingStartHint();
 
   }finally{
 
@@ -379,6 +390,7 @@ export function setFinishQuiet(lat, lon, label = 'Точка'){
   $('s-finish').textContent = '✅ Финиш: ' + lat.toFixed(5) + ', ' + lon.toFixed(5);
   $('s-finish').className = 'status ok';
   checkStartReady();
+  updateBearingStartHint();
 }
 
 
@@ -412,6 +424,7 @@ export async function applyCoordsOrLink(opts = {}){
   if(hideSearch) $('search-results').style.display = 'none';
 
   invalidateRoute();
+  updateBearingStartHint();
 
 }
 
@@ -574,11 +587,6 @@ export function bindSetupUI(){
   $('opt-path-chevrons')?.addEventListener('change', e => {
     S.showPathChevrons = e.target.checked;
     syncChevronInputs();
-    saveAppOptsToStorage();
-  });
-
-  $('opt-low-speed-map')?.addEventListener('change', e => {
-    S.lowSpeedMap = e.target.checked;
     saveAppOptsToStorage();
   });
 
@@ -840,7 +848,7 @@ export function syncOptionsFromDom(){
   S.pathChevronLabels = $('opt-chevron-labels')?.checked ?? true;
   S.pathChevronMax = Math.max(1, Math.min(3,
     parseInt($('opt-chevron-max')?.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
-  S.lowSpeedMap = $('opt-low-speed-map')?.checked !== false;
+  S.lowSpeedMap = false;
   if($('opt-chevron-max')) $('opt-chevron-max').value = String(S.pathChevronMax);
   if($('opt-chevron-labels')) $('opt-chevron-labels').disabled = !S.showPathChevrons;
   if($('opt-chevron-max')) $('opt-chevron-max').disabled = !S.showPathChevrons;

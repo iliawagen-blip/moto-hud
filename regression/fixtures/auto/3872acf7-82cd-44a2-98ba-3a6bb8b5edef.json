@@ -1,0 +1,140 @@
+{
+  "fixture_id": "3872acf7-82cd-44a2-98ba-3a6bb8b5edef",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:12:11.705Z",
+  "last_verified_at": "2026-07-12T06:47:02.412Z",
+  "source": "auto_generator",
+  "category": "highway",
+  "region": "m11_neva",
+  "tags": [
+    "auto_v1",
+    "highway",
+    "m11_neva"
+  ],
+  "waypoints": [
+    {
+      "lat": 56.464889,
+      "lon": 33.060783,
+      "label": "start"
+    },
+    {
+      "lat": 57.595314,
+      "lon": 31.322866,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 90
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 270621,
+      "duration_s": 16640,
+      "maneuver_count": 25,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T09:44:38.222Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 2,
+        "points_original": 2,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 294733,
+      "duration_s": 20606,
+      "maneuver_count": 15,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:06:17.173Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 309678,
+    "duration_s": 20347,
+    "step_count": 26,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:29:27.943Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 43145.4023541023,
+      "avg_lateral_m": 17910.69958981509,
+      "p50_lateral_m": 20556.600792820587,
+      "p95_lateral_m": 37330.65208345065,
+      "max_lateral_m": 38792.40030462369,
+      "length_diff_pct": 12.612132602251371,
+      "duration_diff_pct": 18.21890204944218,
+      "maneuver_count_diff": 1,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.45096731154102737,
+      "waypoint_deviations_m": [
+        0,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 15220.726799250062,
+      "avg_lateral_m": 1274.4312388761925,
+      "p50_lateral_m": 11.083506149260938,
+      "p95_lateral_m": 9908.081410446395,
+      "max_lateral_m": 13501.98821239859,
+      "length_diff_pct": 4.825980534619831,
+      "duration_diff_pct": 1.272914926033322,
+      "maneuver_count_diff": 11,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.2515010006671114,
+      "waypoint_deviations_m": [
+        0,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 43146.17964931139,
+      "avg_lateral_m": 17798.440798710733,
+      "p50_lateral_m": 21546.33260026174,
+      "p95_lateral_m": 40539.670271234514,
+      "max_lateral_m": 43146.17964931139,
+      "length_diff_pct": 8.909877651771296,
+      "duration_diff_pct": 23.834134615384617,
+      "maneuver_count_diff": 10,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.3695797198132088,
+      "waypoint_deviations_m": [
+        0,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 37330.65208345065,
+      "motohud_vs_consensus_avg_m": 9592.565414345641,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "М11 Нева · highway · OSRM 309.7 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

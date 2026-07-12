@@ -1,0 +1,156 @@
+{
+  "fixture_id": "958511f5-67ce-42b0-94b0-e1498b0f3249",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T09:09:13.582Z",
+  "last_verified_at": "2026-07-12T06:54:25.860Z",
+  "source": "auto_generator",
+  "category": "many_waypoints",
+  "region": "moscow_outer",
+  "tags": [
+    "auto_v1",
+    "many_waypoints",
+    "moscow_outer"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.748543,
+      "lon": 37.380186,
+      "label": "start"
+    },
+    {
+      "lat": 55.70081,
+      "lon": 37.431063,
+      "label": "via_1"
+    },
+    {
+      "lat": 55.861268,
+      "lon": 37.480489,
+      "label": "via_2"
+    },
+    {
+      "lat": 55.646821,
+      "lon": 37.61875,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 70
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 73803,
+      "duration_s": 6265,
+      "maneuver_count": 32,
+      "roundabout_count": 2,
+      "fetched_at": "2026-07-12T10:57:01.806Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 4,
+        "points_original": 4,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 87257,
+      "duration_s": 5677,
+      "maneuver_count": 35,
+      "roundabout_count": 1,
+      "fetched_at": "2026-07-12T11:07:23.328Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 74094,
+    "duration_s": 5294,
+    "step_count": 79,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:30:26.061Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 48.365016220996964,
+      "avg_lateral_m": 1.3476260945963865,
+      "p50_lateral_m": 0.4261236997068549,
+      "p95_lateral_m": 5.006259179738214,
+      "max_lateral_m": 48.365016220996964,
+      "length_diff_pct": 0.39274435176937406,
+      "duration_diff_pct": 18.341518700415566,
+      "maneuver_count_diff": 47,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.025815217391304348,
+      "waypoint_deviations_m": [
+        3.6089191558007316,
+        7.204197771450508,
+        0,
+        0.11118769852824024
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 11764.232574225443,
+      "avg_lateral_m": 2208.6242191713604,
+      "p50_lateral_m": 4.520521952003695,
+      "p95_lateral_m": 8054.019685190957,
+      "max_lateral_m": 8888.160355159796,
+      "length_diff_pct": 17.765271142062787,
+      "duration_diff_pct": 7.234605213449188,
+      "maneuver_count_diff": 44,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.43254237288135594,
+      "waypoint_deviations_m": [
+        0,
+        141.1058605558183,
+        0,
+        0.038236586069280654
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 11764.232574225443,
+      "avg_lateral_m": 2213.474085091421,
+      "p50_lateral_m": 6.917538455056229,
+      "p95_lateral_m": 8053.454275516394,
+      "max_lateral_m": 8882.751819183513,
+      "length_diff_pct": 18.229611262414807,
+      "duration_diff_pct": 9.385474860335195,
+      "maneuver_count_diff": -3,
+      "roundabout_count_diff": 1,
+      "direction_mismatch_ratio": 0.43546195652173914,
+      "waypoint_deviations_m": [
+        0,
+        141.1058605558183,
+        0,
+        0.038236586069280654
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 8054.019685190957,
+      "motohud_vs_consensus_avg_m": 1104.9859226329784,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Москва — спальные районы · many_waypoints · OSRM 74.1 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

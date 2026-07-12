@@ -13,7 +13,7 @@ import { listFixtureFiles, loadFixtureFile } from './lib/fixtures-io.mjs';
 import {
   cacheMotohudPath, cacheReferencePath, RESULTS_DIR, checkpointPath, saveJson, loadJson, REGRESSION_ROOT
 } from './lib/paths.mjs';
-import { startStaticServer } from '../playwright/lib/page-helpers.mjs';
+import { startStaticServer, waitForHudFrame } from '../playwright/lib/page-helpers.mjs';
 import { runSimMode } from '../playwright/sim-runner.mjs';
 
 const PROJECT_ROOT = path.resolve(REGRESSION_ROOT, '..');
@@ -111,7 +111,7 @@ async function main(){
 
         const simUrl = `${server.baseUrl}/sim.html?regression=1&autohud=0&t=${Date.now()}`;
         await page.goto(simUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-        await page.waitForFunction(() => !!document.getElementById('frame')?.contentWindow?.__SIM__, {}, { timeout: 60000 });
+        await waitForHudFrame(page);
 
         const seed = parseInt(fixture.fixture_id.replace(/-/g, '').slice(0, 8), 16) ^ mode.length;
 

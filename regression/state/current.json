@@ -1,0 +1,64 @@
+{
+  "updated_at": "2026-07-12T08:33:51.201Z",
+  "fixtures": {
+    "total": 116,
+    "valid": 116,
+    "full_coverage": 89,
+    "full_coverage_pct": 77
+  },
+  "sim": {
+    "last_nightly_date": "2026-07-12",
+    "last_pass": 334,
+    "last_total": 348,
+    "last_pass_rate_pct": 96,
+    "sim_gate_pass": false,
+    "fixtures_tested": 116
+  },
+  "metrics": {
+    "median_p95_lateral_m": 529.6843795001668,
+    "refs_agree_pct": 21
+  },
+  "api_counters": {
+    "graphhopper": {
+      "today": 264,
+      "limit": 500,
+      "safety_stop_at": 450,
+      "remaining_to_burn": 186,
+      "reset_at": null,
+      "resets_in_h": null
+    },
+    "openrouteservice": {
+      "today": 0,
+      "limit": 2000
+    }
+  },
+  "yandex": {
+    "last_fetch_at": "2026-07-09T11:50:19.008Z",
+    "blocked_until": null
+  },
+  "known_issues": [
+    "089c5f22: refs_agree=false: GH↔ORS p95>35km",
+    "eb1e26e7: ors_bad_route: 4130km vs OSRM 47km"
+  ],
+  "investigations_pending": [
+    "019f1539: sim fail on_route",
+    "0f6d2613: sim fail on_route",
+    "1a468618: sim fail deviation",
+    "1ceba96e: sim fail deviation",
+    "3142523b: sim fail on_route",
+    "4c35729c: sim fail deviation",
+    "87d153b1: sim fail deviation",
+    "8f5656aa: sim fail deviation",
+    "9b63130e: sim fail on_route",
+    "bd7a87a4: sim fail on_route",
+    "cb9b0fef: sim fail deviation",
+    "ce5522bc: sim fail deviation",
+    "cfd81eec: sim fail on_route",
+    "d8ddb711: sim fail deviation",
+    "eb1e26e7: ors_bad_route: 4130km vs OSRM 47km"
+  ],
+  "git": {
+    "hash": "e9bee844a041db9bd1b16182d98fb7d694b66834",
+    "date": "2026-07-10 16:03:10 +0300"
+  }
+}

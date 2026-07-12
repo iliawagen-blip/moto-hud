@@ -1,0 +1,112 @@
+{
+  "fixture_id": "2a94fcb5-8a67-4325-9607-2377ebe0aed6",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:09:36.762Z",
+  "last_verified_at": "2026-07-12T06:45:34.714Z",
+  "source": "auto_generator",
+  "category": "city",
+  "region": "m4_don_north",
+  "tags": [
+    "auto_v1",
+    "city",
+    "m4_don_north"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.838061,
+      "lon": 37.752808,
+      "label": "start"
+    },
+    {
+      "lat": 55.45067,
+      "lon": 37.585695,
+      "label": "via_1"
+    },
+    {
+      "lat": 55.446009,
+      "lon": 37.646836,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 74051,
+      "duration_s": 6001,
+      "maneuver_count": 32,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T09:44:03.114Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 3,
+        "points_original": 3,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": null,
+      "duration_s": null,
+      "maneuver_count": null,
+      "roundabout_count": null,
+      "fetched_at": "2026-07-12T11:06:02.945Z",
+      "fetch_error": "Could not find routable point within a radius of 350.0 meters of specified coordinate 0: 37.7528080 55.8380610."
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 71823,
+    "duration_s": 5091,
+    "step_count": 46,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:29:13.808Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 7258.463217900243,
+      "avg_lateral_m": 2423.8440664659174,
+      "p50_lateral_m": 970.8069405070634,
+      "p95_lateral_m": 6818.6391719767325,
+      "max_lateral_m": 7219.063609649274,
+      "length_diff_pct": 3.102070367431046,
+      "duration_diff_pct": 17.87468080927126,
+      "maneuver_count_diff": 14,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.4078486334968465,
+      "waypoint_deviations_m": [
+        0,
+        29.494924140814028,
+        0
+      ]
+    },
+    "ors_vs_motohud": null,
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": null,
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 6818.6391719767325,
+      "motohud_vs_consensus_avg_m": 2423.8440664659174,
+      "signal": "insufficient_refs"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "М4 Дон — северный участок · city · OSRM 71.8 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

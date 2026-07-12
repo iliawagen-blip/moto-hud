@@ -1,9 +1,11 @@
 {
   "graphhopper": {
     "daily": 500,
+    "max_points": 5,
     "safety_margin_pct": 10,
     "safety_stop_at": 450,
-    "delay_between_req_ms": 2000,
+    "delay_between_req_ms": 5000,
+    "retry_pause_ms": 60000,
     "counter_file": "cache/graphhopper-counter.json"
   },
   "ors": {

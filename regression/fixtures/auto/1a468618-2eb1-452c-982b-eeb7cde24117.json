@@ -1,0 +1,156 @@
+{
+  "fixture_id": "1a468618-2eb1-452c-982b-eeb7cde24117",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T14:53:56.767Z",
+  "last_verified_at": "2026-07-12T11:12:24.880Z",
+  "source": "auto_generator",
+  "category": "city",
+  "region": "yekaterinburg",
+  "tags": [
+    "auto_v1",
+    "city",
+    "yekaterinburg"
+  ],
+  "waypoints": [
+    {
+      "lat": 56.825357,
+      "lon": 60.476347,
+      "label": "start"
+    },
+    {
+      "lat": 56.84581,
+      "lon": 60.556675,
+      "label": "via_1"
+    },
+    {
+      "lat": 56.793778,
+      "lon": 60.670317,
+      "label": "via_2"
+    },
+    {
+      "lat": 56.890535,
+      "lon": 60.722954,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 37347,
+      "duration_s": 3194,
+      "maneuver_count": 24,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T08:43:15.062Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 4,
+        "points_original": 4,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 36410,
+      "duration_s": 3515,
+      "maneuver_count": 26,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:05:44.946Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 37754,
+    "duration_s": 4264,
+    "step_count": 44,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:28:55.736Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 1640.3937630774176,
+      "avg_lateral_m": 192.48821925842523,
+      "p50_lateral_m": 0.8358296254830173,
+      "p95_lateral_m": 1204.8382494444422,
+      "max_lateral_m": 1640.3937630774176,
+      "length_diff_pct": 1.0780314668644382,
+      "duration_diff_pct": 25.093808630393998,
+      "maneuver_count_diff": 20,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.26907630522088355,
+      "waypoint_deviations_m": [
+        0.11118250155298304,
+        0,
+        0,
+        0.12147847718060797
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 1434.7597828911962,
+      "avg_lateral_m": 119.77406886541523,
+      "p50_lateral_m": 0.2230939223603756,
+      "p95_lateral_m": 1061.3266102370978,
+      "max_lateral_m": 1434.7597828911962,
+      "length_diff_pct": 3.5598876940191766,
+      "duration_diff_pct": 17.565666041275797,
+      "maneuver_count_diff": 18,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.33379120879120877,
+      "waypoint_deviations_m": [
+        0.11119508074288091,
+        0,
+        0.8512957336493073,
+        0.12147847718060797
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 1639.9108851934238,
+      "avg_lateral_m": 163.5260029391142,
+      "p50_lateral_m": 0.16319508985057873,
+      "p95_lateral_m": 976.0824825532287,
+      "max_lateral_m": 1635.977991089858,
+      "length_diff_pct": 2.508902990869414,
+      "duration_diff_pct": 10.050093926111458,
+      "maneuver_count_diff": -2,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.3159340659340659,
+      "waypoint_deviations_m": [
+        0.11119508074288091,
+        0,
+        0.8512957336493073,
+        0.12147847718060797
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 1204.8382494444422,
+      "motohud_vs_consensus_avg_m": 156.13114406192022,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Екатеринбург · city · OSRM 37.8 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

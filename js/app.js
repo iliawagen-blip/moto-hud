@@ -4,12 +4,12 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __esm = (fn, res, err) => function __init() {
-  if (err) throw err[0];
+var __esm = (fn, res, err2) => function __init() {
+  if (err2) throw err2[0];
   try {
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   } catch (e) {
-    throw err = [e], e;
+    throw err2 = [e], e;
   }
 };
 var __commonJS = (cb, mod) => function __require() {
@@ -197,7 +197,6 @@ var init_state = __esm({
       routeQuality: "OK",
       /** 'route' | 'bearing' — пеленг вне цикла viewMode */
       navMode: "route",
-      compassMode: false,
       routerBackend: "osrm",
       rerouting: false,
       rerouteBackoffStep: 0,
@@ -225,8 +224,8 @@ var init_state = __esm({
       pathChevronMax: DEFAULT_PATH_CHEVRON_MAX,
       /** @deprecated сохранено для старых настроек */
       pathMinSpeedKmh: DEFAULT_PATH_MIN_SPEED_KMH,
-      /** Автокарта вне маршрута (дворы) */
-      lowSpeedMap: true,
+      /** @deprecated автокарта «во дворах» отключена — карта только вручную */
+      lowSpeedMap: false,
       showElevProfile: true,
       elevExag: 1.8,
       elevProfileH: 72,
@@ -334,8 +333,8 @@ function bearing(a, b) {
   const r = Math.PI / 180, d = 180 / Math.PI;
   const f1 = a.lat * r, f2 = b.lat * r, dl = (b.lon - a.lon) * r;
   const y = Math.sin(dl) * Math.cos(f2);
-  const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
-  return (Math.atan2(y, x) * d + 360) % 360;
+  const x2 = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+  return (Math.atan2(y, x2) * d + 360) % 360;
 }
 function distToSegment(p, a, b) {
   const r = Math.PI / 180;
@@ -491,10 +490,10 @@ var init_dist = __esm({
       }
     };
     getPlatformId = (win) => {
-      var _a, _b;
+      var _a2, _b2;
       if (win === null || win === void 0 ? void 0 : win.androidBridge) {
         return "android";
-      } else if ((_b = (_a = win === null || win === void 0 ? void 0 : win.webkit) === null || _a === void 0 ? void 0 : _a.messageHandlers) === null || _b === void 0 ? void 0 : _b.bridge) {
+      } else if ((_b2 = (_a2 = win === null || win === void 0 ? void 0 : win.webkit) === null || _a2 === void 0 ? void 0 : _a2.messageHandlers) === null || _b2 === void 0 ? void 0 : _b2.bridge) {
         return "ios";
       } else {
         return "web";
@@ -519,10 +518,10 @@ var init_dist = __esm({
         return false;
       };
       const getPluginHeader = (pluginName) => {
-        var _a;
-        return (_a = cap.PluginHeaders) === null || _a === void 0 ? void 0 : _a.find((h) => h.name === pluginName);
+        var _a2;
+        return (_a2 = cap.PluginHeaders) === null || _a2 === void 0 ? void 0 : _a2.find((h) => h.name === pluginName);
       };
-      const handleError = (err) => win.console.error(err);
+      const handleError = (err2) => win.console.error(err2);
       const registeredPlugins = /* @__PURE__ */ new Map();
       const registerPlugin2 = (pluginName, jsImplementations = {}) => {
         const registeredPlugin = registeredPlugins.get(pluginName);
@@ -542,7 +541,7 @@ var init_dist = __esm({
           return jsImplementation;
         };
         const createPluginMethod = (impl, prop) => {
-          var _a, _b;
+          var _a2, _b2;
           if (pluginHeader) {
             const methodHeader = pluginHeader === null || pluginHeader === void 0 ? void 0 : pluginHeader.methods.find((m) => prop === m.name);
             if (methodHeader) {
@@ -552,10 +551,10 @@ var init_dist = __esm({
                 return (options, callback) => cap.nativeCallback(pluginName, prop.toString(), options, callback);
               }
             } else if (impl) {
-              return (_a = impl[prop]) === null || _a === void 0 ? void 0 : _a.bind(impl);
+              return (_a2 = impl[prop]) === null || _a2 === void 0 ? void 0 : _a2.bind(impl);
             }
           } else if (impl) {
-            return (_b = impl[prop]) === null || _b === void 0 ? void 0 : _b.bind(impl);
+            return (_b2 = impl[prop]) === null || _b2 === void 0 ? void 0 : _b2.bind(impl);
           } else {
             throw new CapacitorException(`"${pluginName}" plugin is not implemented on ${platform}`, ExceptionCode.Unimplemented);
           }
@@ -693,8 +692,8 @@ var init_dist = __esm({
         listeners.forEach((listener) => listener(data));
       }
       hasListeners(eventName) {
-        var _a;
-        return !!((_a = this.listeners[eventName]) === null || _a === void 0 ? void 0 : _a.length);
+        var _a2;
+        return !!((_a2 = this.listeners[eventName]) === null || _a2 === void 0 ? void 0 : _a2.length);
       }
       registerWindowListener(windowEventName, pluginEventName) {
         this.windowListeners[pluginEventName] = {
@@ -983,18 +982,18 @@ function s(t) {
         return new Proxy({}, {
           get(w, o) {
             return (c, p, r) => {
-              const i = t.Capacitor.Plugins[n];
-              if (i === void 0) {
+              const i2 = t.Capacitor.Plugins[n];
+              if (i2 === void 0) {
                 r(new Error(`Capacitor plugin ${n} not found`));
                 return;
               }
-              if (typeof i[o] != "function") {
+              if (typeof i2[o] != "function") {
                 r(new Error(`Method ${o} not found in Capacitor plugin ${n}`));
                 return;
               }
               (async () => {
                 try {
-                  const a = await i[o](c);
+                  const a = await i2[o](c);
                   p(a);
                 } catch (a) {
                   r(a);
@@ -1046,16 +1045,16 @@ var init_web = __esm({
         return new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition((pos) => {
             resolve(pos);
-          }, (err) => {
-            reject(err);
+          }, (err2) => {
+            reject(err2);
           }, Object.assign({ enableHighAccuracy: false, timeout: 1e4, maximumAge: 0 }, options));
         });
       }
       async watchPosition(options, callback) {
         const id = navigator.geolocation.watchPosition((pos) => {
           callback(pos);
-        }, (err) => {
-          callback(null, err);
+        }, (err2) => {
+          callback(null, err2);
         }, Object.assign({ enableHighAccuracy: false, timeout: 1e4, maximumAge: 0, minimumUpdateInterval: 5e3 }, options));
         return `${id}`;
       }
@@ -1236,11 +1235,11 @@ var init_web2 = __esm({
         }
       }
       sendPending() {
-        var _a;
+        var _a2;
         const toRemove = [];
         const now = (/* @__PURE__ */ new Date()).getTime();
         for (const notification of this.pending) {
-          if (((_a = notification.schedule) === null || _a === void 0 ? void 0 : _a.at) && notification.schedule.at.getTime() <= now) {
+          if (((_a2 = notification.schedule) === null || _a2 === void 0 ? void 0 : _a2.at) && notification.schedule.at.getTime() <= now) {
             this.buildNotification(notification);
             toRemove.push(notification);
           }
@@ -1248,8 +1247,8 @@ var init_web2 = __esm({
         this.pending = this.pending.filter((notification) => !toRemove.find((n) => n === notification));
       }
       sendNotification(notification) {
-        var _a;
-        if ((_a = notification.schedule) === null || _a === void 0 ? void 0 : _a.at) {
+        var _a2;
+        if ((_a2 = notification.schedule) === null || _a2 === void 0 ? void 0 : _a2.at) {
           const diff = notification.schedule.at.getTime() - (/* @__PURE__ */ new Date()).getTime();
           this.pending.push(notification);
           setTimeout(() => {
@@ -1351,9 +1350,9 @@ async function startSetupGps(onFix, onError) {
       timeout: 15e3,
       maximumAge: 1e3
     },
-    (pos, err) => {
-      if (err) {
-        onError(err);
+    (pos, err2) => {
+      if (err2) {
+        onError(err2);
         return;
       }
       if (pos) onFix(mapCapPosition(pos));
@@ -1418,7 +1417,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, OFF_ROAD_MAP_ENTER_MS, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1482,7 +1481,6 @@ var init_nav_constants = __esm({
     ROUTE_LOW_MANEUVER_PER_KM = 25;
     FUSION_GPS_WEIGHT_MIN = 0.02;
     FUSION_GPS_WEIGHT_SPAN = 25;
-    OFF_ROAD_MAP_ENTER_MS = 1500;
     LOW_SPEED_MAP_ZOOM = 18;
     PATH_SKIP_DS_M = 2;
     PATH_SKIP_FRAMES = 2;
@@ -1564,7 +1562,22 @@ function startCompassCalibration(durationMs = 15e3) {
   calibratingUntil = Date.now() + durationMs;
   forceGps = false;
   disagreeSince = 0;
+  recordCompassCalibration();
   startHeadingSensors();
+}
+function recordCompassCalibration() {
+  try {
+    localStorage.setItem(COMPASS_CAL_KEY, String(Date.now()));
+  } catch (e) {
+  }
+}
+function getCompassCalibrationAgeMs() {
+  try {
+    const ts = parseInt(localStorage.getItem(COMPASS_CAL_KEY) || "0", 10);
+    return ts > 0 ? Date.now() - ts : Infinity;
+  } catch (e) {
+    return Infinity;
+  }
 }
 function isCalibrating() {
   return Date.now() < calibratingUntil;
@@ -1620,7 +1633,7 @@ function fuseHeading(gpsHeading, speedMps) {
 function getSensorHeading() {
   return sensorHeading;
 }
-var sensorHeading, sensorTs, listening, motionListening, gyroHeading, gyroTs, lastMotionTs, forceGps, disagreeSince, calibratingUntil, DISAGREE_DEG, DISAGREE_MS, RECOVER_DEG;
+var sensorHeading, sensorTs, listening, motionListening, gyroHeading, gyroTs, lastMotionTs, forceGps, disagreeSince, calibratingUntil, COMPASS_CAL_KEY, DISAGREE_DEG, DISAGREE_MS, RECOVER_DEG;
 var init_heading = __esm({
   "js/heading.js"() {
     init_geo();
@@ -1635,6 +1648,7 @@ var init_heading = __esm({
     forceGps = false;
     disagreeSince = 0;
     calibratingUntil = 0;
+    COMPASS_CAL_KEY = "moto-hud-compass-cal-ts";
     DISAGREE_DEG = 55;
     DISAGREE_MS = 4500;
     RECOVER_DEG = 28;
@@ -1874,8 +1888,8 @@ function logSnapFromResult(snap) {
 function pct(arr, p) {
   if (!arr.length) return null;
   const s2 = [...arr].sort((a, b) => a - b);
-  const i = Math.min(s2.length - 1, Math.floor(p / 100 * s2.length));
-  return s2[i];
+  const i2 = Math.min(s2.length - 1, Math.floor(p / 100 * s2.length));
+  return s2[i2];
 }
 function computeSessionAggregate() {
   if (!_buffer.length) return null;
@@ -2317,8 +2331,8 @@ function refineManeuvers(maneuvers) {
   if (!maneuvers?.length) return [];
   const sorted = [...maneuvers].sort((a, b) => a.s - b.s);
   const kept = [];
-  for (let i = 0; i < sorted.length; i++) {
-    const m = sorted[i];
+  for (let i2 = 0; i2 < sorted.length; i2++) {
+    const m = sorted[i2];
     if (!isNavManeuverType(m.step)) {
       logFiltered(m.step, m.s, "not_nav_type");
       continue;
@@ -2326,7 +2340,7 @@ function refineManeuvers(maneuvers) {
     const segM = m.step.distance || 0;
     const ang = stepTurnAngleDeg(m.step, m) || 0;
     const bend = bendThresholdForStep(m.step);
-    const next = sorted[i + 1];
+    const next = sorted[i2 + 1];
     if (segM < MANEUVER_COLLAPSE_SEG_M && ang < bend) {
       if (next && isNavManeuverType(next.step) && next.s - m.s < MANEUVER_COLLAPSE_GAP_M) {
         logFiltered(m.step, m.s, "collapse_micro");
@@ -2425,7 +2439,7 @@ function pushHist(q) {
   while (_hist.length > SNAP_QUALITY_TICK_WINDOW) _hist.shift();
 }
 function histAgrees(target) {
-  const n = _hist.filter((x) => x === target).length;
+  const n = _hist.filter((x2) => x2 === target).length;
   return n >= SNAP_QUALITY_TICKS_REQUIRED;
 }
 function updateSnapQuality(snap, gps, geom, opts) {
@@ -2590,9 +2604,9 @@ function vSafeFromR(R, params, gradeAt) {
 }
 function applySafeSpeedAtS(geom, s2, vSafe) {
   if (!isFinite(vSafe) || vSafe >= 80) return;
-  const i = findSegAtS(geom, s2);
-  if (!isFinite(geom.safeSpeed[i]) || geom.safeSpeed[i] > vSafe) {
-    geom.safeSpeed[i] = vSafe;
+  const i2 = findSegAtS(geom, s2);
+  if (!isFinite(geom.safeSpeed[i2]) || geom.safeSpeed[i2] > vSafe) {
+    geom.safeSpeed[i2] = vSafe;
   }
 }
 function computeCurveSpeed(geom, route) {
@@ -2698,9 +2712,9 @@ function mergeSpans(spans) {
   if (!spans.length) return [];
   const sorted = spans.slice().sort((a, b) => a.sEntry - b.sEntry);
   const out = [sorted[0]];
-  for (let i = 1; i < sorted.length; i++) {
+  for (let i2 = 1; i2 < sorted.length; i2++) {
     const prev = out[out.length - 1];
-    const cur = sorted[i];
+    const cur = sorted[i2];
     if (cur.sEntry <= prev.sExit + 30) {
       prev.sExit = Math.max(prev.sExit, cur.sExit);
       if (cur.minR < prev.minR) {
@@ -2893,18 +2907,18 @@ function notifyElevationReady() {
 }
 function lonLatToTile(lon, lat, z) {
   const n = 2 ** z;
-  const x = Math.floor((lon + 180) / 360 * n);
+  const x2 = Math.floor((lon + 180) / 360 * n);
   const latRad = lat * Math.PI / 180;
   const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
-  return { x: Math.max(0, Math.min(n - 1, x)), y: Math.max(0, Math.min(n - 1, y)), z };
+  return { x: Math.max(0, Math.min(n - 1, x2)), y: Math.max(0, Math.min(n - 1, y)), z };
 }
 function terrariumDecode(r, g, b) {
   return r * 256 + g + b / 256 - 32768;
 }
-async function fetchTerrariumTile(z, x, y) {
-  const key = z + "/" + x + "/" + y;
+async function fetchTerrariumTile(z, x2, y) {
+  const key = z + "/" + x2 + "/" + y;
   if (_tileCache.has(key)) return _tileCache.get(key);
-  const url = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/" + z + "/" + x + "/" + y + ".png";
+  const url = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/" + z + "/" + x2 + "/" + y + ".png";
   const p = new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -2946,8 +2960,8 @@ async function fetchOpenTopoBatch(batch) {
   const r = await fetch(url);
   if (!r.ok) throw new Error("OpenTopo " + r.status);
   const j = await r.json();
-  batch.forEach((a, i) => {
-    const e = j.results?.[i]?.elevation;
+  batch.forEach((a, i2) => {
+    const e = j.results?.[i2]?.elevation;
     if (e != null && isFinite(e)) a.elev = e;
   });
 }
@@ -2990,8 +3004,8 @@ function smoothElev(geom) {
   const half = SMOOTH_WINDOW_M;
   const out = new Float64Array(n);
   let j0 = 0;
-  for (let i = 0; i < n; i++) {
-    const s0 = geom.s[i];
+  for (let i2 = 0; i2 < n; i2++) {
+    const s0 = geom.s[i2];
     while (j0 < n && geom.s[j0] < s0 - half) j0++;
     let sum = 0;
     let wsum = 0;
@@ -3001,19 +3015,19 @@ function smoothElev(geom) {
       sum += geom.elev[j] * w;
       wsum += w;
     }
-    out[i] = wsum > 0 ? sum / wsum : geom.elev[i];
+    out[i2] = wsum > 0 ? sum / wsum : geom.elev[i2];
   }
   geom.elev = out;
 }
 function computeGrade(geom) {
   const n = geom.n;
-  for (let i = 0; i < n - 1; i++) {
-    const ds = geom.s[i + 1] - geom.s[i];
-    geom.grade[i] = ds > 0 ? (geom.elev[i + 1] - geom.elev[i]) / ds : 0;
+  for (let i2 = 0; i2 < n - 1; i2++) {
+    const ds = geom.s[i2 + 1] - geom.s[i2];
+    geom.grade[i2] = ds > 0 ? (geom.elev[i2 + 1] - geom.elev[i2]) / ds : 0;
   }
   geom.grade[n - 1] = geom.grade[n - 2] || 0;
-  for (let i = 0; i < n; i++) {
-    geom.grade[i] = Math.max(-0.25, Math.min(0.25, geom.grade[i]));
+  for (let i2 = 0; i2 < n; i2++) {
+    geom.grade[i2] = Math.max(-0.25, Math.min(0.25, geom.grade[i2]));
   }
 }
 function injectSimElevation(geom) {
@@ -3034,14 +3048,14 @@ async function fetchElevationForGeometry(geom) {
     return;
   }
   const anchors = buildAnchors(geom);
-  for (let i = 0; i < anchors.length; i += OPENTOPO_BATCH) {
-    const batch = anchors.slice(i, i + OPENTOPO_BATCH);
+  for (let i2 = 0; i2 < anchors.length; i2 += OPENTOPO_BATCH) {
+    const batch = anchors.slice(i2, i2 + OPENTOPO_BATCH);
     try {
       await fetchOpenTopoBatch(batch);
     } catch (e) {
       console.warn("OpenTopo batch:", e);
     }
-    if (i + OPENTOPO_BATCH < anchors.length) await sleep(OPENTOPO_DELAY_MS);
+    if (i2 + OPENTOPO_BATCH < anchors.length) await sleep(OPENTOPO_DELAY_MS);
   }
   for (const a of anchors) {
     if (a.elev != null) continue;
@@ -3082,10 +3096,10 @@ function renderElevProfile(snap, geom, W, H) {
   if (s1 - s0 < 50) return "";
   const samples = [];
   for (let s2 = s0; s2 <= s1; s2 += 40) {
-    const i = findSegAtS(geom, s2);
-    const ds = geom.s[i + 1] - geom.s[i];
-    const t = ds > 0 ? (s2 - geom.s[i]) / ds : 0;
-    const elev = geom.elev[i] + t * (geom.elev[i + 1] - geom.elev[i]);
+    const i2 = findSegAtS(geom, s2);
+    const ds = geom.s[i2 + 1] - geom.s[i2];
+    const t = ds > 0 ? (s2 - geom.s[i2]) / ds : 0;
+    const elev = geom.elev[i2] + t * (geom.elev[i2 + 1] - geom.elev[i2]);
     samples.push({ s: s2 - s0, elev });
   }
   if (samples.length < 2) return "";
@@ -3108,9 +3122,9 @@ function renderElevProfile(snap, geom, W, H) {
   const toX = (ds) => mx + ds / profileLenM * pw;
   const toY = (d) => my + ph - (d - minE) / range * ph;
   let pathSegs = "";
-  samples.forEach((p, i) => {
-    if (i === 0) return;
-    const a = samples[i - 1];
+  samples.forEach((p, i2) => {
+    if (i2 === 0) return;
+    const a = samples[i2 - 1];
     const b = p;
     const sMid = s0 + (a.s + b.s) * 0.5;
     const gi = findSegAtS(geom, sMid);
@@ -3125,10 +3139,10 @@ function renderElevProfile(snap, geom, W, H) {
   const tok = getThemeTokens();
   geom.maneuvers.forEach((m) => {
     if (m.s < s0 || m.s > s1) return;
-    const x = toX(m.s - s0);
-    marks += '<line x1="' + x.toFixed(1) + '" y1="' + my + '" x2="' + x.toFixed(1) + '" y2="' + (my + ph) + '" stroke="' + tok.accent + '" stroke-width="1" opacity="0.5"/>';
+    const x2 = toX(m.s - s0);
+    marks += '<line x1="' + x2.toFixed(1) + '" y1="' + my + '" x2="' + x2.toFixed(1) + '" y2="' + (my + ph) + '" stroke="' + tok.accent + '" stroke-width="1" opacity="0.5"/>';
   });
-  return '<g class="elev-profile" fill="none">' + marks + pathSegs + "</g>";
+  return '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#000" opacity="0.5"/><g class="elev-profile" fill="none">' + marks + pathSegs + "</g>";
 }
 var TERRARIUM_Z, SMOOTH_WINDOW_M, ANCHOR_STEP_M, OPENTOPO_BATCH, OPENTOPO_DELAY_MS, _tileCache, _elevListeners;
 var init_elevation = __esm({
@@ -3148,7 +3162,7 @@ var init_elevation = __esm({
 });
 
 // js/crossings.js
-function projectGround(x, z, elevDelta) {
+function projectGround(x2, z, elevDelta) {
   const pitch = getCamPitchRad();
   const cp = Math.cos(pitch);
   const sp = Math.sin(pitch);
@@ -3159,7 +3173,7 @@ function projectGround(x, z, elevDelta) {
   const Yc = dy * cp + dz * sp - elevLift;
   const Zc = -dy * sp + dz * cp;
   if (Zc < 0.85) return null;
-  const sx = L2.cx + L2.camFocal * x / Zc;
+  const sx = L2.cx + L2.camFocal * x2 / Zc;
   const sy = L2.camVoff - L2.camFocal * Yc / Zc;
   if (sx < -L2.W * 0.4 || sx > L2.W * 1.4) return null;
   return { x: sx, y: sy };
@@ -3175,10 +3189,10 @@ function pickSideBearings(inter, travelBrg) {
   const outIdx = inter.out;
   if (inIdx == null || outIdx == null || !inter.bearings?.length) return [];
   const sides = [];
-  for (let i = 0; i < inter.bearings.length; i++) {
-    if (i === inIdx || i === outIdx) continue;
-    if (inter.entry && inter.entry[i] === false) continue;
-    const brg = inter.bearings[i];
+  for (let i2 = 0; i2 < inter.bearings.length; i2++) {
+    if (i2 === inIdx || i2 === outIdx) continue;
+    if (inter.entry && inter.entry[i2] === false) continue;
+    const brg = inter.bearings[i2];
     const rel = signedAngle(travelBrg, brg);
     if (Math.abs(rel) < 12) continue;
     sides.push({ brg, side: rel < 0 ? "left" : "right", absRel: Math.abs(rel) });
@@ -3197,9 +3211,9 @@ function mergeCrossings(list) {
   if (!list.length) return [];
   const sorted = list.slice().sort((a, b) => a.s - b.s);
   const out = [sorted[0]];
-  for (let i = 1; i < sorted.length; i++) {
+  for (let i2 = 1; i2 < sorted.length; i2++) {
     const prev = out[out.length - 1];
-    const cur = sorted[i];
+    const cur = sorted[i2];
     if (cur.s - prev.s < CROSSING_MERGE_M) {
       const brgs = new Set(prev.sideBearings.concat(cur.sideBearings));
       prev.sideBearings = Array.from(brgs);
@@ -3273,9 +3287,9 @@ function buildRoundabouts(steps, geom) {
     let totalExits = null;
     if (mainIx.bearings?.length && inIdx != null) {
       const exitBearings = [];
-      for (let i = 0; i < mainIx.bearings.length; i++) {
-        if (i === inIdx) continue;
-        exitBearings.push(mainIx.bearings[i]);
+      for (let i2 = 0; i2 < mainIx.bearings.length; i2++) {
+        if (i2 === inIdx) continue;
+        exitBearings.push(mainIx.bearings[i2]);
       }
       totalExits = exitBearings.length || null;
       const targetBrg = outIdx != null ? mainIx.bearings[outIdx] : null;
@@ -3925,7 +3939,7 @@ var init_web3 = __esm({
       async getSupportedLanguages() {
         const voices = this.getSpeechSynthesisVoices();
         const languages = voices.map((voice) => voice.lang);
-        const filteredLanguages = languages.filter((v, i, a) => a.indexOf(v) == i);
+        const filteredLanguages = languages.filter((v, i2, a) => a.indexOf(v) == i2);
         return { languages: filteredLanguages };
       }
       async getSupportedVoices() {
@@ -4028,11 +4042,11 @@ async function refreshRuVoice() {
       const list2 = res.voices || [];
       let best2 = -1;
       let bestScore2 = -1;
-      list2.forEach((v, i) => {
+      list2.forEach((v, i2) => {
         const sc = scoreRuVoice(v);
         if (sc > bestScore2) {
           bestScore2 = sc;
-          best2 = i;
+          best2 = i2;
         }
       });
       _nativeVoiceIdx = best2;
@@ -4243,7 +4257,7 @@ function assessRouteQuality(route) {
   const totalM = geom.s[geom.n - 1] || 0;
   if (totalM < 500) return RouteQuality.OK;
   let segSum = 0;
-  for (let i = 1; i < geom.n; i++) segSum += geom.s[i] - geom.s[i - 1];
+  for (let i2 = 1; i2 < geom.n; i2++) segSum += geom.s[i2] - geom.s[i2 - 1];
   const avgSeg = segSum / Math.max(1, geom.n - 1);
   const maneuvers = geom.maneuvers?.length || 0;
   const perKm = totalM > 0 ? maneuvers / totalM * 1e3 : 0;
@@ -4452,11 +4466,11 @@ function bboxOverlap(a, b, pad = 4e-4) {
 }
 function distPointToWayPolyline(point, geom) {
   let best = Infinity;
-  for (let i = 0; i < geom.length - 1; i++) {
+  for (let i2 = 0; i2 < geom.length - 1; i2++) {
     const d = distToSegment(
       point,
-      { lat: geom[i].lat, lon: geom[i].lon },
-      { lat: geom[i + 1].lat, lon: geom[i + 1].lon }
+      { lat: geom[i2].lat, lon: geom[i2].lon },
+      { lat: geom[i2 + 1].lat, lon: geom[i2 + 1].lon }
     );
     if (d < best) best = d;
   }
@@ -4510,21 +4524,21 @@ out geom;`;
     return;
   }
   const urbanPending = /* @__PURE__ */ new Map();
-  for (let i = 0; i < n; i++) {
-    const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
-    const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
+  for (let i2 = 0; i2 < n; i2++) {
+    const lat = (route.coords[i2][0] + route.coords[i2 + 1][0]) / 2;
+    const lon = (route.coords[i2][1] + route.coords[i2 + 1][1]) / 2;
     const pt = { lat, lon };
     const way = matchWayAtPoint(pt, ways);
     if (way) {
-      highwayTypes[i] = way.highway;
-      wayTags[i] = {
+      highwayTypes[i2] = way.highway;
+      wayTags[i2] = {
         maxspeed: way.maxspeed,
         maxspeedConditional: way.maxspeedConditional
       };
     }
     const uk = urbanCacheKey(lat, lon);
     if (_urbanCache.has(uk)) {
-      urbanSegments[i] = _urbanCache.get(uk);
+      urbanSegments[i2] = _urbanCache.get(uk);
     } else if (!urbanPending.has(uk)) {
       urbanPending.set(uk, checkUrbanZone(lat, lon));
     }
@@ -4533,10 +4547,10 @@ out geom;`;
     const keys = [...urbanPending.keys()];
     const vals = await Promise.all([...urbanPending.values()]);
     const urbanByKey = new Map(keys.map((k, idx) => [k, vals[idx]]));
-    for (let i = 0; i < n; i++) {
-      const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
-      const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
-      urbanSegments[i] = urbanByKey.get(urbanCacheKey(lat, lon)) ?? false;
+    for (let i2 = 0; i2 < n; i2++) {
+      const lat = (route.coords[i2][0] + route.coords[i2 + 1][0]) / 2;
+      const lon = (route.coords[i2][1] + route.coords[i2 + 1][1]) / 2;
+      urbanSegments[i2] = urbanByKey.get(urbanCacheKey(lat, lon)) ?? false;
     }
   }
   route.highwayTypes = highwayTypes;
@@ -4583,15 +4597,15 @@ function resolveSparseSegIdx(snap) {
     let best = 0;
     let bestD = Infinity;
     const c = S.route.coords;
-    for (let i = 0; i < c.length - 1; i++) {
+    for (let i2 = 0; i2 < c.length - 1; i2++) {
       const d = distToSegment(
         pos,
-        { lat: c[i][0], lon: c[i][1] },
-        { lat: c[i + 1][0], lon: c[i + 1][1] }
+        { lat: c[i2][0], lon: c[i2][1] },
+        { lat: c[i2 + 1][0], lon: c[i2 + 1][1] }
       );
       if (d < bestD) {
         bestD = d;
-        best = i;
+        best = i2;
       }
     }
     return best;
@@ -4602,8 +4616,8 @@ function resolveSparseSegIdx(snap) {
   }
   return null;
 }
-function lookupSpeedLimitAtSeg(i, route, userDefault, fallbackMode, now) {
-  const idx = Math.max(0, Math.min(i, route.maxspeeds.length - 1));
+function lookupSpeedLimitAtSeg(i2, route, userDefault, fallbackMode, now) {
+  const idx = Math.max(0, Math.min(i2, route.maxspeeds.length - 1));
   const entry = route.maxspeeds[idx];
   if (entry?.none) return { limit: null, source: "none" };
   const kmh = maxspeedEntryToKmh(entry);
@@ -4635,13 +4649,13 @@ function findNextLimitChange(snap, lookaheadM = SPEED_LIMIT_LOOKAHEAD_M) {
   const curVal = cur.source === "none" ? null : cur.limit;
   const coords = route.coords;
   let dist = 0;
-  for (let i = startIdx + 1; i < route.maxspeeds.length && dist <= lookaheadM; i++) {
+  for (let i2 = startIdx + 1; i2 < route.maxspeeds.length && dist <= lookaheadM; i2++) {
     const segDist = haversine(
-      { lat: coords[i][0], lon: coords[i][1] },
-      { lat: coords[i + 1][0], lon: coords[i + 1][1] }
+      { lat: coords[i2][0], lon: coords[i2][1] },
+      { lat: coords[i2 + 1][0], lon: coords[i2 + 1][1] }
     );
     dist += segDist;
-    const next = getCurrentSpeedLimit({ segIdx: i });
+    const next = getCurrentSpeedLimit({ segIdx: i2 });
     const nextVal = next.source === "none" ? null : next.limit;
     if (!limitsEqual(curVal, nextVal)) {
       const direction = nextVal != null && (curVal == null || nextVal < curVal) ? "down" : "up";
@@ -4817,6 +4831,20 @@ var init_speed_limit = __esm({
 });
 
 // js/route.js
+function auditRouteDrivability(route) {
+  const types = route?.highwayTypes;
+  if (!types?.length) return { ok: true, bad: [], ratio: 0, label: "" };
+  const counts = {};
+  for (const hw of types) {
+    if (!hw || !NON_MOTOR_HIGHWAYS.has(hw)) continue;
+    counts[hw] = (counts[hw] || 0) + 1;
+  }
+  const bad = Object.entries(counts).map(([highway, n]) => ({ highway, n }));
+  const totalBad = bad.reduce((s2, x2) => s2 + x2.n, 0);
+  const ratio = totalBad / types.length;
+  const label = bad.length ? bad.map((x2) => `${x2.highway}\xD7${x2.n}`).join(", ") : "";
+  return { ok: totalBad === 0, bad, ratio, label };
+}
 function getVisibleTurnManeuvers(geom, curS, limit) {
   const maxN = limit || 3;
   const sorted = geom.maneuvers.filter((m) => isSignificantManeuver(m, geom)).sort((a, b) => a.s - b.s);
@@ -4862,7 +4890,6 @@ function attachRouteGeometry(route) {
   delete route._stepSList;
   ensureRouteGeometry(route);
   S.routeQuality = assessRouteQuality(route);
-  S.compassMode = false;
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
@@ -4892,14 +4919,14 @@ function scheduleGeometryBuild(routes, onDone) {
     if (onDone) onDone();
     return;
   }
-  let i = 0;
+  let i2 = 0;
   const step = () => {
-    if (i >= routes.length) {
+    if (i2 >= routes.length) {
       if (onDone) onDone();
       return;
     }
-    ensureRouteGeometry(routes[i]);
-    i++;
+    ensureRouteGeometry(routes[i2]);
+    i2++;
     setTimeout(step, 0);
   };
   setTimeout(step, 50);
@@ -4998,32 +5025,50 @@ async function fetchRouteAlternatives() {
   const j = await r.json();
   return parseRouteResponse(j).map(parseOsrmRoute);
 }
-async function fetchRouteThroughWaypoints(waypoints) {
+async function fetchRouteThroughWaypoints(waypoints, opts = {}) {
   if (!waypoints || waypoints.length < 2) throw new Error("\u041D\u0443\u0436\u043D\u043E \u22652 \u0442\u043E\u0447\u0435\u043A");
   S._usedCache = false;
-  const url = buildRouteRequestUrl(null, null, { waypoints });
+  const tryAlternatives = opts.alternatives ?? waypoints.length === 2;
+  const url = buildRouteRequestUrl(null, null, { waypoints, alternatives: tryAlternatives });
   const r = await fetch(url);
   if (!r.ok) throw new Error("OSRM HTTP " + r.status);
   const j = await r.json();
-  return parseOsrmRoute(parseRouteResponse(j)[0]);
+  const routes = parseRouteResponse(j).map(parseOsrmRoute);
+  if (routes.length === 1) return routes[0];
+  let best = routes[0];
+  let bestScore = Infinity;
+  for (const route of routes) {
+    try {
+      await loadRouteHighwayTypes(route);
+      const audit = auditRouteDrivability(route);
+      const score = audit.ok ? route.distance : route.distance * (1 + audit.ratio * 20);
+      if (score < bestScore) {
+        bestScore = score;
+        best = route;
+      }
+    } catch (e) {
+      if (route.distance < best.distance) best = route;
+    }
+  }
+  return best;
 }
 function buildDirectRouteFromWaypoints(waypoints) {
   if (!waypoints || waypoints.length < 2) throw new Error("\u041D\u0443\u0436\u043D\u043E \u22652 \u0442\u043E\u0447\u0435\u043A");
   const coords = waypoints.map((w) => [w.lat, w.lon]);
   let distance = 0;
-  for (let i = 1; i < waypoints.length; i++) {
-    distance += haversine(waypoints[i - 1], waypoints[i]);
+  for (let i2 = 1; i2 < waypoints.length; i2++) {
+    distance += haversine(waypoints[i2 - 1], waypoints[i2]);
   }
   const duration = distance / (50 / 3.6);
-  const steps = waypoints.map((w, i) => ({
+  const steps = waypoints.map((w, i2) => ({
     lat: w.lat,
     lon: w.lon,
-    type: i === 0 ? "depart" : i === waypoints.length - 1 ? "arrive" : "turn",
+    type: i2 === 0 ? "depart" : i2 === waypoints.length - 1 ? "arrive" : "turn",
     modifier: "",
     name: w.label || "",
-    distance: i > 0 ? haversine(waypoints[i - 1], w) : 0,
-    bearing_before: i > 1 ? bearing(waypoints[i - 2], waypoints[i - 1]) : null,
-    bearing_after: i < waypoints.length - 1 ? bearing(w, waypoints[i + 1]) : null,
+    distance: i2 > 0 ? haversine(waypoints[i2 - 1], w) : 0,
+    bearing_before: i2 > 1 ? bearing(waypoints[i2 - 2], waypoints[i2 - 1]) : null,
+    bearing_after: i2 < waypoints.length - 1 ? bearing(w, waypoints[i2 + 1]) : null,
     highway: "",
     intersections: []
   }));
@@ -5070,9 +5115,9 @@ async function buildRoute(opts = {}) {
     S.route = parseOsrmRoute(parseRouteResponse(j)[0]);
     attachRouteGeometry(S.route);
     if (!reroute) telemetry_default.log("nav", { sub: "route_built" });
-  } catch (err) {
+  } catch (err2) {
     if (!allowCache) {
-      throw err;
+      throw err2;
     }
     const last = loadLastRun();
     if (last && last.route && S.finish && last.finish && haversine(last.finish, S.finish) < 60) {
@@ -5086,9 +5131,9 @@ async function buildRoute(opts = {}) {
     throw new Error("\u041D\u0435\u0442 \u0441\u0435\u0442\u0438 \u0438 \u043D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 \u043A \u044D\u0442\u043E\u0439 \u0442\u043E\u0447\u043A\u0435");
   }
 }
-function classifyRerouteError(err) {
-  const msg = String(err?.message || err || "");
-  if (err instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg)) {
+function classifyRerouteError(err2) {
+  const msg = String(err2?.message || err2 || "");
+  if (err2 instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg)) {
     return "network";
   }
   if (/не найден|no route|NoRoute/i.test(msg)) return "no_route";
@@ -5214,15 +5259,15 @@ function sparseRouteSegIdx(pos) {
   if (!c || c.length < 2 || !pos) return 0;
   let best = 0;
   let bestD = Infinity;
-  for (let i = 0; i < c.length - 1; i++) {
+  for (let i2 = 0; i2 < c.length - 1; i2++) {
     const d = distToSegment(
       pos,
-      { lat: c[i][0], lon: c[i][1] },
-      { lat: c[i + 1][0], lon: c[i + 1][1] }
+      { lat: c[i2][0], lon: c[i2][1] },
+      { lat: c[i2 + 1][0], lon: c[i2 + 1][1] }
     );
     if (d < bestD) {
       bestD = d;
-      best = i;
+      best = i2;
     }
   }
   return best;
@@ -5246,15 +5291,15 @@ function findNearestOnRoute() {
   const c = S.route.coords, n = c.length;
   const scan = (lo2, hi2) => {
     let best2 = { idx: lo2, dist: Infinity };
-    for (let i = lo2; i < hi2; i++) {
+    for (let i2 = lo2; i2 < hi2; i2++) {
       const d = distToSegment(
         pos,
-        { lat: c[i][0], lon: c[i][1] },
-        { lat: c[i + 1][0], lon: c[i + 1][1] }
+        { lat: c[i2][0], lon: c[i2][1] },
+        { lat: c[i2 + 1][0], lon: c[i2 + 1][1] }
       );
       if (d < best2.dist) {
         best2.dist = d;
-        best2.idx = i;
+        best2.idx = i2;
       }
     }
     return best2;
@@ -5271,11 +5316,11 @@ function stepCoordIndex(step) {
   if (step._ci != null) return step._ci;
   const c = S.route.coords;
   let bi = 0, bd = Infinity;
-  for (let i = 0; i < c.length; i++) {
-    const d = haversine({ lat: c[i][0], lon: c[i][1] }, step);
+  for (let i2 = 0; i2 < c.length; i2++) {
+    const d = haversine({ lat: c[i2][0], lon: c[i2][1] }, step);
     if (d < bd) {
       bd = d;
-      bi = i;
+      bi = i2;
     }
   }
   step._ci = bi;
@@ -5297,12 +5342,12 @@ function getCurrentRouteStepAtS(curS) {
   const list = getStepSList(S.route);
   if (!list.length) return null;
   let idx = 0;
-  for (let i = 0; i < list.length; i++) {
-    if (curS + 1 >= list[i].s) idx = i;
+  for (let i2 = 0; i2 < list.length; i2++) {
+    if (curS + 1 >= list[i2].s) idx = i2;
     else break;
   }
-  for (let i = idx; i >= 0; i--) {
-    if (list[i].step.name?.trim()) return list[i].step;
+  for (let i2 = idx; i2 >= 0; i2--) {
+    if (list[i2].step.name?.trim()) return list[i2].step;
   }
   return list[idx]?.step || null;
 }
@@ -5351,10 +5396,10 @@ function getRemainingDistance() {
       { lat: c[near.idx][0], lon: c[near.idx][1] },
       { lat: c[near.idx + 1][0], lon: c[near.idx + 1][1] }
     );
-    for (let i = near.idx + 1; i < c.length - 1; i++) {
+    for (let i2 = near.idx + 1; i2 < c.length - 1; i2++) {
       remaining += haversine(
-        { lat: c[i][0], lon: c[i][1] },
-        { lat: c[i + 1][0], lon: c[i + 1][1] }
+        { lat: c[i2][0], lon: c[i2][1] },
+        { lat: c[i2 + 1][0], lon: c[i2 + 1][1] }
       );
     }
   } else {
@@ -5366,8 +5411,8 @@ function maneuverTurnAngle(step) {
   if (!S.route || !step) return 0;
   const coords = S.route.coords;
   const si = stepCoordIndex(step);
-  const distM = (i, j) => haversine(
-    { lat: coords[i][0], lon: coords[i][1] },
+  const distM = (i2, j) => haversine(
+    { lat: coords[i2][0], lon: coords[i2][1] },
     { lat: coords[j][0], lon: coords[j][1] }
   );
   let bi = si, ai = si;
@@ -5392,7 +5437,7 @@ function maneuverTurnAngle(step) {
   );
   return (bOut - bIn + 540) % 360 - 180;
 }
-var _nearMemoPos, _nearMemoVal, _nearIdx;
+var NON_MOTOR_HIGHWAYS, _nearMemoPos, _nearMemoVal, _nearIdx;
 var init_route = __esm({
   "js/route.js"() {
     init_state();
@@ -5412,6 +5457,16 @@ var init_route = __esm({
     init_maneuver_filter();
     init_route_quality();
     init_speed_limit();
+    NON_MOTOR_HIGHWAYS = /* @__PURE__ */ new Set([
+      "footway",
+      "pedestrian",
+      "steps",
+      "path",
+      "cycleway",
+      "bridleway",
+      "corridor",
+      "elevator"
+    ]);
     _nearMemoPos = null;
     _nearMemoVal = null;
     _nearIdx = 0;
@@ -5440,12 +5495,12 @@ function getRoundaboutPairs(route) {
   if (_pairsCache && _pairsRouteId === key) return _pairsCache;
   const pairs = [];
   const steps = route.steps;
-  for (let i = 0; i < steps.length; i++) {
-    const st = steps[i];
+  for (let i2 = 0; i2 < steps.length; i2++) {
+    const st = steps[i2];
     if (st.type !== "roundabout" && st.type !== "rotary") continue;
     let exitSt = null;
     let exitIdx = -1;
-    for (let j = i + 1; j < steps.length; j++) {
+    for (let j = i2 + 1; j < steps.length; j++) {
       if (steps[j].type === "exit roundabout") {
         exitSt = steps[j];
         exitIdx = j;
@@ -5457,7 +5512,7 @@ function getRoundaboutPairs(route) {
     const exitCi = exitSt ? stepCoordIndex(exitSt) : enterCi;
     const exitNum = st.exit != null && st.exit > 0 ? st.exit : exitSt?.exit != null && exitSt.exit > 0 ? exitSt.exit : null;
     pairs.push({
-      enterIdx: i,
+      enterIdx: i2,
       exitIdx,
       enterStep: st,
       exitStep: exitSt,
@@ -5488,16 +5543,16 @@ function estimateRoundaboutRadius(route, enterCi, exitCi) {
   let lat = 0;
   let lon = 0;
   const n = hi - lo + 1;
-  for (let i = lo; i <= hi; i++) {
-    lat += c[i][0];
-    lon += c[i][1];
+  for (let i2 = lo; i2 <= hi; i2++) {
+    lat += c[i2][0];
+    lon += c[i2][1];
   }
   lat /= n;
   lon /= n;
   const center = { lat, lon };
   let maxD = 0;
-  for (let i = lo; i <= hi; i++) {
-    maxD = Math.max(maxD, haversine(center, { lat: c[i][0], lon: c[i][1] }));
+  for (let i2 = lo; i2 <= hi; i2++) {
+    maxD = Math.max(maxD, haversine(center, { lat: c[i2][0], lon: c[i2][1] }));
   }
   return maxD;
 }
@@ -5580,9 +5635,9 @@ function extractLaneHint(step) {
     const valid = lanes.filter((l) => l.valid);
     if (!valid.length) continue;
     const inds = valid.flatMap((l) => l.indications || []);
-    if (inds.some((i) => String(i).includes("left"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u043B\u0435\u0432\u0443\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
-    if (inds.some((i) => String(i).includes("right"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u043F\u0440\u0430\u0432\u0443\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
-    if (inds.some((i) => String(i).includes("straight"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u0441\u0440\u0435\u0434\u043D\u044E\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
+    if (inds.some((i2) => String(i2).includes("left"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u043B\u0435\u0432\u0443\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
+    if (inds.some((i2) => String(i2).includes("right"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u043F\u0440\u0430\u0432\u0443\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
+    if (inds.some((i2) => String(i2).includes("straight"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u0441\u0440\u0435\u0434\u043D\u044E\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
   }
   return null;
 }
@@ -5632,9 +5687,9 @@ function arcPath(cx, cy, r, startDeg, endDeg) {
   const sweep = endDeg > startDeg ? 1 : 0;
   return "M" + s2.x.toFixed(1) + "," + s2.y.toFixed(1) + " A" + r + "," + r + " 0 " + large + " " + sweep + " " + e.x.toFixed(1) + "," + e.y.toFixed(1);
 }
-function arrowHead(x, y, angleDeg, len, color, sw) {
+function arrowHead(x2, y, angleDeg, len, color, sw) {
   const a = deg2rad(angleDeg);
-  const hx = x + len * Math.sin(a);
+  const hx = x2 + len * Math.sin(a);
   const hy = y - len * Math.cos(a);
   const wing = len * 0.55;
   const a1 = a + deg2rad(150);
@@ -5643,7 +5698,7 @@ function arrowHead(x, y, angleDeg, len, color, sw) {
   const w1y = hy - wing * Math.cos(a1);
   const w2x = hx + wing * Math.sin(a2);
   const w2y = hy - wing * Math.cos(a2);
-  return '<line x1="' + x.toFixed(1) + '" y1="' + y.toFixed(1) + '" x2="' + hx.toFixed(1) + '" y2="' + hy.toFixed(1) + '" stroke="' + color + '" stroke-width="' + sw + '" stroke-linecap="round"/><polygon points="' + hx.toFixed(1) + "," + hy.toFixed(1) + " " + w1x.toFixed(1) + "," + w1y.toFixed(1) + " " + w2x.toFixed(1) + "," + w2y.toFixed(1) + '" fill="' + color + '"/>';
+  return '<line x1="' + x2.toFixed(1) + '" y1="' + y.toFixed(1) + '" x2="' + hx.toFixed(1) + '" y2="' + hy.toFixed(1) + '" stroke="' + color + '" stroke-width="' + sw + '" stroke-linecap="round"/><polygon points="' + hx.toFixed(1) + "," + hy.toFixed(1) + " " + w1x.toFixed(1) + "," + w1y.toFixed(1) + " " + w2x.toFixed(1) + "," + w2y.toFixed(1) + '" fill="' + color + '"/>';
 }
 function ghostExitAngles(exitN, activeDiff) {
   if (!exitN || exitN < 2) return [];
@@ -5830,6 +5885,25 @@ function resetRouteSnap(opts) {
     _disp.inited = true;
   }
 }
+function primeRouteSnapFromDist(distM) {
+  const geom = S.route?.geometry;
+  if (!geom || geom.n < 2) return;
+  const total = geom.s[geom.n - 1];
+  const s2 = Math.max(0, Math.min(total, distM));
+  const p = interpolateAtS(geom, s2);
+  const gps = S.gps;
+  const lateral = gps ? haversine(gps, p) : 0;
+  const segIdx = findSegAtS(geom, s2);
+  const tangent = avgTangentDeg(geom, s2, 20);
+  if (_snap) {
+    _snap = { ..._snap, s: s2, segIdx, lat: p.lat, lon: p.lon, lateral, tangent };
+  } else {
+    _snap = { s: s2, segIdx, lat: p.lat, lon: p.lon, lateral, tangent, confidence: 0.85 };
+    _disp.s = s2;
+    _disp.inited = true;
+  }
+  _prevFixPos = gps ? { lat: gps.lat, lon: gps.lon } : _prevFixPos;
+}
 function destPoint2(from, brgDeg, distM) {
   const r = Math.PI / 180;
   const br = brgDeg * r;
@@ -5901,10 +5975,10 @@ function densifyCoords(coords, stepM) {
   if (!coords || coords.length < 2) return { lat, lon };
   const first = { lat: coords[0][0], lon: coords[0][1] };
   pushUnique(lat, lon, first.lat, first.lon);
-  for (let i = 0; i < coords.length - 1; i++) {
-    const B = { lat: coords[i][0], lon: coords[i][1] };
-    const C = { lat: coords[i + 1][0], lon: coords[i + 1][1] };
-    const A = i > 0 ? { lat: coords[i - 1][0], lon: coords[i - 1][1] } : null;
+  for (let i2 = 0; i2 < coords.length - 1; i2++) {
+    const B = { lat: coords[i2][0], lon: coords[i2][1] };
+    const C = { lat: coords[i2 + 1][0], lon: coords[i2 + 1][1] };
+    const A = i2 > 0 ? { lat: coords[i2 - 1][0], lon: coords[i2 - 1][1] } : null;
     let segStart = B;
     if (A) {
       const arc = bezierCorner(A, B, C);
@@ -5924,10 +5998,10 @@ function densifyCoords(coords, stepM) {
 function buildArcLength(lat, lon) {
   const n = lat.length;
   const s2 = new Float64Array(n);
-  for (let i = 1; i < n; i++) {
-    s2[i] = s2[i - 1] + haversine(
-      { lat: lat[i - 1], lon: lon[i - 1] },
-      { lat: lat[i], lon: lon[i] }
+  for (let i2 = 1; i2 < n; i2++) {
+    s2[i2] = s2[i2 - 1] + haversine(
+      { lat: lat[i2 - 1], lon: lon[i2 - 1] },
+      { lat: lat[i2], lon: lon[i2] }
     );
   }
   return s2;
@@ -5940,16 +6014,16 @@ function findSForLatLon(geom, lat, lon) {
   const gps = { lat, lon };
   let bestS = 0;
   let bestD = Infinity;
-  for (let i = 0; i < geom.n - 1; i++) {
+  for (let i2 = 0; i2 < geom.n - 1; i2++) {
     const proj = projectOnSegment(
       gps,
-      geom.lat[i],
-      geom.lon[i],
-      geom.lat[i + 1],
-      geom.lon[i + 1]
+      geom.lat[i2],
+      geom.lon[i2],
+      geom.lat[i2 + 1],
+      geom.lon[i2 + 1]
     );
-    const segLen = geom.s[i + 1] - geom.s[i];
-    const s2 = geom.s[i] + proj.t * segLen;
+    const segLen = geom.s[i2 + 1] - geom.s[i2];
+    const s2 = geom.s[i2] + proj.t * segLen;
     if (proj.lateral < bestD) {
       bestD = proj.lateral;
       bestS = s2;
@@ -5973,10 +6047,10 @@ function buildManeuvers(steps, sparseCoords, geom) {
 }
 function denseStepForCoords(coords) {
   let total = 0;
-  for (let i = 0; i < coords.length - 1; i++) {
+  for (let i2 = 0; i2 < coords.length - 1; i2++) {
     total += haversine(
-      { lat: coords[i][0], lon: coords[i][1] },
-      { lat: coords[i + 1][0], lon: coords[i + 1][1] }
+      { lat: coords[i2][0], lon: coords[i2][1] },
+      { lat: coords[i2 + 1][0], lon: coords[i2 + 1][1] }
     );
   }
   if (total > 12e4) return 8;
@@ -6024,13 +6098,13 @@ function interpolateAtS(geom, s2) {
   if (s2 <= 0) return { lat: geom.lat[0], lon: geom.lon[0] };
   const total = geom.s[geom.n - 1];
   if (s2 >= total) return { lat: geom.lat[geom.n - 1], lon: geom.lon[geom.n - 1] };
-  const i = findSegAtS(geom, s2);
-  const s0 = geom.s[i];
-  const s1 = geom.s[i + 1];
+  const i2 = findSegAtS(geom, s2);
+  const s0 = geom.s[i2];
+  const s1 = geom.s[i2 + 1];
   const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
   return {
-    lat: geom.lat[i] + t * (geom.lat[i + 1] - geom.lat[i]),
-    lon: geom.lon[i] + t * (geom.lon[i + 1] - geom.lon[i])
+    lat: geom.lat[i2] + t * (geom.lat[i2 + 1] - geom.lat[i2]),
+    lon: geom.lon[i2] + t * (geom.lon[i2 + 1] - geom.lon[i2])
   };
 }
 function turnAngleAtS(geom, s2) {
@@ -6046,10 +6120,10 @@ function turnAngleAtS(geom, s2) {
   const bOut = bearing(p1, p2);
   return (bOut - bIn + 540) % 360 - 180;
 }
-function segmentBearing(geom, i) {
+function segmentBearing(geom, i2) {
   return bearing(
-    { lat: geom.lat[i], lon: geom.lon[i] },
-    { lat: geom.lat[i + 1], lon: geom.lon[i + 1] }
+    { lat: geom.lat[i2], lon: geom.lon[i2] },
+    { lat: geom.lat[i2 + 1], lon: geom.lon[i2 + 1] }
   );
 }
 function projectOnSegment(gps, lat0, lon0, lat1, lon1) {
@@ -6107,21 +6181,21 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx) {
   const prevS = ctx?.prevS ?? 0;
   const skipJump = ctx?.skipJumpPenalty ?? false;
   const dt = ctx?.dt ?? 1;
-  for (let i = i0; i < geom.n - 1; i++) {
-    if (geom.s[i] > sMax) break;
+  for (let i2 = i0; i2 < geom.n - 1; i2++) {
+    if (geom.s[i2] > sMax) break;
     const proj = projectOnSegment(
       gps,
-      geom.lat[i],
-      geom.lon[i],
-      geom.lat[i + 1],
-      geom.lon[i + 1]
+      geom.lat[i2],
+      geom.lon[i2],
+      geom.lat[i2 + 1],
+      geom.lon[i2 + 1]
     );
-    const segLen = geom.s[i + 1] - geom.s[i];
-    const s2 = geom.s[i] + proj.t * segLen;
+    const segLen = geom.s[i2 + 1] - geom.s[i2];
+    const s2 = geom.s[i2] + proj.t * segLen;
     if (s2 < sMin - 1 || s2 > sMax + 1) continue;
-    const tangent = segmentBearing(geom, i);
+    const tangent = segmentBearing(geom, i2);
     const dot = headingDot(tangent, gpsHdg);
-    if (requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, i)) continue;
+    if (requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, i2)) continue;
     if (requireDir && dot < SNAP_MIN_DOT) continue;
     if (requireDir && spd > 1 && ctx?.prevPos) {
       const moveBrg = bearing(ctx.prevPos, gps);
@@ -6136,7 +6210,7 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx) {
     if (!best || score < best.score) {
       best = {
         s: s2,
-        segIdx: i,
+        segIdx: i2,
         lat: proj.lat,
         lon: proj.lon,
         lateral: proj.lateral,
@@ -6350,18 +6424,18 @@ function avgTangentDeg(geom, s2, windowM) {
   let vx = 0;
   let vz = 0;
   const i0 = findSegAtS(geom, s2);
-  for (let i = i0; i < geom.n - 1 && geom.s[i] < end; i++) {
+  for (let i2 = i0; i2 < geom.n - 1 && geom.s[i2] < end; i2++) {
     const r = Math.PI / 180;
-    const midLat = (geom.lat[i] + geom.lat[i + 1]) / 2;
-    const dLon = (geom.lon[i + 1] - geom.lon[i]) * Math.cos(midLat * r) * 111320;
-    const dLat = (geom.lat[i + 1] - geom.lat[i]) * 110540;
+    const midLat = (geom.lat[i2] + geom.lat[i2 + 1]) / 2;
+    const dLon = (geom.lon[i2 + 1] - geom.lon[i2]) * Math.cos(midLat * r) * 111320;
+    const dLat = (geom.lat[i2 + 1] - geom.lat[i2]) * 110540;
     const len = Math.hypot(dLon, dLat) || 1;
     vx += dLon / len;
     vz += dLat / len;
   }
   if (vx === 0 && vz === 0) {
-    const i = findSegAtS(geom, s2);
-    return segmentBearing(geom, Math.min(i, geom.n - 2));
+    const i2 = findSegAtS(geom, s2);
+    return segmentBearing(geom, Math.min(i2, geom.n - 2));
   }
   return (Math.atan2(vx, vz) * 180 / Math.PI + 360) % 360;
 }
@@ -6420,11 +6494,11 @@ function getCamHeadingRad() {
 }
 function interpolateElevAtS(geom, s2) {
   if (!geom.elevReady || !geom.elev.length) return 0;
-  const i = findSegAtS(geom, s2);
-  const s0 = geom.s[i];
-  const s1 = geom.s[i + 1];
+  const i2 = findSegAtS(geom, s2);
+  const s0 = geom.s[i2];
+  const s1 = geom.s[i2 + 1];
   const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
-  return geom.elev[i] + t * (geom.elev[i + 1] - geom.elev[i]);
+  return geom.elev[i2] + t * (geom.elev[i2 + 1] - geom.elev[i2]);
 }
 function meterScale(lat) {
   const r = Math.PI / 180;
@@ -6512,11 +6586,11 @@ function computeRibbonSectionsCam(geom, snap, maxDist, halfW, headingRad) {
   const sections = [];
   let prevNx = null;
   let prevNz = null;
-  for (let i = 0; i < samples.length; i++) {
-    const cur = samples[i];
+  for (let i2 = 0; i2 < samples.length; i2++) {
+    const cur = samples[i2];
     if (cur.z < 0.12) continue;
-    const i0 = Math.max(0, i - 1);
-    const i1 = Math.min(samples.length - 1, i + 1);
+    const i0 = Math.max(0, i2 - 1);
+    const i1 = Math.min(samples.length - 1, i2 + 1);
     let tx2 = samples[i1].x - samples[i0].x;
     let tz = samples[i1].z - samples[i0].z;
     const tl = Math.hypot(tx2, tz);
@@ -6568,18 +6642,18 @@ function worldToCamXZ(lat, lon, snap, headingRad) {
 function projectPointToRoute(geom, point) {
   if (!geom || geom.n < 2 || !point) return null;
   let best = null;
-  for (let i = 0; i < geom.n - 1; i++) {
+  for (let i2 = 0; i2 < geom.n - 1; i2++) {
     const proj = projectOnSegment(
       point,
-      geom.lat[i],
-      geom.lon[i],
-      geom.lat[i + 1],
-      geom.lon[i + 1]
+      geom.lat[i2],
+      geom.lon[i2],
+      geom.lat[i2 + 1],
+      geom.lon[i2 + 1]
     );
-    const segLen = geom.s[i + 1] - geom.s[i];
-    const s2 = geom.s[i] + proj.t * segLen;
+    const segLen = geom.s[i2 + 1] - geom.s[i2];
+    const s2 = geom.s[i2] + proj.t * segLen;
     if (!best || proj.lateral < best.lateral) {
-      best = { s: s2, segIdx: i, lateral: proj.lateral, lat: proj.lat, lon: proj.lon };
+      best = { s: s2, segIdx: i2, lateral: proj.lateral, lat: proj.lat, lon: proj.lon };
     }
   }
   return best;
@@ -6595,9 +6669,9 @@ function latLngsSliceByS(geom, sFrom, sTo) {
   out.push([p0.lat, p0.lon]);
   const i0 = findSegAtS(geom, a);
   const i1 = findSegAtS(geom, b);
-  for (let i = i0 + 1; i <= i1 && i < geom.n; i++) {
-    if (geom.s[i] > a + 0.01 && geom.s[i] < b - 0.01) {
-      out.push([geom.lat[i], geom.lon[i]]);
+  for (let i2 = i0 + 1; i2 <= i1 && i2 < geom.n; i2++) {
+    if (geom.s[i2] > a + 0.01 && geom.s[i2] < b - 0.01) {
+      out.push([geom.lat[i2], geom.lon[i2]]);
     }
   }
   const p1 = interpolateAtS(geom, b);
@@ -6610,7 +6684,7 @@ function latLngsSliceByS(geom, sFrom, sTo) {
 function geometryToLatLngs(geom) {
   if (!geom) return [];
   const out = [];
-  for (let i = 0; i < geom.n; i++) out.push([geom.lat[i], geom.lon[i]]);
+  for (let i2 = 0; i2 < geom.n; i2++) out.push([geom.lat[i2], geom.lon[i2]]);
   return out;
 }
 function remainingDistanceS(geom, snap) {
@@ -6657,11 +6731,11 @@ var require_leaflet_src = __commonJS({
       "use strict";
       var version = "1.9.4";
       function extend(dest) {
-        var i, j, len, src;
+        var i2, j, len, src;
         for (j = 1, len = arguments.length; j < len; j++) {
           src = arguments[j];
-          for (i in src) {
-            dest[i] = src[i];
+          for (i2 in src) {
+            dest[i2] = src[i2];
           }
         }
         return dest;
@@ -6711,9 +6785,9 @@ var require_leaflet_src = __commonJS({
         };
         return wrapperFn;
       }
-      function wrapNum(x, range, includeMax) {
+      function wrapNum(x2, range, includeMax) {
         var max = range[1], min = range[0], d = max - min;
-        return x === max && includeMax ? x : ((x - min) % d + d) % d + min;
+        return x2 === max && includeMax ? x2 : ((x2 - min) % d + d) % d + min;
       }
       function falseFn() {
         return false;
@@ -6735,15 +6809,15 @@ var require_leaflet_src = __commonJS({
         if (!Object.prototype.hasOwnProperty.call(obj, "options")) {
           obj.options = obj.options ? create$2(obj.options) : {};
         }
-        for (var i in options) {
-          obj.options[i] = options[i];
+        for (var i2 in options) {
+          obj.options[i2] = options[i2];
         }
         return obj.options;
       }
       function getParamString(obj, existingUrl, uppercase) {
         var params = [];
-        for (var i in obj) {
-          params.push(encodeURIComponent(uppercase ? i.toUpperCase() : i) + "=" + encodeURIComponent(obj[i]));
+        for (var i2 in obj) {
+          params.push(encodeURIComponent(uppercase ? i2.toUpperCase() : i2) + "=" + encodeURIComponent(obj[i2]));
         }
         return (!existingUrl || existingUrl.indexOf("?") === -1 ? "?" : "&") + params.join("&");
       }
@@ -6763,9 +6837,9 @@ var require_leaflet_src = __commonJS({
         return Object.prototype.toString.call(obj) === "[object Array]";
       };
       function indexOf(array, el) {
-        for (var i = 0; i < array.length; i++) {
-          if (array[i] === el) {
-            return i;
+        for (var i2 = 0; i2 < array.length; i2++) {
+          if (array[i2] === el) {
+            return i2;
           }
         }
         return -1;
@@ -6836,9 +6910,9 @@ var require_leaflet_src = __commonJS({
         var proto = create$2(parentProto);
         proto.constructor = NewClass;
         NewClass.prototype = proto;
-        for (var i in this) {
-          if (Object.prototype.hasOwnProperty.call(this, i) && i !== "prototype" && i !== "__super__") {
-            NewClass[i] = this[i];
+        for (var i2 in this) {
+          if (Object.prototype.hasOwnProperty.call(this, i2) && i2 !== "prototype" && i2 !== "__super__") {
+            NewClass[i2] = this[i2];
           }
         }
         if (props.statics) {
@@ -6864,8 +6938,8 @@ var require_leaflet_src = __commonJS({
             parentProto.callInitHooks.call(this);
           }
           this._initHooksCalled = true;
-          for (var i2 = 0, len = proto._initHooks.length; i2 < len; i2++) {
-            proto._initHooks[i2].call(this);
+          for (var i3 = 0, len = proto._initHooks.length; i3 < len; i3++) {
+            proto._initHooks[i3].call(this);
           }
         };
         return NewClass;
@@ -6897,8 +6971,8 @@ var require_leaflet_src = __commonJS({
           return;
         }
         includes = isArray(includes) ? includes : [includes];
-        for (var i = 0; i < includes.length; i++) {
-          if (includes[i] === L.Mixin.Events) {
+        for (var i2 = 0; i2 < includes.length; i2++) {
+          if (includes[i2] === L.Mixin.Events) {
             console.warn("Deprecated include of L.Mixin.Events: this property will be removed in future releases, please inherit from L.Evented instead.", new Error().stack);
           }
         }
@@ -6918,8 +6992,8 @@ var require_leaflet_src = __commonJS({
             }
           } else {
             types = splitWords(types);
-            for (var i = 0, len = types.length; i < len; i++) {
-              this._on(types[i], fn, context);
+            for (var i2 = 0, len = types.length; i2 < len; i2++) {
+              this._on(types[i2], fn, context);
             }
           }
           return this;
@@ -6945,11 +7019,11 @@ var require_leaflet_src = __commonJS({
           } else {
             types = splitWords(types);
             var removeAll = arguments.length === 1;
-            for (var i = 0, len = types.length; i < len; i++) {
+            for (var i2 = 0, len = types.length; i2 < len; i2++) {
               if (removeAll) {
-                this._off(types[i]);
+                this._off(types[i2]);
               } else {
-                this._off(types[i], fn, context);
+                this._off(types[i2], fn, context);
               }
             }
           }
@@ -6976,7 +7050,7 @@ var require_leaflet_src = __commonJS({
           this._events[type].push(newListener);
         },
         _off: function(type, fn, context) {
-          var listeners, i, len;
+          var listeners, i2, len;
           if (!this._events) {
             return;
           }
@@ -6986,8 +7060,8 @@ var require_leaflet_src = __commonJS({
           }
           if (arguments.length === 1) {
             if (this._firingCount) {
-              for (i = 0, len = listeners.length; i < len; i++) {
-                listeners[i].fn = falseFn;
+              for (i2 = 0, len = listeners.length; i2 < len; i2++) {
+                listeners[i2].fn = falseFn;
               }
             }
             delete this._events[type];
@@ -7024,8 +7098,8 @@ var require_leaflet_src = __commonJS({
             var listeners = this._events[type];
             if (listeners) {
               this._firingCount = this._firingCount + 1 || 1;
-              for (var i = 0, len = listeners.length; i < len; i++) {
-                var l = listeners[i];
+              for (var i2 = 0, len = listeners.length; i2 < len; i2++) {
+                var l = listeners[i2];
                 var fn = l.fn;
                 if (l.once) {
                   this.off(type, fn, l.ctx);
@@ -7081,9 +7155,9 @@ var require_leaflet_src = __commonJS({
           if (context === this) {
             context = void 0;
           }
-          for (var i = 0, len = listeners.length; i < len; i++) {
-            if (listeners[i].fn === fn && listeners[i].ctx === context) {
-              return i;
+          for (var i2 = 0, len = listeners.length; i2 < len; i2++) {
+            if (listeners[i2].fn === fn && listeners[i2].ctx === context) {
+              return i2;
             }
           }
           return false;
@@ -7097,8 +7171,8 @@ var require_leaflet_src = __commonJS({
             }
           } else {
             types = splitWords(types);
-            for (var i = 0, len = types.length; i < len; i++) {
-              this._on(types[i], fn, context, true);
+            for (var i2 = 0, len = types.length; i2 < len; i2++) {
+              this._on(types[i2], fn, context, true);
             }
           }
           return this;
@@ -7133,8 +7207,8 @@ var require_leaflet_src = __commonJS({
       Events.fireEvent = Events.fire;
       Events.hasEventListeners = Events.listens;
       var Evented = Class.extend(Events);
-      function Point(x, y, round) {
-        this.x = round ? Math.round(x) : x;
+      function Point(x2, y, round) {
+        this.x = round ? Math.round(x2) : x2;
         this.y = round ? Math.round(y) : y;
       }
       var trunc = Math.trunc || function(v) {
@@ -7244,8 +7318,8 @@ var require_leaflet_src = __commonJS({
         // Returns the cartesian distance between the current and the given points.
         distanceTo: function(point) {
           point = toPoint(point);
-          var x = point.x - this.x, y = point.y - this.y;
-          return Math.sqrt(x * x + y * y);
+          var x2 = point.x - this.x, y = point.y - this.y;
+          return Math.sqrt(x2 * x2 + y * y);
         },
         // @method equals(otherPoint: Point): Boolean
         // Returns `true` if the given point has the same coordinates.
@@ -7265,28 +7339,28 @@ var require_leaflet_src = __commonJS({
           return "Point(" + formatNum(this.x) + ", " + formatNum(this.y) + ")";
         }
       };
-      function toPoint(x, y, round) {
-        if (x instanceof Point) {
-          return x;
+      function toPoint(x2, y, round) {
+        if (x2 instanceof Point) {
+          return x2;
         }
-        if (isArray(x)) {
-          return new Point(x[0], x[1]);
+        if (isArray(x2)) {
+          return new Point(x2[0], x2[1]);
         }
-        if (x === void 0 || x === null) {
-          return x;
+        if (x2 === void 0 || x2 === null) {
+          return x2;
         }
-        if (typeof x === "object" && "x" in x && "y" in x) {
-          return new Point(x.x, x.y);
+        if (typeof x2 === "object" && "x" in x2 && "y" in x2) {
+          return new Point(x2.x, x2.y);
         }
-        return new Point(x, y, round);
+        return new Point(x2, y, round);
       }
       function Bounds(a, b) {
         if (!a) {
           return;
         }
         var points = b ? [a, b] : a;
-        for (var i = 0, len = points.length; i < len; i++) {
-          this.extend(points[i]);
+        for (var i2 = 0, len = points.length; i2 < len; i2++) {
+          this.extend(points[i2]);
         }
       }
       Bounds.prototype = {
@@ -7428,8 +7502,8 @@ var require_leaflet_src = __commonJS({
           return;
         }
         var latlngs = corner2 ? [corner1, corner2] : corner1;
-        for (var i = 0, len = latlngs.length; i < len; i++) {
-          this.extend(latlngs[i]);
+        for (var i2 = 0, len = latlngs.length; i2 < len; i2++) {
+          this.extend(latlngs[i2]);
         }
       }
       LatLngBounds.prototype = {
@@ -7834,9 +7908,9 @@ var require_leaflet_src = __commonJS({
         return document.createElementNS("http://www.w3.org/2000/svg", name);
       }
       function pointsToPath(rings, closed) {
-        var str = "", i, j, len, len2, points, p;
-        for (i = 0, len = rings.length; i < len; i++) {
-          points = rings[i];
+        var str = "", i2, j, len, len2, points, p;
+        for (i2 = 0, len = rings.length; i2 < len; i2++) {
+          points = rings[i2];
           for (j = 0, len2 = points.length; j < len2; j++) {
             p = points[j];
             str += (j ? "L" : "M") + p.x + " " + p.y;
@@ -8013,8 +8087,8 @@ var require_leaflet_src = __commonJS({
           return;
         }
         e.touches = [];
-        for (var i in _pointers) {
-          e.touches.push(_pointers[i]);
+        for (var i2 in _pointers) {
+          e.touches.push(_pointers[i2]);
         }
         e.changedTouches = [e];
         handler(e);
@@ -8026,10 +8100,10 @@ var require_leaflet_src = __commonJS({
         _handlePointer(handler, e);
       }
       function makeDblclick(event) {
-        var newEvent = {}, prop, i;
-        for (i in event) {
-          prop = event[i];
-          newEvent[i] = prop && prop.bind ? prop.bind(event) : prop;
+        var newEvent = {}, prop, i2;
+        for (i2 in event) {
+          prop = event[i2];
+          newEvent[i2] = prop && prop.bind ? prop.bind(event) : prop;
         }
         event = newEvent;
         newEvent.type = "dblclick";
@@ -8138,8 +8212,8 @@ var require_leaflet_src = __commonJS({
       function addClass(el, name) {
         if (el.classList !== void 0) {
           var classes = splitWords(name);
-          for (var i = 0, len = classes.length; i < len; i++) {
-            el.classList.add(classes[i]);
+          for (var i2 = 0, len = classes.length; i2 < len; i2++) {
+            el.classList.add(classes[i2]);
           }
         } else if (!hasClass(el, name)) {
           var className = getClass(el);
@@ -8192,9 +8266,9 @@ var require_leaflet_src = __commonJS({
       }
       function testProp(props) {
         var style2 = document.documentElement.style;
-        for (var i = 0; i < props.length; i++) {
-          if (props[i] in style2) {
-            return props[i];
+        for (var i2 = 0; i2 < props.length; i2++) {
+          if (props[i2] in style2) {
+            return props[i2];
           }
         }
         return false;
@@ -8328,8 +8402,8 @@ var require_leaflet_src = __commonJS({
           }
         } else {
           types = splitWords(types);
-          for (var i = 0, len = types.length; i < len; i++) {
-            addOne(obj, types[i], fn, context);
+          for (var i2 = 0, len = types.length; i2 < len; i2++) {
+            addOne(obj, types[i2], fn, context);
           }
         }
         return this;
@@ -8350,8 +8424,8 @@ var require_leaflet_src = __commonJS({
               return indexOf(types, type2) !== -1;
             });
           } else {
-            for (var i = 0, len = types.length; i < len; i++) {
-              removeOne(obj, types[i], fn, context);
+            for (var i2 = 0, len = types.length; i2 < len; i2++) {
+              removeOne(obj, types[i2], fn, context);
             }
           }
         }
@@ -8513,7 +8587,7 @@ var require_leaflet_src = __commonJS({
           while (related && related !== el) {
             related = related.parentNode;
           }
-        } catch (err) {
+        } catch (err2) {
           return false;
         }
         return related !== el;
@@ -8833,8 +8907,8 @@ var require_leaflet_src = __commonJS({
           targetCenter = toLatLng(targetCenter);
           targetZoom = targetZoom === void 0 ? startZoom : targetZoom;
           var w0 = Math.max(size.x, size.y), w1 = w0 * this.getZoomScale(startZoom, targetZoom), u1 = to.distanceTo(from) || 1, rho = 1.42, rho2 = rho * rho;
-          function r(i) {
-            var s1 = i ? -1 : 1, s2 = i ? w1 : w0, t1 = w1 * w1 - w0 * w0 + s1 * rho2 * rho2 * u1 * u1, b1 = 2 * s2 * rho2 * u1, b = t1 / b1, sq = Math.sqrt(b * b + 1) - b;
+          function r(i2) {
+            var s1 = i2 ? -1 : 1, s2 = i2 ? w1 : w0, t1 = w1 * w1 - w0 * w0 + s1 * rho2 * rho2 * u1 * u1, b1 = 2 * s2 * rho2 * u1, b = t1 / b1, sq = Math.sqrt(b * b + 1) - b;
             var log2 = sq < 1e-9 ? -18 : Math.log(sq);
             return log2;
           }
@@ -9084,9 +9158,9 @@ var require_leaflet_src = __commonJS({
             bounds,
             timestamp: pos.timestamp
           };
-          for (var i in pos.coords) {
-            if (typeof pos.coords[i] === "number") {
-              data[i] = pos.coords[i];
+          for (var i2 in pos.coords) {
+            if (typeof pos.coords[i2] === "number") {
+              data[i2] = pos.coords[i2];
             }
           }
           this.fire("locationfound", data);
@@ -9139,12 +9213,12 @@ var require_leaflet_src = __commonJS({
           if (this._loaded) {
             this.fire("unload");
           }
-          var i;
-          for (i in this._layers) {
-            this._layers[i].remove();
+          var i2;
+          for (i2 in this._layers) {
+            this._layers[i2].remove();
           }
-          for (i in this._panes) {
-            remove(this._panes[i]);
+          for (i2 in this._panes) {
+            remove(this._panes[i2]);
           }
           this._layers = [];
           this._panes = [];
@@ -9578,9 +9652,9 @@ var require_leaflet_src = __commonJS({
           var targets = this._findEventTargets(e, type);
           if (canvasTargets) {
             var filtered = [];
-            for (var i = 0; i < canvasTargets.length; i++) {
-              if (canvasTargets[i].listens(type, true)) {
-                filtered.push(canvasTargets[i]);
+            for (var i2 = 0; i2 < canvasTargets.length; i2++) {
+              if (canvasTargets[i2].listens(type, true)) {
+                filtered.push(canvasTargets[i2]);
               }
             }
             targets = filtered.concat(targets);
@@ -9601,9 +9675,9 @@ var require_leaflet_src = __commonJS({
             data.layerPoint = this.containerPointToLayerPoint(data.containerPoint);
             data.latlng = isMarker ? target.getLatLng() : this.layerPointToLatLng(data.layerPoint);
           }
-          for (i = 0; i < targets.length; i++) {
-            targets[i].fire(type, data, true);
-            if (data.originalEvent._stopped || targets[i].options.bubblingMouseEvents === false && indexOf(this._mouseEvents, type) !== -1) {
+          for (i2 = 0; i2 < targets.length; i2++) {
+            targets[i2].fire(type, data, true);
+            if (data.originalEvent._stopped || targets[i2].options.bubblingMouseEvents === false && indexOf(this._mouseEvents, type) !== -1) {
               return;
             }
           }
@@ -9613,8 +9687,8 @@ var require_leaflet_src = __commonJS({
           return obj.dragging && obj.dragging.moved() || this.boxZoom && this.boxZoom.moved();
         },
         _clearHandlers: function() {
-          for (var i = 0, len = this._handlers.length; i < len; i++) {
-            this._handlers[i].disable();
+          for (var i2 = 0, len = this._handlers.length; i2 < len; i2++) {
+            this._handlers[i2].disable();
           }
         },
         // @section Other Methods
@@ -9909,8 +9983,8 @@ var require_leaflet_src = __commonJS({
           createCorner("bottom", "right");
         },
         _clearControlPos: function() {
-          for (var i in this._controlCorners) {
-            remove(this._controlCorners[i]);
+          for (var i2 in this._controlCorners) {
+            remove(this._controlCorners[i2]);
           }
           remove(this._controlContainer);
           delete this._controlCorners;
@@ -9952,11 +10026,11 @@ var require_leaflet_src = __commonJS({
           this._lastZIndex = 0;
           this._handlingClick = false;
           this._preventClick = false;
-          for (var i in baseLayers) {
-            this._addLayer(baseLayers[i], i);
+          for (var i2 in baseLayers) {
+            this._addLayer(baseLayers[i2], i2);
           }
-          for (i in overlays) {
-            this._addLayer(overlays[i], i, true);
+          for (i2 in overlays) {
+            this._addLayer(overlays[i2], i2, true);
           }
         },
         onAdd: function(map) {
@@ -9964,8 +10038,8 @@ var require_leaflet_src = __commonJS({
           this._update();
           this._map = map;
           map.on("zoomend", this._checkDisabledLayers, this);
-          for (var i = 0; i < this._layers.length; i++) {
-            this._layers[i].layer.on("add remove", this._onLayerChange, this);
+          for (var i2 = 0; i2 < this._layers.length; i2++) {
+            this._layers[i2].layer.on("add remove", this._onLayerChange, this);
           }
           return this._container;
         },
@@ -9975,8 +10049,8 @@ var require_leaflet_src = __commonJS({
         },
         onRemove: function() {
           this._map.off("zoomend", this._checkDisabledLayers, this);
-          for (var i = 0; i < this._layers.length; i++) {
-            this._layers[i].layer.off("add remove", this._onLayerChange, this);
+          for (var i2 = 0; i2 < this._layers.length; i2++) {
+            this._layers[i2].layer.off("add remove", this._onLayerChange, this);
           }
         },
         // @method addBaseLayer(layer: Layer, name: String): this
@@ -10060,9 +10134,9 @@ var require_leaflet_src = __commonJS({
           container.appendChild(section);
         },
         _getLayer: function(id) {
-          for (var i = 0; i < this._layers.length; i++) {
-            if (this._layers[i] && stamp(this._layers[i].layer) === id) {
-              return this._layers[i];
+          for (var i2 = 0; i2 < this._layers.length; i2++) {
+            if (this._layers[i2] && stamp(this._layers[i2].layer) === id) {
+              return this._layers[i2];
             }
           }
         },
@@ -10093,9 +10167,9 @@ var require_leaflet_src = __commonJS({
           empty(this._baseLayersList);
           empty(this._overlaysList);
           this._layerControlInputs = [];
-          var baseLayersPresent, overlaysPresent, i, obj, baseLayersCount = 0;
-          for (i = 0; i < this._layers.length; i++) {
-            obj = this._layers[i];
+          var baseLayersPresent, overlaysPresent, i2, obj, baseLayersCount = 0;
+          for (i2 = 0; i2 < this._layers.length; i2++) {
+            obj = this._layers[i2];
             this._addItem(obj);
             overlaysPresent = overlaysPresent || obj.overlay;
             baseLayersPresent = baseLayersPresent || !obj.overlay;
@@ -10156,8 +10230,8 @@ var require_leaflet_src = __commonJS({
           var inputs = this._layerControlInputs, input, layer;
           var addedLayers = [], removedLayers = [];
           this._handlingClick = true;
-          for (var i = inputs.length - 1; i >= 0; i--) {
-            input = inputs[i];
+          for (var i2 = inputs.length - 1; i2 >= 0; i2--) {
+            input = inputs[i2];
             layer = this._getLayer(input.layerId).layer;
             if (input.checked) {
               addedLayers.push(layer);
@@ -10165,14 +10239,14 @@ var require_leaflet_src = __commonJS({
               removedLayers.push(layer);
             }
           }
-          for (i = 0; i < removedLayers.length; i++) {
-            if (this._map.hasLayer(removedLayers[i])) {
-              this._map.removeLayer(removedLayers[i]);
+          for (i2 = 0; i2 < removedLayers.length; i2++) {
+            if (this._map.hasLayer(removedLayers[i2])) {
+              this._map.removeLayer(removedLayers[i2]);
             }
           }
-          for (i = 0; i < addedLayers.length; i++) {
-            if (!this._map.hasLayer(addedLayers[i])) {
-              this._map.addLayer(addedLayers[i]);
+          for (i2 = 0; i2 < addedLayers.length; i2++) {
+            if (!this._map.hasLayer(addedLayers[i2])) {
+              this._map.addLayer(addedLayers[i2]);
             }
           }
           this._handlingClick = false;
@@ -10180,8 +10254,8 @@ var require_leaflet_src = __commonJS({
         },
         _checkDisabledLayers: function() {
           var inputs = this._layerControlInputs, input, layer, zoom2 = this._map.getZoom();
-          for (var i = inputs.length - 1; i >= 0; i--) {
-            input = inputs[i];
+          for (var i2 = inputs.length - 1; i2 >= 0; i2--) {
+            input = inputs[i2];
             layer = this._getLayer(input.layerId).layer;
             input.disabled = layer.options.minZoom !== void 0 && zoom2 < layer.options.minZoom || layer.options.maxZoom !== void 0 && zoom2 > layer.options.maxZoom;
           }
@@ -10406,9 +10480,9 @@ var require_leaflet_src = __commonJS({
           map.attributionControl = this;
           this._container = create$1("div", "leaflet-control-attribution");
           disableClickPropagation(this._container);
-          for (var i in map._layers) {
-            if (map._layers[i].getAttribution) {
-              this.addAttribution(map._layers[i].getAttribution());
+          for (var i2 in map._layers) {
+            if (map._layers[i2].getAttribution) {
+              this.addAttribution(map._layers[i2].getAttribution());
             }
           }
           this._update();
@@ -10463,9 +10537,9 @@ var require_leaflet_src = __commonJS({
             return;
           }
           var attribs = [];
-          for (var i in this._attributions) {
-            if (this._attributions[i]) {
-              attribs.push(i);
+          for (var i2 in this._attributions) {
+            if (this._attributions[i2]) {
+              attribs.push(i2);
             }
           }
           var prefixAndAttribs = [];
@@ -10680,15 +10754,15 @@ var require_leaflet_src = __commonJS({
         }
       });
       function clipPolygon(points, bounds, round) {
-        var clippedPoints, edges = [1, 4, 2, 8], i, j, k, a, b, len, edge2, p;
-        for (i = 0, len = points.length; i < len; i++) {
-          points[i]._code = _getBitCode(points[i], bounds);
+        var clippedPoints, edges = [1, 4, 2, 8], i2, j, k, a, b, len, edge2, p;
+        for (i2 = 0, len = points.length; i2 < len; i2++) {
+          points[i2]._code = _getBitCode(points[i2], bounds);
         }
         for (k = 0; k < 4; k++) {
           edge2 = edges[k];
           clippedPoints = [];
-          for (i = 0, len = points.length, j = len - 1; i < len; j = i++) {
-            a = points[i];
+          for (i2 = 0, len = points.length, j = len - 1; i2 < len; j = i2++) {
+            a = points[i2];
             b = points[j];
             if (!(a._code & edge2)) {
               if (b._code & edge2) {
@@ -10708,7 +10782,7 @@ var require_leaflet_src = __commonJS({
         return points;
       }
       function polygonCenter(latlngs, crs) {
-        var i, j, p1, p2, f2, area, x, y, center;
+        var i2, j, p1, p2, f2, area, x2, y, center;
         if (!latlngs || latlngs.length === 0) {
           throw new Error("latlngs not passed");
         }
@@ -10724,23 +10798,23 @@ var require_leaflet_src = __commonJS({
         }
         var len = latlngs.length;
         var points = [];
-        for (i = 0; i < len; i++) {
-          var latlng = toLatLng(latlngs[i]);
+        for (i2 = 0; i2 < len; i2++) {
+          var latlng = toLatLng(latlngs[i2]);
           points.push(crs.project(toLatLng([latlng.lat - centroidLatLng.lat, latlng.lng - centroidLatLng.lng])));
         }
-        area = x = y = 0;
-        for (i = 0, j = len - 1; i < len; j = i++) {
-          p1 = points[i];
+        area = x2 = y = 0;
+        for (i2 = 0, j = len - 1; i2 < len; j = i2++) {
+          p1 = points[i2];
           p2 = points[j];
           f2 = p1.y * p2.x - p2.y * p1.x;
-          x += (p1.x + p2.x) * f2;
+          x2 += (p1.x + p2.x) * f2;
           y += (p1.y + p2.y) * f2;
           area += f2 * 3;
         }
         if (area === 0) {
           center = points[0];
         } else {
-          center = [x / area, y / area];
+          center = [x2 / area, y / area];
         }
         var latlngCenter = crs.unproject(toPoint(center));
         return toLatLng([latlngCenter.lat + centroidLatLng.lat, latlngCenter.lng + centroidLatLng.lng]);
@@ -10749,8 +10823,8 @@ var require_leaflet_src = __commonJS({
         var latSum = 0;
         var lngSum = 0;
         var len = 0;
-        for (var i = 0; i < coords.length; i++) {
-          var latlng = toLatLng(coords[i]);
+        for (var i2 = 0; i2 < coords.length; i2++) {
+          var latlng = toLatLng(coords[i2]);
           latSum += latlng.lat;
           lngSum += latlng.lng;
           len++;
@@ -10782,20 +10856,20 @@ var require_leaflet_src = __commonJS({
         var len = points.length, ArrayConstructor = typeof Uint8Array !== "undefined" ? Uint8Array : Array, markers = new ArrayConstructor(len);
         markers[0] = markers[len - 1] = 1;
         _simplifyDPStep(points, markers, sqTolerance, 0, len - 1);
-        var i, newPoints = [];
-        for (i = 0; i < len; i++) {
-          if (markers[i]) {
-            newPoints.push(points[i]);
+        var i2, newPoints = [];
+        for (i2 = 0; i2 < len; i2++) {
+          if (markers[i2]) {
+            newPoints.push(points[i2]);
           }
         }
         return newPoints;
       }
       function _simplifyDPStep(points, markers, sqTolerance, first, last) {
-        var maxSqDist = 0, index2, i, sqDist;
-        for (i = first + 1; i <= last - 1; i++) {
-          sqDist = _sqClosestPointOnSegment(points[i], points[first], points[last], true);
+        var maxSqDist = 0, index2, i2, sqDist;
+        for (i2 = first + 1; i2 <= last - 1; i2++) {
+          sqDist = _sqClosestPointOnSegment(points[i2], points[first], points[last], true);
           if (sqDist > maxSqDist) {
-            index2 = i;
+            index2 = i2;
             maxSqDist = sqDist;
           }
         }
@@ -10807,10 +10881,10 @@ var require_leaflet_src = __commonJS({
       }
       function _reducePoints(points, sqTolerance) {
         var reducedPoints = [points[0]];
-        for (var i = 1, prev = 0, len = points.length; i < len; i++) {
-          if (_sqDist(points[i], points[prev]) > sqTolerance) {
-            reducedPoints.push(points[i]);
-            prev = i;
+        for (var i2 = 1, prev = 0, len = points.length; i2 < len; i2++) {
+          if (_sqDist(points[i2], points[prev]) > sqTolerance) {
+            reducedPoints.push(points[i2]);
+            prev = i2;
           }
         }
         if (prev < len - 1) {
@@ -10842,21 +10916,21 @@ var require_leaflet_src = __commonJS({
         }
       }
       function _getEdgeIntersection(a, b, code, bounds, round) {
-        var dx = b.x - a.x, dy = b.y - a.y, min = bounds.min, max = bounds.max, x, y;
+        var dx = b.x - a.x, dy = b.y - a.y, min = bounds.min, max = bounds.max, x2, y;
         if (code & 8) {
-          x = a.x + dx * (max.y - a.y) / dy;
+          x2 = a.x + dx * (max.y - a.y) / dy;
           y = max.y;
         } else if (code & 4) {
-          x = a.x + dx * (min.y - a.y) / dy;
+          x2 = a.x + dx * (min.y - a.y) / dy;
           y = min.y;
         } else if (code & 2) {
-          x = max.x;
+          x2 = max.x;
           y = a.y + dy * (max.x - a.x) / dx;
         } else if (code & 1) {
-          x = min.x;
+          x2 = min.x;
           y = a.y + dy * (min.x - a.x) / dx;
         }
-        return new Point(x, y, round);
+        return new Point(x2, y, round);
       }
       function _getBitCode(p, bounds) {
         var code = 0;
@@ -10877,20 +10951,20 @@ var require_leaflet_src = __commonJS({
         return dx * dx + dy * dy;
       }
       function _sqClosestPointOnSegment(p, p1, p2, sqDist) {
-        var x = p1.x, y = p1.y, dx = p2.x - x, dy = p2.y - y, dot = dx * dx + dy * dy, t;
+        var x2 = p1.x, y = p1.y, dx = p2.x - x2, dy = p2.y - y, dot = dx * dx + dy * dy, t;
         if (dot > 0) {
-          t = ((p.x - x) * dx + (p.y - y) * dy) / dot;
+          t = ((p.x - x2) * dx + (p.y - y) * dy) / dot;
           if (t > 1) {
-            x = p2.x;
+            x2 = p2.x;
             y = p2.y;
           } else if (t > 0) {
-            x += dx * t;
+            x2 += dx * t;
             y += dy * t;
           }
         }
-        dx = p.x - x;
+        dx = p.x - x2;
         dy = p.y - y;
-        return sqDist ? dx * dx + dy * dy : new Point(x, y);
+        return sqDist ? dx * dx + dy * dy : new Point(x2, y);
       }
       function isFlat(latlngs) {
         return !isArray(latlngs[0]) || typeof latlngs[0][0] !== "object" && typeof latlngs[0][0] !== "undefined";
@@ -10900,7 +10974,7 @@ var require_leaflet_src = __commonJS({
         return isFlat(latlngs);
       }
       function polylineCenter(latlngs, crs) {
-        var i, halfDist, segDist, dist, p1, p2, ratio, center;
+        var i2, halfDist, segDist, dist, p1, p2, ratio, center;
         if (!latlngs || latlngs.length === 0) {
           throw new Error("latlngs not passed");
         }
@@ -10916,19 +10990,19 @@ var require_leaflet_src = __commonJS({
         }
         var len = latlngs.length;
         var points = [];
-        for (i = 0; i < len; i++) {
-          var latlng = toLatLng(latlngs[i]);
+        for (i2 = 0; i2 < len; i2++) {
+          var latlng = toLatLng(latlngs[i2]);
           points.push(crs.project(toLatLng([latlng.lat - centroidLatLng.lat, latlng.lng - centroidLatLng.lng])));
         }
-        for (i = 0, halfDist = 0; i < len - 1; i++) {
-          halfDist += points[i].distanceTo(points[i + 1]) / 2;
+        for (i2 = 0, halfDist = 0; i2 < len - 1; i2++) {
+          halfDist += points[i2].distanceTo(points[i2 + 1]) / 2;
         }
         if (halfDist === 0) {
           center = points[0];
         } else {
-          for (i = 0, dist = 0; i < len - 1; i++) {
-            p1 = points[i];
-            p2 = points[i + 1];
+          for (i2 = 0, dist = 0; i2 < len - 1; i2++) {
+            p1 = points[i2];
+            p2 = points[i2 + 1];
             segDist = p1.distanceTo(p2);
             dist += segDist;
             if (dist > halfDist) {
@@ -10978,7 +11052,7 @@ var require_leaflet_src = __commonJS({
         },
         unproject: function(point) {
           var d = 180 / Math.PI, r = this.R, tmp = this.R_MINOR / r, e = Math.sqrt(1 - tmp * tmp), ts = Math.exp(-point.y / r), phi = Math.PI / 2 - 2 * Math.atan(ts);
-          for (var i = 0, dphi = 0.1, con; i < 15 && Math.abs(dphi) > 1e-7; i++) {
+          for (var i2 = 0, dphi = 0.1, con; i2 < 15 && Math.abs(dphi) > 1e-7; i2++) {
             con = e * Math.sin(phi);
             con = Math.pow((1 - con) / (1 + con), e / 2);
             dphi = Math.PI / 2 - 2 * Math.atan(ts * con) - phi;
@@ -11153,15 +11227,15 @@ var require_leaflet_src = __commonJS({
          * ```
          */
         eachLayer: function(method, context) {
-          for (var i in this._layers) {
-            method.call(context, this._layers[i]);
+          for (var i2 in this._layers) {
+            method.call(context, this._layers[i2]);
           }
           return this;
         },
         _addLayers: function(layers2) {
           layers2 = layers2 ? isArray(layers2) ? layers2 : [layers2] : [];
-          for (var i = 0, len = layers2.length; i < len; i++) {
-            this.addLayer(layers2[i]);
+          for (var i2 = 0, len = layers2.length; i2 < len; i2++) {
+            this.addLayer(layers2[i2]);
           }
         },
         _addZoomLimit: function(layer) {
@@ -11179,8 +11253,8 @@ var require_leaflet_src = __commonJS({
         },
         _updateZoomLevels: function() {
           var minZoom = Infinity, maxZoom = -Infinity, oldZoomSpan = this._getZoomSpan();
-          for (var i in this._zoomBoundLayers) {
-            var options = this._zoomBoundLayers[i].options;
+          for (var i2 in this._zoomBoundLayers) {
+            var options = this._zoomBoundLayers[i2].options;
             minZoom = options.minZoom === void 0 ? minZoom : Math.min(minZoom, options.minZoom);
             maxZoom = options.maxZoom === void 0 ? maxZoom : Math.max(maxZoom, options.maxZoom);
           }
@@ -11201,10 +11275,10 @@ var require_leaflet_src = __commonJS({
         initialize: function(layers2, options) {
           setOptions(this, options);
           this._layers = {};
-          var i, len;
+          var i2, len;
           if (layers2) {
-            for (i = 0, len = layers2.length; i < len; i++) {
-              this.addLayer(layers2[i]);
+            for (i2 = 0, len = layers2.length; i2 < len; i2++) {
+              this.addLayer(layers2[i2]);
             }
           }
         },
@@ -11250,9 +11324,9 @@ var require_leaflet_src = __commonJS({
         // additional parameters. Has no effect if the layers contained do not
         // implement `methodName`.
         invoke: function(methodName) {
-          var args = Array.prototype.slice.call(arguments, 1), i, layer;
-          for (i in this._layers) {
-            layer = this._layers[i];
+          var args = Array.prototype.slice.call(arguments, 1), i2, layer;
+          for (i2 in this._layers) {
+            layer = this._layers[i2];
             if (layer[methodName]) {
               layer[methodName].apply(layer, args);
             }
@@ -11273,8 +11347,8 @@ var require_leaflet_src = __commonJS({
         // });
         // ```
         eachLayer: function(method, context) {
-          for (var i in this._layers) {
-            method.call(context, this._layers[i]);
+          for (var i2 in this._layers) {
+            method.call(context, this._layers[i2]);
           }
           return this;
         },
@@ -12146,9 +12220,9 @@ var require_leaflet_src = __commonJS({
           var minDistance = Infinity, minPoint = null, closest = _sqClosestPointOnSegment, p1, p2;
           for (var j = 0, jLen = this._parts.length; j < jLen; j++) {
             var points = this._parts[j];
-            for (var i = 1, len = points.length; i < len; i++) {
-              p1 = points[i - 1];
-              p2 = points[i];
+            for (var i2 = 1, len = points.length; i2 < len; i2++) {
+              p1 = points[i2 - 1];
+              p2 = points[i2];
               var sqDist = closest(p, p1, p2, true);
               if (sqDist < minDistance) {
                 minDistance = sqDist;
@@ -12195,12 +12269,12 @@ var require_leaflet_src = __commonJS({
         // recursively convert latlngs input into actual LatLng instances; calculate bounds along the way
         _convertLatLngs: function(latlngs) {
           var result = [], flat = isFlat(latlngs);
-          for (var i = 0, len = latlngs.length; i < len; i++) {
+          for (var i2 = 0, len = latlngs.length; i2 < len; i2++) {
             if (flat) {
-              result[i] = toLatLng(latlngs[i]);
-              this._bounds.extend(result[i]);
+              result[i2] = toLatLng(latlngs[i2]);
+              this._bounds.extend(result[i2]);
             } else {
-              result[i] = this._convertLatLngs(latlngs[i]);
+              result[i2] = this._convertLatLngs(latlngs[i2]);
             }
           }
           return result;
@@ -12226,17 +12300,17 @@ var require_leaflet_src = __commonJS({
         },
         // recursively turns latlngs into a set of rings with projected coordinates
         _projectLatlngs: function(latlngs, result, projectedBounds) {
-          var flat = latlngs[0] instanceof LatLng, len = latlngs.length, i, ring;
+          var flat = latlngs[0] instanceof LatLng, len = latlngs.length, i2, ring;
           if (flat) {
             ring = [];
-            for (i = 0; i < len; i++) {
-              ring[i] = this._map.latLngToLayerPoint(latlngs[i]);
-              projectedBounds.extend(ring[i]);
+            for (i2 = 0; i2 < len; i2++) {
+              ring[i2] = this._map.latLngToLayerPoint(latlngs[i2]);
+              projectedBounds.extend(ring[i2]);
             }
             result.push(ring);
           } else {
-            for (i = 0; i < len; i++) {
-              this._projectLatlngs(latlngs[i], result, projectedBounds);
+            for (i2 = 0; i2 < len; i2++) {
+              this._projectLatlngs(latlngs[i2], result, projectedBounds);
             }
           }
         },
@@ -12251,9 +12325,9 @@ var require_leaflet_src = __commonJS({
             this._parts = this._rings;
             return;
           }
-          var parts = this._parts, i, j, k, len, len2, segment, points;
-          for (i = 0, k = 0, len = this._rings.length; i < len; i++) {
-            points = this._rings[i];
+          var parts = this._parts, i2, j, k, len, len2, segment, points;
+          for (i2 = 0, k = 0, len = this._rings.length; i2 < len; i2++) {
+            points = this._rings[i2];
             for (j = 0, len2 = points.length; j < len2 - 1; j++) {
               segment = clipSegment(points[j], points[j + 1], bounds, j, true);
               if (!segment) {
@@ -12271,8 +12345,8 @@ var require_leaflet_src = __commonJS({
         // simplify each clipped part of the polyline for performance
         _simplifyPoints: function() {
           var parts = this._parts, tolerance = this.options.smoothFactor;
-          for (var i = 0, len = parts.length; i < len; i++) {
-            parts[i] = simplify(parts[i], tolerance);
+          for (var i2 = 0, len = parts.length; i2 < len; i2++) {
+            parts[i2] = simplify(parts[i2], tolerance);
           }
         },
         _update: function() {
@@ -12288,12 +12362,12 @@ var require_leaflet_src = __commonJS({
         },
         // Needed by the `Canvas` renderer for interactivity
         _containsPoint: function(p, closed) {
-          var i, j, k, len, len2, part, w = this._clickTolerance();
+          var i2, j, k, len, len2, part, w = this._clickTolerance();
           if (!this._pxBounds || !this._pxBounds.contains(p)) {
             return false;
           }
-          for (i = 0, len = this._parts.length; i < len; i++) {
-            part = this._parts[i];
+          for (i2 = 0, len = this._parts.length; i2 < len; i2++) {
+            part = this._parts[i2];
             for (j = 0, len2 = part.length, k = len2 - 1; j < len2; k = j++) {
               if (!closed && j === 0) {
                 continue;
@@ -12352,8 +12426,8 @@ var require_leaflet_src = __commonJS({
             this._parts = this._rings;
             return;
           }
-          for (var i = 0, len = this._rings.length, clipped; i < len; i++) {
-            clipped = clipPolygon(this._rings[i], bounds, true);
+          for (var i2 = 0, len = this._rings.length, clipped; i2 < len; i2++) {
+            clipped = clipPolygon(this._rings[i2], bounds, true);
             if (clipped.length) {
               this._parts.push(clipped);
             }
@@ -12364,12 +12438,12 @@ var require_leaflet_src = __commonJS({
         },
         // Needed by the `Canvas` renderer for interactivity
         _containsPoint: function(p) {
-          var inside = false, part, p1, p2, i, j, k, len, len2;
+          var inside = false, part, p1, p2, i2, j, k, len, len2;
           if (!this._pxBounds || !this._pxBounds.contains(p)) {
             return false;
           }
-          for (i = 0, len = this._parts.length; i < len; i++) {
-            part = this._parts[i];
+          for (i2 = 0, len = this._parts.length; i2 < len; i2++) {
+            part = this._parts[i2];
             for (j = 0, len2 = part.length, k = len2 - 1; j < len2; k = j++) {
               p1 = part[j];
               p2 = part[k];
@@ -12444,10 +12518,10 @@ var require_leaflet_src = __commonJS({
         // @method addData( <GeoJSON> data ): this
         // Adds a GeoJSON object to the layer.
         addData: function(geojson) {
-          var features = isArray(geojson) ? geojson : geojson.features, i, len, feature;
+          var features = isArray(geojson) ? geojson : geojson.features, i2, len, feature;
           if (features) {
-            for (i = 0, len = features.length; i < len; i++) {
-              feature = features[i];
+            for (i2 = 0, len = features.length; i2 < len; i2++) {
+              feature = features[i2];
               if (feature.geometries || feature.geometry || feature.features || feature.coordinates) {
                 this.addData(feature);
               }
@@ -12498,7 +12572,7 @@ var require_leaflet_src = __commonJS({
         }
       });
       function geometryToLayer(geojson, options) {
-        var geometry = geojson.type === "Feature" ? geojson.geometry : geojson, coords = geometry ? geometry.coordinates : null, layers2 = [], pointToLayer = options && options.pointToLayer, _coordsToLatLng = options && options.coordsToLatLng || coordsToLatLng, latlng, latlngs, i, len;
+        var geometry = geojson.type === "Feature" ? geojson.geometry : geojson, coords = geometry ? geometry.coordinates : null, layers2 = [], pointToLayer = options && options.pointToLayer, _coordsToLatLng = options && options.coordsToLatLng || coordsToLatLng, latlng, latlngs, i2, len;
         if (!coords && !geometry) {
           return null;
         }
@@ -12507,8 +12581,8 @@ var require_leaflet_src = __commonJS({
             latlng = _coordsToLatLng(coords);
             return _pointToLayer(pointToLayer, geojson, latlng, options);
           case "MultiPoint":
-            for (i = 0, len = coords.length; i < len; i++) {
-              latlng = _coordsToLatLng(coords[i]);
+            for (i2 = 0, len = coords.length; i2 < len; i2++) {
+              latlng = _coordsToLatLng(coords[i2]);
               layers2.push(_pointToLayer(pointToLayer, geojson, latlng, options));
             }
             return new FeatureGroup(layers2);
@@ -12521,9 +12595,9 @@ var require_leaflet_src = __commonJS({
             latlngs = coordsToLatLngs(coords, geometry.type === "Polygon" ? 1 : 2, _coordsToLatLng);
             return new Polygon(latlngs, options);
           case "GeometryCollection":
-            for (i = 0, len = geometry.geometries.length; i < len; i++) {
+            for (i2 = 0, len = geometry.geometries.length; i2 < len; i2++) {
               var geoLayer = geometryToLayer({
-                geometry: geometry.geometries[i],
+                geometry: geometry.geometries[i2],
                 type: "Feature",
                 properties: geojson.properties
               }, options);
@@ -12533,8 +12607,8 @@ var require_leaflet_src = __commonJS({
             }
             return new FeatureGroup(layers2);
           case "FeatureCollection":
-            for (i = 0, len = geometry.features.length; i < len; i++) {
-              var featureLayer = geometryToLayer(geometry.features[i], options);
+            for (i2 = 0, len = geometry.features.length; i2 < len; i2++) {
+              var featureLayer = geometryToLayer(geometry.features[i2], options);
               if (featureLayer) {
                 layers2.push(featureLayer);
               }
@@ -12552,8 +12626,8 @@ var require_leaflet_src = __commonJS({
       }
       function coordsToLatLngs(coords, levelsDeep, _coordsToLatLng) {
         var latlngs = [];
-        for (var i = 0, len = coords.length, latlng; i < len; i++) {
-          latlng = levelsDeep ? coordsToLatLngs(coords[i], levelsDeep - 1, _coordsToLatLng) : (_coordsToLatLng || coordsToLatLng)(coords[i]);
+        for (var i2 = 0, len = coords.length, latlng; i2 < len; i2++) {
+          latlng = levelsDeep ? coordsToLatLngs(coords[i2], levelsDeep - 1, _coordsToLatLng) : (_coordsToLatLng || coordsToLatLng)(coords[i2]);
           latlngs.push(latlng);
         }
         return latlngs;
@@ -12564,8 +12638,8 @@ var require_leaflet_src = __commonJS({
       }
       function latLngsToCoords(latlngs, levelsDeep, closed, precision) {
         var coords = [];
-        for (var i = 0, len = latlngs.length; i < len; i++) {
-          coords.push(levelsDeep ? latLngsToCoords(latlngs[i], isFlat(latlngs[i]) ? 0 : levelsDeep - 1, closed, precision) : latLngToCoords(latlngs[i], precision));
+        for (var i2 = 0, len = latlngs.length; i2 < len; i2++) {
+          coords.push(levelsDeep ? latLngsToCoords(latlngs[i2], isFlat(latlngs[i2]) ? 0 : levelsDeep - 1, closed, precision) : latLngToCoords(latlngs[i2], precision));
         }
         if (!levelsDeep && closed && coords.length > 0) {
           coords.push(coords[0].slice());
@@ -12919,9 +12993,9 @@ var require_leaflet_src = __commonJS({
           vid.loop = !!this.options.loop;
           vid.muted = !!this.options.muted;
           vid.playsInline = !!this.options.playsInline;
-          for (var i = 0; i < this._url.length; i++) {
+          for (var i2 = 0; i2 < this._url.length; i2++) {
             var source = create$1("source");
-            source.src = this._url[i];
+            source.src = this._url[i2];
             vid.appendChild(source);
           }
         }
@@ -14047,9 +14121,9 @@ var require_leaflet_src = __commonJS({
         },
         _setAutoZIndex: function(compare) {
           var layers2 = this.getPane().children, edgeZIndex = -compare(-Infinity, Infinity);
-          for (var i = 0, len = layers2.length, zIndex; i < len; i++) {
-            zIndex = layers2[i].style.zIndex;
-            if (layers2[i] !== this._container && zIndex) {
+          for (var i2 = 0, len = layers2.length, zIndex; i2 < len; i2++) {
+            zIndex = layers2[i2].style.zIndex;
+            if (layers2[i2] !== this._container && zIndex) {
               edgeZIndex = compare(edgeZIndex, +zIndex);
             }
           }
@@ -14190,8 +14264,8 @@ var require_leaflet_src = __commonJS({
           this._removeAllTiles();
           this._tileZoom = void 0;
         },
-        _retainParent: function(x, y, z, minZoom) {
-          var x2 = Math.floor(x / 2), y2 = Math.floor(y / 2), z2 = z - 1, coords2 = new Point(+x2, +y2);
+        _retainParent: function(x2, y, z, minZoom) {
+          var x22 = Math.floor(x2 / 2), y2 = Math.floor(y / 2), z2 = z - 1, coords2 = new Point(+x22, +y2);
           coords2.z = +z2;
           var key = this._tileCoordsToKey(coords2), tile = this._tiles[key];
           if (tile && tile.active) {
@@ -14201,14 +14275,14 @@ var require_leaflet_src = __commonJS({
             tile.retain = true;
           }
           if (z2 > minZoom) {
-            return this._retainParent(x2, y2, z2, minZoom);
+            return this._retainParent(x22, y2, z2, minZoom);
           }
           return false;
         },
-        _retainChildren: function(x, y, z, maxZoom) {
-          for (var i = 2 * x; i < 2 * x + 2; i++) {
+        _retainChildren: function(x2, y, z, maxZoom) {
+          for (var i2 = 2 * x2; i2 < 2 * x2 + 2; i2++) {
             for (var j = 2 * y; j < 2 * y + 2; j++) {
-              var coords = new Point(i, j);
+              var coords = new Point(i2, j);
               coords.z = z + 1;
               var key = this._tileCoordsToKey(coords), tile = this._tiles[key];
               if (tile && tile.active) {
@@ -14218,7 +14292,7 @@ var require_leaflet_src = __commonJS({
                 tile.retain = true;
               }
               if (z + 1 < maxZoom) {
-                this._retainChildren(i, j, z + 1, maxZoom);
+                this._retainChildren(i2, j, z + 1, maxZoom);
               }
             }
           }
@@ -14266,8 +14340,8 @@ var require_leaflet_src = __commonJS({
           this._setZoomTransforms(center, zoom2);
         },
         _setZoomTransforms: function(center, zoom2) {
-          for (var i in this._levels) {
-            this._setZoomTransform(this._levels[i], center, zoom2);
+          for (var i2 in this._levels) {
+            this._setZoomTransform(this._levels[i2], center, zoom2);
           }
         },
         _setZoomTransform: function(level, center, zoom2) {
@@ -14334,8 +14408,8 @@ var require_leaflet_src = __commonJS({
             return;
           }
           for (var j = tileRange.min.y; j <= tileRange.max.y; j++) {
-            for (var i = tileRange.min.x; i <= tileRange.max.x; i++) {
-              var coords = new Point(i, j);
+            for (var i2 = tileRange.min.x; i2 <= tileRange.max.x; i2++) {
+              var coords = new Point(i2, j);
               coords.z = this._tileZoom;
               if (!this._isValidTile(coords)) {
                 continue;
@@ -14357,8 +14431,8 @@ var require_leaflet_src = __commonJS({
               this.fire("loading");
             }
             var fragment = document.createDocumentFragment();
-            for (i = 0; i < queue.length; i++) {
-              this._addTile(queue[i], fragment);
+            for (i2 = 0; i2 < queue.length; i2++) {
+              this._addTile(queue[i2], fragment);
             }
             this._level.el.appendChild(fragment);
           }
@@ -14444,10 +14518,10 @@ var require_leaflet_src = __commonJS({
             coords
           });
         },
-        _tileReady: function(coords, err, tile) {
-          if (err) {
+        _tileReady: function(coords, err2, tile) {
+          if (err2) {
             this.fire("tileerror", {
-              error: err,
+              error: err2,
               tile,
               coords
             });
@@ -14466,7 +14540,7 @@ var require_leaflet_src = __commonJS({
             tile.active = true;
             this._pruneTiles();
           }
-          if (!err) {
+          if (!err2) {
             addClass(tile.el, "leaflet-tile-loaded");
             this.fire("tileload", {
               tile: tile.el,
@@ -14662,17 +14736,17 @@ var require_leaflet_src = __commonJS({
         },
         // stops loading all tiles in the background layer
         _abortLoading: function() {
-          var i, tile;
-          for (i in this._tiles) {
-            if (this._tiles[i].coords.z !== this._tileZoom) {
-              tile = this._tiles[i].el;
+          var i2, tile;
+          for (i2 in this._tiles) {
+            if (this._tiles[i2].coords.z !== this._tileZoom) {
+              tile = this._tiles[i2].el;
               tile.onload = falseFn;
               tile.onerror = falseFn;
               if (!tile.complete) {
                 tile.src = emptyImageUrl;
-                var coords = this._tiles[i].coords;
+                var coords = this._tiles[i2].coords;
                 remove(tile);
-                delete this._tiles[i];
+                delete this._tiles[i2];
                 this.fire("tileabort", {
                   tile,
                   coords
@@ -14689,11 +14763,11 @@ var require_leaflet_src = __commonJS({
           tile.el.setAttribute("src", emptyImageUrl);
           return GridLayer.prototype._removeTile.call(this, key);
         },
-        _tileReady: function(coords, err, tile) {
+        _tileReady: function(coords, err2, tile) {
           if (!this._map || tile && tile.getAttribute("src") === emptyImageUrl) {
             return;
           }
-          return GridLayer.prototype._tileReady.call(this, coords, err, tile);
+          return GridLayer.prototype._tileReady.call(this, coords, err2, tile);
         }
       });
       function tileLayer(url, options) {
@@ -14736,9 +14810,9 @@ var require_leaflet_src = __commonJS({
         initialize: function(url, options) {
           this._url = url;
           var wmsParams = extend({}, this.defaultWmsParams);
-          for (var i in options) {
-            if (!(i in this.options)) {
-              wmsParams[i] = options[i];
+          for (var i2 in options) {
+            if (!(i2 in this.options)) {
+              wmsParams[i2] = options[i2];
             }
           }
           options = setOptions(this, options);
@@ -14969,9 +15043,9 @@ var require_leaflet_src = __commonJS({
         },
         _updateDashArray: function(layer) {
           if (typeof layer.options.dashArray === "string") {
-            var parts = layer.options.dashArray.split(/[, ]+/), dashArray = [], dashValue, i;
-            for (i = 0; i < parts.length; i++) {
-              dashValue = Number(parts[i]);
+            var parts = layer.options.dashArray.split(/[, ]+/), dashArray = [], dashValue, i2;
+            for (i2 = 0; i2 < parts.length; i2++) {
+              dashValue = Number(parts[i2]);
               if (isNaN(dashValue)) {
                 return;
               }
@@ -15042,14 +15116,14 @@ var require_leaflet_src = __commonJS({
           if (!this._drawing) {
             return;
           }
-          var i, j, len2, p, parts = layer._parts, len = parts.length, ctx = this._ctx;
+          var i2, j, len2, p, parts = layer._parts, len = parts.length, ctx = this._ctx;
           if (!len) {
             return;
           }
           ctx.beginPath();
-          for (i = 0; i < len; i++) {
-            for (j = 0, len2 = parts[i].length; j < len2; j++) {
-              p = parts[i][j];
+          for (i2 = 0; i2 < len; i2++) {
+            for (j = 0, len2 = parts[i2].length; j < len2; j++) {
+              p = parts[i2][j];
               ctx[j ? "lineTo" : "moveTo"](p.x, p.y);
             }
             if (closed) {
@@ -15732,7 +15806,7 @@ var require_leaflet_src = __commonJS({
           this._draggable._newPos = this._draggable._startPos.add(offset);
         },
         _onPreDragWrap: function() {
-          var worldWidth = this._worldWidth, halfWidth = Math.round(worldWidth / 2), dx = this._initialWorldOffset, x = this._draggable._newPos.x, newX1 = (x - halfWidth + dx) % worldWidth + halfWidth - dx, newX2 = (x + halfWidth + dx) % worldWidth - halfWidth - dx, newX = Math.abs(newX1 + dx) < Math.abs(newX2 + dx) ? newX1 : newX2;
+          var worldWidth = this._worldWidth, halfWidth = Math.round(worldWidth / 2), dx = this._initialWorldOffset, x2 = this._draggable._newPos.x, newX1 = (x2 - halfWidth + dx) % worldWidth + halfWidth - dx, newX2 = (x2 + halfWidth + dx) % worldWidth - halfWidth - dx, newX = Math.abs(newX1 + dx) < Math.abs(newX2 + dx) ? newX1 : newX2;
           this._draggable._absPos = this._draggable._newPos.clone();
           this._draggable._newPos.x = newX;
         },
@@ -15828,27 +15902,27 @@ var require_leaflet_src = __commonJS({
           this._map.fire("blur");
         },
         _setPanDelta: function(panDelta) {
-          var keys = this._panKeys = {}, codes = this.keyCodes, i, len;
-          for (i = 0, len = codes.left.length; i < len; i++) {
-            keys[codes.left[i]] = [-1 * panDelta, 0];
+          var keys = this._panKeys = {}, codes = this.keyCodes, i2, len;
+          for (i2 = 0, len = codes.left.length; i2 < len; i2++) {
+            keys[codes.left[i2]] = [-1 * panDelta, 0];
           }
-          for (i = 0, len = codes.right.length; i < len; i++) {
-            keys[codes.right[i]] = [panDelta, 0];
+          for (i2 = 0, len = codes.right.length; i2 < len; i2++) {
+            keys[codes.right[i2]] = [panDelta, 0];
           }
-          for (i = 0, len = codes.down.length; i < len; i++) {
-            keys[codes.down[i]] = [0, panDelta];
+          for (i2 = 0, len = codes.down.length; i2 < len; i2++) {
+            keys[codes.down[i2]] = [0, panDelta];
           }
-          for (i = 0, len = codes.up.length; i < len; i++) {
-            keys[codes.up[i]] = [0, -1 * panDelta];
+          for (i2 = 0, len = codes.up.length; i2 < len; i2++) {
+            keys[codes.up[i2]] = [0, -1 * panDelta];
           }
         },
         _setZoomDelta: function(zoomDelta) {
-          var keys = this._zoomKeys = {}, codes = this.keyCodes, i, len;
-          for (i = 0, len = codes.zoomIn.length; i < len; i++) {
-            keys[codes.zoomIn[i]] = zoomDelta;
+          var keys = this._zoomKeys = {}, codes = this.keyCodes, i2, len;
+          for (i2 = 0, len = codes.zoomIn.length; i2 < len; i2++) {
+            keys[codes.zoomIn[i2]] = zoomDelta;
           }
-          for (i = 0, len = codes.zoomOut.length; i < len; i++) {
-            keys[codes.zoomOut[i]] = -zoomDelta;
+          for (i2 = 0, len = codes.zoomOut.length; i2 < len; i2++) {
+            keys[codes.zoomOut[i2]] = -zoomDelta;
           }
         },
         _addHooks: function() {
@@ -16874,9 +16948,9 @@ function evaluateBuffer(minFixes, accLimit) {
     else gpsStreak++;
   }
   if (gpsStreak < 2) return { ok: false, fail_detail: "gps_streak_low" };
-  for (let i = 1; i < recent.length; i++) {
-    const a = recent[i - 1];
-    const b = recent[i];
+  for (let i2 = 1; i2 < recent.length; i2++) {
+    const a = recent[i2 - 1];
+    const b = recent[i2];
     const d = haversine(a, b);
     const accA = a.acc != null ? a.acc : accLimit;
     const accB = b.acc != null ? b.acc : accLimit;
@@ -16964,324 +17038,288 @@ var init_gps_converge = __esm({
   }
 });
 
-// js/gps.js
-function curPos() {
-  return RENDER_POS || S.gps;
-}
-function updateRenderPos() {
-  if (!S.gps) {
-    RENDER_POS = null;
-    return;
+// js/yandex-link.js
+var yandex_link_exports = {};
+__export(yandex_link_exports, {
+  YANDEX_PARSER_REV: () => YANDEX_PARSER_REV,
+  YANDEX_URL_RE: () => YANDEX_URL_RE,
+  buildYandexRouteUrl: () => buildYandexRouteUrl,
+  decodeQueryComponent: () => decodeQueryComponent,
+  extractRtextParam: () => extractRtextParam,
+  extractYandexUrl: () => extractYandexUrl,
+  isYandexMapsUrl: () => isYandexMapsUrl,
+  normalizePastedText: () => normalizePastedText,
+  parseRtextWaypoints: () => parseRtextWaypoints,
+  parseYandexRouteLink: () => parseYandexRouteLink,
+  resolveYandexShortLink: () => resolveYandexShortLink
+});
+function decodeQueryComponent(raw) {
+  if (raw == null) return "";
+  let s2 = String(raw).trim();
+  if (!s2) return "";
+  try {
+    s2 = decodeURIComponent(s2.replace(/\+/g, "%20"));
+  } catch {
+    s2 = s2.replace(/\+/g, " ");
   }
-  const v = S.gps.speed != null && S.gps.speed > 0.6 ? S.gps.speed : 0;
-  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
-  if (!v || hdg == null || isNaN(hdg) || !S.fixPos) {
-    RENDER_POS = S.gps;
-    return;
+  return s2;
+}
+function normalizePastedText(text) {
+  return String(text || "").replace(/&amp;/gi, "&").replace(/&#0*38;/g, "&").replace(/^[\s"'«»]+|[\s"'«»]+$/g, "").trim();
+}
+function extractYandexUrl(text) {
+  const s2 = normalizePastedText(text);
+  if (!s2) return null;
+  if (/^https?:\/\//i.test(s2)) {
+    const one = s2.match(YANDEX_URL_RE);
+    if (one) return one[0];
   }
-  const rad = Math.PI / 180;
-  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1e3));
-  const dist = v * dt;
-  RENDER_POS = {
-    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
-    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
-    speed: S.gps.speed,
-    heading: S.gps.heading,
-    acc: S.gps.acc
-  };
+  const m = s2.match(YANDEX_URL_RE);
+  return m ? m[0] : null;
 }
-function easeSpeed() {
-  const el = $2("v-speed");
-  if (!el || !S.gps) return;
-  const raw = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
-  const target = Math.min(raw, GPS_SPEED_MAX_MPS * 3.6);
-  S.dispSpeed += (target - S.dispSpeed) * 0.22;
-  if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
-  const shown = Math.round(S.dispSpeed);
-  el.textContent = shown;
-  el.classList.toggle("over", isSpeedOverLimit(target));
-  el.classList.toggle("speed-3", shown >= 100);
+function extractRtextParam(url) {
+  const m = String(url || "").match(RTEXT_RE);
+  return m ? decodeQueryComponent(m[1]) : null;
 }
-function resolveGpsSpeed(next, prev) {
-  const acc = next.acc ?? 999;
-  const device = next.speed != null && !isNaN(next.speed) && next.speed >= 0 ? next.speed : null;
-  let meas = 0;
-  let dist = 0;
-  let dt = 0;
-  if (prev) {
-    dt = (next.ts - prev.ts) / 1e3;
-    if (dt > 0.15 && dt < 12) {
-      dist = haversine(prev, next);
-      const measFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
-      if (dist >= measFloor && dist < 500) meas = dist / dt;
+function parseRtextPoint(part, index, total) {
+  const s2 = String(part || "").trim();
+  if (!s2) return null;
+  const coord = s2.match(/^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
+  if (coord) {
+    const lat = parseFloat(coord[1]);
+    const lon = parseFloat(coord[2]);
+    if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+      return { lat, lon, label: DEFAULT_LABELS(index, total) };
     }
   }
-  const driftFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
-  const driftM = acc <= GPS_SPEED_ACC_TRUST_M ? driftFloor : Math.max(driftFloor, acc * 0.55);
-  const base = { device, meas, dist, driftM, dt };
-  if (prev && dist < driftM && (device == null || device < 0.5)) {
-    return { ...base, mps: 0, src: "drift" };
-  }
-  if (device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
-    if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
-      return { ...base, mps: device, src: "device" };
-    }
-  }
-  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
-  if (meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)) {
-    const mps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
-    return { ...base, meas, mps, src: "meas" };
-  }
-  return { ...base, mps: 0, src: "zero" };
+  return null;
 }
-function initGps(callbacks) {
-  _onTick = callbacks.onTick || _onTick;
-  _onVisual = callbacks.onVisual || _onVisual;
-}
-function visualLoop() {
-  S.rafId = requestAnimationFrame(visualLoop);
-  if (!$2("hud").classList.contains("on")) return;
-  telemetry_default.tickPerfFrame();
-  updateRenderPos();
-  tickNavMap();
-  easeSpeed();
-  tickRoundaboutHudRefresh(_onTick);
-  _onVisual();
-}
-function startVisualLoop() {
-  if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
-}
-function stopVisualLoop() {
-  if (S.rafId) {
-    cancelAnimationFrame(S.rafId);
-    S.rafId = null;
+function parseRtextWaypoints(rtext) {
+  const parts = String(rtext || "").split("~").map((p) => p.trim()).filter(Boolean);
+  const waypoints = parts.map((part, i2) => parseRtextPoint(part, i2, parts.length)).filter(Boolean);
+  if (waypoints.length < 2) {
+    throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652 \u0441 \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u0430\u043C\u0438 lat,lon)");
   }
+  return waypoints;
 }
-function getGpsDisplayAcc() {
-  if (!S.gps) return null;
-  return displayAccM(S.gps.acc, S._gpsSpreadBuf || []);
-}
-function updateGpsConvergeUI() {
-  const el = $2("gps-converge");
-  if (el) {
-    el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
-  }
-  const reported = S.gps?.acc != null ? Math.round(S.gps.acc) : null;
-  const shown = getGpsDisplayAcc();
-  const spread = S.gps ? measuredSpreadM(S._gpsSpreadBuf || []) : null;
-  const failHint = getConvergeFailLabel();
-  let title = "\u0422\u0430\u043F \u2014 \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C GPS";
-  if (S.gps) {
-    const parts = [];
-    if (shown != null) parts.push("\u043E\u0446\u0435\u043D\u043A\u0430 \xB1" + shown + " \u043C");
-    if (reported != null && reported !== shown) parts.push("\u043E\u0442\u0447\u0451\u0442 \u041E\u0421 \xB1" + reported + " \u043C");
-    if (spread != null) parts.push("\u0440\u0430\u0437\u0431\u0440\u043E\u0441 ~" + Math.round(spread) + " \u043C");
-    if (!S.gpsConverged && failHint) parts.push("\u0436\u0434\u0451\u043C: " + failHint);
-    if (parts.length) title = parts.join(" \xB7 ");
-  }
-  if (S.gpsConverged) {
-    const tag = isSim() ? " \u0441\u0438\u043C" : "";
-    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + (shown ?? "\u2014") + "\u043C";
-    $2("s-gps").className = "chip ok";
-  } else if (S.gps) {
-    $2("s-gps").textContent = "\u23F3 GPS \xB1" + (shown ?? "\u2026") + "\u043C";
-    $2("s-gps").className = "chip";
-  } else {
-    $2("s-gps").textContent = "\u23F3 GPS\u2026";
-    $2("s-gps").className = "chip";
-  }
-  $2("s-gps").title = title;
-  checkStartReady();
-}
-function checkStartReady() {
-  const hasRoute = !!(S.route && S.route.coords && S.route.coords.length);
-  $2("btn-start").disabled = !(S.gps && S.finish && hasRoute);
-  const buildBtn = $2("btn-build-route");
-  if (buildBtn) buildBtn.disabled = !(S.gps && S.finish);
-}
-function onGpsError() {
-  $2("s-gps").textContent = "\u274C GPS";
-  $2("s-gps").className = "chip err";
-  invalidateGpsConverge("invalidate_error");
-  if (!_gpsLost) {
-    _gpsLost = true;
-    telemetry_default.log("nav", { sub: "gps_lost" });
-  }
-}
-function applyGpsFix(next) {
-  if (S.lastPos) {
-    const d = haversine(S.lastPos, next);
-    const dt = (next.ts - S.lastPos.ts) / 1e3;
-    if (d > 3 && d < 500) S.distDone += d;
-    if ((next.heading == null || isNaN(next.heading)) && d > 3) {
-      next.heading = bearing(S.lastPos, next);
-    }
-  }
-  const speedRes = resolveGpsSpeed(next, S.lastPos);
-  S.measSpeed = speedRes.mps;
-  next.speed = speedRes.mps;
-  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
-  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
-  if (fused != null && !isNaN(fused)) next.heading = fused;
-  if (next.heading != null && !isNaN(next.heading)) {
-    if ((next.speed ?? 0) >= 3.2) S.lastReliableHeadingTs = Date.now();
-    if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
-    else {
-      const spd = next.speed ?? S.measSpeed ?? 0;
-      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
-      const keep = 1 - alpha;
-      const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
-      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
-      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
-    }
-  }
-  S.lastPos = next;
-  S.gps = next;
-  if (!S._gpsSpreadBuf) S._gpsSpreadBuf = [];
-  S._gpsSpreadBuf.push({ lat: next.lat, lon: next.lon, acc: next.acc });
-  while (S._gpsSpreadBuf.length > 8) S._gpsSpreadBuf.shift();
-  S.fixPos = { lat: next.lat, lon: next.lon };
-  S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
-  let telSnap = null;
-  let navSnap = null;
-  if ($2("hud").classList.contains("on") && S.route?.geometry) {
-    navSnap = getNavSnap(S.smoothedHeading);
-    if (navSnap) telSnap = { lateral: navSnap.lateral, quality: S.snapQuality };
-  }
-  S.navLateral = navSnap?.lateral ?? null;
-  const telCtx = { fix: next, snap: telSnap };
-  feedGpsConverge(next, telCtx);
-  const effAcc = effectiveAccM(next.acc, S._gpsSpreadBuf);
-  if (effAcc != null && effAcc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge("invalidate_acc", telCtx);
-  if ($2("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) {
-    telemetry_default.log("nav", {
-      sub: "snap_lost_long",
-      lat_off: telSnap?.lateral != null ? Math.round(telSnap.lateral) : null,
-      acc: next.acc != null ? Math.round(next.acc * 10) / 10 : null,
-      lost_ms: Math.round(lostDurationMs())
+async function resolveYandexShortLink(url, opts = {}) {
+  const fetchFn = opts.fetchFn || globalThis.fetch;
+  if (!fetchFn) return url;
+  if (!SHORT_RE.test(url)) return url;
+  const tryFetch = async (method) => {
+    const res = await fetchFn(url, {
+      redirect: "follow",
+      method,
+      signal: AbortSignal.timeout?.(15e3)
     });
-  }
-  updateGpsConvergeUI();
-  tickConvergeBlocked(next, telSnap);
-  if ($2("hud").classList.contains("on")) {
-    _onTick();
-    if (S.viewMode !== "hud") tickNavMap({ force: true });
-  }
-  const rcv = Date.now();
-  if (_gpsLost) {
-    _gpsLost = false;
-    telemetry_default.log("nav", { sub: "gps_restored" });
-  }
-  telemetry_default.logFix({
-    lat: next.lat,
-    lon: next.lon,
-    acc: next.acc,
-    speed: next.speed,
-    heading: next.heading,
-    alt: next.alt,
-    ts: next.ts,
-    rcv,
-    dev: speedRes.device,
-    meas: speedRes.meas,
-    spdSrc: speedRes.src,
-    stepM: speedRes.dist,
-    driftM: speedRes.driftM,
-    stepDt: speedRes.dt
-  });
-  telemetry_default.logTrackPoint({
-    lat: next.lat,
-    lon: next.lon,
-    acc: next.acc,
-    speed: next.speed,
-    heading: next.heading,
-    ts: next.ts
-  });
-  if (navSnap) telemetry_default.logSnapFromResult(navSnap);
-}
-function stopWebGps() {
-  if (S.watchId !== null && navigator.geolocation) {
-    navigator.geolocation.clearWatch(S.watchId);
-    S.watchId = null;
+    return res.url && res.url !== url ? res.url : url;
+  };
+  try {
+    return await tryFetch("HEAD");
+  } catch {
+    try {
+      return await tryFetch("GET");
+    } catch {
+      return url;
+    }
   }
 }
-function startWebGps() {
-  if (!navigator.geolocation) {
-    $2("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
-    $2("s-gps").className = "chip err";
-    return;
+function buildYandexRouteUrl(waypoints, opts = {}) {
+  const rtext = waypoints.map((w) => `${w.lat},${w.lon}`).join("~");
+  const rtt = opts.rtt || "auto";
+  return `https://yandex.ru/maps/?rtext=${encodeURIComponent(rtext)}&rtt=${rtt}`;
+}
+async function parseYandexRouteLink(rawUrl, opts = {}) {
+  let url = normalizePastedText(rawUrl);
+  if (!url) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
+  const extracted = extractYandexUrl(url);
+  if (extracted) url = extracted;
+  else if (!/yandex\.|ya\.ru/i.test(url)) {
+    throw new Error("\u041D\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442");
   }
-  stopWebGps();
-  $2("s-gps").textContent = "\u23F3 GPS\u2026";
-  $2("s-gps").className = "chip";
-  S.watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      const c = pos.coords;
-      applyGpsFix({
-        lat: c.latitude,
-        lon: c.longitude,
-        speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
-        heading: c.heading == null ? null : c.heading,
-        acc: c.accuracy,
-        alt: c.altitude != null && !isNaN(c.altitude) ? c.altitude : null,
-        ts: pos.timestamp
+  url = await resolveYandexShortLink(url, opts);
+  const rtext = extractRtextParam(url);
+  if (!rtext) {
+    throw new Error(
+      "\u0412 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (rtext). \u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u2192 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB \u2192 \u0441\u043A\u043E\u043F\u0438\u0440\u0443\u0439\u0442\u0435 \u0434\u043B\u0438\u043D\u043D\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443."
+    );
+  }
+  return parseRtextWaypoints(rtext);
+}
+function isYandexMapsUrl(raw) {
+  return !!extractYandexUrl(raw) || /yandex\.(?:ru|com)|ya\.ru\/maps/i.test(normalizePastedText(raw));
+}
+var YANDEX_PARSER_REV, YANDEX_URL_RE, SHORT_RE, RTEXT_RE, DEFAULT_LABELS;
+var init_yandex_link = __esm({
+  "js/yandex-link.js"() {
+    YANDEX_PARSER_REV = 2;
+    YANDEX_URL_RE = /https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/(?:maps|navi)[^\s"'<>]*/gi;
+    SHORT_RE = /^https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/maps\/-/i;
+    RTEXT_RE = /[?&#]rtext=([^&#]+)/i;
+    DEFAULT_LABELS = (i2, total) => {
+      if (i2 === 0) return "\u0421\u0442\u0430\u0440\u0442";
+      if (i2 === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
+      return `\u0422\u043E\u0447\u043A\u0430 ${i2 + 1}`;
+    };
+  }
+});
+
+// js/yandex-import.js
+function openDb2() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME2, DB_VER2);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("imports")) {
+        db.createObjectStore("imports", { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveYandexImportHistory(waypoints, mode) {
+  try {
+    const db = await openDb2();
+    const name = (waypoints[0]?.label || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442").split(/\s+/)[0].slice(0, 24);
+    await new Promise((resolve, reject) => {
+      const tx2 = db.transaction("imports", "readwrite");
+      tx2.objectStore("imports").put({
+        id: crypto.randomUUID(),
+        name,
+        ts: Date.now(),
+        mode,
+        waypointCount: waypoints.length
       });
-    },
-    onGpsError,
-    { enableHighAccuracy: true, timeout: 15e3, maximumAge: 1e3 }
-  );
-}
-function startGps() {
-  _navMode = false;
-  startHeadingSensors();
-  if (isNative()) {
-    $2("s-gps").textContent = "\u23F3 GPS\u2026";
-    $2("s-gps").className = "chip";
-    stopWebGps();
-    startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
-    return;
+      tx2.oncomplete = () => resolve();
+      tx2.onerror = () => reject(tx2.error);
+    });
+    db.close();
+  } catch (e) {
+    console.warn("yandex history:", e);
   }
-  startWebGps();
 }
-async function startNavigationGps() {
-  if (!isNative()) return;
-  _navMode = true;
-  await startNavGps(applyGpsFix, onGpsError);
+function waypointsToOsrmPoints(waypoints, gps) {
+  const pts = waypoints.map((w) => ({ lat: w.lat, lon: w.lon }));
+  if (gps && pts.length) {
+    if (haversine(gps, pts[0]) > 500) pts.unshift({ lat: gps.lat, lon: gps.lon });
+    else pts[0] = { lat: gps.lat, lon: gps.lon };
+  }
+  return pts;
 }
-async function stopNavigationGps() {
-  if (!isNative()) return;
-  _navMode = false;
-  await stopNavGps();
-  await startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+function hideImportModal() {
+  $2("yandexImportModal")?.classList.remove("on");
+  _pendingWaypoints = null;
+  _pendingUrl = "";
 }
-var RENDER_POS, _navMode, _gpsLost, _onTick, _onVisual;
-var init_gps = __esm({
-  "js/gps.js"() {
+function hideBanner() {
+  const banner = $2("yandex-banner");
+  banner?.classList.remove("on");
+  banner?.classList.add("hidden");
+}
+async function finishImport(mode) {
+  const wps = _pendingWaypoints;
+  const urlForInput = _pendingUrl;
+  if (!wps?.length) return;
+  hideImportModal();
+  hideBanner();
+  const status = $2("s-finish");
+  const btn = $2("btn-build-route");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "\u23F3 \u0418\u043C\u043F\u043E\u0440\u0442\u2026";
+  }
+  if (status) {
+    status.textContent = mode === "direct" ? "\u23F3 \u0411\u044B\u0441\u0442\u0440\u044B\u0439 \u0441\u0442\u0430\u0440\u0442\u2026" : "\u23F3 \u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 OSRM\u2026";
+    status.className = "status";
+  }
+  try {
+    if (mode === "direct") {
+      attachRouteFromImport(buildDirectRouteFromWaypoints(wps), wps);
+    } else {
+      const pts = waypointsToOsrmPoints(wps, S.gps);
+      const route = await fetchRouteThroughWaypoints(pts);
+      attachRouteFromImport(route, pts);
+    }
+    const { refreshRouteUi: refreshRouteUi2 } = await Promise.resolve().then(() => (init_setup(), setup_exports));
+    refreshRouteUi2();
+    await saveYandexImportHistory(wps, mode);
+    telemetry_default.log("nav", { sub: "yandex_import", mode, n: wps.length });
+    if (status) {
+      status.textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442 \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB";
+      status.className = "status ok";
+    }
+    $2("finish-input").value = urlForInput || `${wps.length} \u0442\u043E\u0447\u0435\u043A \u042F\u043D\u0434\u0435\u043A\u0441`;
+  } catch (e) {
+    if (status) {
+      status.textContent = "\u274C " + (e.message || e);
+      status.className = "status err";
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = !(S.gps && S.finish);
+      btn.textContent = "\u{1F5FA} \u041F\u043E\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442";
+    }
+  }
+}
+function offerYandexImport(waypoints, sourceUrl = "") {
+  _pendingWaypoints = waypoints;
+  _pendingUrl = sourceUrl || "";
+  const modal = $2("yandexImportModal");
+  const info = $2("yandex-import-info");
+  if (info) {
+    info.textContent = `\u0422\u043E\u0447\u0435\u043A: ${waypoints.length}. \u0414\u043B\u044F \u0442\u043E\u0447\u043D\u043E\u0433\u043E \u043F\u043E\u0432\u0442\u043E\u0440\u0435\u043D\u0438\u044F \u0433\u0435\u043E\u043C\u0435\u0442\u0440\u0438\u0438 \u042F\u043D\u0434\u0435\u043A\u0441\u0430 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0439\u0442\u0435 \u043F\u0440\u043E\u043C\u0435\u0436\u0443\u0442\u043E\u0447\u043D\u044B\u0435 \u0442\u043E\u0447\u043A\u0438 \u043A\u0430\u0436\u0434\u044B\u0435 3\u20135 \u043A\u043C \u2014 \u0438\u043D\u0430\u0447\u0435 OSRM \u043C\u043E\u0436\u0435\u0442 \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u0435 \u0434\u043E\u0440\u043E\u0433\u0438.`;
+  }
+  modal?.classList.add("on");
+}
+async function importYandexFromText(rawText) {
+  const { parseYandexRouteLink: parseYandexRouteLink2 } = await Promise.resolve().then(() => (init_yandex_link(), yandex_link_exports));
+  const url = extractYandexUrl(rawText) || rawText.trim();
+  const wps = await parseYandexRouteLink2(url);
+  offerYandexImport(wps, url);
+  return wps;
+}
+function showYandexBanner(message, onApply) {
+  const banner = $2("yandex-banner");
+  const msg = $2("yandex-banner-msg");
+  if (!banner) return;
+  if (msg) msg.textContent = message || "\u041D\u0430\u0439\u0434\u0435\u043D\u0430 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442";
+  banner.classList.remove("hidden");
+  banner.classList.add("on");
+  const applyBtn = $2("yandex-banner-apply");
+  const dismissBtn = $2("yandex-banner-dismiss");
+  const onOk = () => {
+    hideBanner();
+    onApply?.();
+  };
+  const onNo = () => hideBanner();
+  applyBtn?.replaceWith(applyBtn.cloneNode(true));
+  dismissBtn?.replaceWith(dismissBtn.cloneNode(true));
+  $2("yandex-banner-apply")?.addEventListener("click", onOk, { once: true });
+  $2("yandex-banner-dismiss")?.addEventListener("click", onNo, { once: true });
+}
+function initYandexImportUi() {
+  $2("yandex-import-direct")?.addEventListener("click", () => {
+    void finishImport("direct");
+  });
+  $2("yandex-import-routed")?.addEventListener("click", () => {
+    void finishImport("routed");
+  });
+  $2("yandex-import-cancel")?.addEventListener("click", hideImportModal);
+}
+var DB_NAME2, DB_VER2, _pendingWaypoints, _pendingUrl;
+var init_yandex_import = __esm({
+  "js/yandex-import.js"() {
     init_state();
-    init_geo();
     init_util();
-    init_platform();
-    init_native_gps();
-    init_heading();
+    init_geo();
+    init_route();
+    init_yandex_link();
     init_telemetry();
-    init_route_geometry();
-    init_nav_constants();
-    init_speed_limit();
-    init_roundabout();
-    init_nav_map();
-    init_gps_converge();
-    init_gps_accuracy();
-    init_snap_quality();
-    init_converge_telemetry();
-    init_nav_constants();
-    RENDER_POS = null;
-    _navMode = false;
-    _gpsLost = false;
-    _onTick = () => {
-    };
-    _onVisual = () => {
-    };
+    DB_NAME2 = "moto-hud-yandex";
+    DB_VER2 = 1;
+    _pendingWaypoints = null;
+    _pendingUrl = "";
   }
 });
 
@@ -17395,8 +17433,8 @@ function setViewMode(mode) {
 function cycleViewMode() {
   if (isBearingMode()) return;
   onUserViewModeChange();
-  const i = VIEW_ORDER.indexOf(S.viewMode || "hud");
-  setViewMode(VIEW_ORDER[(i + 1) % VIEW_ORDER.length]);
+  const i2 = VIEW_ORDER.indexOf(S.viewMode || "hud");
+  setViewMode(VIEW_ORDER[(i2 + 1) % VIEW_ORDER.length]);
 }
 function registerTap(clientX, clientY, target, preventDefault) {
   if (!document.getElementById("hud")?.classList.contains("on")) return false;
@@ -17551,6 +17589,12 @@ function syncNavButtons() {
   mapBtn?.classList.toggle("hidden", isBearingMode());
   bearingBtn?.classList.toggle("hud-btn--active", isBearingMode());
 }
+function maybeShowCalibrationBanner() {
+  const banner = $2("bearing-cal-banner");
+  if (!banner) return;
+  const stale = getCompassCalibrationAgeMs() > CAL_WARN_MS;
+  banner.classList.toggle("hidden", !isBearingMode() || !stale);
+}
 function enterBearingMode(opts = {}) {
   const quiet = !!opts.quiet;
   if (!S.finish) {
@@ -17561,25 +17605,25 @@ function enterBearingMode(opts = {}) {
     if (!quiet) alert("\u041D\u0435\u0442 GPS");
     return false;
   }
-  if (!S.route) {
-    if (!quiet) alert("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u043B\u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448");
-    return false;
-  }
   S.navMode = "bearing";
   setViewMode("hud");
   _smoothRel = 0;
+  _arrivedSpoken = false;
   applyBearingLayout(true);
   syncNavButtons();
+  maybeShowCalibrationBanner();
   if (telemetry_default.isActive?.()) {
-    telemetry_default.log("nav", { sub: "bearing_enter" });
+    telemetry_default.log("nav", { sub: "bearing_enter", has_route: !!S.route?.coords?.length });
   }
   return true;
 }
 function exitBearingMode() {
   if (S.navMode !== "bearing") return;
   S.navMode = "route";
+  _arrivedSpoken = false;
   applyBearingLayout(false);
   syncNavButtons();
+  $2("bearing-cal-banner")?.classList.add("hidden");
   if (telemetry_default.isActive?.()) {
     telemetry_default.log("nav", { sub: "bearing_exit" });
   }
@@ -17609,20 +17653,32 @@ function tickBearing(now, kmh) {
   const gps = S.gps;
   const target = getBearingTarget();
   const hdg = getEffectiveHeading(gps);
+  const gpsLost = isGpsFixStale(GPS_LOST_MS);
   const mid = $2("mid-info");
   const tStr = S.startTs ? "T+" + fmtRideTime((Date.now() - S.startTs) / 1e3) : "\u2014";
-  if (mid) mid.textContent = tStr + " \xB7 \u041F\u0415\u041B\u0415\u041D\u0413";
-  if (!target || !gps) {
-    renderBearingArrow(0, "\u2014", { dim: true });
+  if (mid) {
+    mid.textContent = tStr + " \xB7 \u041F\u0415\u041B\u0415\u041D\u0413" + (gpsLost ? " \xB7 GPS?" : "");
+  }
+  maybeShowCalibrationBanner();
+  if (!target || !gps || gpsLost) {
+    renderBearingArrow(0, gpsLost ? "GPS \u043F\u043E\u0442\u0435\u0440\u044F\u043D" : "\u2014", { dim: true });
     const distEl2 = $2("bearing-distance");
     if (distEl2) distEl2.textContent = "\u2014";
+    const labelEl2 = $2("bearing-label");
+    if (labelEl2) {
+      labelEl2.textContent = gpsLost ? "\u041D\u0415\u0422 GPS" : "\u2014";
+      labelEl2.classList.toggle("bearing-label--warn", gpsLost);
+    }
     return;
   }
   const res = updateBearing(gps, target, hdg);
   if (!res) return;
   _smoothRel += (res.bearingRel - _smoothRel) * ARROW_SMOOTH;
   const labelEl = $2("bearing-label");
-  if (labelEl) labelEl.textContent = res.state.label;
+  if (labelEl) {
+    labelEl.textContent = res.state.label;
+    labelEl.classList.toggle("bearing-label--warn", res.state.uTurn || gpsLost);
+  }
   renderBearingArrow(_smoothRel, res.state.uTurn ? "\u0420\u0410\u0417\u0412\u041E\u0420\u041E\u0422" : "", {
     uTurn: res.state.uTurn,
     dim: false
@@ -17631,6 +17687,10 @@ function tickBearing(now, kmh) {
   const distEl = $2("bearing-distance");
   if (distEl) {
     distEl.innerHTML = fmt.u ? '<span class="bearing-dist-val">' + fmt.v + '</span><span class="bearing-dist-u">' + fmt.u + "</span>" : fmt.v;
+  }
+  if (res.state.arrived && !_arrivedSpoken) {
+    _arrivedSpoken = true;
+    speak("\u0412\u044B \u0443 \u0446\u0435\u043B\u0438");
   }
   const meta = $2("bearing-heading-meta");
   if (meta) {
@@ -17645,7 +17705,8 @@ function tickBearing(now, kmh) {
       sub: "bearing_tick",
       dist_m: Math.round(res.distanceM),
       rel: Math.round(_smoothRel),
-      hdg: hdg != null ? Math.round(hdg) : null
+      hdg: hdg != null ? Math.round(hdg) : null,
+      gps_lost: gpsLost
     });
   }
 }
@@ -17672,7 +17733,7 @@ function initBearingMode() {
   });
   syncNavButtons();
 }
-var ARRIVED_M, U_TURN_DEG, GPS_HEADING_ACC_M, GPS_HEADING_MIN_KMH, COMPASS_PREF_MAX_KMH, COMPASS_PREF_ACC_M, ARROW_SMOOTH, _smoothRel, _bound3, _lastTickLog, BEARING_ICON_SVG;
+var ARRIVED_M, U_TURN_DEG, GPS_HEADING_ACC_M, GPS_HEADING_MIN_KMH, COMPASS_PREF_MAX_KMH, COMPASS_PREF_ACC_M, ARROW_SMOOTH, GPS_LOST_MS, CAL_WARN_MS, _smoothRel, _bound3, _lastTickLog, _arrivedSpoken, BEARING_ICON_SVG;
 var init_bearing_mode = __esm({
   "js/bearing-mode.js"() {
     init_state();
@@ -17680,6 +17741,8 @@ var init_bearing_mode = __esm({
     init_geo();
     init_view_mode();
     init_heading();
+    init_gps();
+    init_voice();
     init_telemetry();
     ARRIVED_M = 30;
     U_TURN_DEG = 170;
@@ -17688,9 +17751,12 @@ var init_bearing_mode = __esm({
     COMPASS_PREF_MAX_KMH = 5;
     COMPASS_PREF_ACC_M = 20;
     ARROW_SMOOTH = 0.18;
+    GPS_LOST_MS = 5e3;
+    CAL_WARN_MS = 7 * 864e5;
     _smoothRel = 0;
     _bound3 = false;
     _lastTickLog = 0;
+    _arrivedSpoken = false;
     BEARING_ICON_SVG = '<svg class="bearing-icon-svg" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,5 21,23 16,19 11,23" fill="currentColor"/><circle cx="16" cy="16" r="2.2" fill="currentColor"/></svg>';
   }
 });
@@ -17799,17 +17865,27 @@ function headingDiverged(feed, now) {
   if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
   return simScaledDelta(now - _ctx.headingDivergeSince) >= OFF_ROUTE_HEADING_DIVERGE_MS;
 }
+function lateralAfterReroute() {
+  const geom = S.route?.geometry;
+  const gps = S.gps;
+  if (!geom || !gps) return null;
+  return projectPointToRoute(geom, gps)?.lateral ?? null;
+}
 function canTriggerReroute(feed, now) {
   const distNeed = confirmDistForSpeed(feed.spdMps);
   const msNeed = confirmMsForSpeed(feed.spdMps);
   const distOk = _ctx.suspectDistM >= distNeed;
   const timeOk = _ctx.confirmMs >= msNeed;
   const hdgOk = headingDiverged(feed, now);
-  const snapBad = S.snapQuality !== SnapQuality.GOOD || feed.lateral != null && feed.lateral > 80;
-  if (!snapBad) return null;
+  const lat = feed.lateral;
+  if (S.snapQuality === SnapQuality.LOST && lat != null && lat >= OFF_ROUTE_ENTER_M) {
+    if (_ctx.confirmMs >= 4e3 || _ctx.suspectDistM >= 40) return "snap_lost";
+  }
+  const offConfirmed = S.snapQuality !== SnapQuality.GOOD || lat != null && lat >= OFF_ROUTE_ENTER_M;
+  if (!offConfirmed) return null;
   if (distOk && hdgOk) return "dist_heading";
   if (distOk && timeOk && hdgOk) return "conjunct";
-  if (timeOk && hdgOk && feed.lateral > OFF_ROUTE_ENTER_M) return "time_heading";
+  if (timeOk && hdgOk && lat > OFF_ROUTE_ENTER_M) return "time_heading";
   return null;
 }
 function enterOfflineGuide(feed) {
@@ -17848,7 +17924,14 @@ function beginReroute(fromState, feed, trigger) {
   recalcRoute().then((ok) => {
     _ctx.rerouteBusy = false;
     if (ok) {
-      transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, metaFromFeed(feed));
+      const latAfter = lateralAfterReroute();
+      const meta = latAfter != null ? { ...metaFromFeed(feed), lateral: latAfter } : metaFromFeed(feed);
+      if (latAfter != null && latAfter > OFF_ROUTE_EXIT_M) {
+        transition(OffRouteState.REROUTING, OffRouteState.SUSPECT, meta);
+        resetSuspectCtx();
+        return;
+      }
+      transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, meta);
       resetBackoff();
       resetSuspectCtx();
       showRerouteOk();
@@ -17880,6 +17963,11 @@ function tickSuspectConfirm(feed, inDeadZone) {
 }
 function tryReturnOnRoute(feed) {
   if (feed.lateral >= OFF_ROUTE_EXIT_M) return false;
+  if (S.snapQuality === SnapQuality.LOST) return false;
+  if (S.snapQuality === SnapQuality.DEGRADED && feed.lateral >= OFF_ROUTE_EXIT_M * 0.6) return false;
+  if (feed.spdMps > OFF_ROUTE_HEADING_MIN_SPD && feed.heading != null && !isNaN(feed.heading) && feed.tangent != null && !isNaN(feed.tangent) && angleDiff(feed.heading, feed.tangent) > OFF_ROUTE_HEADING_DIVERGE_DEG) {
+    return false;
+  }
   const from = S.offRouteState;
   transition(from, OffRouteState.ON_ROUTE, metaFromFeed(feed));
   resetBackoff();
@@ -17888,7 +17976,7 @@ function tryReturnOnRoute(feed) {
   return true;
 }
 function tickOffRouteMachine(feed) {
-  if (isBearingMode() || S.compassMode || feed.lateral == null || !S.route) return;
+  if (isBearingMode() || feed.lateral == null || !S.route) return;
   const now = Date.now();
   const dtMs = _ctx.lastFeedMs ? Math.min(3e3, simScaledDelta(now - _ctx.lastFeedMs)) : 0;
   _ctx.lastFeedMs = now;
@@ -17926,6 +18014,7 @@ var init_offroute = __esm({
     init_util();
     init_geo();
     init_route();
+    init_route_geometry();
     init_voice();
     init_telemetry();
     init_snap_quality();
@@ -17954,84 +18043,18 @@ var init_offroute = __esm({
 });
 
 // js/low-speed-map.js
-function canUseLowSpeedMap(waitConverge) {
-  return !!$2("hud")?.classList.contains("on") && !!S.route && !waitConverge && !S.compassMode && !isBearingMode();
-}
-function isNavOnRoad(ctx = {}) {
-  if (!S.route?.geometry) return false;
-  const lat = ctx.lateral;
-  if (S.offRouteState === OffRouteState.OFFLINE_GUIDE) return false;
-  if (S.offRouteState === OffRouteState.SUSPECT) return false;
-  if (S.snapQuality === SnapQuality.LOST) return false;
-  if (lat != null && lat > OFF_ROUTE_EXIT_M) return false;
-  if (S.snapQuality === SnapQuality.GOOD) return true;
-  if (S.snapQuality === SnapQuality.DEGRADED && lat != null && lat <= OFF_ROUTE_EXIT_M) return true;
-  return false;
-}
-function shouldEnterOffRoadMap(ctx, waitConverge) {
-  if (S.lowSpeedMap === false || !canUseLowSpeedMap(waitConverge) || _userPinned) return false;
-  if (isNavOnRoad(ctx)) {
-    _offRoadSince = 0;
-    return false;
-  }
-  const now = Date.now();
-  if (!_offRoadSince) _offRoadSince = now;
-  return now - _offRoadSince >= OFF_ROAD_MAP_ENTER_MS;
-}
-function shouldExitOffRoadMap(ctx) {
-  return isNavOnRoad(ctx);
-}
-function logAutoMap(on, ctx) {
-  if (!telemetry_default.isActive?.()) return;
-  telemetry_default.log("nav", {
-    sub: "view_auto_map",
-    on,
-    lateral: ctx.lateral != null ? Math.round(ctx.lateral) : null,
-    snap: S.snapQuality,
-    off: S.offRouteState
-  });
-}
-function tickLowSpeedMap(kmh, waitConverge, ctx = {}) {
-  if (S.lowSpeedMap === false) {
-    if (_autoActive) {
-      _autoActive = false;
-      _offRoadSince = 0;
-      setViewMode("hud");
-    }
-    return;
-  }
-  if (shouldEnterOffRoadMap(ctx, waitConverge)) {
-    if (S.viewMode === "hud" || _autoActive) {
-      setViewMode("map_zoom");
-      if (!_autoActive) logAutoMap(true, ctx);
-      _autoActive = true;
-    }
-  } else if (_autoActive && shouldExitOffRoadMap(ctx)) {
-    setViewMode("hud");
-    logAutoMap(false, ctx);
-    _autoActive = false;
-    _userPinned = false;
-    _offRoadSince = 0;
-  }
+function tickLowSpeedMap(_kmh, _waitConverge, _ctx4 = {}) {
   if (S.viewMode !== "hud") tickNavMap();
 }
 function onUserViewModeChange() {
-  if (_autoActive) _userPinned = true;
-}
-function isAutoMapActive() {
-  return _autoActive;
 }
 function resetLowSpeedMap() {
-  _autoActive = false;
-  _userPinned = false;
-  _offRoadSince = 0;
 }
 function clampPathMinSpeedKmh(n) {
   const v = parseInt(n, 10);
   if (!Number.isFinite(v)) return DEFAULT_PATH_MIN_SPEED_KMH;
   return Math.max(0, Math.min(MAX_PATH_MIN_SPEED_KMH, v));
 }
-var _autoActive, _userPinned, _offRoadSince;
 var init_low_speed_map = __esm({
   "js/low-speed-map.js"() {
     init_state();
@@ -18039,13 +18062,7 @@ var init_low_speed_map = __esm({
     init_nav_constants();
     init_snap_quality();
     init_offroute();
-    init_bearing_mode();
-    init_view_mode();
     init_nav_map();
-    init_telemetry();
-    _autoActive = false;
-    _userPinned = false;
-    _offRoadSince = 0;
   }
 });
 
@@ -18054,14 +18071,16 @@ function computePathLayout(w, h) {
   const aspect = Math.max(0.2, w / Math.max(1, h));
   L2.W = 1e3;
   L2.H = Math.max(480, Math.min(2400, Math.round(L2.W / aspect)));
-  L2.roadH = L2.H;
+  const profileBand = S.showElevProfile && S.route?.geometry?.elevReady ? getElevProfileH() + PROFILE_GAP + 12 : 0;
+  L2.profileBand = profileBand;
+  L2.roadH = Math.max(240, L2.H - profileBand);
   L2.cx = L2.W / 2;
   L2.land = aspect > 1;
   L2.camFocal = L2.land ? 900 : 1300;
-  L2.camVoff = L2.H * 0.78;
+  L2.camVoff = L2.roadH * 0.78;
   L2.horizonY = L2.camVoff - L2.camFocal * Math.tan(CAM_PITCH);
 }
-function projectGround2(x, z, elevDelta) {
+function projectGround2(x2, z, elevDelta) {
   const pitch = getCamPitchRad();
   const cp = Math.cos(pitch);
   const sp = Math.sin(pitch);
@@ -18072,7 +18091,7 @@ function projectGround2(x, z, elevDelta) {
   const Yc = dy * cp + dz * sp - elevLift;
   const Zc = -dy * sp + dz * cp;
   if (Zc < 0.85) return null;
-  const sx = L2.cx + L2.camFocal * x / Zc;
+  const sx = L2.cx + L2.camFocal * x2 / Zc;
   const sy = L2.camVoff - L2.camFocal * Yc / Zc;
   if (sx < -L2.W * 0.4 || sx > L2.W * 1.4) return null;
   return { x: sx, y: sy };
@@ -18081,15 +18100,15 @@ function toLocalFrenet(lat, lon, snap, headingRad) {
   return worldToCamXZ(lat, lon, snap, headingRad);
 }
 function projectWorld(lat, lon, elev, snap, headingRad) {
-  const { x, z } = worldToCamXZ(lat, lon, snap, headingRad);
-  return projectGround2(x, z, elev);
+  const { x: x2, z } = worldToCamXZ(lat, lon, snap, headingRad);
+  return projectGround2(x2, z, elev);
 }
 function triArea2(a, b, c) {
   if (!a || !b || !c) return 0;
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
-function projectCam(x, z, elev) {
-  return projectGround2(x, z, elev);
+function projectCam(x2, z, elev) {
+  return projectGround2(x2, z, elev);
 }
 function buildStripMeshSvg(sections, geom, speedMps) {
   if (sections.length < 2) return { fill: "", edges: "" };
@@ -18100,9 +18119,9 @@ function buildStripMeshSvg(sections, geom, speedMps) {
   const pt = (p) => p.x.toFixed(1) + "," + p.y.toFixed(1);
   const edgeW = tok.pathEdgeW;
   const glowExtra = tok.glow !== "none" ? ' opacity="' + Math.max(0.1, tok.glowOpacity || 0.25) + '"' : "";
-  for (let i = sections.length - 2; i >= 0; i--) {
-    const a = sections[i];
-    const b = sections[i + 1];
+  for (let i2 = sections.length - 2; i2 >= 0; i2--) {
+    const a = sections[i2];
+    const b = sections[i2 + 1];
     if (b.cz <= a.cz + 0.05) continue;
     const aL = projectCam(a.lx, a.lz, a.elev);
     const aR = projectCam(a.rx, a.rz, a.elev);
@@ -18146,11 +18165,11 @@ function turnAngleAt(step) {
   const coords = S.route.coords;
   let bi = 0;
   let bd = Infinity;
-  for (let i = 0; i < coords.length; i++) {
-    const d = haversine({ lat: coords[i][0], lon: coords[i][1] }, step);
+  for (let i2 = 0; i2 < coords.length; i2++) {
+    const d = haversine({ lat: coords[i2][0], lon: coords[i2][1] }, step);
     if (d < bd) {
       bd = d;
-      bi = i;
+      bi = i2;
     }
   }
   if (bi <= 0 || bi >= coords.length - 1) return null;
@@ -18258,16 +18277,16 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
   const placed = [];
   const minSep = vb * 0.07;
   const pad = vb * 0.014;
-  for (let i = 0; i < markers.length; i++) {
-    const m = markers[i];
+  for (let i2 = 0; i2 < markers.length; i2++) {
+    const m = markers[i2];
     m.degX = null;
     m.degY = null;
     m.distX = null;
     m.distY = null;
-    const prev = i > 0 ? markers[i - 1] : null;
+    const prev = i2 > 0 ? markers[i2 - 1] : null;
     const sep = prev ? Math.hypot(m.P.x - prev.P.x, m.P.y - prev.P.y) : Infinity;
-    const wantDeg = i === 0 && !!m.deg;
-    const wantDist = i === 0 ? true : sep >= minSep;
+    const wantDeg = i2 === 0 && !!m.deg;
+    const wantDist = i2 === 0 ? true : sep >= minSep;
     if (wantDeg) {
       const sides = [m.labelSide, -m.labelSide];
       for (const side of sides) {
@@ -18294,23 +18313,23 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
     const distText = m.dist + " \u043C";
     const slots = [
       () => ({
-        x: m.P.x + m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
+        x: m.P.x + m.nx * m.arm * (1.5 + i2 * 0.25) * m.labelSide,
         y: m.P.y + m.ny * m.arm * 0.35 * m.labelSide + m.distFont * 0.15
       }),
-      () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.1 + i * 0.35) }),
+      () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.1 + i2 * 0.35) }),
       () => ({
-        x: m.P.x - m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
+        x: m.P.x - m.nx * m.arm * (1.5 + i2 * 0.25) * m.labelSide,
         y: m.P.y - m.ny * m.arm * 0.35 * m.labelSide
       }),
-      () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.6 + i * 0.4) })
+      () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.6 + i2 * 0.4) })
     ];
     for (const slot of slots) {
-      let { x, y } = slot();
-      x = clampLabelX(x, m.distFont * distText.length * 0.32, vbX, vbW);
+      let { x: x2, y } = slot();
+      x2 = clampLabelX(x2, m.distFont * distText.length * 0.32, vbX, vbW);
       y = clampLabelY(y, m.distFont, vbY, vbH);
-      const box = textBBox(x, y, m.distFont, distText);
+      const box = textBBox(x2, y, m.distFont, distText);
       if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
-        m.distX = x;
+        m.distX = x2;
         m.distY = y;
         placed.push(box);
         break;
@@ -18426,7 +18445,7 @@ function renderPathway() {
   const kmh = S.gps && S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
   const waitConverge = !hasEverConverged() && S.gpsConverged === false;
   const pathCtx = { lateral: S.navLateral };
-  if (!S.showPath || waitConverge || S.compassMode || isBearingMode()) {
+  if (!S.showPath || waitConverge || isBearingMode()) {
     block.classList.add("hidden");
     hud.classList.add("no-path");
     svg.innerHTML = "";
@@ -18434,12 +18453,6 @@ function renderPathway() {
     return;
   }
   tickLowSpeedMap(kmh, waitConverge, pathCtx);
-  if (isAutoMapActive()) {
-    block.classList.add("hidden");
-    hud.classList.add("no-path");
-    svg.innerHTML = "";
-    return;
-  }
   block.classList.remove("hidden");
   hud.classList.remove("no-path");
   const gpsHdg = S.smoothedHeading;
@@ -18488,7 +18501,7 @@ function renderPathway() {
   const mesh = buildStripMeshSvg(sections, geomReady, speedMps);
   html += mesh.fill + mesh.edges;
   const tok = getThemeTokens();
-  const centerS = sections.map((sec) => ({ p: projectCam(sec.cx, sec.cz, sec.elev), s: sec.s })).filter((x) => x.p);
+  const centerS = sections.map((sec) => ({ p: projectCam(sec.cx, sec.cz, sec.elev), s: sec.s })).filter((x2) => x2.p);
   for (let ci = 0; ci < centerS.length - 1; ci++) {
     const a = centerS[ci];
     const b = centerS[ci + 1];
@@ -18518,27 +18531,27 @@ function computeArrowCenterline(turnDeg, H = 120) {
     const a2 = aDeg * Math.PI / 180;
     return [Math.sin(a2), -Math.cos(a2)];
   };
-  let a = 0, x = 0, y = 0;
-  const pts = [[x, y]];
+  let a = 0, x2 = 0, y = 0;
+  const pts = [[x2, y]];
   let d = dirVec(a);
-  x += d[0] * stemLen;
+  x2 += d[0] * stemLen;
   y += d[1] * stemLen;
-  pts.push([x, y]);
+  pts.push([x2, y]);
   const N = Math.max(3, Math.round(Math.abs(turnDeg) / 5));
   const dA = turnDeg / N;
   const segLen = R * Math.abs(turnDeg) * Math.PI / 180 / N;
-  for (let i = 0; i < N; i++) {
+  for (let i2 = 0; i2 < N; i2++) {
     a += dA;
     d = dirVec(a);
-    x += d[0] * segLen;
+    x2 += d[0] * segLen;
     y += d[1] * segLen;
-    pts.push([x, y]);
+    pts.push([x2, y]);
   }
   d = dirVec(a);
-  x += d[0] * exitLen;
+  x2 += d[0] * exitLen;
   y += d[1] * exitLen;
-  pts.push([x, y]);
-  return { pts, dir: d, tip: [x, y] };
+  pts.push([x2, y]);
+  return { pts, dir: d, tip: [x2, y] };
 }
 function arrowViewBox(all, pad) {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -18589,14 +18602,14 @@ function renderChopperArrow(turnDeg) {
   const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
   const stem = pts.slice(0, pts.length - 1).concat([back]);
   const left = [], right = [];
-  for (let i = 0; i < stem.length; i++) {
-    const p = stem[i];
+  for (let i2 = 0; i2 < stem.length; i2++) {
+    const p = stem[i2];
     let t;
-    if (i < stem.length - 1) {
-      const q = stem[i + 1];
+    if (i2 < stem.length - 1) {
+      const q = stem[i2 + 1];
       t = [q[0] - p[0], q[1] - p[1]];
-    } else if (i > 0) {
-      const q = stem[i - 1];
+    } else if (i2 > 0) {
+      const q = stem[i2 - 1];
       t = [p[0] - q[0], p[1] - q[1]];
     } else {
       t = dir;
@@ -18619,15 +18632,15 @@ function vfdQuant(v, step = 2) {
 }
 function offsetRibbonPoints(centerPts, halfW) {
   const left = [], right = [];
-  for (let i = 0; i < centerPts.length; i++) {
-    const p = centerPts[i];
+  for (let i2 = 0; i2 < centerPts.length; i2++) {
+    const p = centerPts[i2];
     let dx, dy;
-    if (i < centerPts.length - 1) {
-      dx = centerPts[i + 1][0] - p[0];
-      dy = centerPts[i + 1][1] - p[1];
+    if (i2 < centerPts.length - 1) {
+      dx = centerPts[i2 + 1][0] - p[0];
+      dy = centerPts[i2 + 1][1] - p[1];
     } else {
-      dx = p[0] - centerPts[i - 1][0];
-      dy = p[1] - centerPts[i - 1][1];
+      dx = p[0] - centerPts[i2 - 1][0];
+      dy = p[1] - centerPts[i2 - 1][1];
     }
     const len = Math.hypot(dx, dy) || 1;
     const nx = -dy / len, ny = dx / len;
@@ -18715,10 +18728,10 @@ function renderCompass() {
   if (hdg != null && !isNaN(hdg)) {
     [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
       let diff = (d[1] - hdg + 540) % 360 - 180;
-      const x = cx + diff * px;
-      if (x < 14 || x > W - 14) return;
+      const x2 = cx + diff * px;
+      if (x2 < 14 || x2 > W - 14) return;
       const near = Math.abs(diff) < 12;
-      html += '<text x="' + x.toFixed(1) + '" y="29" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="27" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
+      html += '<text x="' + x2.toFixed(1) + '" y="29" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="27" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
     });
   }
   el.setAttribute("viewBox", "0 0 " + W + " " + H);
@@ -18732,10 +18745,10 @@ function renderCompassRose(el, tok, hdg) {
   if (hdg != null && !isNaN(hdg)) {
     [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
       const a2 = (d[1] - hdg) * Math.PI / 180;
-      const x = cx + Math.sin(a2) * r;
+      const x2 = cx + Math.sin(a2) * r;
       const y = cy - Math.cos(a2) * r;
       const near = Math.abs((d[1] - hdg + 540) % 360 - 180) < 18;
-      html += '<text x="' + x.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="' + fs + '" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
+      html += '<text x="' + x2.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="' + fs + '" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
     });
     const a = -hdg * Math.PI / 180;
     html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.sin(a) * (r - 10)).toFixed(1) + '" y2="' + (cy - Math.cos(a) * (r - 10)).toFixed(1) + '" stroke="' + tok.accent + '" stroke-width="' + (chopper ? 4 : 3) + '"/>';
@@ -19347,8 +19360,8 @@ function bindSettingsDataActions(reloadAllOpts) {
       if (typeof reloadAllOpts === "function") reloadAllOpts();
       logSettingsEvent("settings_import", {});
       alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u044B");
-    } catch (err) {
-      alert("\u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043C\u043F\u043E\u0440\u0442\u0430: " + (err.message || err));
+    } catch (err2) {
+      alert("\u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043C\u043F\u043E\u0440\u0442\u0430: " + (err2.message || err2));
     }
   });
   $2("btn-settings-reset")?.addEventListener("click", () => {
@@ -19396,7 +19409,6 @@ function loadAppOptsFromStorage() {
     setCheck("opt-path-chevrons", o.showPathChevrons !== false);
     setCheck("opt-chevron-labels", o.pathChevronLabels !== false);
     setVal("opt-chevron-max", o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
-    setCheck("opt-low-speed-map", o.lowSpeedMap !== false);
     if (o.pathMinSpeedKmh != null) S.pathMinSpeedKmh = clampPathMinSpeedKmh(o.pathMinSpeedKmh);
     setCheck("opt-heading", o.showCompass);
     setCheck("opt-cams", o.cams);
@@ -19414,6 +19426,7 @@ function loadAppOptsFromStorage() {
     setCheck("opt-roundabout-schema", o.roundaboutSchema !== false);
     if (typeof o.roundaboutSchema === "boolean") S.roundaboutSchema = o.roundaboutSchema;
     setVal("opt-cam-speed-tol", o.camSpeedTol != null ? o.camSpeedTol : DEFAULT_CAM_SPEED_TOL);
+    S.lowSpeedMap = false;
   } catch (e) {
   }
 }
@@ -19426,7 +19439,6 @@ function saveAppOptsToStorage() {
       showPathChevrons: S.showPathChevrons !== false,
       pathChevronLabels: S.pathChevronLabels !== false,
       pathChevronMax: S.pathChevronMax,
-      lowSpeedMap: S.lowSpeedMap !== false,
       pathMinSpeedKmh: clampPathMinSpeedKmh(S.pathMinSpeedKmh),
       showCompass: !!S.showCompass,
       cams: !!S.cams,
@@ -19648,1305 +19660,6 @@ var init_hud_settings_sheet = __esm({
   }
 });
 
-// js/yandex-link.js
-var yandex_link_exports = {};
-__export(yandex_link_exports, {
-  YANDEX_PARSER_REV: () => YANDEX_PARSER_REV,
-  YANDEX_URL_RE: () => YANDEX_URL_RE,
-  buildYandexRouteUrl: () => buildYandexRouteUrl,
-  decodeQueryComponent: () => decodeQueryComponent,
-  extractRtextParam: () => extractRtextParam,
-  extractYandexUrl: () => extractYandexUrl,
-  isYandexMapsUrl: () => isYandexMapsUrl,
-  normalizePastedText: () => normalizePastedText,
-  parseRtextWaypoints: () => parseRtextWaypoints,
-  parseYandexRouteLink: () => parseYandexRouteLink,
-  resolveYandexShortLink: () => resolveYandexShortLink
-});
-function decodeQueryComponent(raw) {
-  if (raw == null) return "";
-  let s2 = String(raw).trim();
-  if (!s2) return "";
-  try {
-    s2 = decodeURIComponent(s2.replace(/\+/g, "%20"));
-  } catch {
-    s2 = s2.replace(/\+/g, " ");
-  }
-  return s2;
-}
-function normalizePastedText(text) {
-  return String(text || "").replace(/&amp;/gi, "&").replace(/&#0*38;/g, "&").replace(/^[\s"'«»]+|[\s"'«»]+$/g, "").trim();
-}
-function extractYandexUrl(text) {
-  const s2 = normalizePastedText(text);
-  if (!s2) return null;
-  if (/^https?:\/\//i.test(s2)) {
-    const one = s2.match(YANDEX_URL_RE);
-    if (one) return one[0];
-  }
-  const m = s2.match(YANDEX_URL_RE);
-  return m ? m[0] : null;
-}
-function extractRtextParam(url) {
-  const m = String(url || "").match(RTEXT_RE);
-  return m ? decodeQueryComponent(m[1]) : null;
-}
-function parseRtextPoint(part, index, total) {
-  const s2 = String(part || "").trim();
-  if (!s2) return null;
-  const coord = s2.match(/^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
-  if (coord) {
-    const lat = parseFloat(coord[1]);
-    const lon = parseFloat(coord[2]);
-    if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
-      return { lat, lon, label: DEFAULT_LABELS(index, total) };
-    }
-  }
-  return null;
-}
-function parseRtextWaypoints(rtext) {
-  const parts = String(rtext || "").split("~").map((p) => p.trim()).filter(Boolean);
-  const waypoints = parts.map((part, i) => parseRtextPoint(part, i, parts.length)).filter(Boolean);
-  if (waypoints.length < 2) {
-    throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652 \u0441 \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u0430\u043C\u0438 lat,lon)");
-  }
-  return waypoints;
-}
-async function resolveYandexShortLink(url, opts = {}) {
-  const fetchFn = opts.fetchFn || globalThis.fetch;
-  if (!fetchFn) return url;
-  if (!SHORT_RE.test(url)) return url;
-  const tryFetch = async (method) => {
-    const res = await fetchFn(url, {
-      redirect: "follow",
-      method,
-      signal: AbortSignal.timeout?.(15e3)
-    });
-    return res.url && res.url !== url ? res.url : url;
-  };
-  try {
-    return await tryFetch("HEAD");
-  } catch {
-    try {
-      return await tryFetch("GET");
-    } catch {
-      return url;
-    }
-  }
-}
-function buildYandexRouteUrl(waypoints, opts = {}) {
-  const rtext = waypoints.map((w) => `${w.lat},${w.lon}`).join("~");
-  const rtt = opts.rtt || "auto";
-  return `https://yandex.ru/maps/?rtext=${encodeURIComponent(rtext)}&rtt=${rtt}`;
-}
-async function parseYandexRouteLink(rawUrl, opts = {}) {
-  let url = normalizePastedText(rawUrl);
-  if (!url) throw new Error("\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430");
-  const extracted = extractYandexUrl(url);
-  if (extracted) url = extracted;
-  else if (!/yandex\.|ya\.ru/i.test(url)) {
-    throw new Error("\u041D\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442");
-  }
-  url = await resolveYandexShortLink(url, opts);
-  const rtext = extractRtextParam(url);
-  if (!rtext) {
-    throw new Error(
-      "\u0412 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (rtext). \u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u2192 \xAB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\xBB \u2192 \u0441\u043A\u043E\u043F\u0438\u0440\u0443\u0439\u0442\u0435 \u0434\u043B\u0438\u043D\u043D\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443."
-    );
-  }
-  return parseRtextWaypoints(rtext);
-}
-function isYandexMapsUrl(raw) {
-  return !!extractYandexUrl(raw) || /yandex\.(?:ru|com)|ya\.ru\/maps/i.test(normalizePastedText(raw));
-}
-var YANDEX_PARSER_REV, YANDEX_URL_RE, SHORT_RE, RTEXT_RE, DEFAULT_LABELS;
-var init_yandex_link = __esm({
-  "js/yandex-link.js"() {
-    YANDEX_PARSER_REV = 2;
-    YANDEX_URL_RE = /https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/(?:maps|navi)[^\s"'<>]*/gi;
-    SHORT_RE = /^https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/maps\/-/i;
-    RTEXT_RE = /[?&#]rtext=([^&#]+)/i;
-    DEFAULT_LABELS = (i, total) => {
-      if (i === 0) return "\u0421\u0442\u0430\u0440\u0442";
-      if (i === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
-      return `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
-    };
-  }
-});
-
-// js/yandex-import.js
-function openDb2() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME2, DB_VER2);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains("imports")) {
-        db.createObjectStore("imports", { keyPath: "id" });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function saveYandexImportHistory(waypoints, mode) {
-  try {
-    const db = await openDb2();
-    const name = (waypoints[0]?.label || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442").split(/\s+/)[0].slice(0, 24);
-    await new Promise((resolve, reject) => {
-      const tx2 = db.transaction("imports", "readwrite");
-      tx2.objectStore("imports").put({
-        id: crypto.randomUUID(),
-        name,
-        ts: Date.now(),
-        mode,
-        waypointCount: waypoints.length
-      });
-      tx2.oncomplete = () => resolve();
-      tx2.onerror = () => reject(tx2.error);
-    });
-    db.close();
-  } catch (e) {
-    console.warn("yandex history:", e);
-  }
-}
-function waypointsToOsrmPoints(waypoints, gps) {
-  const pts = waypoints.map((w) => ({ lat: w.lat, lon: w.lon }));
-  if (gps && pts.length) {
-    if (haversine(gps, pts[0]) > 500) pts.unshift({ lat: gps.lat, lon: gps.lon });
-    else pts[0] = { lat: gps.lat, lon: gps.lon };
-  }
-  return pts;
-}
-function hideImportModal() {
-  $2("yandexImportModal")?.classList.remove("on");
-  _pendingWaypoints = null;
-  _pendingUrl = "";
-}
-function hideBanner() {
-  const banner = $2("yandex-banner");
-  banner?.classList.remove("on");
-  banner?.classList.add("hidden");
-}
-async function finishImport(mode) {
-  const wps = _pendingWaypoints;
-  const urlForInput = _pendingUrl;
-  if (!wps?.length) return;
-  hideImportModal();
-  hideBanner();
-  const status = $2("s-finish");
-  const btn = $2("btn-build-route");
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "\u23F3 \u0418\u043C\u043F\u043E\u0440\u0442\u2026";
-  }
-  if (status) {
-    status.textContent = mode === "direct" ? "\u23F3 \u0411\u044B\u0441\u0442\u0440\u044B\u0439 \u0441\u0442\u0430\u0440\u0442\u2026" : "\u23F3 \u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 OSRM\u2026";
-    status.className = "status";
-  }
-  try {
-    if (mode === "direct") {
-      attachRouteFromImport(buildDirectRouteFromWaypoints(wps), wps);
-    } else {
-      const pts = waypointsToOsrmPoints(wps, S.gps);
-      const route = await fetchRouteThroughWaypoints(pts);
-      attachRouteFromImport(route, pts);
-    }
-    const { refreshRouteUi: refreshRouteUi2 } = await Promise.resolve().then(() => (init_setup(), setup_exports));
-    refreshRouteUi2();
-    await saveYandexImportHistory(wps, mode);
-    telemetry_default.log("nav", { sub: "yandex_import", mode, n: wps.length });
-    if (status) {
-      status.textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442 \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB";
-      status.className = "status ok";
-    }
-    $2("finish-input").value = urlForInput || `${wps.length} \u0442\u043E\u0447\u0435\u043A \u042F\u043D\u0434\u0435\u043A\u0441`;
-  } catch (e) {
-    if (status) {
-      status.textContent = "\u274C " + (e.message || e);
-      status.className = "status err";
-    }
-  } finally {
-    if (btn) {
-      btn.disabled = !(S.gps && S.finish);
-      btn.textContent = "\u{1F5FA} \u041F\u043E\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442";
-    }
-  }
-}
-function offerYandexImport(waypoints, sourceUrl = "") {
-  _pendingWaypoints = waypoints;
-  _pendingUrl = sourceUrl || "";
-  const modal = $2("yandexImportModal");
-  const info = $2("yandex-import-info");
-  if (info) {
-    info.textContent = `\u0422\u043E\u0447\u0435\u043A: ${waypoints.length}. \u0414\u043B\u044F \u0442\u043E\u0447\u043D\u043E\u0433\u043E \u043F\u043E\u0432\u0442\u043E\u0440\u0435\u043D\u0438\u044F \u0433\u0435\u043E\u043C\u0435\u0442\u0440\u0438\u0438 \u042F\u043D\u0434\u0435\u043A\u0441\u0430 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0439\u0442\u0435 \u043F\u0440\u043E\u043C\u0435\u0436\u0443\u0442\u043E\u0447\u043D\u044B\u0435 \u0442\u043E\u0447\u043A\u0438 \u043A\u0430\u0436\u0434\u044B\u0435 3\u20135 \u043A\u043C \u2014 \u0438\u043D\u0430\u0447\u0435 OSRM \u043C\u043E\u0436\u0435\u0442 \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u0435 \u0434\u043E\u0440\u043E\u0433\u0438.`;
-  }
-  modal?.classList.add("on");
-}
-async function importYandexFromText(rawText) {
-  const { parseYandexRouteLink: parseYandexRouteLink2 } = await Promise.resolve().then(() => (init_yandex_link(), yandex_link_exports));
-  const url = extractYandexUrl(rawText) || rawText.trim();
-  const wps = await parseYandexRouteLink2(url);
-  offerYandexImport(wps, url);
-  return wps;
-}
-function showYandexBanner(message, onApply) {
-  const banner = $2("yandex-banner");
-  const msg = $2("yandex-banner-msg");
-  if (!banner) return;
-  if (msg) msg.textContent = message || "\u041D\u0430\u0439\u0434\u0435\u043D\u0430 \u0441\u0441\u044B\u043B\u043A\u0430 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442";
-  banner.classList.remove("hidden");
-  banner.classList.add("on");
-  const applyBtn = $2("yandex-banner-apply");
-  const dismissBtn = $2("yandex-banner-dismiss");
-  const onOk = () => {
-    hideBanner();
-    onApply?.();
-  };
-  const onNo = () => hideBanner();
-  applyBtn?.replaceWith(applyBtn.cloneNode(true));
-  dismissBtn?.replaceWith(dismissBtn.cloneNode(true));
-  $2("yandex-banner-apply")?.addEventListener("click", onOk, { once: true });
-  $2("yandex-banner-dismiss")?.addEventListener("click", onNo, { once: true });
-}
-function initYandexImportUi() {
-  $2("yandex-import-direct")?.addEventListener("click", () => {
-    void finishImport("direct");
-  });
-  $2("yandex-import-routed")?.addEventListener("click", () => {
-    void finishImport("routed");
-  });
-  $2("yandex-import-cancel")?.addEventListener("click", hideImportModal);
-}
-var DB_NAME2, DB_VER2, _pendingWaypoints, _pendingUrl;
-var init_yandex_import = __esm({
-  "js/yandex-import.js"() {
-    init_state();
-    init_util();
-    init_geo();
-    init_route();
-    init_yandex_link();
-    init_telemetry();
-    DB_NAME2 = "moto-hud-yandex";
-    DB_VER2 = 1;
-    _pendingWaypoints = null;
-    _pendingUrl = "";
-  }
-});
-
-// js/route-map.js
-function clearLayers() {
-  if (!_map2) return;
-  _routeLayers.forEach((l) => _map2.removeLayer(l));
-  _hudWindowLayers.forEach((l) => _map2.removeLayer(l));
-  _markers.forEach((m) => _map2.removeLayer(m));
-  _routeLayers = [];
-  _hudWindowLayers = [];
-  _markers = [];
-}
-function routePolylineLatLngs(route) {
-  if (route?.geometry?.n > 1) return geometryToLatLngs(route.geometry);
-  const coords = route?.coords;
-  if (!coords?.length) return [];
-  return coords.map((c) => [c[0], c[1]]);
-}
-function latLngsForDistance(route, maxM, startS) {
-  const geom = route?.geometry;
-  if (geom?.n > 1) {
-    return latLngsSliceByS(geom, startS || 0, (startS || 0) + maxM);
-  }
-  const coords = route?.coords;
-  if (!coords || coords.length < 2) return [];
-  const out = [[coords[0][0], coords[0][1]]];
-  let acc = 0;
-  for (let i = 0; i < coords.length - 1 && acc < maxM; i++) {
-    const a = { lat: coords[i][0], lon: coords[i][1] };
-    const b = { lat: coords[i + 1][0], lon: coords[i + 1][1] };
-    const seg = haversine(a, b);
-    if (acc + seg >= maxM) {
-      const t = (maxM - acc) / seg;
-      out.push([a.lat + t * (b.lat - a.lat), a.lon + t * (b.lon - a.lon)]);
-      break;
-    }
-    acc += seg;
-    out.push([b.lat, b.lon]);
-  }
-  return out;
-}
-function applyTileLayer(id) {
-  if (!_map2) return;
-  const layers = resolveMapLayers(id);
-  if (_tileLayer2) _map2.removeLayer(_tileLayer2);
-  if (_overlayLayer2) {
-    _map2.removeLayer(_overlayLayer2);
-    _overlayLayer2 = null;
-  }
-  _tileLayer2 = import_leaflet2.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map2);
-  if (layers.overlay) {
-    _overlayLayer2 = import_leaflet2.default.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map2);
-  }
-}
-function ensureMap2() {
-  const box = $2("route-map");
-  if (!box) return null;
-  if (!_map2) {
-    box.innerHTML = "";
-    _map2 = import_leaflet2.default.map(box, {
-      zoomControl: true,
-      attributionControl: false,
-      preferCanvas: true
-    });
-    applyTileLayer(getMapProviderId());
-  }
-  return _map2;
-}
-function initMapProviderSelect(onChange) {
-  const sel = $2("opt-map");
-  if (!sel) return;
-  sel.innerHTML = buildMapProviderSelectHtml(getMapProviderId());
-  sel.addEventListener("change", () => {
-    saveMapProviderId(sel.value);
-    applyTileLayer(sel.value);
-    if (_lastRender) {
-      renderRouteMap(
-        _lastRender.alternatives,
-        _lastRender.selectedIdx,
-        _lastRender.start,
-        _lastRender.finish
-      );
-    }
-    if (onChange) onChange(sel.value);
-  });
-}
-function renderRouteMap(alternatives, selectedIdx, start2, finish) {
-  const section = $2("route-section");
-  if (!section) return;
-  if (!alternatives || !alternatives.length) {
-    section.classList.add("hidden");
-    clearLayers();
-    _lastRender = null;
-    return;
-  }
-  _lastRender = { alternatives, selectedIdx, start: start2, finish };
-  section.classList.remove("hidden");
-  const map = ensureMap2();
-  if (!map) return;
-  clearLayers();
-  const bounds = import_leaflet2.default.latLngBounds([]);
-  alternatives.forEach((r, i) => {
-    const latlngs = routePolylineLatLngs(r);
-    latlngs.forEach((ll) => bounds.extend(ll));
-    const sel = i === selectedIdx;
-    const layer = import_leaflet2.default.polyline(latlngs, {
-      color: ROUTE_COLORS[i % ROUTE_COLORS.length],
-      weight: sel ? 7 : 4,
-      opacity: sel ? 1 : 0.45,
-      lineCap: "round",
-      lineJoin: "round"
-    }).addTo(map);
-    layer.on("click", () => {
-      if (_onSelect) _onSelect(i);
-    });
-    _routeLayers.push(layer);
-    if (sel) {
-      const hudLenM = getElevProfileLenM();
-      const hudWin = latLngsForDistance(r, hudLenM, 0);
-      if (hudWin.length > 1) {
-        const glow = import_leaflet2.default.polyline(hudWin, {
-          color: "#ffffff",
-          weight: 11,
-          opacity: 0.28,
-          lineCap: "round",
-          lineJoin: "round"
-        }).addTo(map);
-        const core = import_leaflet2.default.polyline(hudWin, {
-          color: ROUTE_COLORS[i % ROUTE_COLORS.length],
-          weight: 5,
-          opacity: 0.95,
-          dashArray: "10,8",
-          lineCap: "round",
-          lineJoin: "round"
-        }).addTo(map).bindTooltip("\u041E\u043A\u043D\u043E HUD ~" + hudLenM / 1e3 + " \u043A\u043C", { direction: "top", sticky: true });
-        _hudWindowLayers.push(glow, core);
-      }
-    }
-  });
-  if (start2) {
-    const m = import_leaflet2.default.circleMarker([start2.lat, start2.lon], {
-      radius: 9,
-      color: "#000",
-      weight: 2,
-      fillColor: THEME.routeStart,
-      fillOpacity: 1
-    }).addTo(map).bindTooltip("\u0412\u044B", { permanent: false, direction: "top" });
-    bounds.extend([start2.lat, start2.lon]);
-    _markers.push(m);
-  }
-  if (finish) {
-    const m = import_leaflet2.default.circleMarker([finish.lat, finish.lon], {
-      radius: 9,
-      color: "#000",
-      weight: 2,
-      fillColor: THEME.routeFinish,
-      fillOpacity: 1
-    }).addTo(map).bindTooltip("\u0424\u0438\u043D\u0438\u0448", { permanent: false, direction: "top" });
-    bounds.extend([finish.lat, finish.lon]);
-    _markers.push(m);
-  }
-  const fuels = fuelStationsForMap(48);
-  fuels.forEach((st) => {
-    const col = fuelColor(st.status);
-    const m = import_leaflet2.default.circleMarker([st.lat, st.lon], {
-      radius: 7,
-      color: "#000",
-      weight: 1,
-      fillColor: col,
-      fillOpacity: 0.92
-    }).addTo(map).bindTooltip("\u26FD " + (st.brand || "\u0410\u0417\u0421"), { direction: "top", opacity: 0.92 });
-    bounds.extend([st.lat, st.lon]);
-    _markers.push(m);
-  });
-  if (bounds.isValid()) {
-    map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });
-  }
-  setTimeout(() => map.invalidateSize(), 120);
-}
-function renderRouteAlts(alternatives, selectedIdx, onPick) {
-  const box = $2("route-alts");
-  if (!box) return;
-  if (!alternatives || !alternatives.length) {
-    box.innerHTML = "";
-    return;
-  }
-  box.innerHTML = alternatives.map((r, i) => {
-    const km = (r.distance / 1e3).toFixed(1);
-    const min = Math.max(1, Math.round(r.duration / 60));
-    const sel = i === selectedIdx;
-    const col = ROUTE_COLORS[i % ROUTE_COLORS.length];
-    return '<button type="button" class="route-alt' + (sel ? " sel" : "") + '" data-ri="' + i + '"><span class="ra-dot" style="background:' + col + '"></span><span class="ra-main">\u0412\u0430\u0440\u0438\u0430\u043D\u0442 ' + (i + 1) + '</span><span class="ra-meta">' + km + " \u043A\u043C \xB7 ~" + min + " \u043C\u0438\u043D</span></button>";
-  }).join("");
-  box.querySelectorAll(".route-alt").forEach((b) => {
-    b.addEventListener("click", () => {
-      const idx = parseInt(b.getAttribute("data-ri"), 10);
-      if (!isNaN(idx)) onPick(idx);
-    });
-  });
-}
-function setRouteMapSelectHandler(fn) {
-  _onSelect = fn;
-}
-function updateRouteInfo(route) {
-  const el = $2("route-info");
-  if (!el || !route) {
-    if (el) el.textContent = "";
-    return;
-  }
-  const km = (route.distance / 1e3).toFixed(1);
-  const min = Math.max(1, Math.round(route.duration / 60));
-  el.textContent = "\u2705 " + km + " \u043A\u043C \xB7 ~" + min + " \u043C\u0438\u043D \u0434\u043E \u0444\u0438\u043D\u0438\u0448\u0430";
-  el.className = "route-info ok";
-}
-function clearRouteMap() {
-  $2("route-section")?.classList.add("hidden");
-  clearLayers();
-  _lastRender = null;
-  if ($2("route-alts")) $2("route-alts").innerHTML = "";
-  if ($2("route-info")) {
-    $2("route-info").textContent = "";
-    $2("route-info").className = "route-info";
-  }
-}
-function invalidateRouteMapSize() {
-  if (_map2) setTimeout(() => _map2.invalidateSize(), 150);
-}
-var import_leaflet2, _onSelect, _map2, _tileLayer2, _overlayLayer2, _routeLayers, _hudWindowLayers, _markers, _lastRender, ROUTE_COLORS;
-var init_route_map = __esm({
-  "js/route-map.js"() {
-    import_leaflet2 = __toESM(require_leaflet_src());
-    init_util();
-    init_geo();
-    init_elevation();
-    init_route_geometry();
-    init_map_providers();
-    init_fuel();
-    init_theme();
-    _onSelect = null;
-    _map2 = null;
-    _tileLayer2 = null;
-    _overlayLayer2 = null;
-    _routeLayers = [];
-    _hudWindowLayers = [];
-    _markers = [];
-    _lastRender = null;
-    ROUTE_COLORS = THEME.routeAlts;
-  }
-});
-
-// js/tts-health.js
-async function auditTtsHealth() {
-  if (!S.voice) {
-    return { ok: true, offlineVoice: true, platform: "off", hint: "" };
-  }
-  if (isNative()) {
-    try {
-      const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
-      const { supported } = await TextToSpeech2.isLanguageSupported({ lang: TTS_LANG });
-      let offlineVoice = supported;
-      let voices2 = 0;
-      try {
-        const res = await TextToSpeech2.getSupportedVoices();
-        const list = res.voices || [];
-        voices2 = list.length;
-        const ru2 = list.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
-        if (ru2.length) {
-          offlineVoice = ru2.some((v) => v.network === false || v.networkConnectionRequired === false);
-        }
-      } catch (e) {
-      }
-      return {
-        ok: !!supported,
-        offlineVoice,
-        voices: voices2,
-        platform: "native",
-        hint: !supported ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u2014 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0431\u0443\u0434\u0435\u0442 \u0431\u0435\u0437 \u043E\u0437\u0432\u0443\u0447\u043A\u0438." : !offlineVoice ? "\u041D\u0435\u0442 \u043E\u0444\u043B\u0430\u0439\u043D-\u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \xAB\u0432 \u0441\u0430\u043C\u043E\u043B\u0451\u0442\u0435\xBB \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u043E\u0433\u0443\u0442 \u043D\u0435 \u0437\u0432\u0443\u0447\u0430\u0442\u044C." : ""
-      };
-    } catch (e) {
-      return { ok: false, offlineVoice: false, platform: "native", hint: String(e.message || e) };
-    }
-  }
-  if (!("speechSynthesis" in window)) {
-    return { ok: false, offlineVoice: false, platform: "web", hint: "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043E\u0437\u0432\u0443\u0447\u043A\u0443." };
-  }
-  const voices = speechSynthesis.getVoices();
-  const ru = voices.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
-  const localRu = ru.filter((v) => v.localService);
-  const best = ru.reduce((acc, v) => {
-    const sc = scoreRuVoice(v);
-    return sc > acc.score ? { score: sc, name: v.name } : acc;
-  }, { score: -1, name: "" });
-  return {
-    ok: ru.length > 0,
-    offlineVoice: localRu.length > 0,
-    voices: ru.length,
-    platform: "web",
-    hint: !ru.length ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0438 \u0441\u0438\u0441\u0442\u0435\u043C\u044B/\u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430." : !localRu.length ? "\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0431\u043B\u0430\u0447\u043D\u044B\u0435 \u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0431\u0435\u0437 \u0441\u0435\u0442\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0430 \u043C\u043E\u0436\u0435\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C." : best.name ? "\u0413\u043E\u043B\u043E\u0441: " + best.name : ""
-  };
-}
-async function openTtsInstall() {
-  if (!isNative()) return false;
-  try {
-    const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
-    await TextToSpeech2.openInstall();
-    return true;
-  } catch (e) {
-    console.warn("TTS install:", e);
-    return false;
-  }
-}
-function renderBanner(health) {
-  const el = $2("tts-banner");
-  if (!el) return;
-  if (!S.voice || health.ok && health.offlineVoice !== false) {
-    el.classList.add("hidden");
-    el.innerHTML = "";
-    return;
-  }
-  el.classList.remove("hidden");
-  let html = "<b>\u{1F50A} \u0413\u043E\u043B\u043E\u0441:</b> ";
-  if (!health.ok) {
-    html += health.hint || "\u0440\u0443\u0441\u0441\u043A\u0438\u0439 TTS \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.";
-  } else {
-    html += health.hint || "\u043E\u0444\u043B\u0430\u0439\u043D-\u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 \u044F\u0437\u044B\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043A\u0435\u0442.";
-  }
-  if (isNative()) {
-    html += ' <button type="button" class="linkish" id="btn-tts-install">\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0433\u043E\u043B\u043E\u0441\u0430</button>';
-  }
-  el.innerHTML = html;
-  $2("btn-tts-install")?.addEventListener("click", () => {
-    openTtsInstall().then(() => setTimeout(refreshTtsBanner, 2e3));
-  });
-}
-function applyTtsBanner(health) {
-  renderBanner(health);
-}
-async function refreshTtsBanner() {
-  const health = await auditTtsHealth();
-  applyTtsBanner(health);
-  return health;
-}
-function initTtsHealth() {
-  initRuVoice();
-  if ("speechSynthesis" in window) {
-    speechSynthesis.addEventListener("voiceschanged", () => {
-      refreshRuVoice();
-      refreshTtsBanner();
-    }, { once: false });
-  }
-  refreshTtsBanner();
-}
-var TTS_LANG;
-var init_tts_health = __esm({
-  "js/tts-health.js"() {
-    init_state();
-    init_util();
-    init_platform();
-    init_tts_ru();
-    TTS_LANG = "ru-RU";
-  }
-});
-
-// js/setup.js
-var setup_exports = {};
-__export(setup_exports, {
-  applyCoordsOrLink: () => applyCoordsOrLink,
-  bindSetupUI: () => bindSetupUI,
-  doAddressSearch: () => doAddressSearch,
-  doBuildRoute: () => doBuildRoute,
-  doFuelSearch: () => doFuelSearch,
-  initNativeHints: () => initNativeHints,
-  invalidateRoute: () => invalidateRoute,
-  refreshRouteUi: () => refreshRouteUi,
-  setFinishQuiet: () => setFinishQuiet,
-  setGoBarVisible: () => setGoBarVisible,
-  syncOptionsFromDom: () => syncOptionsFromDom
-});
-function syncSimPath() {
-  if (window.__SIM__?.setRoutePath && S.route?.coords?.length) {
-    window.__SIM__.setRoutePath(S.route.coords);
-  }
-}
-function setGoBarVisible(visible) {
-  $2("go-bar")?.classList.toggle("hidden", !visible);
-  $2("setup")?.classList.toggle("has-go-bar", !!visible);
-}
-function refreshRouteUi() {
-  if (!S.route) return;
-  renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-  renderRouteAlts(S.routeAlternatives, S.selectedRouteIdx, pickRoute);
-  updateRouteInfo(S.route);
-  syncSimPath();
-  setGoBarVisible(true);
-  $2("route-export-row")?.classList.toggle("hidden", !S.route?.coords?.length);
-  loadCameras();
-  checkStartReady();
-  scheduleGeometryBuild(S.routeAlternatives, () => {
-    renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-  });
-}
-function invalidateRoute() {
-  S.route = null;
-  S.routeAlternatives = [];
-  S.selectedRouteIdx = 0;
-  clearRouteMap();
-  setGoBarVisible(false);
-  $2("route-export-row")?.classList.add("hidden");
-  checkStartReady();
-  const b = $2("btn-build-route");
-  if (b) b.disabled = !(S.gps && S.finish);
-}
-function pickRoute(idx) {
-  selectRouteIndex(idx);
-  ensureRouteGeometry(S.route);
-  renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-  renderRouteAlts(S.routeAlternatives, S.selectedRouteIdx, pickRoute);
-  updateRouteInfo(S.route);
-  syncSimPath();
-  checkStartReady();
-  loadCameras();
-}
-async function doBuildRoute() {
-  if (!S.gps || !S.finish) {
-    $2("s-finish").textContent = "\u274C \u041D\u0443\u0436\u043D\u044B GPS \u0438 \u0444\u0438\u043D\u0438\u0448";
-    $2("s-finish").className = "status err";
-    return;
-  }
-  const btn = $2("btn-build-route");
-  const prev = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "\u23F3 \u0421\u0442\u0440\u043E\u0438\u043C\u2026";
-  $2("route-info").textContent = "\u23F3 \u0417\u0430\u043F\u0440\u043E\u0441 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u043E\u0432\u2026";
-  $2("route-info").className = "route-info";
-  try {
-    S.routeAlternatives = await fetchRouteAlternatives();
-    S.selectedRouteIdx = 0;
-    selectRouteIndex(0);
-    renderRouteMap(S.routeAlternatives, 0, S.gps, S.finish);
-    renderRouteAlts(S.routeAlternatives, 0, pickRoute);
-    updateRouteInfo(S.route);
-    syncSimPath();
-    setGoBarVisible(true);
-    loadCameras();
-    telemetry_default.log("nav", { sub: "route_built", variants: S.routeAlternatives.length });
-    $2("s-finish").textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D \u2014 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB \u0432\u043D\u0438\u0437\u0443";
-    $2("s-finish").className = "status ok";
-    scheduleGeometryBuild(S.routeAlternatives, () => {
-      renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-    });
-    prefetchFuelForMap().then(() => {
-      renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-    });
-  } catch (e) {
-    $2("route-info").textContent = "\u274C " + e.message;
-    $2("route-info").className = "route-info";
-    $2("s-finish").textContent = "\u274C " + e.message;
-    $2("s-finish").className = "status err";
-    clearRouteMap();
-  } finally {
-    btn.textContent = prev;
-    btn.disabled = !(S.gps && S.finish);
-    checkStartReady();
-  }
-}
-async function doAddressSearch() {
-  const q = $2("finish-input").value.trim();
-  if (!q) {
-    $2("s-finish").textContent = "\u274C \u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441";
-    $2("s-finish").className = "status err";
-    return;
-  }
-  if (parseInput(q)) {
-    applyCoordsOrLink();
-    return;
-  }
-  $2("s-finish").textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0430\u0434\u0440\u0435\u0441\u2026";
-  $2("s-finish").className = "status";
-  S.finish = null;
-  invalidateRoute();
-  if (window.__motoHUD) window.__motoHUD._searchBusy = true;
-  try {
-    const res = await searchAddress(q);
-    if (!res.length) {
-      $2("s-finish").textContent = "\u274C \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E";
-      $2("s-finish").className = "status err";
-      $2("search-results").style.display = "none";
-      return;
-    }
-    const box = $2("search-results");
-    box.innerHTML = "";
-    res.forEach((r) => {
-      const d = document.createElement("div");
-      d.textContent = r.display_name;
-      d.addEventListener("click", () => {
-        S.finish = { lat: parseFloat(r.lat), lon: parseFloat(r.lon), label: r.display_name.split(",")[0] };
-        $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + r.display_name;
-        $2("s-finish").className = "status ok";
-        $2("finish-input").value = r.display_name;
-        box.style.display = "none";
-        invalidateRoute();
-      });
-      box.appendChild(d);
-    });
-    box.style.display = "block";
-    try {
-      box.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
-    } catch (e) {
-    }
-    $2("s-finish").textContent = "\u{1F50E} \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430";
-    $2("s-finish").className = "status";
-  } catch (e) {
-    $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430: " + e.message;
-    $2("s-finish").className = "status err";
-  } finally {
-    if (window.__motoHUD) window.__motoHUD._searchBusy = false;
-  }
-}
-function applyFuelFinish(st) {
-  const brand = st.brand || st.name || "\u0410\u0417\u0421";
-  S.finish = { lat: st.lat, lon: st.lon, label: "\u26FD " + brand };
-  const inputVal = st.name && st.name !== st.brand ? brand + " \u2014 " + st.name : brand;
-  $2("finish-input").value = inputVal;
-  $2("finish-input").dataset.userEdited = "1";
-  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + inputVal + " \xB7 " + formatFuelDist(st.distGps);
-  $2("s-finish").className = "status ok";
-  invalidateRoute();
-  checkStartReady();
-}
-function fuelStationMetaLine(st) {
-  const parts = ['<span class="fuel-st ' + (st.status || "unknown") + '">' + escapeHtml(fuelStatusText(st.status)) + "</span>"];
-  if (st.confirmations) parts.push("\u043E\u0442\u0447\u0451\u0442\u043E\u0432: " + st.confirmations);
-  if (st.lastAt) parts.push("\u0434\u0430\u043D\u043D\u044B\u0435: " + escapeHtml(String(st.lastAt).split(" ")[0]));
-  if (st.statusSource === "crowd") parts.push("\u0432\u0430\u0448 \u043E\u0442\u0447\u0451\u0442");
-  return parts.join(" \xB7 ");
-}
-async function doFuelSearch() {
-  if (!S.gps) {
-    $2("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 GPS (\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u{1F4CD} GPS)";
-    $2("s-finish").className = "status err";
-    return;
-  }
-  const btn = $2("btn-fuel-search");
-  const prev = btn?.textContent;
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0410\u0417\u0421\u2026";
-  }
-  $2("s-finish").textContent = "\u23F3 \u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A\u2026";
-  $2("s-finish").className = "status";
-  try {
-    syncOptionsFromDom();
-    const limit = clampFuelPlannerCount(S.fuelPlannerCount);
-    const list = await searchNearestFuelStations(limit);
-    const box = $2("search-results");
-    box.innerHTML = "";
-    if (!list.length) {
-      $2("s-finish").textContent = "\u274C \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438";
-      $2("s-finish").className = "status err";
-      box.style.display = "none";
-      return;
-    }
-    list.forEach((st) => {
-      const row = document.createElement("div");
-      row.className = "fuel-item";
-      row.innerHTML = '<div class="fuel-title"><span>\u26FD ' + escapeHtml(st.brand || st.name || "\u0410\u0417\u0421") + '</span><span class="fuel-dist">' + formatFuelDist(st.distGps) + "</span></div>" + (st.name && st.name !== st.brand ? '<div class="fuel-meta">' + escapeHtml(st.name) + "</div>" : "") + '<div class="fuel-meta">' + fuelStationMetaLine(st) + "</div>";
-      row.addEventListener("click", () => {
-        applyFuelFinish(st);
-        box.style.display = "none";
-      });
-      box.appendChild(row);
-    });
-    box.style.display = "block";
-    try {
-      box.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
-    } catch (e) {
-    }
-    $2("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")" + fuelStatusHint();
-    $2("s-finish").className = "status";
-  } catch (e) {
-    $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0410\u0417\u0421: " + e.message;
-    $2("s-finish").className = "status err";
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = prev || "\u26FD \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0438";
-    }
-  }
-}
-function setFinishQuiet(lat, lon, label = "\u0422\u043E\u0447\u043A\u0430") {
-  S.finish = { lat, lon, label };
-  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + lat.toFixed(5) + ", " + lon.toFixed(5);
-  $2("s-finish").className = "status ok";
-  checkStartReady();
-}
-async function applyCoordsOrLink(opts = {}) {
-  const hideSearch = opts.hideSearch !== false;
-  const raw = $2("finish-input").value.trim();
-  if (await tryYandexRouteImport(raw)) return;
-  const p = parseInput(raw);
-  if (!p) {
-    $2("s-finish").textContent = "\u274C \u041D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043B\u0438. \u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B, \u0441\u0441\u044B\u043B\u043A\u0430 \u0438\u043B\u0438 \xAB\u041D\u0430\u0439\u0442\u0438 \u0430\u0434\u0440\u0435\u0441\xBB";
-    $2("s-finish").className = "status err";
-    return;
-  }
-  S.finish = p;
-  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + p.lat.toFixed(5) + ", " + p.lon.toFixed(5);
-  $2("s-finish").className = "status ok";
-  if (hideSearch) $2("search-results").style.display = "none";
-  invalidateRoute();
-}
-function looksLikeCoordsOrLink(s2) {
-  return /-?\d{1,2}\.\d+.*-?\d{1,3}\.\d+/.test(s2) || /[?&](ll|pt)=/.test(s2) || isYandexMapsUrl(s2);
-}
-async function tryYandexRouteImport(raw) {
-  if (!isYandexMapsUrl(raw)) return false;
-  try {
-    await importYandexFromText(raw);
-    return true;
-  } catch (e) {
-    $2("s-finish").textContent = "\u274C " + (e.message || e);
-    $2("s-finish").className = "status err";
-    return true;
-  }
-}
-function bindSetupUI() {
-  setRouteMapSelectHandler(pickRoute);
-  initMapProviderSelect();
-  $2("s-gps").addEventListener("click", startGps);
-  $2("btn-search").addEventListener("click", doAddressSearch);
-  $2("btn-fuel-search")?.addEventListener("click", doFuelSearch);
-  $2("btn-parse").addEventListener("click", applyCoordsOrLink);
-  $2("btn-build-route").addEventListener("click", doBuildRoute);
-  $2("finish-input").addEventListener("input", () => {
-    $2("finish-input").dataset.userEdited = "1";
-  });
-  $2("finish-input").addEventListener("focus", () => {
-    if (window.__motoHUD) window.__motoHUD._finishFocused = true;
-  });
-  $2("finish-input").addEventListener("blur", () => {
-    if (window.__motoHUD) window.__motoHUD._finishFocused = false;
-  });
-  $2("finish-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (looksLikeCoordsOrLink(e.target.value)) applyCoordsOrLink();
-      else doAddressSearch();
-    }
-  });
-  $2("btn-paste").addEventListener("click", async () => {
-    try {
-      const t = await navigator.clipboard.readText();
-      if (t) {
-        $2("finish-input").value = t;
-        if (await tryYandexRouteImport(t)) return;
-        if (looksLikeCoordsOrLink(t)) await applyCoordsOrLink();
-        else doAddressSearch();
-      }
-    } catch (e) {
-      $2("s-finish").textContent = "\u274C \u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u0431\u0443\u0444\u0435\u0440\u0443";
-      $2("s-finish").className = "status err";
-    }
-  });
-  $2("opt-voice").addEventListener("change", (e) => {
-    S.voice = e.target.checked;
-    refreshTtsBanner();
-    saveAppOptsToStorage();
-  });
-  $2("btn-compass-cal")?.addEventListener("click", async () => {
-    const btn = $2("btn-compass-cal");
-    const ok = await requestHeadingPermission();
-    if (!ok) {
-      alert("\u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u043A\u043E\u043C\u043F\u0430\u0441\u0443. \u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u0435 \u0434\u0430\u0442\u0447\u0438\u043A\u0438 \u043E\u0440\u0438\u0435\u043D\u0442\u0430\u0446\u0438\u0438 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430/\u0441\u0438\u0441\u0442\u0435\u043C\u044B.");
-      return;
-    }
-    startCompassCalibration(15e3);
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "\u23F3 \u0412\u043E\u0441\u044C\u043C\u0451\u0440\u043A\u0430\u2026 15 \u0441";
-    }
-    setTimeout(() => {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "\u{1F9ED} \u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043C\u043F\u0430\u0441\u0430";
-      }
-      if (!isCalibrating()) speak("\u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430");
-    }, 15e3);
-  });
-  $2("opt-path").addEventListener("change", (e) => {
-    S.showPath = e.target.checked;
-    if (!S.showPath) {
-      $2("block-path").classList.add("hidden");
-      $2("hud").classList.add("no-path");
-    } else {
-      $2("block-path").classList.remove("hidden");
-      $2("hud").classList.remove("no-path");
-    }
-    saveAppOptsToStorage();
-  });
-  $2("opt-crossings")?.addEventListener("change", (e) => {
-    S.showCrossingContext = e.target.checked;
-    saveAppOptsToStorage();
-  });
-  function syncChevronInputs() {
-    const on = S.showPathChevrons !== false;
-    const labels = $2("opt-chevron-labels");
-    const maxEl = $2("opt-chevron-max");
-    if (labels) labels.disabled = !on;
-    if (maxEl) maxEl.disabled = !on;
-  }
-  $2("opt-path-chevrons")?.addEventListener("change", (e) => {
-    S.showPathChevrons = e.target.checked;
-    syncChevronInputs();
-    saveAppOptsToStorage();
-  });
-  $2("opt-low-speed-map")?.addEventListener("change", (e) => {
-    S.lowSpeedMap = e.target.checked;
-    saveAppOptsToStorage();
-  });
-  $2("opt-chevron-labels")?.addEventListener("change", (e) => {
-    S.pathChevronLabels = e.target.checked;
-    saveAppOptsToStorage();
-  });
-  $2("opt-chevron-max")?.addEventListener("change", (e) => {
-    S.pathChevronMax = Math.max(1, Math.min(3, parseInt(e.target.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
-    e.target.value = String(S.pathChevronMax);
-    saveAppOptsToStorage();
-  });
-  const bindFinishOpt = (id) => {
-    $2(id)?.addEventListener("change", () => {
-      syncOptionsFromDom();
-      saveHudOptsToStorage();
-      applyHudChrome();
-    });
-  };
-  bindFinishOpt("opt-finish-dist");
-  bindFinishOpt("opt-finish-time");
-  bindFinishOpt("opt-finish-eta");
-  const bindChromeMode = (id, key) => {
-    $2(id)?.addEventListener("change", (e) => {
-      S[key] = normalizeChromeMode(e.target.value);
-      e.target.value = S[key];
-      saveHudOptsToStorage();
-      applyHudChrome();
-    });
-  };
-  bindChromeMode("opt-hud-status-mode", "hudStatusMode");
-  bindChromeMode("opt-hud-finish-mode", "hudFinishMode");
-  $2("opt-fuel-count")?.addEventListener("change", (e) => {
-    S.fuelPlannerCount = clampFuelPlannerCount(e.target.value);
-    e.target.value = String(S.fuelPlannerCount);
-    saveHudOptsToStorage();
-  });
-  $2("opt-fuel-proxy")?.addEventListener("change", (e) => {
-    setFuelProxyBase(e.target.value.trim());
-  });
-  $2("opt-fuel-proxy")?.addEventListener("blur", (e) => {
-    setFuelProxyBase(e.target.value.trim());
-  });
-  function syncElevInputs() {
-    const on = S.showElevProfile;
-    const exag = $2("opt-elev-exag");
-    const ph = $2("opt-elev-profile-h");
-    const plen = $2("opt-elev-profile-len");
-    if (exag) exag.disabled = !on;
-    if (ph) ph.disabled = !on;
-    if (plen) plen.disabled = !on;
-  }
-  $2("opt-elev-profile").addEventListener("change", (e) => {
-    S.showElevProfile = e.target.checked;
-    syncElevInputs();
-    saveElevOptsToStorage();
-    if (S.showElevProfile && S.route?.geometry) loadRouteElevation();
-  });
-  $2("opt-elev-exag").addEventListener("change", (e) => {
-    S.elevExag = Math.max(0.5, Math.min(5, parseFloat(e.target.value) || DEFAULT_ELEV_EXAG));
-    e.target.value = String(S.elevExag);
-    saveElevOptsToStorage();
-  });
-  $2("opt-elev-profile-h").addEventListener("change", (e) => {
-    S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
-      MAX_ELEV_PROFILE_H,
-      parseInt(e.target.value, 10) || DEFAULT_ELEV_PROFILE_H
-    ));
-    e.target.value = String(S.elevProfileH);
-    saveElevOptsToStorage();
-  });
-  $2("opt-elev-profile-len").addEventListener("change", (e) => {
-    S.elevProfileLenKm = Math.max(MIN_ELEV_PROFILE_LEN_KM, Math.min(
-      MAX_ELEV_PROFILE_LEN_KM,
-      parseInt(e.target.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
-    ));
-    e.target.value = String(S.elevProfileLenKm);
-    saveElevOptsToStorage();
-    if (S.routeAlternatives?.length) renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
-  });
-  function syncCurveInputs() {
-    const on = S.curveWarn;
-    const sel = $2("opt-curve-strict");
-    if (sel) sel.disabled = !on;
-  }
-  function recomputeCurveIfReady() {
-    const geom = S.route?.geometry;
-    if (geom) computeCurveSpeed(geom, S.route);
-  }
-  $2("opt-curve-warn").addEventListener("change", (e) => {
-    S.curveWarn = e.target.checked;
-    syncCurveInputs();
-    saveCurveOptsToStorage();
-  });
-  $2("opt-curve-strict").addEventListener("change", (e) => {
-    const v = e.target.value;
-    if (v === "relaxed" || v === "normal" || v === "strict") S.curveStrict = v;
-    saveCurveOptsToStorage();
-    recomputeCurveIfReady();
-  });
-  $2("opt-heading").addEventListener("change", (e) => {
-    S.showCompass = e.target.checked;
-    $2("hud").classList.toggle("show-compass", S.showCompass);
-    saveAppOptsToStorage();
-  });
-  $2("opt-cams").addEventListener("change", (e) => {
-    S.cams = e.target.checked;
-    if (!S.cams) {
-      S.camLoadStatus = "off";
-      S.cameras = [];
-    }
-    updateCamStatusUI();
-    if (S.cams && S.route) loadCameras();
-    saveAppOptsToStorage();
-  });
-  $2("opt-back-only").addEventListener("change", (e) => {
-    S.backOnly = e.target.checked;
-    saveAppOptsToStorage();
-  });
-  $2("opt-tol").addEventListener("change", (e) => {
-    S.tolerance = Math.max(10, Math.min(90, parseInt(e.target.value, 10) || 45));
-    saveAppOptsToStorage();
-  });
-  $2("opt-nodir").addEventListener("change", (e) => {
-    S.noDirPolicy = e.target.value;
-    saveAppOptsToStorage();
-  });
-  $2("opt-limit").addEventListener("change", (e) => {
-    S.userDefaultLimit = parseInt(e.target.value, 10) || 0;
-    saveAppOptsToStorage();
-  });
-  $2("opt-speed-limit-dynamic")?.addEventListener("change", (e) => {
-    S.speedLimitDynamic = !!e.target.checked;
-    saveAppOptsToStorage();
-  });
-  $2("opt-speed-limit-fallback")?.addEventListener("change", (e) => {
-    S.speedLimitFallback = e.target.value === "hide" ? "hide" : "user-default";
-    saveAppOptsToStorage();
-  });
-  $2("opt-roundabout-schema")?.addEventListener("change", (e) => {
-    S.roundaboutSchema = !!e.target.checked;
-    saveAppOptsToStorage();
-  });
-  $2("opt-cam-speed-tol")?.addEventListener("change", (e) => {
-    S.camSpeedTol = Math.max(0, Math.min(50, parseInt(e.target.value, 10) || DEFAULT_CAM_SPEED_TOL));
-    e.target.value = String(S.camSpeedTol);
-    saveAppOptsToStorage();
-  });
-  $2("btn-start").addEventListener("click", () => {
-    requestAppFullscreen();
-    startHud();
-  });
-  let stopArmed = false;
-  let stopArmTimer = null;
-  let stopLastTap = 0;
-  $2("btn-stop").addEventListener("click", (e) => {
-    e.preventDefault();
-    const now = Date.now();
-    if (now - stopLastTap < 350) return;
-    stopLastTap = now;
-    if (stopArmed) {
-      stopArmed = false;
-      clearTimeout(stopArmTimer);
-      $2("btn-stop")?.classList.remove("armed");
-      if (confirm("\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044C \u043F\u043E\u0435\u0437\u0434\u043A\u0443?")) stopHud();
-      return;
-    }
-    stopArmed = true;
-    $2("btn-stop")?.classList.add("armed");
-    stopArmTimer = setTimeout(() => {
-      stopArmed = false;
-      $2("btn-stop")?.classList.remove("armed");
-    }, 1400);
-  });
-  $2("btn-fuel").addEventListener("click", () => {
-    cycleFuelAssist();
-  });
-  $2("btn-gear").addEventListener("click", () => {
-    if ($2("hud")?.classList.contains("on")) handleHudGearClick(syncOptionsFromDom);
-    else openSettingsPanel();
-  });
-  $2("qf-close").addEventListener("click", () => $2("quickFinish").classList.remove("on"));
-  window.addEventListener("orientationchange", () => {
-    invalidateRouteMapSize();
-    setTimeout(() => {
-      if ($2("hud").classList.contains("on")) onTick();
-    }, 250);
-  });
-  document.querySelectorAll(".setup-details").forEach((det) => {
-    det.addEventListener("toggle", () => {
-      if (det.open) setTimeout(() => det.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80);
-    });
-  });
-}
-function syncOptionsFromDom() {
-  S.voice = $2("opt-voice").checked;
-  S.showPath = $2("opt-path").checked;
-  S.showCrossingContext = $2("opt-crossings")?.checked ?? true;
-  S.showPathChevrons = $2("opt-path-chevrons")?.checked ?? true;
-  S.pathChevronLabels = $2("opt-chevron-labels")?.checked ?? true;
-  S.pathChevronMax = Math.max(1, Math.min(
-    3,
-    parseInt($2("opt-chevron-max")?.value, 10) || DEFAULT_PATH_CHEVRON_MAX
-  ));
-  S.lowSpeedMap = $2("opt-low-speed-map")?.checked !== false;
-  if ($2("opt-chevron-max")) $2("opt-chevron-max").value = String(S.pathChevronMax);
-  if ($2("opt-chevron-labels")) $2("opt-chevron-labels").disabled = !S.showPathChevrons;
-  if ($2("opt-chevron-max")) $2("opt-chevron-max").disabled = !S.showPathChevrons;
-  S.showFinishDist = $2("opt-finish-dist")?.checked ?? true;
-  S.showFinishTime = $2("opt-finish-time")?.checked ?? true;
-  S.showFinishEta = $2("opt-finish-eta")?.checked ?? true;
-  S.hudStatusMode = normalizeChromeMode($2("opt-hud-status-mode")?.value || S.hudStatusMode);
-  S.hudFinishMode = normalizeChromeMode($2("opt-hud-finish-mode")?.value || S.hudFinishMode);
-  if ($2("opt-hud-status-mode")) $2("opt-hud-status-mode").value = S.hudStatusMode;
-  if ($2("opt-hud-finish-mode")) $2("opt-hud-finish-mode").value = S.hudFinishMode;
-  applyHudChrome();
-  S.fuelPlannerCount = clampFuelPlannerCount($2("opt-fuel-count")?.value);
-  if ($2("opt-fuel-count")) $2("opt-fuel-count").value = String(S.fuelPlannerCount);
-  const proxyEl = $2("opt-fuel-proxy");
-  if (proxyEl) proxyEl.value = getFuelProxyBase();
-  S.showElevProfile = $2("opt-elev-profile").checked;
-  S.elevExag = Math.max(0.5, Math.min(5, parseFloat($2("opt-elev-exag").value) || DEFAULT_ELEV_EXAG));
-  S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
-    MAX_ELEV_PROFILE_H,
-    parseInt($2("opt-elev-profile-h")?.value, 10) || DEFAULT_ELEV_PROFILE_H
-  ));
-  S.elevProfileLenKm = Math.max(MIN_ELEV_PROFILE_LEN_KM, Math.min(
-    MAX_ELEV_PROFILE_LEN_KM,
-    parseInt($2("opt-elev-profile-len")?.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
-  ));
-  if ($2("opt-elev-exag")) $2("opt-elev-exag").value = String(S.elevExag);
-  if ($2("opt-elev-profile-h")) $2("opt-elev-profile-h").value = String(S.elevProfileH);
-  if ($2("opt-elev-profile-len")) $2("opt-elev-profile-len").value = String(S.elevProfileLenKm);
-  if ($2("opt-elev-exag")) $2("opt-elev-exag").disabled = !S.showElevProfile;
-  if ($2("opt-elev-profile-h")) $2("opt-elev-profile-h").disabled = !S.showElevProfile;
-  if ($2("opt-elev-profile-len")) $2("opt-elev-profile-len").disabled = !S.showElevProfile;
-  S.curveWarn = $2("opt-curve-warn")?.checked ?? true;
-  const strictEl = $2("opt-curve-strict");
-  if (strictEl) {
-    S.curveStrict = strictEl.value || "normal";
-    strictEl.disabled = !S.curveWarn;
-  }
-  S.showCompass = $2("opt-heading").checked;
-  S.cams = $2("opt-cams").checked;
-  S.backOnly = $2("opt-back-only").checked;
-  S.tolerance = parseInt($2("opt-tol").value, 10) || 45;
-  S.noDirPolicy = $2("opt-nodir").value;
-  S.userDefaultLimit = parseInt($2("opt-limit").value, 10) || 60;
-  S.speedLimitDynamic = $2("opt-speed-limit-dynamic")?.checked !== false;
-  S.speedLimitFallback = $2("opt-speed-limit-fallback")?.value === "hide" ? "hide" : "user-default";
-  S.roundaboutSchema = $2("opt-roundabout-schema")?.checked !== false;
-  S.camSpeedTol = Math.max(0, Math.min(
-    50,
-    parseInt($2("opt-cam-speed-tol")?.value, 10) || DEFAULT_CAM_SPEED_TOL
-  ));
-  if ($2("opt-cam-speed-tol")) $2("opt-cam-speed-tol").value = String(S.camSpeedTol);
-  $2("hud")?.classList.toggle("show-compass", S.showCompass);
-  if (!S.showPath) {
-    $2("block-path").classList.add("hidden");
-    $2("hud").classList.add("no-path");
-  } else {
-    $2("block-path")?.classList.remove("hidden");
-    $2("hud")?.classList.remove("no-path");
-  }
-}
-function initNativeHints() {
-  if (!isAndroidNative()) return;
-  const help = $2("drawer-help")?.querySelector(".hint, .drawer-body");
-  if (!help) return;
-  help.innerHTML += '<span class="help-section"><b>Android-\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435</b> \u041F\u0440\u0438 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u0438 \u2014 \u0443\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435 \xAB\u041D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u0430\xBB (foreground-service GPS). \u0412 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043E\u043F\u0442\u0438\u043C\u0438\u0437\u0430\u0446\u0438\u044E \u0431\u0430\u0442\u0430\u0440\u0435\u0438 \u0434\u043B\u044F \xAB\u041C\u043E\u0442\u043E \u0418\u041B\u0421\xBB, \u0438\u043D\u0430\u0447\u0435 GPS \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u0432\u0430\u043B\u0438\u0432\u0430\u0442\u044C\u0441\u044F \u043D\u0430 Samsung/Xiaomi/Huawei. \u0427\u0435\u043A-\u043B\u0438\u0441\u0442: <code>docs/oem-gps-matrix.md</code>.</span>';
-}
-var init_setup = __esm({
-  "js/setup.js"() {
-    init_state();
-    init_util();
-    init_geo();
-    init_yandex_link();
-    init_yandex_import();
-    init_gps();
-    init_route();
-    init_hud();
-    init_cam_status();
-    init_elevation();
-    init_curve_speed();
-    init_hud_opts();
-    init_hud_chrome();
-    init_app_opts();
-    init_platform();
-    init_route_map();
-    init_fuel();
-    init_fuel_config();
-    init_settings_ui();
-    init_hud_settings_sheet();
-    init_tts_health();
-    init_heading();
-    init_voice();
-    init_telemetry();
-  }
-});
-
 // js/favorites.js
 function normalizeFav(raw, idx) {
   if (!raw || typeof raw !== "object") return null;
@@ -20969,7 +19682,7 @@ function readFavsFromKey(key) {
     if (!raw) return [];
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr)) return [];
-    return arr.map((f2, i) => normalizeFav(f2, i)).filter(Boolean);
+    return arr.map((f2, i2) => normalizeFav(f2, i2)).filter(Boolean);
   } catch (e) {
     return [];
   }
@@ -21043,7 +19756,7 @@ function renderFavsEdit() {
   box.querySelectorAll(".fav-del").forEach((b) => {
     b.addEventListener("click", () => {
       const id = b.getAttribute("data-del");
-      const fav = loadFavs().find((x) => x.id === id);
+      const fav = loadFavs().find((x2) => x2.id === id);
       if (fav && confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \xAB" + fav.name + "\xBB?")) deleteFav(id);
     });
   });
@@ -21089,7 +19802,7 @@ function openFavModal(defaultName, point) {
   row.querySelectorAll("button").forEach((b) => {
     b.addEventListener("click", () => {
       favModalState.emoji = b.getAttribute("data-e");
-      row.querySelectorAll("button").forEach((x) => x.classList.remove("sel"));
+      row.querySelectorAll("button").forEach((x2) => x2.classList.remove("sel"));
       b.classList.add("sel");
     });
   });
@@ -21181,7 +19894,7 @@ function initFavorites() {
       try {
         const imported = JSON.parse(reader.result);
         if (!Array.isArray(imported)) throw new Error("format");
-        const valid = imported.map((f2, i) => normalizeFav(f2, i)).filter(Boolean);
+        const valid = imported.map((f2, i2) => normalizeFav(f2, i2)).filter(Boolean);
         if (!valid.length) {
           alert("\u0412 \u0444\u0430\u0439\u043B\u0435 \u043D\u0435\u0442 \u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0445 \u043C\u0435\u0441\u0442");
           return;
@@ -21199,8 +19912,8 @@ function initFavorites() {
         saveFavs(cur);
         refreshFavLists();
         alert("\u0418\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043E \u043C\u0435\u0441\u0442: " + added + (valid.length - added ? " (\u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u0434\u0443\u0431\u043B\u0435\u0439: " + (valid.length - added) + ")" : ""));
-      } catch (err) {
-        alert("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u0444\u0430\u0439\u043B: " + err.message);
+      } catch (err2) {
+        alert("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u0444\u0430\u0439\u043B: " + err2.message);
       }
     };
     reader.readAsText(file);
@@ -21276,11 +19989,11 @@ var init_web4 = __esm({
         document.addEventListener("fullscreenchange", this.handleVisibilityChange);
       }
       async allowSleep() {
-        var _a;
+        var _a2;
         if (!this._isSupported) {
           this.throwUnsupportedError();
         }
-        (_a = this.wakeLock) === null || _a === void 0 ? void 0 : _a.release();
+        (_a2 = this.wakeLock) === null || _a2 === void 0 ? void 0 : _a2.release();
         this.wakeLock = null;
         document.removeEventListener("visibilitychange", this.handleVisibilityChange);
         document.removeEventListener("fullscreenchange", this.handleVisibilityChange);
@@ -21404,10 +20117,10 @@ var init_telemetry_funnel = __esm({
 // js/trip-model.js
 function parseRtext(rtext) {
   if (!rtext?.trim()) return [];
-  return rtext.split("~").map((part, i) => {
+  return rtext.split("~").map((part, i2) => {
     const c = part.trim().match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
     if (!c) return null;
-    return { lat: +c[1], lon: +c[2], label: i === 0 ? "\u0421\u0442\u0430\u0440\u0442" : i === rtext.split("~").length - 1 ? "\u0424\u0438\u043D\u0438\u0448" : `\u0422\u043E\u0447\u043A\u0430 ${i + 1}` };
+    return { lat: +c[1], lon: +c[2], label: i2 === 0 ? "\u0421\u0442\u0430\u0440\u0442" : i2 === rtext.split("~").length - 1 ? "\u0424\u0438\u043D\u0438\u0448" : `\u0422\u043E\u0447\u043A\u0430 ${i2 + 1}` };
   }).filter(Boolean);
 }
 function rtextFromPoints(points) {
@@ -21420,8 +20133,8 @@ function auditSegment(rtext) {
     return { ok: false, km: 0, warnings: ["\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A"] };
   }
   let km = 0;
-  for (let i = 1; i < pts.length; i++) {
-    const seg = haversine(pts[i - 1], pts[i]) / 1e3;
+  for (let i2 = 1; i2 < pts.length; i2++) {
+    const seg = haversine(pts[i2 - 1], pts[i2]) / 1e3;
     km += seg;
     if (seg > 250) warnings.push(`\u0414\u043B\u0438\u043D\u043D\u044B\u0439 \u0441\u0435\u0433\u043C\u0435\u043D\u0442 ${Math.round(seg)} \u043A\u043C`);
   }
@@ -21455,20 +20168,20 @@ function buildTripFromNights({ id, title, start: start2, finish, nights, startDa
   };
   const chain = [start2, ...nights || [], finish];
   const baseDate = startDate ? /* @__PURE__ */ new Date(startDate + "T12:00:00") : null;
-  for (let i = 0; i < chain.length - 1; i++) {
-    const a = chain[i];
-    const b = chain[i + 1];
+  for (let i2 = 0; i2 < chain.length - 1; i2++) {
+    const a = chain[i2];
+    const b = chain[i2 + 1];
     const rtext = rtextFromPoints([a, b]);
     let dateLabel = "";
     if (baseDate && !isNaN(baseDate.getTime())) {
       const d = new Date(baseDate.getTime());
-      d.setDate(d.getDate() + i);
+      d.setDate(d.getDate() + i2);
       dateLabel = formatTripDayDate(d);
     }
     trip.days.push({
-      n: i + 1,
+      n: i2 + 1,
       date: dateLabel,
-      badge: i === chain.length - 2 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D",
+      badge: i2 === chain.length - 2 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D",
       variants: [{
         id: "calm",
         label: "\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439",
@@ -21569,10 +20282,10 @@ function parseSegmentEditorText(text) {
   const lines = String(text || "").split(/\n/).map((l) => l.trim()).filter(Boolean);
   if (lines.length < 2) throw new Error("\u041D\u0443\u0436\u043D\u043E \u043C\u0438\u043D\u0438\u043C\u0443\u043C 2 \u0442\u043E\u0447\u043A\u0438 (\u043F\u043E \u043E\u0434\u043D\u043E\u0439 \u043D\u0430 \u0441\u0442\u0440\u043E\u043A\u0443)");
   const pts = [];
-  for (let i = 0; i < lines.length; i++) {
-    const fb = i === 0 ? "\u0421\u0442\u0430\u0440\u0442" : i === lines.length - 1 ? "\u0424\u0438\u043D\u0438\u0448" : `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
-    const p = parseTripPoint(lines[i], fb);
-    if (!p) throw new Error(`\u0421\u0442\u0440\u043E\u043A\u0430 ${i + 1}: \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D\u044B \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B`);
+  for (let i2 = 0; i2 < lines.length; i2++) {
+    const fb = i2 === 0 ? "\u0421\u0442\u0430\u0440\u0442" : i2 === lines.length - 1 ? "\u0424\u0438\u043D\u0438\u0448" : `\u0422\u043E\u0447\u043A\u0430 ${i2 + 1}`;
+    const p = parseTripPoint(lines[i2], fb);
+    if (!p) throw new Error(`\u0421\u0442\u0440\u043E\u043A\u0430 ${i2 + 1}: \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D\u044B \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B`);
     pts.push(p);
   }
   return { rtext: rtextFromPoints(pts), points: pts };
@@ -21751,10 +20464,10 @@ function sampleViaPoints(coords, maxVia = MAX_VIA_POINTS) {
     return inner.map((c) => ({ lat: c[0], lon: c[1] }));
   }
   const out = [];
-  for (let i = 0; i < maxVia; i++) {
+  for (let i2 = 0; i2 < maxVia; i2++) {
     const idx = Math.min(
       inner.length - 1,
-      Math.round((i + 1) * inner.length / (maxVia + 1)) - 1
+      Math.round((i2 + 1) * inner.length / (maxVia + 1)) - 1
     );
     const c = inner[Math.max(0, idx)];
     out.push({ lat: c[0], lon: c[1] });
@@ -21769,9 +20482,9 @@ function buildYandexNaviUrl({ from, to, via = [] }) {
   }
   p.set("lat_to", String(round6(to.lat)));
   p.set("lon_to", String(round6(to.lon)));
-  via.forEach((pt, i) => {
-    p.set(`lat_via_${i}`, String(round6(pt.lat)));
-    p.set(`lon_via_${i}`, String(round6(pt.lon)));
+  via.forEach((pt, i2) => {
+    p.set(`lat_via_${i2}`, String(round6(pt.lat)));
+    p.set(`lon_via_${i2}`, String(round6(pt.lon)));
   });
   return `yandexnavi://build_route_on_map?${p.toString()}`;
 }
@@ -21869,7 +20582,7 @@ function downloadSegmentGpx(segment, name) {
   const pts = parseRtext(segment.rtext);
   if (pts.length < 2) return false;
   const ts = Date.now();
-  const track = pts.map((p, i) => ({ ...p, ts: ts + i * 6e4 }));
+  const track = pts.map((p, i2) => ({ ...p, ts: ts + i2 * 6e4 }));
   const xml = serializeGpxTrack(track, name || segment.label);
   const blob = new Blob([xml], { type: "application/gpx+xml" });
   const a = document.createElement("a");
@@ -21898,7 +20611,7 @@ var init_trip_planner = __esm({
 function base64UrlEncode(bytes) {
   let bin = "";
   const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+  for (let i2 = 0; i2 < arr.length; i2++) bin += String.fromCharCode(arr[i2]);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 function base64UrlDecode(str) {
@@ -21906,7 +20619,7 @@ function base64UrlDecode(str) {
   const b64 = str.replace(/-/g, "+").replace(/_/g, "/") + pad;
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  for (let i2 = 0; i2 < bin.length; i2++) out[i2] = bin.charCodeAt(i2);
   return out;
 }
 async function gzipBytes(text) {
@@ -22101,12 +20814,12 @@ function toggleSegmentDone(tripId, dayN, segIdx) {
   const all = readJson(PROGRESS_KEY);
   const cur = all[tripId] || { done: [] };
   cur.done = cur.done || [];
-  const i = cur.done.findIndex((d) => d.dayN === dayN && d.segIdx === segIdx);
-  if (i >= 0) cur.done.splice(i, 1);
+  const i2 = cur.done.findIndex((d) => d.dayN === dayN && d.segIdx === segIdx);
+  if (i2 >= 0) cur.done.splice(i2, 1);
   else cur.done.push({ dayN, segIdx, at: Date.now() });
   all[tripId] = cur;
   writeJson(PROGRESS_KEY, all);
-  return i < 0;
+  return i2 < 0;
 }
 function clearTripProgress(tripId) {
   const all = readJson(PROGRESS_KEY);
@@ -22343,9 +21056,9 @@ function buildRoutePolyline(rtext) {
   if (pts.length < 2) return { verts: [], totalM: 0, totalKm: 0 };
   const verts = [{ ...pts[0], s: 0 }];
   let s2 = 0;
-  for (let i = 1; i < pts.length; i++) {
-    s2 += haversine(pts[i - 1], pts[i]);
-    verts.push({ ...pts[i], s: s2 });
+  for (let i2 = 1; i2 < pts.length; i2++) {
+    s2 += haversine(pts[i2 - 1], pts[i2]);
+    verts.push({ ...pts[i2], s: s2 });
   }
   return { verts, totalM: s2, totalKm: s2 / 1e3 };
 }
@@ -22354,9 +21067,9 @@ function projectToPolyline(poly, point) {
   if (verts.length < 2) return { routeM: 0, lateralM: Infinity };
   let bestS = 0;
   let bestLat = Infinity;
-  for (let i = 0; i < verts.length - 1; i++) {
-    const a = verts[i];
-    const b = verts[i + 1];
+  for (let i2 = 0; i2 < verts.length - 1; i2++) {
+    const a = verts[i2];
+    const b = verts[i2 + 1];
     const segLen = haversine(a, b) || 1;
     const latM = distToSegment(point, a, b);
     const r = Math.PI / 180;
@@ -22406,7 +21119,7 @@ async function planGreedyFuelStops(segment, profile, opts = {}) {
     const candidates = stations.map((st) => {
       const proj = projectToPolyline(poly, st);
       return { st, ...proj };
-    }).filter((x) => x.lateralM <= corridorM && x.routeM > posM + 400 && x.routeM <= reachableM).sort((a, b) => b.routeM - a.routeM);
+    }).filter((x2) => x2.lateralM <= corridorM && x2.routeM > posM + 400 && x2.routeM <= reachableM).sort((a, b) => b.routeM - a.routeM);
     if (!candidates.length) {
       const fromKm = Math.round(posM / 1e3);
       const toKm = Math.round(reachableM / 1e3);
@@ -22499,7 +21212,7 @@ function formatFuelPlanHtml(fuelPlan) {
   return lines.join("");
 }
 function assessDayFuel(day, variantId, profile) {
-  const v = day?.variants?.find((x) => x.id === variantId) || day?.variants?.[0];
+  const v = day?.variants?.find((x2) => x2.id === variantId) || day?.variants?.[0];
   if (!v?.segments?.length) return null;
   let totalKm = 0;
   let totalLiters = 0;
@@ -22610,7 +21323,7 @@ function initSegmentEditor() {
       const { rtext, points } = parseSegmentEditorText($2("trip-seg-edit-points")?.value || "");
       const audit = auditSegment(rtext);
       const day = _ctx2.trip.days.find((d) => d.n === _ctx2.dayN);
-      const v = day?.variants?.find((x) => x.id === _ctx2.variantId) || day?.variants?.[0];
+      const v = day?.variants?.find((x2) => x2.id === _ctx2.variantId) || day?.variants?.[0];
       const seg = v?.segments?.[_ctx2.segIdx];
       if (!seg) throw new Error("\u0421\u0435\u0433\u043C\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
       seg.label = label;
@@ -22640,86 +21353,86 @@ var init_trip_segment_editor = __esm({
 
 // js/trip-segment-map.js
 function destroyMap() {
-  if (_map3) {
-    _map3.remove();
-    _map3 = null;
+  if (_map2) {
+    _map2.remove();
+    _map2 = null;
   }
-  _tileLayer3 = null;
-  _markers2 = [];
+  _tileLayer2 = null;
+  _markers = [];
   _line = null;
 }
 function applyTiles2() {
-  if (!_map3) return;
+  if (!_map2) return;
   const layers = resolveMapLayers(getMapProviderId());
-  if (_tileLayer3) _map3.removeLayer(_tileLayer3);
-  _tileLayer3 = import_leaflet3.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map3);
+  if (_tileLayer2) _map2.removeLayer(_tileLayer2);
+  _tileLayer2 = import_leaflet2.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map2);
 }
-function markerLabel(i, total) {
-  if (i === 0) return "\u0421\u0442\u0430\u0440\u0442";
-  if (i === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
-  return `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
+function markerLabel(i2, total) {
+  if (i2 === 0) return "\u0421\u0442\u0430\u0440\u0442";
+  if (i2 === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
+  return `\u0422\u043E\u0447\u043A\u0430 ${i2 + 1}`;
 }
 function syncPolyline() {
-  const latlngs = _markers2.map((m) => m.getLatLng());
+  const latlngs = _markers.map((m) => m.getLatLng());
   if (_line) _line.setLatLngs(latlngs);
-  else if (_map3 && latlngs.length) {
-    _line = import_leaflet3.default.polyline(latlngs, { color: "#4dabf7", weight: 4, opacity: 0.9 }).addTo(_map3);
+  else if (_map2 && latlngs.length) {
+    _line = import_leaflet2.default.polyline(latlngs, { color: "#4dabf7", weight: 4, opacity: 0.9 }).addTo(_map2);
   }
   const n = $2("trip-seg-map-count");
   if (n) n.textContent = `${latlngs.length} \u0442\u043E\u0447\u0435\u043A`;
 }
 function addMarker(lat, lon, label, draggable = true) {
-  if (!_map3) return null;
-  const idx = _markers2.length;
-  const m = import_leaflet3.default.marker([lat, lon], { draggable });
+  if (!_map2) return null;
+  const idx = _markers.length;
+  const m = import_leaflet2.default.marker([lat, lon], { draggable });
   m._wpLabel = label || markerLabel(idx, idx + 1);
   m.bindTooltip(m._wpLabel, { permanent: true, direction: "top", className: "trip-map-lbl" });
   m.on("drag", syncPolyline);
   m.on("dragend", () => {
-    m._wpLabel = markerLabel(_markers2.indexOf(m), _markers2.length);
+    m._wpLabel = markerLabel(_markers.indexOf(m), _markers.length);
     m.setTooltipContent(m._wpLabel);
   });
-  m.addTo(_map3);
-  _markers2.push(m);
+  m.addTo(_map2);
+  _markers.push(m);
   syncPolyline();
   return m;
 }
 function pointsFromMarkers() {
-  return _markers2.map((m, i) => ({
+  return _markers.map((m, i2) => ({
     lat: m.getLatLng().lat,
     lon: m.getLatLng().lng,
-    label: m._wpLabel || markerLabel(i, _markers2.length)
+    label: m._wpLabel || markerLabel(i2, _markers.length)
   }));
 }
 function fitBounds() {
-  if (!_map3 || !_markers2.length) return;
-  if (_markers2.length === 1) {
-    _map3.setView(_markers2[0].getLatLng(), 10);
+  if (!_map2 || !_markers.length) return;
+  if (_markers.length === 1) {
+    _map2.setView(_markers[0].getLatLng(), 10);
     return;
   }
-  const g = import_leaflet3.default.featureGroup(_markers2);
-  _map3.fitBounds(g.getBounds().pad(0.15));
+  const g = import_leaflet2.default.featureGroup(_markers);
+  _map2.fitBounds(g.getBounds().pad(0.15));
 }
 function initMap(segment) {
   const box = $2("trip-seg-map");
   if (!box) return;
   destroyMap();
   box.innerHTML = "";
-  _map3 = import_leaflet3.default.map(box, { zoomControl: true, attributionControl: false, preferCanvas: true });
+  _map2 = import_leaflet2.default.map(box, { zoomControl: true, attributionControl: false, preferCanvas: true });
   applyTiles2();
   const pts = parseRtext(segment.rtext);
   if (!pts.length) {
-    _map3.setView([55.75, 37.62], 6);
-    _map3.on("click", onMapClick);
+    _map2.setView([55.75, 37.62], 6);
+    _map2.on("click", onMapClick);
     return;
   }
-  pts.forEach((p, i) => addMarker(p.lat, p.lon, p.label || markerLabel(i, pts.length)));
+  pts.forEach((p, i2) => addMarker(p.lat, p.lon, p.label || markerLabel(i2, pts.length)));
   fitBounds();
-  _map3.on("click", onMapClick);
+  _map2.on("click", onMapClick);
 }
 function onMapClick(e) {
-  if (!_map3 || !_ctx3) return;
-  const n = _markers2.length;
+  if (!_map2 || !_ctx3) return;
+  const n = _markers.length;
   addMarker(e.latlng.lat, e.latlng.lng, markerLabel(n, n + 1));
 }
 function setError2(msg) {
@@ -22736,7 +21449,7 @@ function openSegmentMapEditor(ctx) {
   $2("trip-segment-map-modal")?.classList.add("on");
   requestAnimationFrame(() => {
     initMap(ctx.segment);
-    _map3?.invalidateSize();
+    _map2?.invalidateSize();
   });
 }
 function closeSegmentMapEditor() {
@@ -22750,8 +21463,8 @@ function initSegmentMapEditor() {
   modal.dataset.bound = "1";
   $2("trip-seg-map-cancel")?.addEventListener("click", closeSegmentMapEditor);
   $2("trip-seg-map-undo")?.addEventListener("click", () => {
-    const m = _markers2.pop();
-    if (m && _map3) _map3.removeLayer(m);
+    const m = _markers.pop();
+    if (m && _map2) _map2.removeLayer(m);
     syncPolyline();
   });
   $2("trip-seg-map-save")?.addEventListener("click", async () => {
@@ -22762,7 +21475,7 @@ function initSegmentMapEditor() {
       const rtext = rtextFromPoints(points);
       const audit = auditSegment(rtext);
       const day = _ctx3.trip.days.find((d) => d.n === _ctx3.dayN);
-      const v = day?.variants?.find((x) => x.id === _ctx3.variantId) || day?.variants?.[0];
+      const v = day?.variants?.find((x2) => x2.id === _ctx3.variantId) || day?.variants?.[0];
       const seg = v?.segments?.[_ctx3.segIdx];
       if (!seg) throw new Error("\u0421\u0435\u0433\u043C\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
       seg.rtext = rtext;
@@ -22776,17 +21489,17 @@ function initSegmentMapEditor() {
     }
   });
 }
-var import_leaflet3, _ctx3, _map3, _tileLayer3, _markers2, _line;
+var import_leaflet2, _ctx3, _map2, _tileLayer2, _markers, _line;
 var init_trip_segment_map = __esm({
   "js/trip-segment-map.js"() {
-    import_leaflet3 = __toESM(require_leaflet_src());
+    import_leaflet2 = __toESM(require_leaflet_src());
     init_util();
     init_trip_model();
     init_map_providers();
     _ctx3 = null;
-    _map3 = null;
-    _tileLayer3 = null;
-    _markers2 = [];
+    _map2 = null;
+    _tileLayer2 = null;
+    _markers = [];
     _line = null;
   }
 });
@@ -22797,10 +21510,10 @@ function findTripConflict(existing, incoming) {
   if (existing.id !== incoming.id) return null;
   const er = existing.meta?.revision ?? 0;
   const ir = incoming.meta?.revision ?? 0;
-  const et = existing.updatedAt || 0;
+  const et2 = existing.updatedAt || 0;
   const it = incoming.updatedAt || 0;
-  if (er === ir && Math.abs(et - it) < 1500) return null;
-  return { existing, incoming, localNewer: et >= it };
+  if (er === ir && Math.abs(et2 - it) < 1500) return null;
+  return { existing, incoming, localNewer: et2 >= it };
 }
 function segmentSignature(day, variantId) {
   const v = getDayVariant(day, variantId);
@@ -22820,9 +21533,9 @@ function tripDiffLines(local, remote, variantId = "calm") {
   if (ld !== rd) lines.push(`\u0427\u0438\u0441\u043B\u043E \u0434\u043D\u0435\u0439: ${ld} \u2192 ${rd}`);
   lines.push(`Revision: ${local.meta?.revision ?? 0} \u2192 ${remote.meta?.revision ?? 0}`);
   const max = Math.max(ld, rd);
-  for (let i = 0; i < max; i++) {
-    const a = local.days?.[i];
-    const b = remote.days?.[i];
+  for (let i2 = 0; i2 < max; i2++) {
+    const a = local.days?.[i2];
+    const b = remote.days?.[i2];
     if (!a && b) lines.push(`\u0414\u0435\u043D\u044C ${b.n}: \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0438\u043C\u043F\u043E\u0440\u0442\u0435`);
     else if (a && !b) lines.push(`\u0414\u0435\u043D\u044C ${a.n}: \u0442\u043E\u043B\u044C\u043A\u043E \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E`);
     else if (a && b) {
@@ -22998,10 +21711,10 @@ function proposeRebuildRemaining(trip, fromDayN, startPoint, variantId = "calm")
   let cur = { lat: startPoint.lat, lon: startPoint.lon, label: startPoint.label || "\u0421\u0435\u0439\u0447\u0430\u0441" };
   const newDays = [];
   const previewLines = [`\u0421\u0442\u0430\u0440\u0442 \u043F\u0435\u0440\u0435\u0441\u0431\u043E\u0440\u043A\u0438: ${cur.label}`, `\u0414\u043D\u0435\u0439 \u0437\u0430\u0442\u0440\u043E\u043D\u0443\u0442\u043E: ${rest.length}`];
-  for (let i = 0; i < targets.length; i++) {
-    const t = targets[i];
-    const oldDay = rest[i] || rest[rest.length - 1];
-    const dayN = fromDayN + i;
+  for (let i2 = 0; i2 < targets.length; i2++) {
+    const t = targets[i2];
+    const oldDay = rest[i2] || rest[rest.length - 1];
+    const dayN = fromDayN + i2;
     const cal = calendarDateForDay(trip, dayN);
     const rtext = rtextFromPoints([cur, t]);
     previewLines.push(`\u0414\u0435\u043D\u044C ${dayN}: ${cur.label} \u2192 ${t.label}`);
@@ -23017,7 +21730,7 @@ function proposeRebuildRemaining(trip, fromDayN, startPoint, variantId = "calm")
     newDays.push({
       n: dayN,
       date: oldDay?.date || (cal ? formatTripDayDate(cal) : ""),
-      badge: oldDay?.badge || (i === targets.length - 1 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D"),
+      badge: oldDay?.badge || (i2 === targets.length - 1 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D"),
       variants
     });
     cur = t;
@@ -23325,11 +22038,11 @@ function renderBikePanel() {
     if (res) res.value = String(profile.reserveKm);
   }
 }
-function setStatus(msg, err) {
+function setStatus(msg, err2) {
   const el = $2("trip-status");
   if (!el) return;
   el.textContent = msg || "";
-  el.className = "status" + (err ? " err" : msg ? " ok" : "");
+  el.className = "status" + (err2 ? " err" : msg ? " ok" : "");
 }
 function dayDateLabel(trip, day) {
   if (day.date) return day.date;
@@ -23414,10 +22127,10 @@ function renderActiveTrip() {
       ${v?.lunch ? `<p class="trip-lunch">${escapeHtml(v.lunch)}</p>` : ""}
       ${v?.night ? `<p class="trip-night">${escapeHtml(v.night)}</p>` : ""}
       <div class="trip-segments">
-        ${segs.map((seg, i) => {
-      const done = isSegmentDone(trip.id, day.n, i);
+        ${segs.map((seg, i2) => {
+      const done = isSegmentDone(trip.id, day.n, i2);
       const active = ctx?.tripId === trip.id && ctx?.dayN === day.n && ctx?.segmentLabel === seg.label;
-      const wasLast = last?.dayN === day.n && last?.segIdx === i;
+      const wasLast = last?.dayN === day.n && last?.segIdx === i2;
       const fuel = bikeProf ? assessSegmentFuel(seg, bikeProf) : null;
       const cls = ["trip-seg", done ? "is-done" : "", active ? "is-active" : "", wasLast && !active ? "is-last" : ""].filter(Boolean).join(" ");
       return `
@@ -23427,16 +22140,16 @@ function renderActiveTrip() {
             ${fuel ? `<span class="trip-seg-fuel fuel-${fuel.level}">${escapeHtml(formatFuelHint(fuel))}</span>` : ""}
             ${seg.fuelPlan ? `<div class="trip-fuel-plan">${formatFuelPlanHtml(seg.fuelPlan)}</div>` : ""}
             <div class="btnrow c3 trip-seg-actions">
-              <button type="button" class="secondary trip-osrm" data-day="${day.n}" data-seg="${i}">\u{1F5FA} OSRM</button>
-              <button type="button" class="secondary trip-yandex" data-day="${day.n}" data-seg="${i}">\u{1F9ED} \u042F\u043D\u0434\u0435\u043A\u0441</button>
-              <button type="button" class="secondary trip-gpx" data-day="${day.n}" data-seg="${i}">GPX</button>
+              <button type="button" class="secondary trip-osrm" data-day="${day.n}" data-seg="${i2}">\u{1F5FA} OSRM</button>
+              <button type="button" class="secondary trip-yandex" data-day="${day.n}" data-seg="${i2}">\u{1F9ED} \u042F\u043D\u0434\u0435\u043A\u0441</button>
+              <button type="button" class="secondary trip-gpx" data-day="${day.n}" data-seg="${i2}">GPX</button>
             </div>
             <div class="btnrow c3 trip-seg-edit-row">
-              <button type="button" class="secondary trip-edit-btn" data-day="${day.n}" data-seg="${i}">\u270E \u0422\u0435\u043A\u0441\u0442</button>
-              <button type="button" class="secondary trip-map-btn" data-day="${day.n}" data-seg="${i}">\u{1F4CD} \u041A\u0430\u0440\u0442\u0430</button>
-              ${bikeProf ? `<button type="button" class="secondary trip-fuel-btn" data-day="${day.n}" data-seg="${i}">\u26FD \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438</button>` : ""}
+              <button type="button" class="secondary trip-edit-btn" data-day="${day.n}" data-seg="${i2}">\u270E \u0422\u0435\u043A\u0441\u0442</button>
+              <button type="button" class="secondary trip-map-btn" data-day="${day.n}" data-seg="${i2}">\u{1F4CD} \u041A\u0430\u0440\u0442\u0430</button>
+              ${bikeProf ? `<button type="button" class="secondary trip-fuel-btn" data-day="${day.n}" data-seg="${i2}">\u26FD \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438</button>` : ""}
             </div>
-            <button type="button" class="trip-done-btn" data-day="${day.n}" data-seg="${i}">${done ? "\u21A9 \u0421\u043D\u044F\u0442\u044C \xAB\u0433\u043E\u0442\u043E\u0432\u043E\xBB" : "\u2713 \u041E\u0442\u043C\u0435\u0442\u0438\u0442\u044C \u0433\u043E\u0442\u043E\u0432\u043E"}</button>
+            <button type="button" class="trip-done-btn" data-day="${day.n}" data-seg="${i2}">${done ? "\u21A9 \u0421\u043D\u044F\u0442\u044C \xAB\u0433\u043E\u0442\u043E\u0432\u043E\xBB" : "\u2713 \u041E\u0442\u043C\u0435\u0442\u0438\u0442\u044C \u0433\u043E\u0442\u043E\u0432\u043E"}</button>
           </div>`;
     }).join("")}
       </div>
@@ -23901,7 +22614,7 @@ function initTripPlannerUi() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    importTripFromFile(file).catch((err) => setStatus("\u274C " + (err.message || err), true));
+    importTripFromFile(file).catch((err2) => setStatus("\u274C " + (err2.message || err2), true));
   });
   $2("btn-trip-clear")?.addEventListener("click", () => {
     S.activeTrip = null;
@@ -24077,6 +22790,782 @@ var init_track_recorder = __esm({
   }
 });
 
+// node_modules/fflate/esm/browser.js
+function deflateSync(data, opts) {
+  return dopt(data, opts || {}, 0, 0);
+}
+function strToU8(str, latin1) {
+  if (latin1) {
+    var ar_1 = new u8(str.length);
+    for (var i2 = 0; i2 < str.length; ++i2)
+      ar_1[i2] = str.charCodeAt(i2);
+    return ar_1;
+  }
+  if (te)
+    return te.encode(str);
+  var l = str.length;
+  var ar = new u8(str.length + (str.length >> 1));
+  var ai = 0;
+  var w = function(v) {
+    ar[ai++] = v;
+  };
+  for (var i2 = 0; i2 < l; ++i2) {
+    if (ai + 5 > ar.length) {
+      var n = new u8(ai + 8 + (l - i2 << 1));
+      n.set(ar);
+      ar = n;
+    }
+    var c = str.charCodeAt(i2);
+    if (c < 128 || latin1)
+      w(c);
+    else if (c < 2048)
+      w(192 | c >> 6), w(128 | c & 63);
+    else if (c > 55295 && c < 57344)
+      c = 65536 + (c & 1023 << 10) | str.charCodeAt(++i2) & 1023, w(240 | c >> 18), w(128 | c >> 12 & 63), w(128 | c >> 6 & 63), w(128 | c & 63);
+    else
+      w(224 | c >> 12), w(128 | c >> 6 & 63), w(128 | c & 63);
+  }
+  return slc(ar, 0, ai);
+}
+function zipSync(data, opts) {
+  if (!opts)
+    opts = {};
+  var r = {};
+  var files = [];
+  fltn(data, "", r, opts);
+  var o = 0;
+  var tot = 0;
+  for (var fn in r) {
+    var _a2 = r[fn], file = _a2[0], p = _a2[1];
+    var compression = p.level == 0 ? 0 : 8;
+    var f2 = strToU8(fn), s2 = f2.length;
+    var com = p.comment, m = com && strToU8(com), ms = m && m.length;
+    var exl = exfl(p.extra);
+    if (s2 > 65535)
+      err(11);
+    var d = compression ? deflateSync(file, p) : file, l = d.length;
+    var c = crc();
+    c.p(file);
+    files.push(mrg(p, {
+      size: file.length,
+      crc: c.d(),
+      c: d,
+      f: f2,
+      m,
+      u: s2 != fn.length || m && com.length != ms,
+      o,
+      compression
+    }));
+    o += 30 + s2 + exl + l;
+    tot += 76 + 2 * (s2 + exl) + (ms || 0) + l;
+  }
+  var out = new u8(tot + 22), oe = o, cdl = tot - o;
+  for (var i2 = 0; i2 < files.length; ++i2) {
+    var f2 = files[i2];
+    wzh(out, f2.o, f2, f2.f, f2.u, f2.c.length);
+    var badd = 30 + f2.f.length + exfl(f2.extra);
+    out.set(f2.c, f2.o + badd);
+    wzh(out, o, f2, f2.f, f2.u, f2.c.length, f2.o, f2.m), o += 16 + badd + (f2.m ? f2.m.length : 0);
+  }
+  wzf(out, o, files.length, cdl, oe);
+  return out;
+}
+var u8, u16, i32, fleb, fdeb, clim, freb, _a, fl, revfl, _b, fd, revfd, rev, x, i, hMap, flt, i, i, i, i, fdt, i, flm, fdm, shft, slc, ec, err, wbits, wbits16, hTree, ln, lc, clen, wfblk, wblk, deo, et, dflt, crct, crc, dopt, mrg, wbytes, fltn, te, td, tds, exfl, wzh, wzf;
+var init_browser = __esm({
+  "node_modules/fflate/esm/browser.js"() {
+    u8 = Uint8Array;
+    u16 = Uint16Array;
+    i32 = Int32Array;
+    fleb = new u8([
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      3,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5,
+      0,
+      /* unused */
+      0,
+      0,
+      /* impossible */
+      0
+    ]);
+    fdeb = new u8([
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      2,
+      2,
+      3,
+      3,
+      4,
+      4,
+      5,
+      5,
+      6,
+      6,
+      7,
+      7,
+      8,
+      8,
+      9,
+      9,
+      10,
+      10,
+      11,
+      11,
+      12,
+      12,
+      13,
+      13,
+      /* unused */
+      0,
+      0
+    ]);
+    clim = new u8([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
+    freb = function(eb, start2) {
+      var b = new u16(31);
+      for (var i2 = 0; i2 < 31; ++i2) {
+        b[i2] = start2 += 1 << eb[i2 - 1];
+      }
+      var r = new i32(b[30]);
+      for (var i2 = 1; i2 < 30; ++i2) {
+        for (var j = b[i2]; j < b[i2 + 1]; ++j) {
+          r[j] = j - b[i2] << 5 | i2;
+        }
+      }
+      return { b, r };
+    };
+    _a = freb(fleb, 2);
+    fl = _a.b;
+    revfl = _a.r;
+    fl[28] = 258, revfl[258] = 28;
+    _b = freb(fdeb, 0);
+    fd = _b.b;
+    revfd = _b.r;
+    rev = new u16(32768);
+    for (i = 0; i < 32768; ++i) {
+      x = (i & 43690) >> 1 | (i & 21845) << 1;
+      x = (x & 52428) >> 2 | (x & 13107) << 2;
+      x = (x & 61680) >> 4 | (x & 3855) << 4;
+      rev[i] = ((x & 65280) >> 8 | (x & 255) << 8) >> 1;
+    }
+    hMap = (function(cd, mb, r) {
+      var s2 = cd.length;
+      var i2 = 0;
+      var l = new u16(mb);
+      for (; i2 < s2; ++i2) {
+        if (cd[i2])
+          ++l[cd[i2] - 1];
+      }
+      var le = new u16(mb);
+      for (i2 = 1; i2 < mb; ++i2) {
+        le[i2] = le[i2 - 1] + l[i2 - 1] << 1;
+      }
+      var co;
+      if (r) {
+        co = new u16(1 << mb);
+        var rvb = 15 - mb;
+        for (i2 = 0; i2 < s2; ++i2) {
+          if (cd[i2]) {
+            var sv = i2 << 4 | cd[i2];
+            var r_1 = mb - cd[i2];
+            var v = le[cd[i2] - 1]++ << r_1;
+            for (var m = v | (1 << r_1) - 1; v <= m; ++v) {
+              co[rev[v] >> rvb] = sv;
+            }
+          }
+        }
+      } else {
+        co = new u16(s2);
+        for (i2 = 0; i2 < s2; ++i2) {
+          if (cd[i2]) {
+            co[i2] = rev[le[cd[i2] - 1]++] >> 15 - cd[i2];
+          }
+        }
+      }
+      return co;
+    });
+    flt = new u8(288);
+    for (i = 0; i < 144; ++i)
+      flt[i] = 8;
+    for (i = 144; i < 256; ++i)
+      flt[i] = 9;
+    for (i = 256; i < 280; ++i)
+      flt[i] = 7;
+    for (i = 280; i < 288; ++i)
+      flt[i] = 8;
+    fdt = new u8(32);
+    for (i = 0; i < 32; ++i)
+      fdt[i] = 5;
+    flm = /* @__PURE__ */ hMap(flt, 9, 0);
+    fdm = /* @__PURE__ */ hMap(fdt, 5, 0);
+    shft = function(p) {
+      return (p + 7) / 8 | 0;
+    };
+    slc = function(v, s2, e) {
+      if (s2 == null || s2 < 0)
+        s2 = 0;
+      if (e == null || e > v.length)
+        e = v.length;
+      return new u8(v.subarray(s2, e));
+    };
+    ec = [
+      "unexpected EOF",
+      "invalid block type",
+      "invalid length/literal",
+      "invalid distance",
+      "stream finished",
+      "no stream handler",
+      ,
+      // determined by compression function
+      "no callback",
+      "invalid UTF-8 data",
+      "extra field too long",
+      "date not in range 1980-2099",
+      "filename too long",
+      "stream finishing",
+      "invalid zip data"
+      // determined by unknown compression method
+    ];
+    err = function(ind, msg, nt) {
+      var e = new Error(msg || ec[ind]);
+      e.code = ind;
+      if (Error.captureStackTrace)
+        Error.captureStackTrace(e, err);
+      if (!nt)
+        throw e;
+      return e;
+    };
+    wbits = function(d, p, v) {
+      v <<= p & 7;
+      var o = p / 8 | 0;
+      d[o] |= v;
+      d[o + 1] |= v >> 8;
+    };
+    wbits16 = function(d, p, v) {
+      v <<= p & 7;
+      var o = p / 8 | 0;
+      d[o] |= v;
+      d[o + 1] |= v >> 8;
+      d[o + 2] |= v >> 16;
+    };
+    hTree = function(d, mb) {
+      var t = [];
+      for (var i2 = 0; i2 < d.length; ++i2) {
+        if (d[i2])
+          t.push({ s: i2, f: d[i2] });
+      }
+      var s2 = t.length;
+      var t2 = t.slice();
+      if (!s2)
+        return { t: et, l: 0 };
+      if (s2 == 1) {
+        var v = new u8(t[0].s + 1);
+        v[t[0].s] = 1;
+        return { t: v, l: 1 };
+      }
+      t.sort(function(a, b) {
+        return a.f - b.f;
+      });
+      t.push({ s: -1, f: 25001 });
+      var l = t[0], r = t[1], i0 = 0, i1 = 1, i22 = 2;
+      t[0] = { s: -1, f: l.f + r.f, l, r };
+      while (i1 != s2 - 1) {
+        l = t[t[i0].f < t[i22].f ? i0++ : i22++];
+        r = t[i0 != i1 && t[i0].f < t[i22].f ? i0++ : i22++];
+        t[i1++] = { s: -1, f: l.f + r.f, l, r };
+      }
+      var maxSym = t2[0].s;
+      for (var i2 = 1; i2 < s2; ++i2) {
+        if (t2[i2].s > maxSym)
+          maxSym = t2[i2].s;
+      }
+      var tr = new u16(maxSym + 1);
+      var mbt = ln(t[i1 - 1], tr, 0);
+      if (mbt > mb) {
+        var i2 = 0, dt = 0;
+        var lft = mbt - mb, cst = 1 << lft;
+        t2.sort(function(a, b) {
+          return tr[b.s] - tr[a.s] || a.f - b.f;
+        });
+        for (; i2 < s2; ++i2) {
+          var i2_1 = t2[i2].s;
+          if (tr[i2_1] > mb) {
+            dt += cst - (1 << mbt - tr[i2_1]);
+            tr[i2_1] = mb;
+          } else
+            break;
+        }
+        dt >>= lft;
+        while (dt > 0) {
+          var i2_2 = t2[i2].s;
+          if (tr[i2_2] < mb)
+            dt -= 1 << mb - tr[i2_2]++ - 1;
+          else
+            ++i2;
+        }
+        for (; i2 >= 0 && dt; --i2) {
+          var i2_3 = t2[i2].s;
+          if (tr[i2_3] == mb) {
+            --tr[i2_3];
+            ++dt;
+          }
+        }
+        mbt = mb;
+      }
+      return { t: new u8(tr), l: mbt };
+    };
+    ln = function(n, l, d) {
+      return n.s == -1 ? Math.max(ln(n.l, l, d + 1), ln(n.r, l, d + 1)) : l[n.s] = d;
+    };
+    lc = function(c) {
+      var s2 = c.length;
+      while (s2 && !c[--s2])
+        ;
+      var cl = new u16(++s2);
+      var cli = 0, cln = c[0], cls = 1;
+      var w = function(v) {
+        cl[cli++] = v;
+      };
+      for (var i2 = 1; i2 <= s2; ++i2) {
+        if (c[i2] == cln && i2 != s2)
+          ++cls;
+        else {
+          if (!cln && cls > 2) {
+            for (; cls > 138; cls -= 138)
+              w(32754);
+            if (cls > 2) {
+              w(cls > 10 ? cls - 11 << 5 | 28690 : cls - 3 << 5 | 12305);
+              cls = 0;
+            }
+          } else if (cls > 3) {
+            w(cln), --cls;
+            for (; cls > 6; cls -= 6)
+              w(8304);
+            if (cls > 2)
+              w(cls - 3 << 5 | 8208), cls = 0;
+          }
+          while (cls--)
+            w(cln);
+          cls = 1;
+          cln = c[i2];
+        }
+      }
+      return { c: cl.subarray(0, cli), n: s2 };
+    };
+    clen = function(cf, cl) {
+      var l = 0;
+      for (var i2 = 0; i2 < cl.length; ++i2)
+        l += cf[i2] * cl[i2];
+      return l;
+    };
+    wfblk = function(out, pos, dat) {
+      var s2 = dat.length;
+      var o = shft(pos + 2);
+      out[o] = s2 & 255;
+      out[o + 1] = s2 >> 8;
+      out[o + 2] = out[o] ^ 255;
+      out[o + 3] = out[o + 1] ^ 255;
+      for (var i2 = 0; i2 < s2; ++i2)
+        out[o + i2 + 4] = dat[i2];
+      return (o + 4 + s2) * 8;
+    };
+    wblk = function(dat, out, final, syms, lf, df, eb, li, bs, bl, p) {
+      wbits(out, p++, final);
+      ++lf[256];
+      var _a2 = hTree(lf, 15), dlt = _a2.t, mlb = _a2.l;
+      var _b2 = hTree(df, 15), ddt = _b2.t, mdb = _b2.l;
+      var _c = lc(dlt), lclt = _c.c, nlc = _c.n;
+      var _d = lc(ddt), lcdt = _d.c, ndc = _d.n;
+      var lcfreq = new u16(19);
+      for (var i2 = 0; i2 < lclt.length; ++i2)
+        ++lcfreq[lclt[i2] & 31];
+      for (var i2 = 0; i2 < lcdt.length; ++i2)
+        ++lcfreq[lcdt[i2] & 31];
+      var _e = hTree(lcfreq, 7), lct = _e.t, mlcb = _e.l;
+      var nlcc = 19;
+      for (; nlcc > 4 && !lct[clim[nlcc - 1]]; --nlcc)
+        ;
+      var flen = bl + 5 << 3;
+      var ftlen = clen(lf, flt) + clen(df, fdt) + eb;
+      var dtlen = clen(lf, dlt) + clen(df, ddt) + eb + 14 + 3 * nlcc + clen(lcfreq, lct) + 2 * lcfreq[16] + 3 * lcfreq[17] + 7 * lcfreq[18];
+      if (bs >= 0 && flen <= ftlen && flen <= dtlen)
+        return wfblk(out, p, dat.subarray(bs, bs + bl));
+      var lm, ll, dm, dl;
+      wbits(out, p, 1 + (dtlen < ftlen)), p += 2;
+      if (dtlen < ftlen) {
+        lm = hMap(dlt, mlb, 0), ll = dlt, dm = hMap(ddt, mdb, 0), dl = ddt;
+        var llm = hMap(lct, mlcb, 0);
+        wbits(out, p, nlc - 257);
+        wbits(out, p + 5, ndc - 1);
+        wbits(out, p + 10, nlcc - 4);
+        p += 14;
+        for (var i2 = 0; i2 < nlcc; ++i2)
+          wbits(out, p + 3 * i2, lct[clim[i2]]);
+        p += 3 * nlcc;
+        var lcts = [lclt, lcdt];
+        for (var it = 0; it < 2; ++it) {
+          var clct = lcts[it];
+          for (var i2 = 0; i2 < clct.length; ++i2) {
+            var len = clct[i2] & 31;
+            wbits(out, p, llm[len]), p += lct[len];
+            if (len > 15)
+              wbits(out, p, clct[i2] >> 5 & 127), p += clct[i2] >> 12;
+          }
+        }
+      } else {
+        lm = flm, ll = flt, dm = fdm, dl = fdt;
+      }
+      for (var i2 = 0; i2 < li; ++i2) {
+        var sym = syms[i2];
+        if (sym > 255) {
+          var len = sym >> 18 & 31;
+          wbits16(out, p, lm[len + 257]), p += ll[len + 257];
+          if (len > 7)
+            wbits(out, p, sym >> 23 & 31), p += fleb[len];
+          var dst = sym & 31;
+          wbits16(out, p, dm[dst]), p += dl[dst];
+          if (dst > 3)
+            wbits16(out, p, sym >> 5 & 8191), p += fdeb[dst];
+        } else {
+          wbits16(out, p, lm[sym]), p += ll[sym];
+        }
+      }
+      wbits16(out, p, lm[256]);
+      return p + ll[256];
+    };
+    deo = /* @__PURE__ */ new i32([65540, 131080, 131088, 131104, 262176, 1048704, 1048832, 2114560, 2117632]);
+    et = /* @__PURE__ */ new u8(0);
+    dflt = function(dat, lvl, plvl, pre, post, st) {
+      var s2 = st.z || dat.length;
+      var o = new u8(pre + s2 + 5 * (1 + Math.ceil(s2 / 7e3)) + post);
+      var w = o.subarray(pre, o.length - post);
+      var lst = st.l;
+      var pos = (st.r || 0) & 7;
+      if (lvl) {
+        if (pos)
+          w[0] = st.r >> 3;
+        var opt = deo[lvl - 1];
+        var n = opt >> 13, c = opt & 8191;
+        var msk_1 = (1 << plvl) - 1;
+        var prev = st.p || new u16(32768), head = st.h || new u16(msk_1 + 1);
+        var bs1_1 = Math.ceil(plvl / 3), bs2_1 = 2 * bs1_1;
+        var hsh = function(i3) {
+          return (dat[i3] ^ dat[i3 + 1] << bs1_1 ^ dat[i3 + 2] << bs2_1) & msk_1;
+        };
+        var syms = new i32(25e3);
+        var lf = new u16(288), df = new u16(32);
+        var lc_1 = 0, eb = 0, i2 = st.i || 0, li = 0, wi = st.w || 0, bs = 0;
+        for (; i2 + 2 < s2; ++i2) {
+          var hv = hsh(i2);
+          var imod = i2 & 32767, pimod = head[hv];
+          prev[imod] = pimod;
+          head[hv] = imod;
+          if (wi <= i2) {
+            var rem = s2 - i2;
+            if ((lc_1 > 7e3 || li > 24576) && (rem > 423 || !lst)) {
+              pos = wblk(dat, w, 0, syms, lf, df, eb, li, bs, i2 - bs, pos);
+              li = lc_1 = eb = 0, bs = i2;
+              for (var j = 0; j < 286; ++j)
+                lf[j] = 0;
+              for (var j = 0; j < 30; ++j)
+                df[j] = 0;
+            }
+            var l = 2, d = 0, ch_1 = c, dif = imod - pimod & 32767;
+            if (rem > 2 && hv == hsh(i2 - dif)) {
+              var maxn = Math.min(n, rem) - 1;
+              var maxd = Math.min(32767, i2);
+              var ml = Math.min(258, rem);
+              while (dif <= maxd && --ch_1 && imod != pimod) {
+                if (dat[i2 + l] == dat[i2 + l - dif]) {
+                  var nl = 0;
+                  for (; nl < ml && dat[i2 + nl] == dat[i2 + nl - dif]; ++nl)
+                    ;
+                  if (nl > l) {
+                    l = nl, d = dif;
+                    if (nl > maxn)
+                      break;
+                    var mmd = Math.min(dif, nl - 2);
+                    var md = 0;
+                    for (var j = 0; j < mmd; ++j) {
+                      var ti = i2 - dif + j & 32767;
+                      var pti = prev[ti];
+                      var cd = ti - pti & 32767;
+                      if (cd > md)
+                        md = cd, pimod = ti;
+                    }
+                  }
+                }
+                imod = pimod, pimod = prev[imod];
+                dif += imod - pimod & 32767;
+              }
+            }
+            if (d) {
+              syms[li++] = 268435456 | revfl[l] << 18 | revfd[d];
+              var lin = revfl[l] & 31, din = revfd[d] & 31;
+              eb += fleb[lin] + fdeb[din];
+              ++lf[257 + lin];
+              ++df[din];
+              wi = i2 + l;
+              ++lc_1;
+            } else {
+              syms[li++] = dat[i2];
+              ++lf[dat[i2]];
+            }
+          }
+        }
+        for (i2 = Math.max(i2, wi); i2 < s2; ++i2) {
+          syms[li++] = dat[i2];
+          ++lf[dat[i2]];
+        }
+        pos = wblk(dat, w, lst, syms, lf, df, eb, li, bs, i2 - bs, pos);
+        if (!lst) {
+          st.r = pos & 7 | w[pos / 8 | 0] << 3;
+          pos -= 7;
+          st.h = head, st.p = prev, st.i = i2, st.w = wi;
+        }
+      } else {
+        for (var i2 = st.w || 0; i2 < s2 + lst; i2 += 65535) {
+          var e = i2 + 65535;
+          if (e >= s2) {
+            w[pos / 8 | 0] = lst;
+            e = s2;
+          }
+          pos = wfblk(w, pos + 1, dat.subarray(i2, e));
+        }
+        st.i = s2;
+      }
+      return slc(o, 0, pre + shft(pos) + post);
+    };
+    crct = /* @__PURE__ */ (function() {
+      var t = new Int32Array(256);
+      for (var i2 = 0; i2 < 256; ++i2) {
+        var c = i2, k = 9;
+        while (--k)
+          c = (c & 1 && -306674912) ^ c >>> 1;
+        t[i2] = c;
+      }
+      return t;
+    })();
+    crc = function() {
+      var c = -1;
+      return {
+        p: function(d) {
+          var cr = c;
+          for (var i2 = 0; i2 < d.length; ++i2)
+            cr = crct[cr & 255 ^ d[i2]] ^ cr >>> 8;
+          c = cr;
+        },
+        d: function() {
+          return ~c;
+        }
+      };
+    };
+    dopt = function(dat, opt, pre, post, st) {
+      if (!st) {
+        st = { l: 1 };
+        if (opt.dictionary) {
+          var dict = opt.dictionary.subarray(-32768);
+          var newDat = new u8(dict.length + dat.length);
+          newDat.set(dict);
+          newDat.set(dat, dict.length);
+          dat = newDat;
+          st.w = dict.length;
+        }
+      }
+      return dflt(dat, opt.level == null ? 6 : opt.level, opt.mem == null ? st.l ? Math.ceil(Math.max(8, Math.min(13, Math.log(dat.length))) * 1.5) : 20 : 12 + opt.mem, pre, post, st);
+    };
+    mrg = function(a, b) {
+      var o = {};
+      for (var k in a)
+        o[k] = a[k];
+      for (var k in b)
+        o[k] = b[k];
+      return o;
+    };
+    wbytes = function(d, b, v) {
+      for (; v; ++b)
+        d[b] = v, v >>>= 8;
+    };
+    fltn = function(d, p, t, o) {
+      for (var k in d) {
+        var val = d[k], n = p + k, op = o;
+        if (Array.isArray(val))
+          op = mrg(o, val[1]), val = val[0];
+        if (ArrayBuffer.isView(val))
+          t[n] = [val, op];
+        else {
+          t[n += "/"] = [new u8(0), op];
+          fltn(val, n, t, o);
+        }
+      }
+    };
+    te = typeof TextEncoder != "undefined" && /* @__PURE__ */ new TextEncoder();
+    td = typeof TextDecoder != "undefined" && /* @__PURE__ */ new TextDecoder();
+    tds = 0;
+    try {
+      td.decode(et, { stream: true });
+      tds = 1;
+    } catch (e) {
+    }
+    exfl = function(ex) {
+      var le = 0;
+      if (ex) {
+        for (var k in ex) {
+          var l = ex[k].length;
+          if (l > 65535)
+            err(9);
+          le += l + 4;
+        }
+      }
+      return le;
+    };
+    wzh = function(d, b, f2, fn, u2, c, ce, co) {
+      var fl2 = fn.length, ex = f2.extra, col = co && co.length;
+      var exl = exfl(ex);
+      wbytes(d, b, ce != null ? 33639248 : 67324752), b += 4;
+      if (ce != null)
+        d[b++] = 20, d[b++] = f2.os;
+      d[b] = 20, b += 2;
+      d[b++] = f2.flag << 1 | (c < 0 && 8), d[b++] = u2 && 8;
+      d[b++] = f2.compression & 255, d[b++] = f2.compression >> 8;
+      var dt = new Date(f2.mtime == null ? Date.now() : f2.mtime), y = dt.getFullYear() - 1980;
+      if (y < 0 || y > 119)
+        err(10);
+      wbytes(d, b, y << 25 | dt.getMonth() + 1 << 21 | dt.getDate() << 16 | dt.getHours() << 11 | dt.getMinutes() << 5 | dt.getSeconds() >> 1), b += 4;
+      if (c != -1) {
+        wbytes(d, b, f2.crc);
+        wbytes(d, b + 4, c < 0 ? -c - 2 : c);
+        wbytes(d, b + 8, f2.size);
+      }
+      wbytes(d, b + 12, fl2);
+      wbytes(d, b + 14, exl), b += 16;
+      if (ce != null) {
+        wbytes(d, b, col);
+        wbytes(d, b + 6, f2.attrs);
+        wbytes(d, b + 10, ce), b += 14;
+      }
+      d.set(fn, b);
+      b += fl2;
+      if (exl) {
+        for (var k in ex) {
+          var exf = ex[k], l = exf.length;
+          wbytes(d, b, +k);
+          wbytes(d, b + 2, l);
+          d.set(exf, b + 4), b += 4 + l;
+        }
+      }
+      if (col)
+        d.set(co, b), b += col;
+      return b;
+    };
+    wzf = function(o, b, c, d, e) {
+      wbytes(o, b, 101010256);
+      wbytes(o, b + 8, c);
+      wbytes(o, b + 10, c);
+      wbytes(o, b + 12, d);
+      wbytes(o, b + 16, e);
+    };
+  }
+});
+
+// js/telemetry-export.js
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+function fmtLocal(ts) {
+  const d = new Date(ts || Date.now());
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + "_" + pad2(d.getHours()) + "-" + pad2(d.getMinutes());
+}
+function buildReadme(exports) {
+  const lines = [
+    "\u041C\u043E\u0442\u043E \u0418\u041B\u0421 \u2014 \u0442\u0435\u043B\u0435\u043C\u0435\u0442\u0440\u0438\u044F \u043F\u043E\u0435\u0437\u0434\u043E\u043A",
+    "\u0421\u0435\u0441\u0441\u0438\u0439 \u0432 \u0430\u0440\u0445\u0438\u0432\u0435: " + exports.length,
+    "",
+    "\u041A\u0430\u0436\u0434\u044B\u0439 \u0444\u0430\u0439\u043B .jsonl \u2014 \u043E\u0434\u043D\u0430 \u043F\u043E\u0435\u0437\u0434\u043A\u0430 (\u043E\u0442\u0434\u0435\u043B\u044C\u043D\u0430\u044F \u0437\u0430\u043F\u0438\u0441\u044C HUD).",
+    "\u042D\u0442\u043E \u043D\u0435 \u043E\u0434\u0438\u043D \u043E\u0431\u0449\u0438\u0439 JSON: \u0432\u043D\u0443\u0442\u0440\u0438 \u0430\u0440\u0445\u0438\u0432\u0430 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0444\u0430\u0439\u043B\u043E\u0432 \u043F\u043E \u0447\u0438\u0441\u043B\u0443 \u043F\u043E\u0435\u0437\u0434\u043E\u043A.",
+    "",
+    "\u0424\u0430\u0439\u043B\u044B:"
+  ];
+  for (const ex of exports) {
+    const durMin = ex.sess.startedAt && ex.sess.endedAt ? Math.round((ex.sess.endedAt - ex.sess.startedAt) / 6e4) : "?";
+    lines.push("- " + ex.filename + " \xB7 " + durMin + " \u043C\u0438\u043D \xB7 \u0441\u043E\u0431\u044B\u0442\u0438\u0439 " + ex.events.length);
+  }
+  lines.push("", "\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 .jsonl \u0432 sim.html \u0438\u043B\u0438 \u043E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 \u0440\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A\u0443.");
+  return lines.join("\n") + "\n";
+}
+function formatZipFilename(exports) {
+  const starts = exports.map((e) => e.sess.startedAt || Date.now());
+  const base = fmtLocal(Math.min(...starts));
+  if (exports.length === 1) return "telemetry_" + base + ".zip";
+  return "telemetry_" + base + "_" + exports.length + "sessions.zip";
+}
+function triggerDownload(blob, filename) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5e3);
+}
+function buildTelemetryZip(exports) {
+  if (!exports.length) throw new Error("\u041D\u0435\u0442 \u0441\u0435\u0441\u0441\u0438\u0439 \u0434\u043B\u044F \u0430\u0440\u0445\u0438\u0432\u0430");
+  const files = {};
+  for (const ex of exports) {
+    files[ex.filename] = strToU8(ex.body);
+  }
+  files["README.txt"] = strToU8(buildReadme(exports));
+  const bytes = zipSync(files, { level: 6 });
+  return new Blob([bytes], { type: "application/zip" });
+}
+async function exportSessionsArchive(sessionIds) {
+  const ids = [...new Set(sessionIds.filter(Boolean))];
+  if (!ids.length) throw new Error("\u041D\u0435 \u0432\u044B\u0431\u0440\u0430\u043D\u044B \u0441\u0435\u0441\u0441\u0438\u0438");
+  const exports = [];
+  for (const id of ids) {
+    exports.push(await telemetry_default.buildSessionExport(id));
+  }
+  if (exports.length === 1) {
+    const ex = exports[0];
+    triggerDownload(ex.blob, ex.filename);
+    return "jsonl";
+  }
+  const zip = buildTelemetryZip(exports);
+  triggerDownload(zip, formatZipFilename(exports));
+  return "zip";
+}
+var init_telemetry_export = __esm({
+  "js/telemetry-export.js"() {
+    init_browser();
+    init_telemetry();
+  }
+});
+
 // js/telemetry-ui.js
 function bindMarkButton() {
   const btn = $2("btn-telemetry-mark");
@@ -24155,7 +23644,11 @@ function updateBulkBar() {
   const hasSessions = ids.length > 0;
   if (bar) bar.classList.toggle("hidden", !hasSessions);
   if (countEl) countEl.textContent = n ? "\u0412\u044B\u0431\u0440\u0430\u043D\u043E: " + n : "\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0432\u044B\u0431\u0440\u0430\u043D\u043E";
-  if (exportBtn) exportBtn.disabled = n === 0;
+  if (exportBtn) {
+    exportBtn.disabled = n === 0;
+    exportBtn.textContent = n <= 1 ? "\u{1F4E5} JSONL \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439" : "\u{1F4E6} ZIP (" + n + " \u043F\u043E\u0435\u0437\u0434\u043E\u043A)";
+    exportBtn.title = n <= 1 ? "\u0421\u043A\u0430\u0447\u0430\u0442\u044C \u043E\u0434\u0438\u043D \u0444\u0430\u0439\u043B JSONL \u0434\u043B\u044F \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439 \u043F\u043E\u0435\u0437\u0434\u043A\u0438" : "\u0421\u043A\u0430\u0447\u0430\u0442\u044C \u043E\u0434\u0438\u043D ZIP \u2014 \u0432\u043D\u0443\u0442\u0440\u0438 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u044B\u0439 JSONL \u043D\u0430 \u043A\u0430\u0436\u0434\u0443\u044E \u043F\u043E\u0435\u0437\u0434\u043A\u0443";
+  }
   if (deleteBtn) deleteBtn.disabled = n === 0;
   if (selectAll) {
     selectAll.indeterminate = n > 0 && n < ids.length;
@@ -24187,13 +23680,12 @@ function setAllSelected(on) {
   updateBulkBar();
 }
 async function exportSessions(ids) {
-  for (const id of ids) {
-    try {
-      await telemetry_default.export(id);
-    } catch (e) {
-      console.warn(e);
-    }
-    await new Promise((r) => setTimeout(r, 300));
+  if (!ids.length) return;
+  try {
+    await exportSessionsArchive(ids);
+  } catch (e) {
+    console.warn(e);
+    alert(e.message || String(e));
   }
 }
 async function deleteSessions(ids) {
@@ -24212,7 +23704,7 @@ function renderSessionRow(s2) {
     shareBadge = ' <span class="tel-share-done">\u043F\u0435\u0440\u0435\u0434\u0430\u043D\u043E</span>';
   }
   const checked = _selected.has(s2.id);
-  return '<div class="tel-row' + (checked ? " tel-row--selected" : "") + '" data-id="' + s2.id + '"><label class="tel-check" title="\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E"><input type="checkbox" data-act="select" data-id="' + s2.id + '"' + (checked ? " checked" : "") + '></label><div class="tel-main"><strong>' + fmtDate(s2.startedAt) + "</strong>" + dirty + shareBadge + '<span class="tel-meta">' + fmtDur(s2.durationMs) + " \xB7 " + s2.eventCount + " \u0441\u043E\u0431. \xB7 \u043C\u0435\u0442\u043E\u043A " + s2.markCount + '</span></div><div class="tel-actions"><button type="button" class="tel-btn" data-act="export" data-id="' + s2.id + '" title="\u042D\u043A\u0441\u043F\u043E\u0440\u0442">\u{1F4E4}</button><button type="button" class="tel-btn" data-act="delete" data-id="' + s2.id + '" title="\u0423\u0434\u0430\u043B\u0438\u0442\u044C">\u{1F5D1}</button></div></div>';
+  return '<div class="tel-row' + (checked ? " tel-row--selected" : "") + '" data-id="' + s2.id + '"><label class="tel-check" title="\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E"><input type="checkbox" data-act="select" data-id="' + s2.id + '"' + (checked ? " checked" : "") + '></label><div class="tel-main"><strong>' + fmtDate(s2.startedAt) + "</strong>" + dirty + shareBadge + '<span class="tel-meta">' + fmtDur(s2.durationMs) + " \xB7 " + s2.eventCount + " \u0441\u043E\u0431. \xB7 \u043C\u0435\u0442\u043E\u043A " + s2.markCount + '</span></div><div class="tel-actions"><button type="button" class="tel-btn" data-act="export" data-id="' + s2.id + '" title="\u0421\u043A\u0430\u0447\u0430\u0442\u044C JSONL \u044D\u0442\u043E\u0439 \u043F\u043E\u0435\u0437\u0434\u043A\u0438">\u{1F4E5}</button><button type="button" class="tel-btn" data-act="delete" data-id="' + s2.id + '" title="\u0423\u0434\u0430\u043B\u0438\u0442\u044C">\u{1F5D1}</button></div></div>';
 }
 async function refreshSessionsList() {
   const list = $2("telemetry-sessions");
@@ -24235,6 +23727,13 @@ async function refreshSessionsList() {
       return;
     }
     list.innerHTML = sessions.map(renderSessionRow).join("");
+    const exportAllBtn = $2("btn-telemetry-export-all");
+    if (exportAllBtn) {
+      const cnt = sessions.length;
+      exportAllBtn.classList.toggle("hidden", cnt === 0);
+      exportAllBtn.textContent = cnt <= 1 ? "\u{1F4E5} \u0421\u043A\u0430\u0447\u0430\u0442\u044C JSONL" : "\u{1F4E6} ZIP \u0432\u0441\u0435\u0445 \u043F\u043E\u0435\u0437\u0434\u043E\u043A (" + cnt + ")";
+      exportAllBtn.title = cnt <= 1 ? "\u0421\u043A\u0430\u0447\u0430\u0442\u044C JSONL \u0435\u0434\u0438\u043D\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0439 \u0437\u0430\u043F\u0438\u0441\u0438" : "\u041E\u0434\u0438\u043D ZIP-\u0430\u0440\u0445\u0438\u0432: \u0432\u043D\u0443\u0442\u0440\u0438 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u044B\u0439 .jsonl \u043D\u0430 \u043A\u0430\u0436\u0434\u0443\u044E \u043F\u043E\u0435\u0437\u0434\u043A\u0443";
+    }
     updateBulkBar();
   } catch (e) {
     list.innerHTML = '<div class="hint err">IndexedDB: ' + e.message + "</div>";
@@ -24258,11 +23757,11 @@ function bindSessionsList() {
     if (btn.dataset.act === "export") {
       try {
         await telemetry_default.export(id);
-      } catch (err) {
-        alert(err.message);
+      } catch (err2) {
+        alert(err2.message);
       }
     } else if (btn.dataset.act === "delete") {
-      if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F?")) return;
+      if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F? \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 JSONL \u2014 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0431\u0443\u0434\u0435\u0442 \u043D\u0435\u043B\u044C\u0437\u044F.")) return;
       _selected.delete(id);
       await telemetry_default.deleteSession(id);
       await refreshSessionsList();
@@ -24279,7 +23778,8 @@ function bindSessionsList() {
   $2("btn-telemetry-delete-selected")?.addEventListener("click", async () => {
     const ids = [..._selected];
     if (!ids.length) return;
-    if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C " + ids.length + " \u0441\u0435\u0441\u0441\u0438\u0439 \u0438 \u0432\u0441\u0435 \u0438\u0445 \u0441\u043E\u0431\u044B\u0442\u0438\u044F?")) return;
+    const msg = ids.length === 1 ? "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F? \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 JSONL/ZIP \u2014 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0431\u0443\u0434\u0435\u0442 \u043D\u0435\u043B\u044C\u0437\u044F." : "\u0423\u0434\u0430\u043B\u0438\u0442\u044C " + ids.length + " \u0441\u0435\u0441\u0441\u0438\u0439 \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F? \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 ZIP \u2014 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0431\u0443\u0434\u0435\u0442 \u043D\u0435\u043B\u044C\u0437\u044F.";
+    if (!confirm(msg)) return;
     await deleteSessions(ids);
   });
   $2("btn-telemetry-export-all")?.addEventListener("click", async () => {
@@ -24310,6 +23810,7 @@ var _tapCount, _tapTimer, MARK_TAP_MS, _selected;
 var init_telemetry_ui = __esm({
   "js/telemetry-ui.js"() {
     init_telemetry();
+    init_telemetry_export();
     init_hud();
     init_util();
     init_telemetry_funnel();
@@ -24716,9 +24217,9 @@ function bindSendModal() {
       );
       $2("telemetry-send-confirm")?.classList.remove("hidden");
       await refreshSessionsList();
-    } catch (err) {
-      if (err?.name === "AbortError") return;
-      const msg = err?.message || String(err);
+    } catch (err2) {
+      if (err2?.name === "AbortError") return;
+      const msg = err2?.message || String(err2);
       if (/Share API|нельзя передать/i.test(msg)) {
         setSendStatus("Share \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u2014 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0438 \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u0432\u0440\u0443\u0447\u043D\u0443\u044E.", "warn");
       } else {
@@ -24739,8 +24240,8 @@ function bindSendModal() {
       }
       await downloadSession(sid);
       setSendStatus("\u0424\u0430\u0439\u043B \u0441\u043A\u0430\u0447\u0430\u043D \u2014 \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u043A \u043F\u0438\u0441\u044C\u043C\u0443 \u0438\u043B\u0438 \u0432 Telegram.", "ok");
-    } catch (err) {
-      alert(err.message || String(err));
+    } catch (err2) {
+      alert(err2.message || String(err2));
     }
   });
   $2("telemetry-send-email")?.addEventListener("click", async () => {
@@ -24758,8 +24259,8 @@ function bindSendModal() {
       const note = $2("telemetry-send-note")?.value || "";
       openShareEmail(summary, note);
       setSendStatus("\u041E\u0442\u043A\u0440\u044B\u0442\u0430 \u043F\u043E\u0447\u0442\u0430 \u2014 \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u0441\u043A\u0430\u0447\u0430\u043D\u043D\u044B\u0439 JSONL \u0432\u0440\u0443\u0447\u043D\u0443\u044E.", "warn");
-    } catch (err) {
-      alert(err.message || String(err));
+    } catch (err2) {
+      alert(err2.message || String(err2));
     }
   });
   $2("telemetry-send-telegram")?.addEventListener("click", () => {
@@ -24813,7 +24314,7 @@ async function maybeShowSendPrompt(sessionId) {
   let durationMs = 0;
   try {
     const sessions = await telemetry_default.listSessions();
-    const s2 = sessions.find((x) => x.id === sessionId);
+    const s2 = sessions.find((x2) => x2.id === sessionId);
     if (!s2) return;
     eventCount = s2.eventCount || 0;
     durationMs = s2.durationMs || 0;
@@ -24960,14 +24461,14 @@ function checkCamerasILS() {
   const radius = Math.max(200, Math.min(1e3, kmh * 10));
   const tol = S.camSpeedTol != null ? S.camSpeedTol : 15;
   let closest = null;
-  S.cameras.forEach((c, i) => {
+  S.cameras.forEach((c, i2) => {
     const d = haversine(S.gps, c);
     if (d > radius) return;
     if (!c.speed) return;
     if (kmh <= c.speed + tol) return;
     if (S.backOnly && !isCameraBehind(c, heading)) return;
     if (heading != null && angleDiff(bearing(S.gps, c), heading) > 90) return;
-    if (!closest || d < closest.dist) closest = { cam: c, dist: d, id: i };
+    if (!closest || d < closest.dist) closest = { cam: c, dist: d, id: i2 };
   });
   const alertEl = $2("camAlert");
   if (closest) {
@@ -24982,8 +24483,8 @@ function checkCamerasILS() {
     }
   } else {
     alertEl.classList.remove("on");
-    S.cameras.forEach((c, i) => {
-      if (S.camWarned.has(i) && haversine(S.gps, c) > 2e3) S.camWarned.delete(i);
+    S.cameras.forEach((c, i2) => {
+      if (S.camWarned.has(i2) && haversine(S.gps, c) > 2e3) S.camWarned.delete(i2);
     });
   }
 }
@@ -25038,6 +24539,31 @@ function snapLostBlocksNav(snap) {
   const lat = lateralForOffRoute(snap);
   return lat == null || lat > OFF_ROUTE_ENTER_M;
 }
+function shouldUseReturnArrow(snap) {
+  const lat = lateralForOffRoute(snap);
+  if (isOfflineGuide()) return true;
+  if (S.offRouteState === OffRouteState.SUSPECT && lat != null && lat > OFF_ROUTE_ENTER_M) return true;
+  if (isSnapLost() && lat != null && lat > OFF_ROUTE_ENTER_M) return true;
+  return false;
+}
+function paintReturnToRouteArrow(snap) {
+  const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
+  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
+  let turn = 0;
+  if (hdg != null && !isNaN(hdg)) turn = (brg - hdg + 540) % 360 - 180;
+  $2("arrow-box").innerHTML = buildTurnArrowSVG(turn);
+  const dSnap = haversine(S.gps, { lat: snap.lat, lon: snap.lon });
+  if (dSnap < 1e3) {
+    $2("v-mdist").textContent = Math.max(0, Math.round(dSnap / 10) * 10);
+    $2("v-mdist-u").textContent = "\u043C";
+  } else {
+    $2("v-mdist").textContent = (dSnap / 1e3).toFixed(1);
+    $2("v-mdist-u").textContent = "\u043A\u043C";
+  }
+  const label = isOfflineGuide() ? "\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422" : "\u0421\u042A\u0415\u0417\u0414 \u0421 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0410";
+  setHudStreetLabels(label, hudCurrentStreetLabel(snap));
+  $2("rb-exit-label")?.classList.add("hidden");
+}
 function onTick() {
   if (!S.gps) return;
   if ($2("hud").classList.contains("on")) {
@@ -25063,14 +24589,16 @@ function onTick() {
     hw.classList.toggle("on", !!hh.interference && kmh < 25);
     hw.textContent = hh.calibrating ? "\u{1F9ED} \u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043C\u043F\u0430\u0441\u0430 \u2014 \u0432\u043E\u0441\u044C\u043C\u0451\u0440\u043A\u0430 15 \u0441" : "\u26A0 \u041F\u043E\u043C\u0435\u0445\u0438 \u043A\u043E\u043C\u043F\u0430\u0441\u0430 \u2014 \u043A\u0443\u0440\u0441 \u043F\u043E GPS";
   }
+  if (isBearingMode() && S.finish && S.gps) {
+    tickBearing(now, kmh);
+    updateFinishInfo(haversine(S.gps, S.finish), kmh, now);
+    tickAutoMode();
+    refreshFuelPanel();
+    return;
+  }
   if (!S.route) {
     $2("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
     updateFinishInfo(0, kmh, now);
-    return;
-  }
-  if (isBearingMode()) {
-    tickBearing(now, kmh);
-    updateFinishInfo(haversine(S.gps, S.finish), kmh, now);
     return;
   }
   tickSpeedLimit(getNavSnap(S.smoothedHeading));
@@ -25107,50 +24635,10 @@ function onTick() {
   }
   const remaining = getRemainingDistance();
   const near = findNearestOnRoute();
-  if (S.compassMode && S.finish && S.gps && !isOfflineGuide()) {
-    const brg = bearing(S.gps, S.finish);
-    const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
-    let turn = 0;
-    if (hdg != null && !isNaN(hdg)) turn = (brg - hdg + 540) % 360 - 180;
-    $2("arrow-box").innerHTML = buildTurnArrowSVG(turn);
-    const dFin = haversine(S.gps, S.finish);
-    if (dFin < 1e3) {
-      $2("v-mdist").textContent = Math.max(0, Math.round(dFin / 10) * 10);
-      $2("v-mdist-u").textContent = "\u043C";
-    } else {
-      $2("v-mdist").textContent = (dFin / 1e3).toFixed(1);
-      $2("v-mdist-u").textContent = "\u043A\u043C";
-    }
-    setHudStreetLabels("\u041A \u0424\u0418\u041D\u0418\u0428\u0423", hudCurrentStreetLabel(snap));
-    $2("rb-exit-label")?.classList.add("hidden");
-    const mid = $2("mid-info");
-    const tStr = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
-    const tripX2 = formatTripHudExtraLine();
-    mid.textContent = tripX2 ? tStr + " \xB7 " + tripX2 : tStr + " \xB7 \u041A\u041E\u041C\u041F\u0410\u0421";
-    updateFinishInfo(remaining, kmh, now);
-    tickAutoMode();
-    checkCamerasILS();
-    refreshFuelPanel();
-    return;
-  }
   if (!gpsOk) return;
   if (snapLostBlocksNav(snap)) return;
-  if (isOfflineGuide() && snap && S.gps) {
-    const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
-    const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
-    let turn = 0;
-    if (hdg != null && !isNaN(hdg)) turn = (brg - hdg + 540) % 360 - 180;
-    $2("arrow-box").innerHTML = buildTurnArrowSVG(turn);
-    const dSnap = haversine(S.gps, { lat: snap.lat, lon: snap.lon });
-    if (dSnap < 1e3) {
-      $2("v-mdist").textContent = Math.max(0, Math.round(dSnap / 10) * 10);
-      $2("v-mdist-u").textContent = "\u043C";
-    } else {
-      $2("v-mdist").textContent = (dSnap / 1e3).toFixed(1);
-      $2("v-mdist-u").textContent = "\u043A\u043C";
-    }
-    setHudStreetLabels("\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422", hudCurrentStreetLabel(snap));
-    $2("rb-exit-label")?.classList.add("hidden");
+  if (shouldUseReturnArrow(snap) && snap && S.gps) {
+    paintReturnToRouteArrow(snap);
   } else {
     let nm = isSnapDegraded() ? getCachedManeuver() : null;
     if (!nm) nm = findNextManeuver();
@@ -25230,6 +24718,10 @@ function onTick() {
       }
     } else {
       setHudStreetLabels("\u2014", hudCurrentStreetLabel(snap));
+      $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
+      $2("v-mdist").textContent = "\u2014";
+      $2("v-mdist-u").textContent = "";
+      $2("rb-exit-label")?.classList.add("hidden");
     }
   }
   updateFinishInfo(remaining, kmh, now);
@@ -25237,7 +24729,7 @@ function onTick() {
   const tripX = formatTripHudExtraLine();
   let fullMid = tripX ? midLine + " \xB7 " + tripX : midLine;
   if (snapLost) fullMid += " \xB7 SNAP?";
-  if (S.routeQuality === RouteQuality.LOW && !S.compassMode) {
+  if (S.routeQuality === RouteQuality.LOW) {
     $2("mid-info").textContent = fullMid + " \xB7 \u041D\u0418\u0417\u041A. OSM";
   } else {
     $2("mid-info").textContent = fullMid;
@@ -25271,15 +24763,16 @@ function r23(n) {
 async function startHud() {
   clearHudChromeReveal();
   applyHudChrome();
-  if (!S.route) {
-    alert("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442");
+  if (!S.gps || !S.finish) {
+    alert("\u0414\u043E\u0436\u0434\u0438\u0442\u0435\u0441\u044C GPS \u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448");
     return;
   }
+  const hasRoute = !!S.route?.coords?.length;
   saveLastRun();
   if (telemetry_default.isEnabled()) {
-    telemetry_default.start({ routeKm: S.route?.distance ? r23(S.route.distance / 1e3) : null });
+    telemetry_default.start({ routeKm: hasRoute && S.route?.distance ? r23(S.route.distance / 1e3) : null });
     telemetry_default.updateMarkButtonVisibility();
-    logFunnel("ride_start", { routeKm: S.route?.distance ? r23(S.route.distance / 1e3) : null });
+    logFunnel("ride_start", { routeKm: hasRoute && S.route?.distance ? r23(S.route.distance / 1e3) : null });
   }
   resetConvergeTelemetryRide();
   if (isTrackRecordEnabled()) startTrackRecorder();
@@ -25293,8 +24786,10 @@ async function startHud() {
   resetCurveRibbonState();
   resetSpeedLimitState();
   resetRoundaboutState();
-  ensureRouteGeometry(S.route);
-  seedSnapFromGps({ relaxed: true });
+  if (hasRoute) {
+    ensureRouteGeometry(S.route);
+    seedSnapFromGps({ relaxed: true });
+  }
   $2("setup").style.display = "none";
   $2("setup").style.zIndex = "30";
   $2("hud").classList.add("on");
@@ -25303,7 +24798,7 @@ async function startHud() {
   resetVintageVfd();
   syncVintageVfdDomClasses();
   updateCamStatusUI();
-  loadCameras();
+  if (hasRoute && !globalThis.__REGRESSION_SIM__?.active) loadCameras();
   acquireWakeLock();
   try {
     await startNavigationGps();
@@ -25312,11 +24807,18 @@ async function startHud() {
   }
   if (window.__SIM__?.onNavigationStart) window.__SIM__.onNavigationStart();
   requestAppFullscreen();
-  speak("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D. \u0412 \u043F\u0443\u0442\u0438 " + Math.round(S.route.duration / 60) + " \u043C\u0438\u043D\u0443\u0442");
   S.dispSpeed = S.gps?.speed > 0 ? Math.min(S.gps.speed * 3.6, 198) : 0;
-  S.navMode = "route";
-  syncNavButtons();
-  tickSpeedLimit(getNavSnap(S.smoothedHeading));
+  if (hasRoute) {
+    speak("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D. \u0412 \u043F\u0443\u0442\u0438 " + Math.round(S.route.duration / 60) + " \u043C\u0438\u043D\u0443\u0442");
+    S.navMode = "route";
+    syncNavButtons();
+    tickSpeedLimit(getNavSnap(S.smoothedHeading));
+  } else {
+    enterBearingMode({ quiet: true });
+    const d = haversine(S.gps, S.finish);
+    const distSpeech = d < 1e3 ? Math.max(0, Math.round(d / 10) * 10) + " \u043C\u0435\u0442\u0440\u043E\u0432" : (d / 1e3).toFixed(1) + " \u043A\u0438\u043B\u043E\u043C\u0435\u0442\u0440\u043E\u0432";
+    speak("\u041F\u0435\u043B\u0435\u043D\u0433 \u043A \u0446\u0435\u043B\u0438. \u0414\u043E \u0444\u0438\u043D\u0438\u0448\u0430 " + distSpeech);
+  }
   onTick();
   startVisualLoop();
 }
@@ -25349,8 +24851,7 @@ async function stopHud() {
   clearHudChromeReveal();
   $2("setup").style.display = "block";
   renderFavs();
-  const goBar = $2("go-bar");
-  if (goBar) goBar.classList.toggle("hidden", !(S.route && S.route.coords?.length));
+  checkStartReady();
   releaseWakeLock();
   clearVoiceQueue();
   resetOffRouteMachine();
@@ -25585,6 +25086,7 @@ var init_hud = __esm({
     init_hud_opts();
     init_hud_chrome();
     init_offroute();
+    init_nav_constants();
     init_telemetry();
     init_telemetry_funnel();
     init_view_mode();
@@ -25596,11 +25098,1373 @@ var init_hud = __esm({
     init_speed_limit();
     init_roundabout();
     init_converge_telemetry();
-    init_nav_constants();
     _lastMarkCtx = null;
     _fuelBusy = false;
     _fuelPanelShownAt = 0;
     FUEL_PANEL_MS = 9e3;
+  }
+});
+
+// js/route-map.js
+function clearLayers() {
+  if (!_map3) return;
+  _routeLayers.forEach((l) => _map3.removeLayer(l));
+  _hudWindowLayers.forEach((l) => _map3.removeLayer(l));
+  _markers2.forEach((m) => _map3.removeLayer(m));
+  _routeLayers = [];
+  _hudWindowLayers = [];
+  _markers2 = [];
+}
+function routePolylineLatLngs(route) {
+  if (route?.geometry?.n > 1) return geometryToLatLngs(route.geometry);
+  const coords = route?.coords;
+  if (!coords?.length) return [];
+  return coords.map((c) => [c[0], c[1]]);
+}
+function latLngsForDistance(route, maxM, startS) {
+  const geom = route?.geometry;
+  if (geom?.n > 1) {
+    return latLngsSliceByS(geom, startS || 0, (startS || 0) + maxM);
+  }
+  const coords = route?.coords;
+  if (!coords || coords.length < 2) return [];
+  const out = [[coords[0][0], coords[0][1]]];
+  let acc = 0;
+  for (let i2 = 0; i2 < coords.length - 1 && acc < maxM; i2++) {
+    const a = { lat: coords[i2][0], lon: coords[i2][1] };
+    const b = { lat: coords[i2 + 1][0], lon: coords[i2 + 1][1] };
+    const seg = haversine(a, b);
+    if (acc + seg >= maxM) {
+      const t = (maxM - acc) / seg;
+      out.push([a.lat + t * (b.lat - a.lat), a.lon + t * (b.lon - a.lon)]);
+      break;
+    }
+    acc += seg;
+    out.push([b.lat, b.lon]);
+  }
+  return out;
+}
+function applyTileLayer(id) {
+  if (!_map3) return;
+  const layers = resolveMapLayers(id);
+  if (_tileLayer3) _map3.removeLayer(_tileLayer3);
+  if (_overlayLayer2) {
+    _map3.removeLayer(_overlayLayer2);
+    _overlayLayer2 = null;
+  }
+  _tileLayer3 = import_leaflet3.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map3);
+  if (layers.overlay) {
+    _overlayLayer2 = import_leaflet3.default.tileLayer(layers.overlay.url, layers.overlay.opts).addTo(_map3);
+  }
+}
+function ensureMap2() {
+  const box = $2("route-map");
+  if (!box) return null;
+  if (!_map3) {
+    box.innerHTML = "";
+    _map3 = import_leaflet3.default.map(box, {
+      zoomControl: true,
+      attributionControl: false,
+      preferCanvas: true
+    });
+    applyTileLayer(getMapProviderId());
+  }
+  return _map3;
+}
+function initMapProviderSelect(onChange) {
+  const sel = $2("opt-map");
+  if (!sel) return;
+  sel.innerHTML = buildMapProviderSelectHtml(getMapProviderId());
+  sel.addEventListener("change", () => {
+    saveMapProviderId(sel.value);
+    applyTileLayer(sel.value);
+    if (_lastRender) {
+      renderRouteMap(
+        _lastRender.alternatives,
+        _lastRender.selectedIdx,
+        _lastRender.start,
+        _lastRender.finish
+      );
+    }
+    if (onChange) onChange(sel.value);
+  });
+}
+function renderRouteMap(alternatives, selectedIdx, start2, finish) {
+  const section = $2("route-section");
+  if (!section) return;
+  if (!alternatives || !alternatives.length) {
+    section.classList.add("hidden");
+    clearLayers();
+    _lastRender = null;
+    return;
+  }
+  _lastRender = { alternatives, selectedIdx, start: start2, finish };
+  section.classList.remove("hidden");
+  const map = ensureMap2();
+  if (!map) return;
+  clearLayers();
+  const bounds = import_leaflet3.default.latLngBounds([]);
+  alternatives.forEach((r, i2) => {
+    const latlngs = routePolylineLatLngs(r);
+    latlngs.forEach((ll) => bounds.extend(ll));
+    const sel = i2 === selectedIdx;
+    const layer = import_leaflet3.default.polyline(latlngs, {
+      color: ROUTE_COLORS[i2 % ROUTE_COLORS.length],
+      weight: sel ? 7 : 4,
+      opacity: sel ? 1 : 0.45,
+      lineCap: "round",
+      lineJoin: "round"
+    }).addTo(map);
+    layer.on("click", () => {
+      if (_onSelect) _onSelect(i2);
+    });
+    _routeLayers.push(layer);
+    if (sel) {
+      const hudLenM = getElevProfileLenM();
+      const hudWin = latLngsForDistance(r, hudLenM, 0);
+      if (hudWin.length > 1) {
+        const glow = import_leaflet3.default.polyline(hudWin, {
+          color: "#ffffff",
+          weight: 11,
+          opacity: 0.28,
+          lineCap: "round",
+          lineJoin: "round"
+        }).addTo(map);
+        const core = import_leaflet3.default.polyline(hudWin, {
+          color: ROUTE_COLORS[i2 % ROUTE_COLORS.length],
+          weight: 5,
+          opacity: 0.95,
+          dashArray: "10,8",
+          lineCap: "round",
+          lineJoin: "round"
+        }).addTo(map).bindTooltip("\u041E\u043A\u043D\u043E HUD ~" + hudLenM / 1e3 + " \u043A\u043C", { direction: "top", sticky: true });
+        _hudWindowLayers.push(glow, core);
+      }
+    }
+  });
+  if (start2) {
+    const m = import_leaflet3.default.circleMarker([start2.lat, start2.lon], {
+      radius: 9,
+      color: "#000",
+      weight: 2,
+      fillColor: THEME.routeStart,
+      fillOpacity: 1
+    }).addTo(map).bindTooltip("\u0412\u044B", { permanent: false, direction: "top" });
+    bounds.extend([start2.lat, start2.lon]);
+    _markers2.push(m);
+  }
+  if (finish) {
+    const m = import_leaflet3.default.circleMarker([finish.lat, finish.lon], {
+      radius: 9,
+      color: "#000",
+      weight: 2,
+      fillColor: THEME.routeFinish,
+      fillOpacity: 1
+    }).addTo(map).bindTooltip("\u0424\u0438\u043D\u0438\u0448", { permanent: false, direction: "top" });
+    bounds.extend([finish.lat, finish.lon]);
+    _markers2.push(m);
+  }
+  const fuels = fuelStationsForMap(48);
+  fuels.forEach((st) => {
+    const col = fuelColor(st.status);
+    const m = import_leaflet3.default.circleMarker([st.lat, st.lon], {
+      radius: 7,
+      color: "#000",
+      weight: 1,
+      fillColor: col,
+      fillOpacity: 0.92
+    }).addTo(map).bindTooltip("\u26FD " + (st.brand || "\u0410\u0417\u0421"), { direction: "top", opacity: 0.92 });
+    bounds.extend([st.lat, st.lon]);
+    _markers2.push(m);
+  });
+  if (bounds.isValid()) {
+    map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });
+  }
+  setTimeout(() => map.invalidateSize(), 120);
+}
+function renderRouteAlts(alternatives, selectedIdx, onPick) {
+  const box = $2("route-alts");
+  if (!box) return;
+  if (!alternatives || !alternatives.length) {
+    box.innerHTML = "";
+    return;
+  }
+  box.innerHTML = alternatives.map((r, i2) => {
+    const km = (r.distance / 1e3).toFixed(1);
+    const min = Math.max(1, Math.round(r.duration / 60));
+    const sel = i2 === selectedIdx;
+    const col = ROUTE_COLORS[i2 % ROUTE_COLORS.length];
+    return '<button type="button" class="route-alt' + (sel ? " sel" : "") + '" data-ri="' + i2 + '"><span class="ra-dot" style="background:' + col + '"></span><span class="ra-main">\u0412\u0430\u0440\u0438\u0430\u043D\u0442 ' + (i2 + 1) + '</span><span class="ra-meta">' + km + " \u043A\u043C \xB7 ~" + min + " \u043C\u0438\u043D</span></button>";
+  }).join("");
+  box.querySelectorAll(".route-alt").forEach((b) => {
+    b.addEventListener("click", () => {
+      const idx = parseInt(b.getAttribute("data-ri"), 10);
+      if (!isNaN(idx)) onPick(idx);
+    });
+  });
+}
+function setRouteMapSelectHandler(fn) {
+  _onSelect = fn;
+}
+function updateRouteInfo(route) {
+  const el = $2("route-info");
+  if (!el || !route) {
+    if (el) el.textContent = "";
+    return;
+  }
+  const km = (route.distance / 1e3).toFixed(1);
+  const min = Math.max(1, Math.round(route.duration / 60));
+  el.textContent = "\u2705 " + km + " \u043A\u043C \xB7 ~" + min + " \u043C\u0438\u043D \u0434\u043E \u0444\u0438\u043D\u0438\u0448\u0430";
+  el.className = "route-info ok";
+}
+function clearRouteMap() {
+  $2("route-section")?.classList.add("hidden");
+  clearLayers();
+  _lastRender = null;
+  if ($2("route-alts")) $2("route-alts").innerHTML = "";
+  if ($2("route-info")) {
+    $2("route-info").textContent = "";
+    $2("route-info").className = "route-info";
+  }
+}
+function invalidateRouteMapSize() {
+  if (_map3) setTimeout(() => _map3.invalidateSize(), 150);
+}
+var import_leaflet3, _onSelect, _map3, _tileLayer3, _overlayLayer2, _routeLayers, _hudWindowLayers, _markers2, _lastRender, ROUTE_COLORS;
+var init_route_map = __esm({
+  "js/route-map.js"() {
+    import_leaflet3 = __toESM(require_leaflet_src());
+    init_util();
+    init_geo();
+    init_elevation();
+    init_route_geometry();
+    init_map_providers();
+    init_fuel();
+    init_theme();
+    _onSelect = null;
+    _map3 = null;
+    _tileLayer3 = null;
+    _overlayLayer2 = null;
+    _routeLayers = [];
+    _hudWindowLayers = [];
+    _markers2 = [];
+    _lastRender = null;
+    ROUTE_COLORS = THEME.routeAlts;
+  }
+});
+
+// js/tts-health.js
+async function auditTtsHealth() {
+  if (!S.voice) {
+    return { ok: true, offlineVoice: true, platform: "off", hint: "" };
+  }
+  if (isNative()) {
+    try {
+      const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
+      const { supported } = await TextToSpeech2.isLanguageSupported({ lang: TTS_LANG });
+      let offlineVoice = supported;
+      let voices2 = 0;
+      try {
+        const res = await TextToSpeech2.getSupportedVoices();
+        const list = res.voices || [];
+        voices2 = list.length;
+        const ru2 = list.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
+        if (ru2.length) {
+          offlineVoice = ru2.some((v) => v.network === false || v.networkConnectionRequired === false);
+        }
+      } catch (e) {
+      }
+      return {
+        ok: !!supported,
+        offlineVoice,
+        voices: voices2,
+        platform: "native",
+        hint: !supported ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u2014 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0431\u0443\u0434\u0435\u0442 \u0431\u0435\u0437 \u043E\u0437\u0432\u0443\u0447\u043A\u0438." : !offlineVoice ? "\u041D\u0435\u0442 \u043E\u0444\u043B\u0430\u0439\u043D-\u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \xAB\u0432 \u0441\u0430\u043C\u043E\u043B\u0451\u0442\u0435\xBB \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u043E\u0433\u0443\u0442 \u043D\u0435 \u0437\u0432\u0443\u0447\u0430\u0442\u044C." : ""
+      };
+    } catch (e) {
+      return { ok: false, offlineVoice: false, platform: "native", hint: String(e.message || e) };
+    }
+  }
+  if (!("speechSynthesis" in window)) {
+    return { ok: false, offlineVoice: false, platform: "web", hint: "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043E\u0437\u0432\u0443\u0447\u043A\u0443." };
+  }
+  const voices = speechSynthesis.getVoices();
+  const ru = voices.filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
+  const localRu = ru.filter((v) => v.localService);
+  const best = ru.reduce((acc, v) => {
+    const sc = scoreRuVoice(v);
+    return sc > acc.score ? { score: sc, name: v.name } : acc;
+  }, { score: -1, name: "" });
+  return {
+    ok: ru.length > 0,
+    offlineVoice: localRu.length > 0,
+    voices: ru.length,
+    platform: "web",
+    hint: !ru.length ? "\u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0438 \u0441\u0438\u0441\u0442\u0435\u043C\u044B/\u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430." : !localRu.length ? "\u0422\u043E\u043B\u044C\u043A\u043E \u043E\u0431\u043B\u0430\u0447\u043D\u044B\u0435 \u0433\u043E\u043B\u043E\u0441\u0430 \u2014 \u0431\u0435\u0437 \u0441\u0435\u0442\u0438 \u043E\u0437\u0432\u0443\u0447\u043A\u0430 \u043C\u043E\u0436\u0435\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C." : best.name ? "\u0413\u043E\u043B\u043E\u0441: " + best.name : ""
+  };
+}
+async function openTtsInstall() {
+  if (!isNative()) return false;
+  try {
+    const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
+    await TextToSpeech2.openInstall();
+    return true;
+  } catch (e) {
+    console.warn("TTS install:", e);
+    return false;
+  }
+}
+function renderBanner(health) {
+  const el = $2("tts-banner");
+  if (!el) return;
+  if (!S.voice || health.ok && health.offlineVoice !== false) {
+    el.classList.add("hidden");
+    el.innerHTML = "";
+    return;
+  }
+  el.classList.remove("hidden");
+  let html = "<b>\u{1F50A} \u0413\u043E\u043B\u043E\u0441:</b> ";
+  if (!health.ok) {
+    html += health.hint || "\u0440\u0443\u0441\u0441\u043A\u0438\u0439 TTS \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.";
+  } else {
+    html += health.hint || "\u043E\u0444\u043B\u0430\u0439\u043D-\u0433\u043E\u043B\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 \u044F\u0437\u044B\u043A\u043E\u0432\u043E\u0439 \u043F\u0430\u043A\u0435\u0442.";
+  }
+  if (isNative()) {
+    html += ' <button type="button" class="linkish" id="btn-tts-install">\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0433\u043E\u043B\u043E\u0441\u0430</button>';
+  }
+  el.innerHTML = html;
+  $2("btn-tts-install")?.addEventListener("click", () => {
+    openTtsInstall().then(() => setTimeout(refreshTtsBanner, 2e3));
+  });
+}
+function applyTtsBanner(health) {
+  renderBanner(health);
+}
+async function refreshTtsBanner() {
+  const health = await auditTtsHealth();
+  applyTtsBanner(health);
+  return health;
+}
+function initTtsHealth() {
+  initRuVoice();
+  if ("speechSynthesis" in window) {
+    speechSynthesis.addEventListener("voiceschanged", () => {
+      refreshRuVoice();
+      refreshTtsBanner();
+    }, { once: false });
+  }
+  refreshTtsBanner();
+}
+var TTS_LANG;
+var init_tts_health = __esm({
+  "js/tts-health.js"() {
+    init_state();
+    init_util();
+    init_platform();
+    init_tts_ru();
+    TTS_LANG = "ru-RU";
+  }
+});
+
+// js/setup.js
+var setup_exports = {};
+__export(setup_exports, {
+  applyCoordsOrLink: () => applyCoordsOrLink,
+  bindSetupUI: () => bindSetupUI,
+  doAddressSearch: () => doAddressSearch,
+  doBuildRoute: () => doBuildRoute,
+  doFuelSearch: () => doFuelSearch,
+  initNativeHints: () => initNativeHints,
+  invalidateRoute: () => invalidateRoute,
+  refreshRouteUi: () => refreshRouteUi,
+  setFinishQuiet: () => setFinishQuiet,
+  setGoBarVisible: () => setGoBarVisible,
+  syncOptionsFromDom: () => syncOptionsFromDom,
+  updateBearingStartHint: () => updateBearingStartHint
+});
+function syncSimPath() {
+  if (window.__SIM__?.setRoutePath && S.route?.coords?.length) {
+    window.__SIM__.setRoutePath(S.route.coords);
+  }
+}
+function setGoBarVisible(visible) {
+  $2("go-bar")?.classList.toggle("hidden", !visible);
+  $2("setup")?.classList.toggle("has-go-bar", !!visible);
+}
+function updateBearingStartHint() {
+  const ri = $2("route-info");
+  if (!ri || !S.gps || !S.finish || S.route?.coords?.length) return;
+  const txt = (ri.textContent || "").trim();
+  if (txt.startsWith("\u23F3") || txt.startsWith("\u274C")) return;
+  ri.textContent = "\u{1F9ED} \u0411\u0435\u0437 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430: \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB \u2014 \u043F\u0435\u043B\u0435\u043D\u0433 \u043A \u0444\u0438\u043D\u0438\u0448\u0443";
+  ri.className = "route-info ok";
+}
+function refreshRouteUi() {
+  if (!S.route) return;
+  renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+  renderRouteAlts(S.routeAlternatives, S.selectedRouteIdx, pickRoute);
+  updateRouteInfo(S.route);
+  syncSimPath();
+  setGoBarVisible(true);
+  $2("route-export-row")?.classList.toggle("hidden", !S.route?.coords?.length);
+  loadCameras();
+  checkStartReady();
+  scheduleGeometryBuild(S.routeAlternatives, () => {
+    renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+  });
+}
+function invalidateRoute() {
+  S.route = null;
+  S.routeAlternatives = [];
+  S.selectedRouteIdx = 0;
+  clearRouteMap();
+  $2("route-export-row")?.classList.add("hidden");
+  checkStartReady();
+  updateBearingStartHint();
+  const b = $2("btn-build-route");
+  if (b) b.disabled = !(S.gps && S.finish);
+}
+function pickRoute(idx) {
+  selectRouteIndex(idx);
+  ensureRouteGeometry(S.route);
+  renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+  renderRouteAlts(S.routeAlternatives, S.selectedRouteIdx, pickRoute);
+  updateRouteInfo(S.route);
+  syncSimPath();
+  checkStartReady();
+  loadCameras();
+}
+async function doBuildRoute() {
+  if (!S.gps || !S.finish) {
+    $2("s-finish").textContent = "\u274C \u041D\u0443\u0436\u043D\u044B GPS \u0438 \u0444\u0438\u043D\u0438\u0448";
+    $2("s-finish").className = "status err";
+    return;
+  }
+  const btn = $2("btn-build-route");
+  const prev = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "\u23F3 \u0421\u0442\u0440\u043E\u0438\u043C\u2026";
+  $2("route-info").textContent = "\u23F3 \u0417\u0430\u043F\u0440\u043E\u0441 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u043E\u0432\u2026";
+  $2("route-info").className = "route-info";
+  try {
+    S.routeAlternatives = await fetchRouteAlternatives();
+    S.selectedRouteIdx = 0;
+    selectRouteIndex(0);
+    renderRouteMap(S.routeAlternatives, 0, S.gps, S.finish);
+    renderRouteAlts(S.routeAlternatives, 0, pickRoute);
+    updateRouteInfo(S.route);
+    syncSimPath();
+    setGoBarVisible(true);
+    loadCameras();
+    telemetry_default.log("nav", { sub: "route_built", variants: S.routeAlternatives.length });
+    $2("s-finish").textContent = "\u2705 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D \u2014 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB \u0432\u043D\u0438\u0437\u0443";
+    $2("s-finish").className = "status ok";
+    scheduleGeometryBuild(S.routeAlternatives, () => {
+      renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+    });
+    prefetchFuelForMap().then(() => {
+      renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+    });
+  } catch (e) {
+    $2("route-info").textContent = "\u274C " + e.message;
+    $2("route-info").className = "route-info";
+    $2("s-finish").textContent = "\u274C " + e.message;
+    $2("s-finish").className = "status err";
+    clearRouteMap();
+    updateBearingStartHint();
+  } finally {
+    btn.textContent = prev;
+    btn.disabled = !(S.gps && S.finish);
+    checkStartReady();
+  }
+}
+async function doAddressSearch() {
+  const q = $2("finish-input").value.trim();
+  if (!q) {
+    $2("s-finish").textContent = "\u274C \u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0430\u0434\u0440\u0435\u0441";
+    $2("s-finish").className = "status err";
+    return;
+  }
+  if (parseInput(q)) {
+    applyCoordsOrLink();
+    return;
+  }
+  $2("s-finish").textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0430\u0434\u0440\u0435\u0441\u2026";
+  $2("s-finish").className = "status";
+  S.finish = null;
+  invalidateRoute();
+  if (window.__motoHUD) window.__motoHUD._searchBusy = true;
+  try {
+    const res = await searchAddress(q);
+    if (!res.length) {
+      $2("s-finish").textContent = "\u274C \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E";
+      $2("s-finish").className = "status err";
+      $2("search-results").style.display = "none";
+      return;
+    }
+    const box = $2("search-results");
+    box.innerHTML = "";
+    res.forEach((r) => {
+      const d = document.createElement("div");
+      d.textContent = r.display_name;
+      d.addEventListener("click", () => {
+        S.finish = { lat: parseFloat(r.lat), lon: parseFloat(r.lon), label: r.display_name.split(",")[0] };
+        $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + r.display_name;
+        $2("s-finish").className = "status ok";
+        $2("finish-input").value = r.display_name;
+        box.style.display = "none";
+        invalidateRoute();
+      });
+      box.appendChild(d);
+    });
+    box.style.display = "block";
+    try {
+      box.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
+    } catch (e) {
+    }
+    $2("s-finish").textContent = "\u{1F50E} \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043D\u0442 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430";
+    $2("s-finish").className = "status";
+  } catch (e) {
+    $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u043E\u0438\u0441\u043A\u0430: " + e.message;
+    $2("s-finish").className = "status err";
+  } finally {
+    if (window.__motoHUD) window.__motoHUD._searchBusy = false;
+  }
+}
+function applyFuelFinish(st) {
+  const brand = st.brand || st.name || "\u0410\u0417\u0421";
+  S.finish = { lat: st.lat, lon: st.lon, label: "\u26FD " + brand };
+  const inputVal = st.name && st.name !== st.brand ? brand + " \u2014 " + st.name : brand;
+  $2("finish-input").value = inputVal;
+  $2("finish-input").dataset.userEdited = "1";
+  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + inputVal + " \xB7 " + formatFuelDist(st.distGps);
+  $2("s-finish").className = "status ok";
+  invalidateRoute();
+  checkStartReady();
+}
+function fuelStationMetaLine(st) {
+  const parts = ['<span class="fuel-st ' + (st.status || "unknown") + '">' + escapeHtml(fuelStatusText(st.status)) + "</span>"];
+  if (st.confirmations) parts.push("\u043E\u0442\u0447\u0451\u0442\u043E\u0432: " + st.confirmations);
+  if (st.lastAt) parts.push("\u0434\u0430\u043D\u043D\u044B\u0435: " + escapeHtml(String(st.lastAt).split(" ")[0]));
+  if (st.statusSource === "crowd") parts.push("\u0432\u0430\u0448 \u043E\u0442\u0447\u0451\u0442");
+  return parts.join(" \xB7 ");
+}
+async function doFuelSearch() {
+  if (!S.gps) {
+    $2("s-finish").textContent = "\u274C \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0435 GPS (\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u{1F4CD} GPS)";
+    $2("s-finish").className = "status err";
+    return;
+  }
+  const btn = $2("btn-fuel-search");
+  const prev = btn?.textContent;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "\u23F3 \u0418\u0449\u0435\u043C \u0410\u0417\u0421\u2026";
+  }
+  $2("s-finish").textContent = "\u23F3 \u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u043F\u0440\u0430\u0432\u043E\u043A\u2026";
+  $2("s-finish").className = "status";
+  try {
+    syncOptionsFromDom();
+    const limit = clampFuelPlannerCount(S.fuelPlannerCount);
+    const list = await searchNearestFuelStations(limit);
+    const box = $2("search-results");
+    box.innerHTML = "";
+    if (!list.length) {
+      $2("s-finish").textContent = "\u274C \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438";
+      $2("s-finish").className = "status err";
+      box.style.display = "none";
+      return;
+    }
+    list.forEach((st) => {
+      const row = document.createElement("div");
+      row.className = "fuel-item";
+      row.innerHTML = '<div class="fuel-title"><span>\u26FD ' + escapeHtml(st.brand || st.name || "\u0410\u0417\u0421") + '</span><span class="fuel-dist">' + formatFuelDist(st.distGps) + "</span></div>" + (st.name && st.name !== st.brand ? '<div class="fuel-meta">' + escapeHtml(st.name) + "</div>" : "") + '<div class="fuel-meta">' + fuelStationMetaLine(st) + "</div>";
+      row.addEventListener("click", () => {
+        applyFuelFinish(st);
+        box.style.display = "none";
+      });
+      box.appendChild(row);
+    });
+    box.style.display = "block";
+    try {
+      box.scrollIntoView({ block: "nearest", behavior: "smooth", inline: "nearest" });
+    } catch (e) {
+    }
+    $2("s-finish").textContent = "\u26FD \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0443 (" + list.length + ")" + fuelStatusHint();
+    $2("s-finish").className = "status";
+  } catch (e) {
+    $2("s-finish").textContent = "\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0410\u0417\u0421: " + e.message;
+    $2("s-finish").className = "status err";
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = prev || "\u26FD \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u0437\u0430\u043F\u0440\u0430\u0432\u043A\u0438";
+    }
+  }
+}
+function setFinishQuiet(lat, lon, label = "\u0422\u043E\u0447\u043A\u0430") {
+  S.finish = { lat, lon, label };
+  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + lat.toFixed(5) + ", " + lon.toFixed(5);
+  $2("s-finish").className = "status ok";
+  checkStartReady();
+  updateBearingStartHint();
+}
+async function applyCoordsOrLink(opts = {}) {
+  const hideSearch = opts.hideSearch !== false;
+  const raw = $2("finish-input").value.trim();
+  if (await tryYandexRouteImport(raw)) return;
+  const p = parseInput(raw);
+  if (!p) {
+    $2("s-finish").textContent = "\u274C \u041D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043B\u0438. \u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B, \u0441\u0441\u044B\u043B\u043A\u0430 \u0438\u043B\u0438 \xAB\u041D\u0430\u0439\u0442\u0438 \u0430\u0434\u0440\u0435\u0441\xBB";
+    $2("s-finish").className = "status err";
+    return;
+  }
+  S.finish = p;
+  $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + p.lat.toFixed(5) + ", " + p.lon.toFixed(5);
+  $2("s-finish").className = "status ok";
+  if (hideSearch) $2("search-results").style.display = "none";
+  invalidateRoute();
+  updateBearingStartHint();
+}
+function looksLikeCoordsOrLink(s2) {
+  return /-?\d{1,2}\.\d+.*-?\d{1,3}\.\d+/.test(s2) || /[?&](ll|pt)=/.test(s2) || isYandexMapsUrl(s2);
+}
+async function tryYandexRouteImport(raw) {
+  if (!isYandexMapsUrl(raw)) return false;
+  try {
+    await importYandexFromText(raw);
+    return true;
+  } catch (e) {
+    $2("s-finish").textContent = "\u274C " + (e.message || e);
+    $2("s-finish").className = "status err";
+    return true;
+  }
+}
+function bindSetupUI() {
+  setRouteMapSelectHandler(pickRoute);
+  initMapProviderSelect();
+  $2("s-gps").addEventListener("click", startGps);
+  $2("btn-search").addEventListener("click", doAddressSearch);
+  $2("btn-fuel-search")?.addEventListener("click", doFuelSearch);
+  $2("btn-parse").addEventListener("click", applyCoordsOrLink);
+  $2("btn-build-route").addEventListener("click", doBuildRoute);
+  $2("finish-input").addEventListener("input", () => {
+    $2("finish-input").dataset.userEdited = "1";
+  });
+  $2("finish-input").addEventListener("focus", () => {
+    if (window.__motoHUD) window.__motoHUD._finishFocused = true;
+  });
+  $2("finish-input").addEventListener("blur", () => {
+    if (window.__motoHUD) window.__motoHUD._finishFocused = false;
+  });
+  $2("finish-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (looksLikeCoordsOrLink(e.target.value)) applyCoordsOrLink();
+      else doAddressSearch();
+    }
+  });
+  $2("btn-paste").addEventListener("click", async () => {
+    try {
+      const t = await navigator.clipboard.readText();
+      if (t) {
+        $2("finish-input").value = t;
+        if (await tryYandexRouteImport(t)) return;
+        if (looksLikeCoordsOrLink(t)) await applyCoordsOrLink();
+        else doAddressSearch();
+      }
+    } catch (e) {
+      $2("s-finish").textContent = "\u274C \u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u0431\u0443\u0444\u0435\u0440\u0443";
+      $2("s-finish").className = "status err";
+    }
+  });
+  $2("opt-voice").addEventListener("change", (e) => {
+    S.voice = e.target.checked;
+    refreshTtsBanner();
+    saveAppOptsToStorage();
+  });
+  $2("btn-compass-cal")?.addEventListener("click", async () => {
+    const btn = $2("btn-compass-cal");
+    const ok = await requestHeadingPermission();
+    if (!ok) {
+      alert("\u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u043A\u043E\u043C\u043F\u0430\u0441\u0443. \u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u0435 \u0434\u0430\u0442\u0447\u0438\u043A\u0438 \u043E\u0440\u0438\u0435\u043D\u0442\u0430\u0446\u0438\u0438 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430/\u0441\u0438\u0441\u0442\u0435\u043C\u044B.");
+      return;
+    }
+    startCompassCalibration(15e3);
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "\u23F3 \u0412\u043E\u0441\u044C\u043C\u0451\u0440\u043A\u0430\u2026 15 \u0441";
+    }
+    setTimeout(() => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "\u{1F9ED} \u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u043A\u043E\u043C\u043F\u0430\u0441\u0430";
+      }
+      if (!isCalibrating()) speak("\u041A\u0430\u043B\u0438\u0431\u0440\u043E\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430");
+    }, 15e3);
+  });
+  $2("opt-path").addEventListener("change", (e) => {
+    S.showPath = e.target.checked;
+    if (!S.showPath) {
+      $2("block-path").classList.add("hidden");
+      $2("hud").classList.add("no-path");
+    } else {
+      $2("block-path").classList.remove("hidden");
+      $2("hud").classList.remove("no-path");
+    }
+    saveAppOptsToStorage();
+  });
+  $2("opt-crossings")?.addEventListener("change", (e) => {
+    S.showCrossingContext = e.target.checked;
+    saveAppOptsToStorage();
+  });
+  function syncChevronInputs() {
+    const on = S.showPathChevrons !== false;
+    const labels = $2("opt-chevron-labels");
+    const maxEl = $2("opt-chevron-max");
+    if (labels) labels.disabled = !on;
+    if (maxEl) maxEl.disabled = !on;
+  }
+  $2("opt-path-chevrons")?.addEventListener("change", (e) => {
+    S.showPathChevrons = e.target.checked;
+    syncChevronInputs();
+    saveAppOptsToStorage();
+  });
+  $2("opt-chevron-labels")?.addEventListener("change", (e) => {
+    S.pathChevronLabels = e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $2("opt-chevron-max")?.addEventListener("change", (e) => {
+    S.pathChevronMax = Math.max(1, Math.min(3, parseInt(e.target.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
+    e.target.value = String(S.pathChevronMax);
+    saveAppOptsToStorage();
+  });
+  const bindFinishOpt = (id) => {
+    $2(id)?.addEventListener("change", () => {
+      syncOptionsFromDom();
+      saveHudOptsToStorage();
+      applyHudChrome();
+    });
+  };
+  bindFinishOpt("opt-finish-dist");
+  bindFinishOpt("opt-finish-time");
+  bindFinishOpt("opt-finish-eta");
+  const bindChromeMode = (id, key) => {
+    $2(id)?.addEventListener("change", (e) => {
+      S[key] = normalizeChromeMode(e.target.value);
+      e.target.value = S[key];
+      saveHudOptsToStorage();
+      applyHudChrome();
+    });
+  };
+  bindChromeMode("opt-hud-status-mode", "hudStatusMode");
+  bindChromeMode("opt-hud-finish-mode", "hudFinishMode");
+  $2("opt-fuel-count")?.addEventListener("change", (e) => {
+    S.fuelPlannerCount = clampFuelPlannerCount(e.target.value);
+    e.target.value = String(S.fuelPlannerCount);
+    saveHudOptsToStorage();
+  });
+  $2("opt-fuel-proxy")?.addEventListener("change", (e) => {
+    setFuelProxyBase(e.target.value.trim());
+  });
+  $2("opt-fuel-proxy")?.addEventListener("blur", (e) => {
+    setFuelProxyBase(e.target.value.trim());
+  });
+  function syncElevInputs() {
+    const on = S.showElevProfile;
+    const exag = $2("opt-elev-exag");
+    const ph = $2("opt-elev-profile-h");
+    const plen = $2("opt-elev-profile-len");
+    if (exag) exag.disabled = !on;
+    if (ph) ph.disabled = !on;
+    if (plen) plen.disabled = !on;
+  }
+  $2("opt-elev-profile").addEventListener("change", (e) => {
+    S.showElevProfile = e.target.checked;
+    syncElevInputs();
+    saveElevOptsToStorage();
+    if (S.showElevProfile && S.route?.geometry) loadRouteElevation();
+  });
+  $2("opt-elev-exag").addEventListener("change", (e) => {
+    S.elevExag = Math.max(0.5, Math.min(5, parseFloat(e.target.value) || DEFAULT_ELEV_EXAG));
+    e.target.value = String(S.elevExag);
+    saveElevOptsToStorage();
+  });
+  $2("opt-elev-profile-h").addEventListener("change", (e) => {
+    S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
+      MAX_ELEV_PROFILE_H,
+      parseInt(e.target.value, 10) || DEFAULT_ELEV_PROFILE_H
+    ));
+    e.target.value = String(S.elevProfileH);
+    saveElevOptsToStorage();
+  });
+  $2("opt-elev-profile-len").addEventListener("change", (e) => {
+    S.elevProfileLenKm = Math.max(MIN_ELEV_PROFILE_LEN_KM, Math.min(
+      MAX_ELEV_PROFILE_LEN_KM,
+      parseInt(e.target.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
+    ));
+    e.target.value = String(S.elevProfileLenKm);
+    saveElevOptsToStorage();
+    if (S.routeAlternatives?.length) renderRouteMap(S.routeAlternatives, S.selectedRouteIdx, S.gps, S.finish);
+  });
+  function syncCurveInputs() {
+    const on = S.curveWarn;
+    const sel = $2("opt-curve-strict");
+    if (sel) sel.disabled = !on;
+  }
+  function recomputeCurveIfReady() {
+    const geom = S.route?.geometry;
+    if (geom) computeCurveSpeed(geom, S.route);
+  }
+  $2("opt-curve-warn").addEventListener("change", (e) => {
+    S.curveWarn = e.target.checked;
+    syncCurveInputs();
+    saveCurveOptsToStorage();
+  });
+  $2("opt-curve-strict").addEventListener("change", (e) => {
+    const v = e.target.value;
+    if (v === "relaxed" || v === "normal" || v === "strict") S.curveStrict = v;
+    saveCurveOptsToStorage();
+    recomputeCurveIfReady();
+  });
+  $2("opt-heading").addEventListener("change", (e) => {
+    S.showCompass = e.target.checked;
+    $2("hud").classList.toggle("show-compass", S.showCompass);
+    saveAppOptsToStorage();
+  });
+  $2("opt-cams").addEventListener("change", (e) => {
+    S.cams = e.target.checked;
+    if (!S.cams) {
+      S.camLoadStatus = "off";
+      S.cameras = [];
+    }
+    updateCamStatusUI();
+    if (S.cams && S.route) loadCameras();
+    saveAppOptsToStorage();
+  });
+  $2("opt-back-only").addEventListener("change", (e) => {
+    S.backOnly = e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $2("opt-tol").addEventListener("change", (e) => {
+    S.tolerance = Math.max(10, Math.min(90, parseInt(e.target.value, 10) || 45));
+    saveAppOptsToStorage();
+  });
+  $2("opt-nodir").addEventListener("change", (e) => {
+    S.noDirPolicy = e.target.value;
+    saveAppOptsToStorage();
+  });
+  $2("opt-limit").addEventListener("change", (e) => {
+    S.userDefaultLimit = parseInt(e.target.value, 10) || 0;
+    saveAppOptsToStorage();
+  });
+  $2("opt-speed-limit-dynamic")?.addEventListener("change", (e) => {
+    S.speedLimitDynamic = !!e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $2("opt-speed-limit-fallback")?.addEventListener("change", (e) => {
+    S.speedLimitFallback = e.target.value === "hide" ? "hide" : "user-default";
+    saveAppOptsToStorage();
+  });
+  $2("opt-roundabout-schema")?.addEventListener("change", (e) => {
+    S.roundaboutSchema = !!e.target.checked;
+    saveAppOptsToStorage();
+  });
+  $2("opt-cam-speed-tol")?.addEventListener("change", (e) => {
+    S.camSpeedTol = Math.max(0, Math.min(50, parseInt(e.target.value, 10) || DEFAULT_CAM_SPEED_TOL));
+    e.target.value = String(S.camSpeedTol);
+    saveAppOptsToStorage();
+  });
+  $2("btn-start").addEventListener("click", () => {
+    requestAppFullscreen();
+    startHud();
+  });
+  let stopArmed = false;
+  let stopArmTimer = null;
+  let stopLastTap = 0;
+  $2("btn-stop").addEventListener("click", (e) => {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - stopLastTap < 350) return;
+    stopLastTap = now;
+    if (stopArmed) {
+      stopArmed = false;
+      clearTimeout(stopArmTimer);
+      $2("btn-stop")?.classList.remove("armed");
+      if (confirm("\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044C \u043F\u043E\u0435\u0437\u0434\u043A\u0443?")) stopHud();
+      return;
+    }
+    stopArmed = true;
+    $2("btn-stop")?.classList.add("armed");
+    stopArmTimer = setTimeout(() => {
+      stopArmed = false;
+      $2("btn-stop")?.classList.remove("armed");
+    }, 1400);
+  });
+  $2("btn-fuel").addEventListener("click", () => {
+    cycleFuelAssist();
+  });
+  $2("btn-gear").addEventListener("click", () => {
+    if ($2("hud")?.classList.contains("on")) handleHudGearClick(syncOptionsFromDom);
+    else openSettingsPanel();
+  });
+  $2("qf-close").addEventListener("click", () => $2("quickFinish").classList.remove("on"));
+  window.addEventListener("orientationchange", () => {
+    invalidateRouteMapSize();
+    setTimeout(() => {
+      if ($2("hud").classList.contains("on")) onTick();
+    }, 250);
+  });
+  document.querySelectorAll(".setup-details").forEach((det) => {
+    det.addEventListener("toggle", () => {
+      if (det.open) setTimeout(() => det.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80);
+    });
+  });
+}
+function syncOptionsFromDom() {
+  S.voice = $2("opt-voice").checked;
+  S.showPath = $2("opt-path").checked;
+  S.showCrossingContext = $2("opt-crossings")?.checked ?? true;
+  S.showPathChevrons = $2("opt-path-chevrons")?.checked ?? true;
+  S.pathChevronLabels = $2("opt-chevron-labels")?.checked ?? true;
+  S.pathChevronMax = Math.max(1, Math.min(
+    3,
+    parseInt($2("opt-chevron-max")?.value, 10) || DEFAULT_PATH_CHEVRON_MAX
+  ));
+  S.lowSpeedMap = false;
+  if ($2("opt-chevron-max")) $2("opt-chevron-max").value = String(S.pathChevronMax);
+  if ($2("opt-chevron-labels")) $2("opt-chevron-labels").disabled = !S.showPathChevrons;
+  if ($2("opt-chevron-max")) $2("opt-chevron-max").disabled = !S.showPathChevrons;
+  S.showFinishDist = $2("opt-finish-dist")?.checked ?? true;
+  S.showFinishTime = $2("opt-finish-time")?.checked ?? true;
+  S.showFinishEta = $2("opt-finish-eta")?.checked ?? true;
+  S.hudStatusMode = normalizeChromeMode($2("opt-hud-status-mode")?.value || S.hudStatusMode);
+  S.hudFinishMode = normalizeChromeMode($2("opt-hud-finish-mode")?.value || S.hudFinishMode);
+  if ($2("opt-hud-status-mode")) $2("opt-hud-status-mode").value = S.hudStatusMode;
+  if ($2("opt-hud-finish-mode")) $2("opt-hud-finish-mode").value = S.hudFinishMode;
+  applyHudChrome();
+  S.fuelPlannerCount = clampFuelPlannerCount($2("opt-fuel-count")?.value);
+  if ($2("opt-fuel-count")) $2("opt-fuel-count").value = String(S.fuelPlannerCount);
+  const proxyEl = $2("opt-fuel-proxy");
+  if (proxyEl) proxyEl.value = getFuelProxyBase();
+  S.showElevProfile = $2("opt-elev-profile").checked;
+  S.elevExag = Math.max(0.5, Math.min(5, parseFloat($2("opt-elev-exag").value) || DEFAULT_ELEV_EXAG));
+  S.elevProfileH = Math.max(MIN_ELEV_PROFILE_H, Math.min(
+    MAX_ELEV_PROFILE_H,
+    parseInt($2("opt-elev-profile-h")?.value, 10) || DEFAULT_ELEV_PROFILE_H
+  ));
+  S.elevProfileLenKm = Math.max(MIN_ELEV_PROFILE_LEN_KM, Math.min(
+    MAX_ELEV_PROFILE_LEN_KM,
+    parseInt($2("opt-elev-profile-len")?.value, 10) || DEFAULT_ELEV_PROFILE_LEN_KM
+  ));
+  if ($2("opt-elev-exag")) $2("opt-elev-exag").value = String(S.elevExag);
+  if ($2("opt-elev-profile-h")) $2("opt-elev-profile-h").value = String(S.elevProfileH);
+  if ($2("opt-elev-profile-len")) $2("opt-elev-profile-len").value = String(S.elevProfileLenKm);
+  if ($2("opt-elev-exag")) $2("opt-elev-exag").disabled = !S.showElevProfile;
+  if ($2("opt-elev-profile-h")) $2("opt-elev-profile-h").disabled = !S.showElevProfile;
+  if ($2("opt-elev-profile-len")) $2("opt-elev-profile-len").disabled = !S.showElevProfile;
+  S.curveWarn = $2("opt-curve-warn")?.checked ?? true;
+  const strictEl = $2("opt-curve-strict");
+  if (strictEl) {
+    S.curveStrict = strictEl.value || "normal";
+    strictEl.disabled = !S.curveWarn;
+  }
+  S.showCompass = $2("opt-heading").checked;
+  S.cams = $2("opt-cams").checked;
+  S.backOnly = $2("opt-back-only").checked;
+  S.tolerance = parseInt($2("opt-tol").value, 10) || 45;
+  S.noDirPolicy = $2("opt-nodir").value;
+  S.userDefaultLimit = parseInt($2("opt-limit").value, 10) || 60;
+  S.speedLimitDynamic = $2("opt-speed-limit-dynamic")?.checked !== false;
+  S.speedLimitFallback = $2("opt-speed-limit-fallback")?.value === "hide" ? "hide" : "user-default";
+  S.roundaboutSchema = $2("opt-roundabout-schema")?.checked !== false;
+  S.camSpeedTol = Math.max(0, Math.min(
+    50,
+    parseInt($2("opt-cam-speed-tol")?.value, 10) || DEFAULT_CAM_SPEED_TOL
+  ));
+  if ($2("opt-cam-speed-tol")) $2("opt-cam-speed-tol").value = String(S.camSpeedTol);
+  $2("hud")?.classList.toggle("show-compass", S.showCompass);
+  if (!S.showPath) {
+    $2("block-path").classList.add("hidden");
+    $2("hud").classList.add("no-path");
+  } else {
+    $2("block-path")?.classList.remove("hidden");
+    $2("hud")?.classList.remove("no-path");
+  }
+}
+function initNativeHints() {
+  if (!isAndroidNative()) return;
+  const help = $2("drawer-help")?.querySelector(".hint, .drawer-body");
+  if (!help) return;
+  help.innerHTML += '<span class="help-section"><b>Android-\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435</b> \u041F\u0440\u0438 \u043D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u0438 \u2014 \u0443\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435 \xAB\u041D\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u0430\xBB (foreground-service GPS). \u0412 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445 \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043E\u043F\u0442\u0438\u043C\u0438\u0437\u0430\u0446\u0438\u044E \u0431\u0430\u0442\u0430\u0440\u0435\u0438 \u0434\u043B\u044F \xAB\u041C\u043E\u0442\u043E \u0418\u041B\u0421\xBB, \u0438\u043D\u0430\u0447\u0435 GPS \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u0432\u0430\u043B\u0438\u0432\u0430\u0442\u044C\u0441\u044F \u043D\u0430 Samsung/Xiaomi/Huawei. \u0427\u0435\u043A-\u043B\u0438\u0441\u0442: <code>docs/oem-gps-matrix.md</code>.</span>';
+}
+var init_setup = __esm({
+  "js/setup.js"() {
+    init_state();
+    init_util();
+    init_geo();
+    init_yandex_link();
+    init_yandex_import();
+    init_gps();
+    init_route();
+    init_hud();
+    init_cam_status();
+    init_elevation();
+    init_curve_speed();
+    init_hud_opts();
+    init_hud_chrome();
+    init_app_opts();
+    init_platform();
+    init_route_map();
+    init_fuel();
+    init_fuel_config();
+    init_settings_ui();
+    init_hud_settings_sheet();
+    init_tts_health();
+    init_heading();
+    init_voice();
+    init_telemetry();
+  }
+});
+
+// js/gps.js
+function curPos() {
+  return RENDER_POS || S.gps;
+}
+function updateRenderPos() {
+  if (!S.gps) {
+    RENDER_POS = null;
+    return;
+  }
+  const v = S.gps.speed != null && S.gps.speed > 0.6 ? S.gps.speed : 0;
+  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
+  if (!v || hdg == null || isNaN(hdg) || !S.fixPos) {
+    RENDER_POS = S.gps;
+    return;
+  }
+  const rad = Math.PI / 180;
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dt = Math.min(1.6, Math.max(0, (now - S.fixAt) / 1e3));
+  const dist = v * dt;
+  RENDER_POS = {
+    lat: S.fixPos.lat + dist * Math.cos(hdg * rad) / 110540,
+    lon: S.fixPos.lon + dist * Math.sin(hdg * rad) / (Math.cos(S.fixPos.lat * rad) * 111320),
+    speed: S.gps.speed,
+    heading: S.gps.heading,
+    acc: S.gps.acc
+  };
+}
+function easeSpeed() {
+  const el = $2("v-speed");
+  if (!el || !S.gps) return;
+  const raw = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed * 3.6 : 0;
+  const target = Math.min(raw, GPS_SPEED_MAX_MPS * 3.6);
+  S.dispSpeed += (target - S.dispSpeed) * 0.22;
+  if (Math.abs(target - S.dispSpeed) < 0.3) S.dispSpeed = target;
+  const shown = Math.round(S.dispSpeed);
+  el.textContent = shown;
+  el.classList.toggle("over", isSpeedOverLimit(target));
+  el.classList.toggle("speed-3", shown >= 100);
+}
+function resolveGpsSpeed(next, prev) {
+  const acc = next.acc ?? 999;
+  const device = next.speed != null && !isNaN(next.speed) && next.speed >= 0 ? next.speed : null;
+  let meas = 0;
+  let dist = 0;
+  let dt = 0;
+  if (prev) {
+    dt = (next.ts - prev.ts) / 1e3;
+    if (dt > 0.15 && dt < 12) {
+      dist = haversine(prev, next);
+      const measFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
+      if (dist >= measFloor && dist < 500) meas = dist / dt;
+    }
+  }
+  const driftFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
+  const driftM = acc <= GPS_SPEED_ACC_TRUST_M ? driftFloor : Math.max(driftFloor, acc * 0.55);
+  const base = { device, meas, dist, driftM, dt };
+  if (prev && dist < driftM && (device == null || device < 0.5)) {
+    return { ...base, mps: 0, src: "drift" };
+  }
+  if (device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
+    if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
+      return { ...base, mps: device, src: "device" };
+    }
+  }
+  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
+  if (meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)) {
+    const mps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+    return { ...base, meas, mps, src: "meas" };
+  }
+  return { ...base, mps: 0, src: "zero" };
+}
+function initGps(callbacks) {
+  _onTick = callbacks.onTick || _onTick;
+  _onVisual = callbacks.onVisual || _onVisual;
+}
+function visualLoop() {
+  S.rafId = requestAnimationFrame(visualLoop);
+  if (!$2("hud").classList.contains("on")) return;
+  telemetry_default.tickPerfFrame();
+  updateRenderPos();
+  tickNavMap();
+  easeSpeed();
+  tickRoundaboutHudRefresh(_onTick);
+  _onVisual();
+}
+function startVisualLoop() {
+  if (!S.rafId) S.rafId = requestAnimationFrame(visualLoop);
+}
+function stopVisualLoop() {
+  if (S.rafId) {
+    cancelAnimationFrame(S.rafId);
+    S.rafId = null;
+  }
+}
+function getGpsDisplayAcc() {
+  if (!S.gps) return null;
+  return displayAccM(S.gps.acc, S._gpsSpreadBuf || []);
+}
+function updateGpsConvergeUI() {
+  const el = $2("gps-converge");
+  if (el) {
+    el.classList.toggle("on", $2("hud").classList.contains("on") && !S.gpsConverged);
+  }
+  const reported = S.gps?.acc != null ? Math.round(S.gps.acc) : null;
+  const shown = getGpsDisplayAcc();
+  const spread = S.gps ? measuredSpreadM(S._gpsSpreadBuf || []) : null;
+  const failHint = getConvergeFailLabel();
+  let title = "\u0422\u0430\u043F \u2014 \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C GPS";
+  if (S.gps) {
+    const parts = [];
+    if (shown != null) parts.push("\u043E\u0446\u0435\u043D\u043A\u0430 \xB1" + shown + " \u043C");
+    if (reported != null && reported !== shown) parts.push("\u043E\u0442\u0447\u0451\u0442 \u041E\u0421 \xB1" + reported + " \u043C");
+    if (spread != null) parts.push("\u0440\u0430\u0437\u0431\u0440\u043E\u0441 ~" + Math.round(spread) + " \u043C");
+    if (!S.gpsConverged && failHint) parts.push("\u0436\u0434\u0451\u043C: " + failHint);
+    if (parts.length) title = parts.join(" \xB7 ");
+  }
+  if (S.gpsConverged) {
+    const tag = isSim() ? " \u0441\u0438\u043C" : "";
+    $2("s-gps").textContent = "\u2705 GPS" + tag + " \xB1" + (shown ?? "\u2014") + "\u043C";
+    $2("s-gps").className = "chip ok";
+  } else if (S.gps) {
+    $2("s-gps").textContent = "\u23F3 GPS \xB1" + (shown ?? "\u2026") + "\u043C";
+    $2("s-gps").className = "chip";
+  } else {
+    $2("s-gps").textContent = "\u23F3 GPS\u2026";
+    $2("s-gps").className = "chip";
+  }
+  $2("s-gps").title = title;
+  checkStartReady();
+}
+function checkStartReady() {
+  const ready = !!(S.gps && S.finish);
+  $2("btn-start").disabled = !ready;
+  const buildBtn = $2("btn-build-route");
+  if (buildBtn) buildBtn.disabled = !ready;
+  const goBar = $2("go-bar");
+  if (goBar) {
+    goBar.classList.toggle("hidden", !ready);
+    $2("setup")?.classList.toggle("has-go-bar", ready);
+  }
+  if (ready) {
+    Promise.resolve().then(() => (init_setup(), setup_exports)).then((m) => m.updateBearingStartHint?.()).catch(() => {
+    });
+  }
+}
+function getGpsFixAgeMs() {
+  if (!S.gps) return Infinity;
+  if (_lastGpsRcvMs > 0) return Math.max(0, Date.now() - _lastGpsRcvMs);
+  if (S.gps.ts) return Math.max(0, Date.now() - S.gps.ts);
+  return Infinity;
+}
+function isGpsFixStale(maxMs = 5e3) {
+  return getGpsFixAgeMs() > maxMs;
+}
+function onGpsError() {
+  $2("s-gps").textContent = "\u274C GPS";
+  $2("s-gps").className = "chip err";
+  invalidateGpsConverge("invalidate_error");
+  if (!_gpsLost) {
+    _gpsLost = true;
+    telemetry_default.log("nav", { sub: "gps_lost" });
+  }
+}
+function applyGpsFix(next) {
+  if (S.lastPos) {
+    const d = haversine(S.lastPos, next);
+    const dt = (next.ts - S.lastPos.ts) / 1e3;
+    if (d > 3 && d < 500) S.distDone += d;
+    if ((next.heading == null || isNaN(next.heading)) && d > 3) {
+      next.heading = bearing(S.lastPos, next);
+    }
+  }
+  const speedRes = resolveGpsSpeed(next, S.lastPos);
+  S.measSpeed = speedRes.mps;
+  next.speed = speedRes.mps;
+  updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
+  const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
+  if (fused != null && !isNaN(fused)) next.heading = fused;
+  if (next.heading != null && !isNaN(next.heading)) {
+    if ((next.speed ?? 0) >= 3.2) S.lastReliableHeadingTs = Date.now();
+    if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
+    else {
+      const spd = next.speed ?? S.measSpeed ?? 0;
+      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
+      const keep = 1 - alpha;
+      const r = Math.PI / 180, d = 180 / Math.PI;
+      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
+      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
+      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
+    }
+  }
+  _lastGpsRcvMs = Date.now();
+  S.lastPos = next;
+  S.gps = next;
+  if (!S._gpsSpreadBuf) S._gpsSpreadBuf = [];
+  S._gpsSpreadBuf.push({ lat: next.lat, lon: next.lon, acc: next.acc });
+  while (S._gpsSpreadBuf.length > 8) S._gpsSpreadBuf.shift();
+  S.fixPos = { lat: next.lat, lon: next.lon };
+  S.fixAt = typeof performance !== "undefined" ? performance.now() : Date.now();
+  let telSnap = null;
+  let navSnap = null;
+  if ($2("hud").classList.contains("on") && S.route?.geometry) {
+    navSnap = getNavSnap(S.smoothedHeading);
+    if (navSnap) telSnap = { lateral: navSnap.lateral, quality: S.snapQuality };
+  }
+  S.navLateral = navSnap?.lateral ?? null;
+  const telCtx = { fix: next, snap: telSnap };
+  feedGpsConverge(next, telCtx);
+  const effAcc = effectiveAccM(next.acc, S._gpsSpreadBuf);
+  if (effAcc != null && effAcc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge("invalidate_acc", telCtx);
+  if ($2("hud").classList.contains("on") && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS) {
+    telemetry_default.log("nav", {
+      sub: "snap_lost_long",
+      lat_off: telSnap?.lateral != null ? Math.round(telSnap.lateral) : null,
+      acc: next.acc != null ? Math.round(next.acc * 10) / 10 : null,
+      lost_ms: Math.round(lostDurationMs())
+    });
+  }
+  updateGpsConvergeUI();
+  tickConvergeBlocked(next, telSnap);
+  if ($2("hud").classList.contains("on")) {
+    _onTick();
+    if (S.viewMode !== "hud") tickNavMap({ force: true });
+  }
+  const rcv = Date.now();
+  if (_gpsLost) {
+    _gpsLost = false;
+    telemetry_default.log("nav", { sub: "gps_restored" });
+  }
+  telemetry_default.logFix({
+    lat: next.lat,
+    lon: next.lon,
+    acc: next.acc,
+    speed: next.speed,
+    heading: next.heading,
+    alt: next.alt,
+    ts: next.ts,
+    rcv,
+    dev: speedRes.device,
+    meas: speedRes.meas,
+    spdSrc: speedRes.src,
+    stepM: speedRes.dist,
+    driftM: speedRes.driftM,
+    stepDt: speedRes.dt
+  });
+  telemetry_default.logTrackPoint({
+    lat: next.lat,
+    lon: next.lon,
+    acc: next.acc,
+    speed: next.speed,
+    heading: next.heading,
+    ts: next.ts
+  });
+  if (navSnap) telemetry_default.logSnapFromResult(navSnap);
+}
+function stopWebGps() {
+  if (S.watchId !== null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(S.watchId);
+    S.watchId = null;
+  }
+}
+function startWebGps() {
+  if (!navigator.geolocation) {
+    $2("s-gps").textContent = "\u274C \u041D\u0435\u0442 GPS";
+    $2("s-gps").className = "chip err";
+    return;
+  }
+  stopWebGps();
+  $2("s-gps").textContent = "\u23F3 GPS\u2026";
+  $2("s-gps").className = "chip";
+  S.watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const c = pos.coords;
+      applyGpsFix({
+        lat: c.latitude,
+        lon: c.longitude,
+        speed: c.speed != null && !isNaN(c.speed) && c.speed >= 0 ? c.speed : null,
+        heading: c.heading == null ? null : c.heading,
+        acc: c.accuracy,
+        alt: c.altitude != null && !isNaN(c.altitude) ? c.altitude : null,
+        ts: pos.timestamp
+      });
+    },
+    onGpsError,
+    { enableHighAccuracy: true, timeout: 15e3, maximumAge: 1e3 }
+  );
+}
+function startGps() {
+  _navMode = false;
+  startHeadingSensors();
+  if (isNative()) {
+    $2("s-gps").textContent = "\u23F3 GPS\u2026";
+    $2("s-gps").className = "chip";
+    stopWebGps();
+    startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+    return;
+  }
+  startWebGps();
+}
+async function startNavigationGps() {
+  if (!isNative()) return;
+  _navMode = true;
+  await startNavGps(applyGpsFix, onGpsError);
+}
+async function stopNavigationGps() {
+  if (!isNative()) return;
+  _navMode = false;
+  await stopNavGps();
+  await startSetupGps(applyGpsFix, onGpsError).catch(onGpsError);
+}
+var RENDER_POS, _navMode, _gpsLost, _lastGpsRcvMs, _onTick, _onVisual;
+var init_gps = __esm({
+  "js/gps.js"() {
+    init_state();
+    init_geo();
+    init_util();
+    init_platform();
+    init_native_gps();
+    init_heading();
+    init_telemetry();
+    init_route_geometry();
+    init_nav_constants();
+    init_speed_limit();
+    init_roundabout();
+    init_nav_map();
+    init_gps_converge();
+    init_gps_accuracy();
+    init_snap_quality();
+    init_converge_telemetry();
+    init_nav_constants();
+    RENDER_POS = null;
+    _navMode = false;
+    _gpsLost = false;
+    _lastGpsRcvMs = 0;
+    _onTick = () => {
+    };
+    _onVisual = () => {
+    };
   }
 });
 
@@ -25738,8 +26602,7 @@ var STEPPER_IDS = [
 ];
 var HELP_TEXTS = {
   "opt-voice": "\u0413\u043E\u043B\u043E\u0441\u043E\u0432\u044B\u0435 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u0430\u043D\u0451\u0432\u0440\u043E\u0432 \u0438 \u043A\u0430\u043C\u0435\u0440. \u0420\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0447\u0435\u0440\u0435\u0437 \u0441\u0438\u043D\u0442\u0435\u0437 \u0440\u0435\u0447\u0438 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430.",
-  "opt-path": "\u041F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430 \u043D\u0430 HUD: \u0440\u0435\u043B\u044C\u0435\u0444, \u0448\u0435\u0432\u0440\u043E\u043D\u044B, \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u043F\u0435\u0440\u0435\u043A\u0440\u0451\u0441\u0442\u043A\u043E\u0432. \u041D\u0430 \u0434\u043E\u0440\u043E\u0433\u0435 \u2014 \u043F\u0440\u0438 \u043B\u044E\u0431\u043E\u0439 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u0438.",
-  "opt-low-speed-map": "\u0412\u043D\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (\u0434\u0432\u043E\u0440, \u043F\u0430\u0440\u043A\u043E\u0432\u043A\u0430): \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u043A\u0430\u0440\u0442\u0430 \u043A\u0440\u0443\u043F\u043D\u044B\u043C \u043F\u043B\u0430\u043D\u043E\u043C. \u041D\u0430 \u0434\u043E\u0440\u043E\u0433\u0435 \u043A\u0430\u0440\u0442\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u0440\u0443\u0447\u043D\u0443\u044E (\u0434\u0432\u043E\u0439\u043D\u043E\u0439 \u0442\u0430\u043F).",
+  "opt-path": "\u041F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430 \u043D\u0430 HUD: \u0440\u0435\u043B\u044C\u0435\u0444, \u0448\u0435\u0432\u0440\u043E\u043D\u044B, \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u043F\u0435\u0440\u0435\u043A\u0440\u0451\u0441\u0442\u043A\u043E\u0432. \u041D\u0430 \u0434\u043E\u0440\u043E\u0433\u0435 \u2014 \u043F\u0440\u0438 \u043B\u044E\u0431\u043E\u0439 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u0438. \u041A\u0430\u0440\u0442\u0430 \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u0440\u0443\u0447\u043D\u0443\u044E (\u041A\u0410\u0420\u0422 / \u0434\u0432\u043E\u0439\u043D\u043E\u0439 \u0442\u0430\u043F).",
   "opt-limit": "\u041B\u0438\u043C\u0438\u0442 \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E, \u043A\u043E\u0433\u0434\u0430 OSM \u043D\u0435 \u0437\u043D\u0430\u0435\u0442 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0438\u0435. \u041F\u0440\u0438 \u0434\u0438\u043D\u0430\u043C\u0438\u043A\u0435 \u2014 fallback.",
   "opt-speed-limit-dynamic": "\u0414\u0438\u043D\u0430\u043C\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u043B\u0438\u043C\u0438\u0442 \u043F\u043E \u0442\u0435\u0433\u0443 maxspeed OSM \u0432\u0434\u043E\u043B\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430. \u0412\u044B\u043A\u043B. \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u0435\u0444\u043E\u043B\u0442 \u0438\u0437 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438.",
   "opt-speed-limit-fallback": "\u0415\u0441\u043B\u0438 OSM \u0438 implicit \u043D\u0435 \u0434\u0430\u043B\u0438 \u043B\u0438\u043C\u0438\u0442: \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0432\u0430\u0448 \u0434\u0435\u0444\u043E\u043B\u0442 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u0437\u043D\u0430\u043A.",
@@ -26019,24 +26882,32 @@ function prepareRegressionHud(opts) {
   S.smoothedHeading = hdg;
   S.gpsConverged = true;
   S.gpsFixCount = 12;
-  S.compassMode = false;
   S.voice = false;
   S.cams = false;
   S.showElevProfile = false;
   resetOffRouteMachine();
   resetRouteSnap();
+  ensureRouteGeometry(S.route);
+  seedSnapFromGps({ relaxed: true });
   return { distance_m: route.distance, duration_s: route.duration };
+}
+function regressionPrimeSnap(distM) {
+  if (!globalThis.__REGRESSION_SIM__?.active) return;
+  if (distM != null && Number.isFinite(distM)) primeRouteSnapFromDist(distM);
 }
 function sampleRegressionState(extra = {}) {
   let lateral = null;
   let maneuverType = null;
+  const lat = S.gps?.lat ?? null;
+  const lon = S.gps?.lon ?? null;
+  const heading = S.smoothedHeading ?? S.gps?.heading ?? null;
   if (S.route && S.gps) {
     const snap = getNavSnap(S.smoothedHeading);
     lateral = snap?.lateral ?? null;
     if (lateral != null && (!Number.isFinite(lateral) || lateral > 300)) lateral = null;
     const steps = S.route.steps || [];
-    for (let i = 1; i < steps.length; i++) {
-      const st = steps[i];
+    for (let i2 = 1; i2 < steps.length; i2++) {
+      const st = steps[i2];
       if (haversine(S.gps, st) < 120) {
         maneuverType = st.type;
         break;
@@ -26046,6 +26917,10 @@ function sampleRegressionState(extra = {}) {
   return {
     ts: Date.now(),
     type: "regression_tick",
+    lat: lat != null ? Math.round(lat * 1e6) / 1e6 : null,
+    lon: lon != null ? Math.round(lon * 1e6) / 1e6 : null,
+    heading: heading != null ? Math.round(heading * 10) / 10 : null,
+    dist_m: extra.dist_m ?? extra.routeDistM ?? null,
     lateral_m: lateral != null ? Math.round(lateral * 10) / 10 : null,
     snap_quality: S.snapQuality,
     off_route_state: S.offRouteState,
@@ -26064,6 +26939,8 @@ init_bearing_mode();
 init_theme_manager();
 init_setup();
 init_route();
+init_speed_limit();
+init_yandex_link();
 var DEMO_FINISH = [55.827099, 37.632066];
 function isSimPage() {
   return new URLSearchParams(location.search).get("sim") === "1";
@@ -26159,11 +27036,88 @@ async function simBuildRoute() {
   const errText = ($2("route-info")?.textContent || $2("s-finish")?.textContent || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D").replace(/^❌\s*/, "");
   return { ok: false, error: errText };
 }
+async function simImportYandexRoute(rawText, opts = {}) {
+  const mode = opts.mode === "direct" ? "direct" : "routed";
+  const url = extractYandexUrl(rawText) || String(rawText || "").trim();
+  if (!url) return { ok: false, error: "\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430" };
+  let wps;
+  try {
+    wps = await parseYandexRouteLink(url);
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  }
+  const first = wps[0];
+  const last = wps[wps.length - 1];
+  const sim = window.__SIM__;
+  if (sim?.setStartPoint) {
+    sim.setStartPoint(first.lat, first.lon, { rebuildRoute: false });
+  } else {
+    simKickGps();
+  }
+  const pts = wps.map((w) => ({ lat: w.lat, lon: w.lon, label: w.label }));
+  let via = mode;
+  try {
+    if (mode === "direct") {
+      attachRouteFromImport(buildDirectRouteFromWaypoints(pts), pts);
+    } else {
+      const route = await fetchRouteThroughWaypoints(pts);
+      attachRouteFromImport(route, pts);
+    }
+  } catch (e) {
+    if (!isSimPage()) return { ok: false, error: e.message || String(e) };
+    try {
+      attachRouteFromImport(buildDirectRouteFromWaypoints(pts), pts);
+      via = "direct";
+    } catch (e2) {
+      return { ok: false, error: e2.message || String(e2) };
+    }
+  }
+  refreshRouteUi();
+  setGoBarVisible(true);
+  syncSimPathFromRoute();
+  if (S.routeAlternatives?.length) {
+    scheduleGeometryBuild(S.routeAlternatives, () => refreshRouteUi());
+  }
+  const inp = $2("finish-input");
+  if (inp) {
+    inp.value = url;
+    inp.dataset.userEdited = "1";
+  }
+  if ($2("s-finish")) {
+    $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + last.lat.toFixed(5) + ", " + last.lon.toFixed(5);
+    $2("s-finish").className = "status ok";
+  }
+  let warn = null;
+  if (via !== "direct" && S.route) {
+    try {
+      await loadRouteHighwayTypes(S.route);
+      const audit = auditRouteDrivability(S.route);
+      if (!audit.ok) {
+        warn = "OSRM \u0432\u0435\u0434\u0451\u0442 \u043F\u043E \u0441\u0435\u0433\u043C\u0435\u043D\u0442\u0430\u043C: " + audit.label + ". ";
+      }
+    } catch (e) {
+    }
+  }
+  if (wps.length <= 3) {
+    const hint = "\u0418\u0437 \u0441\u0441\u044B\u043B\u043A\u0438 \u0431\u0435\u0440\u0443\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u043E\u0447\u043A\u0438 rtext \u2014 \u0434\u043E\u0440\u043E\u0433\u0443 \u0441\u0442\u0440\u043E\u0438\u0442 OSRM (OpenStreetMap), \u043D\u0435 \u042F\u043D\u0434\u0435\u043A\u0441. \u0414\u043B\u044F \u0441\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u044F \u0434\u043E\u0431\u0430\u0432\u044C\u0442\u0435 \u043F\u0440\u043E\u043C\u0435\u0436\u0443\u0442\u043E\u0447\u043D\u044B\u0435 \u0442\u043E\u0447\u043A\u0438 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u043A\u0430\u0436\u0434\u044B\u0435 3\u20135 \u043A\u043C.";
+    warn = warn ? warn + hint : wps.length === 2 ? hint : null;
+  }
+  return {
+    ok: true,
+    url,
+    waypoints: wps.length,
+    start: first,
+    finish: last,
+    pts: S.route?.coords?.length || S.route?.geometry?.n || 0,
+    via,
+    warn
+  };
+}
 async function simNavAction(kind) {
   const hud = $2("hud");
   if (!hud?.classList.contains("on")) {
-    if (!S.route) {
-      return { ok: false, error: "\u041F\u043E\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0432 \u043C\u0435\u043D\u044E \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB" };
+    if (!S.gps || !S.finish) {
+      return { ok: false, error: "\u0414\u043E\u0436\u0434\u0438\u0442\u0435\u0441\u044C GPS \u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448 \u0432 \u043C\u0435\u043D\u044E" };
     }
     await startHud();
     if (!$2("hud")?.classList.contains("on")) {
@@ -26180,8 +27134,7 @@ async function simNavAction(kind) {
       exitBearingMode();
     } else {
       if (!S.finish) return { ok: false, error: "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0444\u0438\u043D\u0438\u0448" };
-      if (!S.gps) return { ok: false, error: "\u041D\u0435\u0442 GPS \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041F\u041E\u0415\u0425\u0410\u041B\u0418\xBB" };
-      if (!S.route) return { ok: false, error: "\u041D\u0435\u0442 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430" };
+      if (!S.gps) return { ok: false, error: "\u041D\u0435\u0442 GPS" };
       if (!enterBearingMode({ quiet: true })) {
         return { ok: false, error: "\u041F\u0435\u043B\u0435\u043D\u0433 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D" };
       }
@@ -26273,6 +27226,7 @@ window.__motoHUD = {
   findNearestOnRoute,
   prepareRegressionHud,
   sampleRegressionState,
+  regressionPrimeSnap,
   toggleBearingMode,
   isBearingMode,
   enterBearingMode,
@@ -26284,6 +27238,7 @@ window.__motoHUD = {
   simNavAction,
   simApplyTheme,
   simBuildRoute,
+  simImportYandexRoute,
   simGetStatus,
   simKickGps,
   simEnsureDemoFinish,

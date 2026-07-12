@@ -1,0 +1,140 @@
+{
+  "fixture_id": "b48f6ae4-a5d2-46c6-841d-34d4e5535add",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:41:50.531Z",
+  "last_verified_at": "2026-07-12T06:57:29.282Z",
+  "source": "auto_generator",
+  "category": "mountain",
+  "region": "caucasus_serpentines",
+  "tags": [
+    "auto_v1",
+    "mountain",
+    "caucasus_serpentines"
+  ],
+  "waypoints": [
+    {
+      "lat": 44.045133,
+      "lon": 41.990224,
+      "label": "start"
+    },
+    {
+      "lat": 43.722696,
+      "lon": 42.777146,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 55
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 108903,
+      "duration_s": 8928,
+      "maneuver_count": 20,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T10:59:07.419Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 2,
+        "points_original": 2,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 108642,
+      "duration_s": 8627,
+      "maneuver_count": 20,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:07:51.503Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 110787,
+    "duration_s": 9964,
+    "step_count": 29,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:30:52.240Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 3579.5951215291,
+      "avg_lateral_m": 194.28540373784494,
+      "p50_lateral_m": 3.4263210695361352,
+      "p95_lateral_m": 1877.3477579488892,
+      "max_lateral_m": 3579.5951215291,
+      "length_diff_pct": 1.700560535080831,
+      "duration_diff_pct": 10.397430750702528,
+      "maneuver_count_diff": 9,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.2114743162108072,
+      "waypoint_deviations_m": [
+        0,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 1868.8756464588307,
+      "avg_lateral_m": 58.86994682924453,
+      "p50_lateral_m": 2.921696876659816,
+      "p95_lateral_m": 205.64432702694526,
+      "max_lateral_m": 1868.8756464588307,
+      "length_diff_pct": 1.9361477429662326,
+      "duration_diff_pct": 13.418305901244478,
+      "maneuver_count_diff": 9,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.16077384923282187,
+      "waypoint_deviations_m": [
+        0,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 2359.378026247731,
+      "avg_lateral_m": 114.73003731555687,
+      "p50_lateral_m": 2.605494308073947,
+      "p95_lateral_m": 993.3283421015162,
+      "max_lateral_m": 2359.378026247731,
+      "length_diff_pct": 0.23966281920608248,
+      "duration_diff_pct": 3.3714157706093193,
+      "maneuver_count_diff": 0,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.057371581054036024,
+      "waypoint_deviations_m": [
+        0,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 1877.3477579488892,
+      "motohud_vs_consensus_avg_m": 126.57767528354474,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Кавказ — серпантины · mountain · OSRM 110.8 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

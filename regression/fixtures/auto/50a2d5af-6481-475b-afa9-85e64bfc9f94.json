@@ -1,0 +1,156 @@
+{
+  "fixture_id": "50a2d5af-6481-475b-afa9-85e64bfc9f94",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:10:24.796Z",
+  "last_verified_at": "2026-07-12T06:50:10.929Z",
+  "source": "auto_generator",
+  "category": "many_waypoints",
+  "region": "spb_suburbs",
+  "tags": [
+    "auto_v1",
+    "many_waypoints",
+    "spb_suburbs"
+  ],
+  "waypoints": [
+    {
+      "lat": 59.972157,
+      "lon": 29.788272,
+      "label": "start"
+    },
+    {
+      "lat": 59.84517,
+      "lon": 30.382618,
+      "label": "via_1"
+    },
+    {
+      "lat": 59.986774,
+      "lon": 30.486984,
+      "label": "via_2"
+    },
+    {
+      "lat": 59.864639,
+      "lon": 30.187134,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 70
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 148964,
+      "duration_s": 8052,
+      "maneuver_count": 41,
+      "roundabout_count": 1,
+      "fetched_at": "2026-07-12T10:53:30.817Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 4,
+        "points_original": 4,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 153920,
+      "duration_s": 8038,
+      "maneuver_count": 39,
+      "roundabout_count": 1,
+      "fetched_at": "2026-07-12T11:06:43.281Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 144778,
+    "duration_s": 7990,
+    "step_count": 81,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:29:50.069Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 1952.1158662166774,
+      "avg_lateral_m": 62.0472151913436,
+      "p50_lateral_m": 2.1066462269229644,
+      "p95_lateral_m": 497.8763942888782,
+      "max_lateral_m": 1952.1158662166774,
+      "length_diff_pct": 2.891323267347249,
+      "duration_diff_pct": 0.7759699624530664,
+      "maneuver_count_diff": 40,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.13008672448298866,
+      "waypoint_deviations_m": [
+        0,
+        0,
+        7.285083749105188,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 3172.2099937678445,
+      "avg_lateral_m": 151.0295612963128,
+      "p50_lateral_m": 1.7148329178614046,
+      "p95_lateral_m": 1310.7719338367688,
+      "max_lateral_m": 3172.2099937678445,
+      "length_diff_pct": 6.314495296246668,
+      "duration_diff_pct": 0.6007509386733416,
+      "maneuver_count_diff": 42,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.23682454969979988,
+      "waypoint_deviations_m": [
+        0.05564432950318685,
+        31.699843307517913,
+        0,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 3167.3451114798704,
+      "avg_lateral_m": 133.793832792493,
+      "p50_lateral_m": 1.9956385203661418,
+      "p95_lateral_m": 939.7550966225979,
+      "max_lateral_m": 3167.3451114798704,
+      "length_diff_pct": 3.326978330334846,
+      "duration_diff_pct": 0.17386984600099353,
+      "maneuver_count_diff": 2,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.18412274849899934,
+      "waypoint_deviations_m": [
+        0.05564432950318685,
+        31.699843307517913,
+        0,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 1310.7719338367688,
+      "motohud_vs_consensus_avg_m": 106.5383882438282,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "СПб — пригороды · many_waypoints · OSRM 144.8 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

@@ -271,7 +271,6 @@
           <div class="toggle opt-row">↪ Шевроны на дорожке <input type="checkbox" id="opt-path-chevrons" checked></div>
           <div class="toggle opt-row">↪ Подписи (угол, м) <input type="checkbox" id="opt-chevron-labels" checked></div>
           <div class="toggle opt-row">↪ Макс. шевронов <input type="number" id="opt-chevron-max" value="3" min="1" max="3" step="1"></div>
-          <div class="toggle opt-row">🗺 Карта во дворах (вне маршрута) <input type="checkbox" id="opt-low-speed-map" checked></div>
         </div>
       </details>
 
@@ -279,7 +278,7 @@
         <summary class="opts-fold-summary">Телеметрия</summary>
         <div class="opts-fold-body">
           <div class="telemetry-explainer">
-            <p><strong>Помогите улучшить ИЛС.</strong> Запись хранится <em>только на телефоне</em>. После поездки экспортируйте JSONL и отправьте разработчику — так проще ловить баги GPS и навигации.</p>
+            <p><strong>Помогите улучшить ИЛС.</strong> Запись хранится <em>только на телефоне</em>. После поездки скачайте файлы и отправьте разработчику — так проще ловить баги GPS и навигации.</p>
             <p class="telemetry-explainer-title">Что записывается</p>
             <ul class="telemetry-explainer-list">
               <li>GPS: координаты, точность, скорость (итог, чип, meas), курс</li>
@@ -291,7 +290,8 @@
             <p class="telemetry-explainer-title">Чего нет</p>
             <ul class="telemetry-explainer-list">
               <li>Адресов и названий финиша в открытом виде — только координаты и события навигации</li>
-              <li>Автоотправки на сервер — файл скачиваете вы сами</li>
+              <li>Автоотправки на сервер — файлы скачиваете вы сами</li>
+              <li>Один общий JSON на все поездки — <em>нет</em>: каждая поездка = свой <code>.jsonl</code>; несколько — один <code>.zip</code></li>
             </ul>
             <p class="telemetry-explainer-title">Зачем это нужно</p>
             <p class="telemetry-explainer-note">Отладка на разных телефонах и в реальных поездках: точность GPS, ложные повороты, кольца, голос, «GPS потерян».</p>
@@ -304,17 +304,18 @@
           </div>
           <p class="opt-hint">URL: <code>?telemetry=1</code> · <code>?track=1</code></p>
           <div class="hint" id="telemetry-stats" style="margin:8px 0">—</div>
+          <p class="opt-hint tel-export-hint">📦 Несколько поездок → один <strong>ZIP</strong> (внутри отдельный <code>.jsonl</code> на каждую). Одна поездка → один <code>.jsonl</code>. Кнопка «Отправить» после СТОП — только последняя поездка.</p>
           <p class="hint telemetry-pending-hint hidden" id="telemetry-pending-share-hint"></p>
           <div class="tel-bulk-bar hidden" id="telemetry-bulk-bar">
             <label class="tel-select-all"><input type="checkbox" id="telemetry-select-all"> Все</label>
             <span class="tel-select-count" id="telemetry-select-count">Ничего не выбрано</span>
             <div class="tel-bulk-actions">
-              <button type="button" class="secondary tel-bulk-btn" id="btn-telemetry-export-selected" disabled>📤 Выбранные</button>
-              <button type="button" class="secondary tel-bulk-btn" id="btn-telemetry-delete-selected" disabled>🗑 Выбранные</button>
+              <button type="button" class="secondary tel-bulk-btn" id="btn-telemetry-export-selected" disabled title="Скачать выбранные поездки">📥 JSONL выбранной</button>
+              <button type="button" class="secondary tel-bulk-btn" id="btn-telemetry-delete-selected" disabled title="Удалить выбранные с телефона">🗑 Удалить выбранные</button>
             </div>
           </div>
           <div id="telemetry-sessions"></div>
-          <button type="button" class="secondary opt-full-btn" id="btn-telemetry-export-all">📤 Экспорт всех сессий</button>
+          <button type="button" class="secondary opt-full-btn" id="btn-telemetry-export-all" title="Скачать все записи одним ZIP или JSONL">📦 ZIP всех поездок</button>
           <button type="button" class="secondary opt-full-btn hidden" id="btn-track-gpx">📤 GPX последней поездки</button>
         </div>
       </details>
@@ -931,8 +932,8 @@
   ⚠ Не удалось загрузить JS. Для полной работы запустите <strong>preview.bat</strong> или <code>npm run dev</code> — откроется <code>http://localhost:3456</code>.
 </div>
 
-<script>window.__BUILD_ID__='mreucd06';</script>
-<script src="js/sim.js?v=mreucd06"></script>
+<script>window.__BUILD_ID__='mrhp4bs9';</script>
+<script src="js/sim.js?v=mrhp4bs9"></script>
 <script>
 (function(){
   var v = window.__BUILD_ID__ || '';

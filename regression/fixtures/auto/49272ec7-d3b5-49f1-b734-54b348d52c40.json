@@ -1,0 +1,148 @@
+{
+  "fixture_id": "49272ec7-d3b5-49f1-b734-54b348d52c40",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T23:02:38.028Z",
+  "last_verified_at": "2026-07-12T06:49:04.272Z",
+  "source": "auto_generator",
+  "category": "city",
+  "region": "mkad_ring",
+  "tags": [
+    "auto_v1",
+    "city",
+    "mkad_ring"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.872973,
+      "lon": 37.479316,
+      "label": "start"
+    },
+    {
+      "lat": 55.827294,
+      "lon": 37.83845,
+      "label": "via_1"
+    },
+    {
+      "lat": 55.770204,
+      "lon": 37.746952,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 45357,
+      "duration_s": 2954,
+      "maneuver_count": 22,
+      "roundabout_count": 1,
+      "fetched_at": "2026-07-12T10:53:10.707Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 3,
+        "points_original": 3,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 45216,
+      "duration_s": 2879,
+      "maneuver_count": 26,
+      "roundabout_count": 1,
+      "fetched_at": "2026-07-12T11:06:35.173Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 45468,
+    "duration_s": 2799,
+    "step_count": 60,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:29:43.919Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 54.27369210959512,
+      "avg_lateral_m": 0.2175689074302902,
+      "p50_lateral_m": 0.01842220270229226,
+      "p95_lateral_m": 0.3863576436186186,
+      "max_lateral_m": 54.27369210959512,
+      "length_diff_pct": 0.24412773818949593,
+      "duration_diff_pct": 5.537692032868882,
+      "maneuver_count_diff": 38,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.01434878587196468,
+      "waypoint_deviations_m": [
+        0,
+        0,
+        0.062067963021152445
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 226.9808932841572,
+      "avg_lateral_m": 1.033291308745653,
+      "p50_lateral_m": 0.01765996635600401,
+      "p95_lateral_m": 0.7580661128791965,
+      "max_lateral_m": 142.9109654362048,
+      "length_diff_pct": 0.5542359461599367,
+      "duration_diff_pct": 2.85816362986781,
+      "maneuver_count_diff": 34,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.032044198895027624,
+      "waypoint_deviations_m": [
+        89.09272329046988,
+        30.902506950840706,
+        0.062067963021152445
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 226.9808932841572,
+      "avg_lateral_m": 0.8835335857704647,
+      "p50_lateral_m": 0.030982597960338906,
+      "p95_lateral_m": 0.656646957805548,
+      "max_lateral_m": 142.96145309559665,
+      "length_diff_pct": 0.3108671208413255,
+      "duration_diff_pct": 2.5389302640487474,
+      "maneuver_count_diff": -4,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.04861878453038674,
+      "waypoint_deviations_m": [
+        89.09272329046988,
+        30.902506950840706,
+        0.062067963021152445
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": true,
+      "motohud_vs_consensus_p95_m": 0.7580661128791965,
+      "motohud_vs_consensus_avg_m": 0.6254301080879716,
+      "signal": "ok"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "МКАД и ТТК · city · OSRM 45.5 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}
