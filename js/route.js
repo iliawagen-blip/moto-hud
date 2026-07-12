@@ -27,6 +27,32 @@ import { HIGHWAY_CLASSES } from './maneuver-filter.js';
 import { assessRouteQuality, RouteQuality } from './route-quality.js';
 import { parseMaxspeedsFromRoute, parseSegmentSpeedsFromRoute, loadRouteHighwayTypes } from './speed-limit.js';
 
+/** Типы OSM highway без проезда для мото/авто (аудит после Overpass). */
+export const NON_MOTOR_HIGHWAYS = new Set([
+  'footway', 'pedestrian', 'steps', 'path', 'cycleway', 'bridleway', 'corridor', 'elevator'
+]);
+
+/**
+ * Аудит маршрута по highwayTypes (нужен предварительный loadRouteHighwayTypes).
+ * @param {object} route
+ */
+export function auditRouteDrivability(route){
+  const types = route?.highwayTypes;
+  if(!types?.length) return { ok: true, bad: [], ratio: 0, label: '' };
+  const counts = {};
+  for(const hw of types){
+    if(!hw || !NON_MOTOR_HIGHWAYS.has(hw)) continue;
+    counts[hw] = (counts[hw] || 0) + 1;
+  }
+  const bad = Object.entries(counts).map(([highway, n]) => ({ highway, n }));
+  const totalBad = bad.reduce((s, x) => s + x.n, 0);
+  const ratio = totalBad / types.length;
+  const label = bad.length
+    ? bad.map(x => `${x.highway}×${x.n}`).join(', ')
+    : '';
+  return { ok: totalBad === 0, bad, ratio, label };
+}
+
 export { isSignificantManeuver, MANEUVER_MIN_ANGLE, MANEUVER_BEND_ANGLE, MANEUVER_PASSED_M };
 
 export function getVisibleTurnManeuvers(geom, curS, limit){
@@ -224,14 +250,33 @@ export async function fetchRouteAlternatives(){
 }
 
 /** OSRM через цепочку waypoints (Яндекс rtext → наш роутер) */
-export async function fetchRouteThroughWaypoints(waypoints){
+export async function fetchRouteThroughWaypoints(waypoints, opts = {}){
   if(!waypoints || waypoints.length < 2) throw new Error('Нужно ≥2 точек');
   S._usedCache = false;
-  const url = buildRouteRequestUrl(null, null, { waypoints });
+  const tryAlternatives = opts.alternatives ?? waypoints.length === 2;
+  const url = buildRouteRequestUrl(null, null, { waypoints, alternatives: tryAlternatives });
   const r = await fetch(url);
   if(!r.ok) throw new Error('OSRM HTTP ' + r.status);
   const j = await r.json();
-  return parseOsrmRoute(parseRouteResponse(j)[0]);
+  const routes = parseRouteResponse(j).map(parseOsrmRoute);
+  if(routes.length === 1) return routes[0];
+
+  let best = routes[0];
+  let bestScore = Infinity;
+  for(const route of routes){
+    try{
+      await loadRouteHighwayTypes(route);
+      const audit = auditRouteDrivability(route);
+      const score = audit.ok ? route.distance : route.distance * (1 + audit.ratio * 20);
+      if(score < bestScore){
+        bestScore = score;
+        best = route;
+      }
+    }catch(e){
+      if(route.distance < best.distance) best = route;
+    }
+  }
+  return best;
 }
 
 /** Прямая polyline между точками (быстрый старт без OSRM) */

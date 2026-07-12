@@ -1,28 +1,17 @@
 /**
- * Автокарта крупным планом вне маршрута (дворы, парковки).
- * На дороге карта только вручную (двойной тап).
+ * Синхронизация Leaflet при ручном режиме карты (двойной тап / КАРТ).
+ * Автопоказ карты «во дворах» отключён — только ручное переключение viewMode.
  * @module low-speed-map
  */
 import { S, DEFAULT_PATH_MIN_SPEED_KMH, MAX_PATH_MIN_SPEED_KMH } from './state.js';
 import { $ } from './util.js';
-import { OFF_ROUTE_EXIT_M, OFF_ROAD_MAP_ENTER_MS } from './nav-constants.js';
+import { OFF_ROUTE_EXIT_M } from './nav-constants.js';
 import { SnapQuality } from './snap-quality.js';
 import { OffRouteState } from './offroute.js';
-import { isBearingMode } from './bearing-mode.js';
-import { setViewMode } from './view-mode.js';
 import { tickNavMap } from './nav-map.js';
-import telemetry from './telemetry.js';
-
-let _autoActive = false;
-let _userPinned = false;
-let _offRoadSince = 0;
-
-function canUseLowSpeedMap(waitConverge){
-  return !!$('hud')?.classList.contains('on') && !!S.route && !waitConverge && !isBearingMode();
-}
 
 /**
- * На маршруте с нормальным snap — прогноз-дорожка, без автокарты.
+ * На маршруте с нормальным snap — прогноз-дорожка (не «двор»).
  * @param {{ lateral?: number | null }} [ctx]
  */
 export function isNavOnRoad(ctx = {}){
@@ -37,87 +26,29 @@ export function isNavOnRoad(ctx = {}){
   return false;
 }
 
-function shouldEnterOffRoadMap(ctx, waitConverge){
-  if(S.lowSpeedMap === false || !canUseLowSpeedMap(waitConverge) || _userPinned) return false;
-  if(isNavOnRoad(ctx)){
-    _offRoadSince = 0;
-    return false;
-  }
-  const now = Date.now();
-  if(!_offRoadSince) _offRoadSince = now;
-  return now - _offRoadSince >= OFF_ROAD_MAP_ENTER_MS;
-}
-
-function shouldExitOffRoadMap(ctx){
-  return isNavOnRoad(ctx);
-}
-
-function logAutoMap(on, ctx){
-  if(!telemetry.isActive?.()) return;
-  telemetry.log('nav', {
-    sub: 'view_auto_map',
-    on,
-    lateral: ctx.lateral != null ? Math.round(ctx.lateral) : null,
-    snap: S.snapQuality,
-    off: S.offRouteState
-  });
-}
-
-/**
- * @param {number} kmh — для телеметрии / совместимости
- * @param {boolean} waitConverge
- * @param {{ lateral?: number | null }} [ctx]
- */
-export function tickLowSpeedMap(kmh, waitConverge, ctx = {}){
-  if(S.lowSpeedMap === false){
-    if(_autoActive){
-      _autoActive = false;
-      _offRoadSince = 0;
-      setViewMode('hud');
-    }
-    return;
-  }
-
-  if(shouldEnterOffRoadMap(ctx, waitConverge)){
-    if(S.viewMode === 'hud' || _autoActive){
-      setViewMode('map_zoom');
-      if(!_autoActive) logAutoMap(true, ctx);
-      _autoActive = true;
-    }
-  }else if(_autoActive && shouldExitOffRoadMap(ctx)){
-    setViewMode('hud');
-    logAutoMap(false, ctx);
-    _autoActive = false;
-    _userPinned = false;
-    _offRoadSince = 0;
-  }
-
+/** @deprecated автокарта удалена */
+export function tickLowSpeedMap(_kmh, _waitConverge, _ctx = {}){
   if(S.viewMode !== 'hud') tickNavMap();
 }
 
-/** Пользователь переключил вид двойным тапом — не мешать автокарте во дворе. */
-export function onUserViewModeChange(){
-  if(_autoActive) _userPinned = true;
-}
+/** @deprecated */
+export function onUserViewModeChange(){}
 
+/** @deprecated всегда false */
 export function isAutoMapActive(){
-  return _autoActive;
+  return false;
 }
 
-export function resetLowSpeedMap(){
-  _autoActive = false;
-  _userPinned = false;
-  _offRoadSince = 0;
-}
+export function resetLowSpeedMap(){}
 
-/** @deprecated — для миграции старых настроек */
+/** @deprecated */
 export function clampPathMinSpeedKmh(n){
   const v = parseInt(n, 10);
   if(!Number.isFinite(v)) return DEFAULT_PATH_MIN_SPEED_KMH;
   return Math.max(0, Math.min(MAX_PATH_MIN_SPEED_KMH, v));
 }
 
-/** @deprecated дорожка больше не скрывается по скорости на дороге */
+/** @deprecated */
 export function getPathMinSpeedKmh(){
   return 0;
 }

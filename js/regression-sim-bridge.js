@@ -99,6 +99,9 @@ export function regressionPrimeSnap(distM){
 export function sampleRegressionState(extra = {}){
   let lateral = null;
   let maneuverType = null;
+  const lat = S.gps?.lat ?? null;
+  const lon = S.gps?.lon ?? null;
+  const heading = S.smoothedHeading ?? S.gps?.heading ?? null;
   if(S.route && S.gps){
     const snap = getNavSnap(S.smoothedHeading);
     lateral = snap?.lateral ?? null;
@@ -116,6 +119,10 @@ export function sampleRegressionState(extra = {}){
   return {
     ts: Date.now(),
     type: 'regression_tick',
+    lat: lat != null ? Math.round(lat * 1e6) / 1e6 : null,
+    lon: lon != null ? Math.round(lon * 1e6) / 1e6 : null,
+    heading: heading != null ? Math.round(heading * 10) / 10 : null,
+    dist_m: extra.dist_m ?? extra.routeDistM ?? null,
     lateral_m: lateral != null ? Math.round(lateral * 10) / 10 : null,
     snap_quality: S.snapQuality,
     off_route_state: S.offRouteState,

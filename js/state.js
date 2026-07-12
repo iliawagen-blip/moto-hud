@@ -56,8 +56,8 @@ export const S = {
   pathChevronMax: DEFAULT_PATH_CHEVRON_MAX,
   /** @deprecated сохранено для старых настроек */
   pathMinSpeedKmh: DEFAULT_PATH_MIN_SPEED_KMH,
-  /** Автокарта вне маршрута (дворы) */
-  lowSpeedMap: true,
+  /** @deprecated автокарта «во дворах» отключена — карта только вручную */
+  lowSpeedMap: false,
   showElevProfile: true,
   elevExag: 1.8,
   elevProfileH: 72,

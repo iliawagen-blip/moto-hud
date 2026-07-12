@@ -86,11 +86,25 @@ must_be <= min(remaining_today, 450 - count_today)
 3. ORS — параллельный эталон; при исчерпании GH nightly продолжается на ORS + motohud.
 4. Yandex web — **не** тратит GH-квоту (отдельная фаза).
 
+## Лимит точек маршрута
+
+GraphHopper **Directions API** принимает **не более 5 waypoints** на запрос (`Too many points: 6, allowed: 5`).
+
+Конвейер:
+
+- `generate-waypoints.mjs` — новые fixtures: `many_waypoints` даёт 2–3 via (итого 4–5 точек);
+- `fetch-graphhopper.mjs` — при `waypoints.length > 5` автоматически урезает до 5 (start + via + finish, равномерно);
+- `config/rate-limits.json` → `graphhopper.max_points: 5`;
+- в `references.graphhopper.provider_meta` пишется `points_original`, `points_sent`, `downsampled`.
+
+Fixture может хранить 6+ точек для motohud/ORS; для GH отправляется урезанный набор.
+
 ## Troubleshooting
 
 | Ситуация | Действие |
 |----------|----------|
 | `count >= 450` | Стоп до сброса; checkpoint; продолжить после `reset_at` |
+| HTTP 400 Too many points | Fixture >5 точек: fetch урежет автоматически; для новых — `generate-waypoints` cap 5 |
 | HTTP 429 | Пауза 60 с, retry 1×; если снова 429 — стоп фазы |
 | Неверный ключ | Проверить `regression/.env`, не коммитить |
 | Счётчик «залип» | Удалить `graphhopper-counter.json` или исправить `date` вручную |

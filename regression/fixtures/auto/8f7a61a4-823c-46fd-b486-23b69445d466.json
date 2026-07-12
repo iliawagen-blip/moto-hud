@@ -1,0 +1,140 @@
+{
+  "fixture_id": "8f7a61a4-823c-46fd-b486-23b69445d466",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:41:33.831Z",
+  "last_verified_at": "2026-07-12T06:53:54.413Z",
+  "source": "auto_generator",
+  "category": "city",
+  "region": "krasnodar",
+  "tags": [
+    "auto_v1",
+    "city",
+    "krasnodar"
+  ],
+  "waypoints": [
+    {
+      "lat": 45.111809,
+      "lon": 39.133206,
+      "label": "start"
+    },
+    {
+      "lat": 45.097098,
+      "lon": 38.951738,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 21826,
+      "duration_s": 1970,
+      "maneuver_count": 18,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T10:56:51.790Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 2,
+        "points_original": 2,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 22438,
+      "duration_s": 2245,
+      "maneuver_count": 22,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:07:19.313Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 21218,
+    "duration_s": 1937,
+    "step_count": 27,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:30:21.960Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 374.7810737151999,
+      "avg_lateral_m": 4.436045635481238,
+      "p50_lateral_m": 0.034574108868485685,
+      "p95_lateral_m": 0.3595356256029272,
+      "max_lateral_m": 281.9370222644737,
+      "length_diff_pct": 2.865491563766613,
+      "duration_diff_pct": 1.7036654620547238,
+      "maneuver_count_diff": 9,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.22169811320754718,
+      "waypoint_deviations_m": [
+        0,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 825.8198033016392,
+      "avg_lateral_m": 49.480907294725704,
+      "p50_lateral_m": 0.002944235705611541,
+      "p95_lateral_m": 409.3453852593297,
+      "max_lateral_m": 752.484874854926,
+      "length_diff_pct": 5.749835045715901,
+      "duration_diff_pct": 15.900877645844089,
+      "maneuver_count_diff": 5,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.45047169811320753,
+      "waypoint_deviations_m": [
+        146.27796949269887,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 745.4568323883682,
+      "avg_lateral_m": 56.35560288696035,
+      "p50_lateral_m": 0.08760902278494194,
+      "p95_lateral_m": 454.560510005116,
+      "max_lateral_m": 743.1184723619899,
+      "length_diff_pct": 2.803995235040777,
+      "duration_diff_pct": 13.959390862944163,
+      "maneuver_count_diff": -4,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.32036613272311215,
+      "waypoint_deviations_m": [
+        146.27796949269887,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 409.3453852593297,
+      "motohud_vs_consensus_avg_m": 26.95847646510347,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Краснодар · city · OSRM 21.2 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

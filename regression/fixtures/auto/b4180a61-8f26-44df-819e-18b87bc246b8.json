@@ -1,0 +1,148 @@
+{
+  "fixture_id": "b4180a61-8f26-44df-819e-18b87bc246b8",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T23:03:03.310Z",
+  "last_verified_at": "2026-07-12T06:57:01.513Z",
+  "source": "auto_generator",
+  "category": "roundabouts",
+  "region": "spb_center",
+  "tags": [
+    "auto_v1",
+    "roundabouts",
+    "spb_center"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.658037,
+      "lon": 37.399224,
+      "label": "start_ring"
+    },
+    {
+      "lat": 55.661602,
+      "lon": 37.402971,
+      "label": "via_ring_1"
+    },
+    {
+      "lat": 55.659276,
+      "lon": 37.414918,
+      "label": "finish_ring"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 10472,
+      "duration_s": 1087,
+      "maneuver_count": 16,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T10:59:02.339Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 3,
+        "points_original": 3,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 10455,
+      "duration_s": 1071,
+      "maneuver_count": 13,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:07:49.352Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 11324,
+    "duration_s": 1057,
+    "step_count": 29,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:30:50.072Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 333.6101583808608,
+      "avg_lateral_m": 14.82039437063766,
+      "p50_lateral_m": 0.07003192066463788,
+      "p95_lateral_m": 134.40773247333556,
+      "max_lateral_m": 333.6101583808608,
+      "length_diff_pct": 7.523843164959379,
+      "duration_diff_pct": 2.838221381267739,
+      "maneuver_count_diff": 13,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.2857142857142857,
+      "waypoint_deviations_m": [
+        0.4371646118619581,
+        0.11119507995279233,
+        0.06272659799681508
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 333.6101583808608,
+      "avg_lateral_m": 15.44518786378133,
+      "p50_lateral_m": 0.09335200987894701,
+      "p95_lateral_m": 134.40773247333556,
+      "max_lateral_m": 333.6101583808608,
+      "length_diff_pct": 7.673966796185093,
+      "duration_diff_pct": 1.3245033112582782,
+      "maneuver_count_diff": 16,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.27751196172248804,
+      "waypoint_deviations_m": [
+        0.4371646118619581,
+        0.11119507995279233,
+        0.06272659799681508
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 17.863031677417897,
+      "avg_lateral_m": 0.7706452197563486,
+      "p50_lateral_m": 0.015572313528508006,
+      "p95_lateral_m": 0.7542574934377761,
+      "max_lateral_m": 17.863031677417897,
+      "length_diff_pct": 0.16233766233766234,
+      "duration_diff_pct": 1.4719411223551058,
+      "maneuver_count_diff": 3,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0,
+      "waypoint_deviations_m": [
+        0.4371646118619581,
+        0.11119507995279233,
+        0.06272659799681508
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": true,
+      "motohud_vs_consensus_p95_m": 134.40773247333556,
+      "motohud_vs_consensus_avg_m": 15.132791117209495,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "СПб — центр · roundabouts · OSRM 11.3 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

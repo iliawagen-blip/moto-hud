@@ -1,0 +1,148 @@
+{
+  "fixture_id": "97a0f93c-8336-4d04-b1d2-a521f33db135",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T13:58:02.652Z",
+  "last_verified_at": "2026-07-12T06:55:04.988Z",
+  "source": "auto_generator",
+  "category": "highway",
+  "region": "m4_don_south",
+  "tags": [
+    "auto_v1",
+    "highway",
+    "m4_don_south"
+  ],
+  "waypoints": [
+    {
+      "lat": 48.023921,
+      "lon": 39.694308,
+      "label": "start"
+    },
+    {
+      "lat": 48.307739,
+      "lon": 39.760023,
+      "label": "via_1"
+    },
+    {
+      "lat": 48.644732,
+      "lon": 39.87262,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 90
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 123596,
+      "duration_s": 8510,
+      "maneuver_count": 49,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T10:57:16.882Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 3,
+        "points_original": 3,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 112244,
+      "duration_s": 8988,
+      "maneuver_count": 38,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:07:29.345Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 125529,
+    "duration_s": 11339,
+    "step_count": 65,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:30:32.156Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 1335.779869245742,
+      "avg_lateral_m": 33.01270248437421,
+      "p50_lateral_m": 1.8441097942094813,
+      "p95_lateral_m": 59.857798794234114,
+      "max_lateral_m": 1335.779869245742,
+      "length_diff_pct": 1.5398832142373475,
+      "duration_diff_pct": 24.94929006085193,
+      "maneuver_count_diff": 16,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.13275517011340893,
+      "waypoint_deviations_m": [
+        0.07436952505684273,
+        24.724816663816277,
+        0.184269927403958
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 8752.746984102028,
+      "avg_lateral_m": 1124.8856302438426,
+      "p50_lateral_m": 3.330060426792131,
+      "p95_lateral_m": 7632.271150261279,
+      "max_lateral_m": 8752.746984102028,
+      "length_diff_pct": 10.583211847461543,
+      "duration_diff_pct": 20.733750771672987,
+      "maneuver_count_diff": 27,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.4216144096064043,
+      "waypoint_deviations_m": [
+        0.07436952505684273,
+        24.724816663816277,
+        0.184269927403958
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 8762.188560515635,
+      "avg_lateral_m": 1111.9638001821522,
+      "p50_lateral_m": 2.68176526300581,
+      "p95_lateral_m": 7676.229928281007,
+      "max_lateral_m": 8762.188560515635,
+      "length_diff_pct": 9.184763260946955,
+      "duration_diff_pct": 5.616921269095182,
+      "maneuver_count_diff": 11,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.4296197464976651,
+      "waypoint_deviations_m": [
+        0.07436952505684273,
+        24.724816663816277,
+        0.184269927403958
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 7632.271150261279,
+      "motohud_vs_consensus_avg_m": 578.9491663641084,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "М4 Дон — южный участок · highway · OSRM 125.5 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

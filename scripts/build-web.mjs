@@ -81,6 +81,39 @@ await esbuild.build({
   logLevel: 'info'
 });
 
+await esbuild.build({
+  entryPoints: [path.join(ROOT, 'js', 'telemetry-parse.mjs')],
+  outfile: path.join(ROOT, 'js', 'telemetry-parse.js'),
+  bundle: true,
+  format: 'iife',
+  globalName: 'TelemetryParse',
+  platform: 'browser',
+  target: ['es2020'],
+  logLevel: 'info'
+});
+
+await esbuild.build({
+  entryPoints: [path.join(ROOT, 'js', 'regression-parse.mjs')],
+  outfile: path.join(ROOT, 'js', 'regression-parse.js'),
+  bundle: true,
+  format: 'iife',
+  globalName: 'RegressionParse',
+  platform: 'browser',
+  target: ['es2020'],
+  logLevel: 'info'
+});
+
+await esbuild.build({
+  entryPoints: [path.join(ROOT, 'js', 'shared', 'tick-compare.mjs')],
+  outfile: path.join(ROOT, 'js', 'tick-compare.js'),
+  bundle: true,
+  format: 'iife',
+  globalName: 'TickCompare',
+  platform: 'browser',
+  target: ['es2020'],
+  logLevel: 'info'
+});
+
 const leafletSrc = path.join(ROOT, 'node_modules', 'leaflet', 'dist', 'leaflet.js');
 const leafletDst = path.join(ROOT, 'js', 'leaflet.js');
 if(fs.existsSync(leafletSrc)) cp(leafletSrc, leafletDst);
@@ -101,7 +134,13 @@ STATIC_DIRS.forEach(d => {
   if(d === 'js'){
     cpDir(path.join(ROOT, 'js'), path.join(WWW, 'js'), n =>
       n === 'sim.js' || n === 'app.js' || n === 'app-iife.js' || n === 'app.js.map' ||
-      n === 'sim-replay.js' || n === 'sim-map.js' || n === 'sim-map-module.js' || n === 'leaflet.js');
+      n === 'sim-replay.js' || n === 'sim-mode.js' || n === 'sim-regression-ui.js' ||
+      n === 'sim-regression-replay.js' || n === 'sim-compare-ui.js' ||
+      n === 'tick-compare.js' ||
+      n === 'sim-map.js' || n === 'sim-map-module.js' ||
+      n === 'regression-parse.js' || n === 'regression-parse.mjs' ||
+      n === 'telemetry-parse.js' || n === 'telemetry-parse.mjs' ||
+      n.startsWith('shared') || n === 'leaflet.js');
   } else {
     cpDir(path.join(ROOT, d), path.join(WWW, d));
   }

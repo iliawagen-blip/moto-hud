@@ -1,0 +1,164 @@
+{
+  "fixture_id": "3a8c2ca2-f138-4b5a-aa38-076e58e59aa2",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:06:46.641Z",
+  "last_verified_at": "2026-07-12T06:47:30.953Z",
+  "source": "auto_generator",
+  "category": "many_waypoints",
+  "region": "m4_don_north",
+  "tags": [
+    "auto_v1",
+    "many_waypoints",
+    "m4_don_north"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.682192,
+      "lon": 37.797461,
+      "label": "start"
+    },
+    {
+      "lat": 55.836871,
+      "lon": 37.820097,
+      "label": "via_1"
+    },
+    {
+      "lat": 55.559913,
+      "lon": 38.112047,
+      "label": "via_2"
+    },
+    {
+      "lat": 55.870546,
+      "lon": 37.558207,
+      "label": "via_3"
+    },
+    {
+      "lat": 55.839846,
+      "lon": 37.80906,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 70
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 172445,
+      "duration_s": 9609,
+      "maneuver_count": 43,
+      "roundabout_count": 3,
+      "fetched_at": "2026-07-12T10:43:43.102Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 5,
+        "points_original": 5,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 172394,
+      "duration_s": 9798,
+      "maneuver_count": 41,
+      "roundabout_count": 2,
+      "fetched_at": "2026-07-12T11:06:19.190Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 173341,
+    "duration_s": 9449,
+    "step_count": 150,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:29:29.945Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 716.8263364533731,
+      "avg_lateral_m": 10.820924052768692,
+      "p50_lateral_m": 1.061115942440036,
+      "p95_lateral_m": 11.790345262753215,
+      "max_lateral_m": 699.2255887615097,
+      "length_diff_pct": 0.5169002140289949,
+      "duration_diff_pct": 1.6933008783998307,
+      "maneuver_count_diff": 107,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.02601734489659773,
+      "waypoint_deviations_m": [
+        234.32753566875888,
+        221.99288965794122,
+        35.58279721544748,
+        7.816779318102806,
+        0.042310230876212995
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 275.9318521123511,
+      "avg_lateral_m": 4.345164489662836,
+      "p50_lateral_m": 0.9876077278737463,
+      "p95_lateral_m": 11.226044877700792,
+      "max_lateral_m": 275.9318521123511,
+      "length_diff_pct": 0.5463219896043059,
+      "duration_diff_pct": 3.69351254100963,
+      "maneuver_count_diff": 109,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.018679119412941963,
+      "waypoint_deviations_m": [
+        234.32753566875888,
+        222.10642136983603,
+        0,
+        6.95117750737918,
+        0.04223905359876201
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 987.4687072391231,
+      "avg_lateral_m": 13.90956760947727,
+      "p50_lateral_m": 0.884944753442394,
+      "p95_lateral_m": 14.533569321164382,
+      "max_lateral_m": 987.4687072391231,
+      "length_diff_pct": 0.02957464698889501,
+      "duration_diff_pct": 1.966906025600999,
+      "maneuver_count_diff": 2,
+      "roundabout_count_diff": 1,
+      "direction_mismatch_ratio": 0.01200800533689126,
+      "waypoint_deviations_m": [
+        234.32753566875888,
+        222.10642136983603,
+        0,
+        6.95117750737918,
+        0.04223905359876201
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": true,
+      "motohud_vs_consensus_p95_m": 11.790345262753215,
+      "motohud_vs_consensus_avg_m": 7.583044271215764,
+      "signal": "ok"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "М4 Дон — северный участок · many_waypoints · OSRM 173.3 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

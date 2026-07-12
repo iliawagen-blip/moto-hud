@@ -40,6 +40,27 @@ export function incrementGraphhopperCounter(delta = 1, opts = {}){
 }
 
 /**
+ * Текстовое представление заголовков X-RateLimit-* из ответа GraphHopper.
+ * @param {import('http').IncomingHttpHeaders | Headers} headers
+ * @returns {string}
+ */
+export function formatRateLimitText(headers){
+  const pairs = [];
+  const src = headers instanceof Headers
+    ? [...headers.entries()]
+    : Object.entries(headers || {});
+  for(const [k, v] of src){
+    const lk = String(k).toLowerCase();
+    if(!lk.startsWith('x-ratelimit-')) continue;
+    const name = lk.slice('x-ratelimit-'.length);
+    const val = Array.isArray(v) ? v.join(',') : String(v);
+    pairs.push(`${name}=${val}`);
+  }
+  pairs.sort();
+  return pairs.length ? pairs.join(' ') : '(нет X-RateLimit-* заголовков)';
+}
+
+/**
  * Обновить reset_at из заголовка X-RateLimit-Reset (unix seconds или ISO).
  * @param {import('http').IncomingHttpHeaders} headers
  */

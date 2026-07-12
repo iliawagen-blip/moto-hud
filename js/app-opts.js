@@ -26,7 +26,6 @@ export function loadAppOptsFromStorage(){
     setCheck('opt-path-chevrons', o.showPathChevrons !== false);
     setCheck('opt-chevron-labels', o.pathChevronLabels !== false);
     setVal('opt-chevron-max', o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
-    setCheck('opt-low-speed-map', o.lowSpeedMap !== false);
     if(o.pathMinSpeedKmh != null) S.pathMinSpeedKmh = clampPathMinSpeedKmh(o.pathMinSpeedKmh);
     setCheck('opt-heading', o.showCompass);
     setCheck('opt-cams', o.cams);
@@ -44,6 +43,7 @@ export function loadAppOptsFromStorage(){
     setCheck('opt-roundabout-schema', o.roundaboutSchema !== false);
     if(typeof o.roundaboutSchema === 'boolean') S.roundaboutSchema = o.roundaboutSchema;
     setVal('opt-cam-speed-tol', o.camSpeedTol != null ? o.camSpeedTol : DEFAULT_CAM_SPEED_TOL);
+    S.lowSpeedMap = false;
   }catch(e){}
 }
 
@@ -56,7 +56,6 @@ export function saveAppOptsToStorage(){
       showPathChevrons: S.showPathChevrons !== false,
       pathChevronLabels: S.pathChevronLabels !== false,
       pathChevronMax: S.pathChevronMax,
-      lowSpeedMap: S.lowSpeedMap !== false,
       pathMinSpeedKmh: clampPathMinSpeedKmh(S.pathMinSpeedKmh),
       showCompass: !!S.showCompass,
       cams: !!S.cams,

@@ -1,0 +1,140 @@
+{
+  "fixture_id": "da2a32e9-67ea-4359-9f9b-672adc9fbe0b",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:09:45.354Z",
+  "last_verified_at": "2026-07-12T07:02:01.191Z",
+  "source": "auto_generator",
+  "category": "roundabouts",
+  "region": "moscow_outer",
+  "tags": [
+    "auto_v1",
+    "roundabouts",
+    "moscow_outer"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.737053,
+      "lon": 37.53136,
+      "label": "start_ring"
+    },
+    {
+      "lat": 55.742829,
+      "lon": 37.538916,
+      "label": "finish_ring"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 5292,
+      "duration_s": 759,
+      "maneuver_count": 11,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:03:08.570Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 2,
+        "points_original": 2,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 4927,
+      "duration_s": 618,
+      "maneuver_count": 9,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:08:44.065Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 4987,
+    "duration_s": 487,
+    "step_count": 15,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:31:44.244Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 101.47138400459247,
+      "avg_lateral_m": 2.1986645489927215,
+      "p50_lateral_m": 0.034110004239818824,
+      "p95_lateral_m": 21.568807335980228,
+      "max_lateral_m": 48.71591408549666,
+      "length_diff_pct": 6.115901343493082,
+      "duration_diff_pct": 55.85215605749486,
+      "maneuver_count_diff": 4,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.07,
+      "waypoint_deviations_m": [
+        0.06260190664656529,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 45.41544314253104,
+      "avg_lateral_m": 0.7614344282296476,
+      "p50_lateral_m": 0.0009707773776309083,
+      "p95_lateral_m": 0.5095980294972137,
+      "max_lateral_m": 45.41544314253104,
+      "length_diff_pct": 1.20312813314618,
+      "duration_diff_pct": 26.899383983572893,
+      "maneuver_count_diff": 6,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0,
+      "waypoint_deviations_m": [
+        0.06260190664656529,
+        45.41544314253104
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 137.8168561138249,
+      "avg_lateral_m": 8.448772998018045,
+      "p50_lateral_m": 0.014906184229401145,
+      "p95_lateral_m": 85.07291739059836,
+      "max_lateral_m": 137.8168561138249,
+      "length_diff_pct": 6.897203325774755,
+      "duration_diff_pct": 18.57707509881423,
+      "maneuver_count_diff": 2,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.050505050505050504,
+      "waypoint_deviations_m": [
+        0.06260190664656529,
+        45.41544314253104
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 21.568807335980228,
+      "motohud_vs_consensus_avg_m": 1.4800494886111846,
+      "signal": "warn"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Москва — спальные районы · roundabouts · OSRM 5.0 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

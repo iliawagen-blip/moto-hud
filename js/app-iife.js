@@ -5,12 +5,12 @@
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __getProtoOf = Object.getPrototypeOf;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
-  var __esm = (fn, res, err) => function __init() {
-    if (err) throw err[0];
+  var __esm = (fn, res, err2) => function __init() {
+    if (err2) throw err2[0];
     try {
       return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
     } catch (e) {
-      throw err = [e], e;
+      throw err2 = [e], e;
     }
   };
   var __commonJS = (cb, mod) => function __require() {
@@ -225,8 +225,8 @@
         pathChevronMax: DEFAULT_PATH_CHEVRON_MAX,
         /** @deprecated сохранено для старых настроек */
         pathMinSpeedKmh: DEFAULT_PATH_MIN_SPEED_KMH,
-        /** Автокарта вне маршрута (дворы) */
-        lowSpeedMap: true,
+        /** @deprecated автокарта «во дворах» отключена — карта только вручную */
+        lowSpeedMap: false,
         showElevProfile: true,
         elevExag: 1.8,
         elevProfileH: 72,
@@ -334,8 +334,8 @@
     const r = Math.PI / 180, d = 180 / Math.PI;
     const f1 = a.lat * r, f2 = b.lat * r, dl = (b.lon - a.lon) * r;
     const y = Math.sin(dl) * Math.cos(f2);
-    const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
-    return (Math.atan2(y, x) * d + 360) % 360;
+    const x2 = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+    return (Math.atan2(y, x2) * d + 360) % 360;
   }
   function distToSegment(p, a, b) {
     const r = Math.PI / 180;
@@ -491,10 +491,10 @@
         }
       };
       getPlatformId = (win) => {
-        var _a, _b;
+        var _a2, _b2;
         if (win === null || win === void 0 ? void 0 : win.androidBridge) {
           return "android";
-        } else if ((_b = (_a = win === null || win === void 0 ? void 0 : win.webkit) === null || _a === void 0 ? void 0 : _a.messageHandlers) === null || _b === void 0 ? void 0 : _b.bridge) {
+        } else if ((_b2 = (_a2 = win === null || win === void 0 ? void 0 : win.webkit) === null || _a2 === void 0 ? void 0 : _a2.messageHandlers) === null || _b2 === void 0 ? void 0 : _b2.bridge) {
           return "ios";
         } else {
           return "web";
@@ -519,10 +519,10 @@
           return false;
         };
         const getPluginHeader = (pluginName) => {
-          var _a;
-          return (_a = cap.PluginHeaders) === null || _a === void 0 ? void 0 : _a.find((h) => h.name === pluginName);
+          var _a2;
+          return (_a2 = cap.PluginHeaders) === null || _a2 === void 0 ? void 0 : _a2.find((h) => h.name === pluginName);
         };
-        const handleError = (err) => win.console.error(err);
+        const handleError = (err2) => win.console.error(err2);
         const registeredPlugins = /* @__PURE__ */ new Map();
         const registerPlugin2 = (pluginName, jsImplementations = {}) => {
           const registeredPlugin = registeredPlugins.get(pluginName);
@@ -542,7 +542,7 @@
             return jsImplementation;
           };
           const createPluginMethod = (impl, prop) => {
-            var _a, _b;
+            var _a2, _b2;
             if (pluginHeader) {
               const methodHeader = pluginHeader === null || pluginHeader === void 0 ? void 0 : pluginHeader.methods.find((m) => prop === m.name);
               if (methodHeader) {
@@ -552,10 +552,10 @@
                   return (options, callback) => cap.nativeCallback(pluginName, prop.toString(), options, callback);
                 }
               } else if (impl) {
-                return (_a = impl[prop]) === null || _a === void 0 ? void 0 : _a.bind(impl);
+                return (_a2 = impl[prop]) === null || _a2 === void 0 ? void 0 : _a2.bind(impl);
               }
             } else if (impl) {
-              return (_b = impl[prop]) === null || _b === void 0 ? void 0 : _b.bind(impl);
+              return (_b2 = impl[prop]) === null || _b2 === void 0 ? void 0 : _b2.bind(impl);
             } else {
               throw new CapacitorException(`"${pluginName}" plugin is not implemented on ${platform}`, ExceptionCode.Unimplemented);
             }
@@ -693,8 +693,8 @@
           listeners.forEach((listener) => listener(data));
         }
         hasListeners(eventName) {
-          var _a;
-          return !!((_a = this.listeners[eventName]) === null || _a === void 0 ? void 0 : _a.length);
+          var _a2;
+          return !!((_a2 = this.listeners[eventName]) === null || _a2 === void 0 ? void 0 : _a2.length);
         }
         registerWindowListener(windowEventName, pluginEventName) {
           this.windowListeners[pluginEventName] = {
@@ -983,18 +983,18 @@
           return new Proxy({}, {
             get(w, o) {
               return (c, p, r) => {
-                const i = t.Capacitor.Plugins[n];
-                if (i === void 0) {
+                const i2 = t.Capacitor.Plugins[n];
+                if (i2 === void 0) {
                   r(new Error(`Capacitor plugin ${n} not found`));
                   return;
                 }
-                if (typeof i[o] != "function") {
+                if (typeof i2[o] != "function") {
                   r(new Error(`Method ${o} not found in Capacitor plugin ${n}`));
                   return;
                 }
                 (async () => {
                   try {
-                    const a = await i[o](c);
+                    const a = await i2[o](c);
                     p(a);
                   } catch (a) {
                     r(a);
@@ -1046,16 +1046,16 @@
           return new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition((pos) => {
               resolve(pos);
-            }, (err) => {
-              reject(err);
+            }, (err2) => {
+              reject(err2);
             }, Object.assign({ enableHighAccuracy: false, timeout: 1e4, maximumAge: 0 }, options));
           });
         }
         async watchPosition(options, callback) {
           const id = navigator.geolocation.watchPosition((pos) => {
             callback(pos);
-          }, (err) => {
-            callback(null, err);
+          }, (err2) => {
+            callback(null, err2);
           }, Object.assign({ enableHighAccuracy: false, timeout: 1e4, maximumAge: 0, minimumUpdateInterval: 5e3 }, options));
           return `${id}`;
         }
@@ -1236,11 +1236,11 @@
           }
         }
         sendPending() {
-          var _a;
+          var _a2;
           const toRemove = [];
           const now = (/* @__PURE__ */ new Date()).getTime();
           for (const notification of this.pending) {
-            if (((_a = notification.schedule) === null || _a === void 0 ? void 0 : _a.at) && notification.schedule.at.getTime() <= now) {
+            if (((_a2 = notification.schedule) === null || _a2 === void 0 ? void 0 : _a2.at) && notification.schedule.at.getTime() <= now) {
               this.buildNotification(notification);
               toRemove.push(notification);
             }
@@ -1248,8 +1248,8 @@
           this.pending = this.pending.filter((notification) => !toRemove.find((n) => n === notification));
         }
         sendNotification(notification) {
-          var _a;
-          if ((_a = notification.schedule) === null || _a === void 0 ? void 0 : _a.at) {
+          var _a2;
+          if ((_a2 = notification.schedule) === null || _a2 === void 0 ? void 0 : _a2.at) {
             const diff = notification.schedule.at.getTime() - (/* @__PURE__ */ new Date()).getTime();
             this.pending.push(notification);
             setTimeout(() => {
@@ -1351,9 +1351,9 @@
         timeout: 15e3,
         maximumAge: 1e3
       },
-      (pos, err) => {
-        if (err) {
-          onError(err);
+      (pos, err2) => {
+        if (err2) {
+          onError(err2);
           return;
         }
         if (pos) onFix(mapCapPosition(pos));
@@ -1418,7 +1418,7 @@
   });
 
   // js/nav-constants.js
-  var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, OFF_ROAD_MAP_ENTER_MS, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+  var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
   var init_nav_constants = __esm({
     "js/nav-constants.js"() {
       SNAP_QUALITY_GOOD_OUT = 1;
@@ -1482,7 +1482,6 @@
       ROUTE_LOW_MANEUVER_PER_KM = 25;
       FUSION_GPS_WEIGHT_MIN = 0.02;
       FUSION_GPS_WEIGHT_SPAN = 25;
-      OFF_ROAD_MAP_ENTER_MS = 1500;
       LOW_SPEED_MAP_ZOOM = 18;
       PATH_SKIP_DS_M = 2;
       PATH_SKIP_FRAMES = 2;
@@ -1890,8 +1889,8 @@
   function pct(arr, p) {
     if (!arr.length) return null;
     const s2 = [...arr].sort((a, b) => a - b);
-    const i = Math.min(s2.length - 1, Math.floor(p / 100 * s2.length));
-    return s2[i];
+    const i2 = Math.min(s2.length - 1, Math.floor(p / 100 * s2.length));
+    return s2[i2];
   }
   function computeSessionAggregate() {
     if (!_buffer.length) return null;
@@ -2333,8 +2332,8 @@
     if (!maneuvers?.length) return [];
     const sorted = [...maneuvers].sort((a, b) => a.s - b.s);
     const kept = [];
-    for (let i = 0; i < sorted.length; i++) {
-      const m = sorted[i];
+    for (let i2 = 0; i2 < sorted.length; i2++) {
+      const m = sorted[i2];
       if (!isNavManeuverType(m.step)) {
         logFiltered(m.step, m.s, "not_nav_type");
         continue;
@@ -2342,7 +2341,7 @@
       const segM = m.step.distance || 0;
       const ang = stepTurnAngleDeg(m.step, m) || 0;
       const bend = bendThresholdForStep(m.step);
-      const next = sorted[i + 1];
+      const next = sorted[i2 + 1];
       if (segM < MANEUVER_COLLAPSE_SEG_M && ang < bend) {
         if (next && isNavManeuverType(next.step) && next.s - m.s < MANEUVER_COLLAPSE_GAP_M) {
           logFiltered(m.step, m.s, "collapse_micro");
@@ -2441,7 +2440,7 @@
     while (_hist.length > SNAP_QUALITY_TICK_WINDOW) _hist.shift();
   }
   function histAgrees(target) {
-    const n = _hist.filter((x) => x === target).length;
+    const n = _hist.filter((x2) => x2 === target).length;
     return n >= SNAP_QUALITY_TICKS_REQUIRED;
   }
   function updateSnapQuality(snap, gps, geom, opts) {
@@ -2606,9 +2605,9 @@
   }
   function applySafeSpeedAtS(geom, s2, vSafe) {
     if (!isFinite(vSafe) || vSafe >= 80) return;
-    const i = findSegAtS(geom, s2);
-    if (!isFinite(geom.safeSpeed[i]) || geom.safeSpeed[i] > vSafe) {
-      geom.safeSpeed[i] = vSafe;
+    const i2 = findSegAtS(geom, s2);
+    if (!isFinite(geom.safeSpeed[i2]) || geom.safeSpeed[i2] > vSafe) {
+      geom.safeSpeed[i2] = vSafe;
     }
   }
   function computeCurveSpeed(geom, route) {
@@ -2714,9 +2713,9 @@
     if (!spans.length) return [];
     const sorted = spans.slice().sort((a, b) => a.sEntry - b.sEntry);
     const out = [sorted[0]];
-    for (let i = 1; i < sorted.length; i++) {
+    for (let i2 = 1; i2 < sorted.length; i2++) {
       const prev = out[out.length - 1];
-      const cur = sorted[i];
+      const cur = sorted[i2];
       if (cur.sEntry <= prev.sExit + 30) {
         prev.sExit = Math.max(prev.sExit, cur.sExit);
         if (cur.minR < prev.minR) {
@@ -2909,18 +2908,18 @@
   }
   function lonLatToTile(lon, lat, z) {
     const n = 2 ** z;
-    const x = Math.floor((lon + 180) / 360 * n);
+    const x2 = Math.floor((lon + 180) / 360 * n);
     const latRad = lat * Math.PI / 180;
     const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
-    return { x: Math.max(0, Math.min(n - 1, x)), y: Math.max(0, Math.min(n - 1, y)), z };
+    return { x: Math.max(0, Math.min(n - 1, x2)), y: Math.max(0, Math.min(n - 1, y)), z };
   }
   function terrariumDecode(r, g, b) {
     return r * 256 + g + b / 256 - 32768;
   }
-  async function fetchTerrariumTile(z, x, y) {
-    const key = z + "/" + x + "/" + y;
+  async function fetchTerrariumTile(z, x2, y) {
+    const key = z + "/" + x2 + "/" + y;
     if (_tileCache.has(key)) return _tileCache.get(key);
-    const url = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/" + z + "/" + x + "/" + y + ".png";
+    const url = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/" + z + "/" + x2 + "/" + y + ".png";
     const p = new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
@@ -2962,8 +2961,8 @@
     const r = await fetch(url);
     if (!r.ok) throw new Error("OpenTopo " + r.status);
     const j = await r.json();
-    batch.forEach((a, i) => {
-      const e = j.results?.[i]?.elevation;
+    batch.forEach((a, i2) => {
+      const e = j.results?.[i2]?.elevation;
       if (e != null && isFinite(e)) a.elev = e;
     });
   }
@@ -3006,8 +3005,8 @@
     const half = SMOOTH_WINDOW_M;
     const out = new Float64Array(n);
     let j0 = 0;
-    for (let i = 0; i < n; i++) {
-      const s0 = geom.s[i];
+    for (let i2 = 0; i2 < n; i2++) {
+      const s0 = geom.s[i2];
       while (j0 < n && geom.s[j0] < s0 - half) j0++;
       let sum = 0;
       let wsum = 0;
@@ -3017,19 +3016,19 @@
         sum += geom.elev[j] * w;
         wsum += w;
       }
-      out[i] = wsum > 0 ? sum / wsum : geom.elev[i];
+      out[i2] = wsum > 0 ? sum / wsum : geom.elev[i2];
     }
     geom.elev = out;
   }
   function computeGrade(geom) {
     const n = geom.n;
-    for (let i = 0; i < n - 1; i++) {
-      const ds = geom.s[i + 1] - geom.s[i];
-      geom.grade[i] = ds > 0 ? (geom.elev[i + 1] - geom.elev[i]) / ds : 0;
+    for (let i2 = 0; i2 < n - 1; i2++) {
+      const ds = geom.s[i2 + 1] - geom.s[i2];
+      geom.grade[i2] = ds > 0 ? (geom.elev[i2 + 1] - geom.elev[i2]) / ds : 0;
     }
     geom.grade[n - 1] = geom.grade[n - 2] || 0;
-    for (let i = 0; i < n; i++) {
-      geom.grade[i] = Math.max(-0.25, Math.min(0.25, geom.grade[i]));
+    for (let i2 = 0; i2 < n; i2++) {
+      geom.grade[i2] = Math.max(-0.25, Math.min(0.25, geom.grade[i2]));
     }
   }
   function injectSimElevation(geom) {
@@ -3050,14 +3049,14 @@
       return;
     }
     const anchors = buildAnchors(geom);
-    for (let i = 0; i < anchors.length; i += OPENTOPO_BATCH) {
-      const batch = anchors.slice(i, i + OPENTOPO_BATCH);
+    for (let i2 = 0; i2 < anchors.length; i2 += OPENTOPO_BATCH) {
+      const batch = anchors.slice(i2, i2 + OPENTOPO_BATCH);
       try {
         await fetchOpenTopoBatch(batch);
       } catch (e) {
         console.warn("OpenTopo batch:", e);
       }
-      if (i + OPENTOPO_BATCH < anchors.length) await sleep(OPENTOPO_DELAY_MS);
+      if (i2 + OPENTOPO_BATCH < anchors.length) await sleep(OPENTOPO_DELAY_MS);
     }
     for (const a of anchors) {
       if (a.elev != null) continue;
@@ -3098,10 +3097,10 @@
     if (s1 - s0 < 50) return "";
     const samples = [];
     for (let s2 = s0; s2 <= s1; s2 += 40) {
-      const i = findSegAtS(geom, s2);
-      const ds = geom.s[i + 1] - geom.s[i];
-      const t = ds > 0 ? (s2 - geom.s[i]) / ds : 0;
-      const elev = geom.elev[i] + t * (geom.elev[i + 1] - geom.elev[i]);
+      const i2 = findSegAtS(geom, s2);
+      const ds = geom.s[i2 + 1] - geom.s[i2];
+      const t = ds > 0 ? (s2 - geom.s[i2]) / ds : 0;
+      const elev = geom.elev[i2] + t * (geom.elev[i2 + 1] - geom.elev[i2]);
       samples.push({ s: s2 - s0, elev });
     }
     if (samples.length < 2) return "";
@@ -3124,9 +3123,9 @@
     const toX = (ds) => mx + ds / profileLenM * pw;
     const toY = (d) => my + ph - (d - minE) / range * ph;
     let pathSegs = "";
-    samples.forEach((p, i) => {
-      if (i === 0) return;
-      const a = samples[i - 1];
+    samples.forEach((p, i2) => {
+      if (i2 === 0) return;
+      const a = samples[i2 - 1];
       const b = p;
       const sMid = s0 + (a.s + b.s) * 0.5;
       const gi = findSegAtS(geom, sMid);
@@ -3141,10 +3140,10 @@
     const tok = getThemeTokens();
     geom.maneuvers.forEach((m) => {
       if (m.s < s0 || m.s > s1) return;
-      const x = toX(m.s - s0);
-      marks += '<line x1="' + x.toFixed(1) + '" y1="' + my + '" x2="' + x.toFixed(1) + '" y2="' + (my + ph) + '" stroke="' + tok.accent + '" stroke-width="1" opacity="0.5"/>';
+      const x2 = toX(m.s - s0);
+      marks += '<line x1="' + x2.toFixed(1) + '" y1="' + my + '" x2="' + x2.toFixed(1) + '" y2="' + (my + ph) + '" stroke="' + tok.accent + '" stroke-width="1" opacity="0.5"/>';
     });
-    return '<g class="elev-profile" fill="none">' + marks + pathSegs + "</g>";
+    return '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#000" opacity="0.5"/><g class="elev-profile" fill="none">' + marks + pathSegs + "</g>";
   }
   var TERRARIUM_Z, SMOOTH_WINDOW_M, ANCHOR_STEP_M, OPENTOPO_BATCH, OPENTOPO_DELAY_MS, _tileCache, _elevListeners;
   var init_elevation = __esm({
@@ -3164,7 +3163,7 @@
   });
 
   // js/crossings.js
-  function projectGround(x, z, elevDelta) {
+  function projectGround(x2, z, elevDelta) {
     const pitch = getCamPitchRad();
     const cp = Math.cos(pitch);
     const sp = Math.sin(pitch);
@@ -3175,7 +3174,7 @@
     const Yc = dy * cp + dz * sp - elevLift;
     const Zc = -dy * sp + dz * cp;
     if (Zc < 0.85) return null;
-    const sx = L2.cx + L2.camFocal * x / Zc;
+    const sx = L2.cx + L2.camFocal * x2 / Zc;
     const sy = L2.camVoff - L2.camFocal * Yc / Zc;
     if (sx < -L2.W * 0.4 || sx > L2.W * 1.4) return null;
     return { x: sx, y: sy };
@@ -3191,10 +3190,10 @@
     const outIdx = inter.out;
     if (inIdx == null || outIdx == null || !inter.bearings?.length) return [];
     const sides = [];
-    for (let i = 0; i < inter.bearings.length; i++) {
-      if (i === inIdx || i === outIdx) continue;
-      if (inter.entry && inter.entry[i] === false) continue;
-      const brg = inter.bearings[i];
+    for (let i2 = 0; i2 < inter.bearings.length; i2++) {
+      if (i2 === inIdx || i2 === outIdx) continue;
+      if (inter.entry && inter.entry[i2] === false) continue;
+      const brg = inter.bearings[i2];
       const rel = signedAngle(travelBrg, brg);
       if (Math.abs(rel) < 12) continue;
       sides.push({ brg, side: rel < 0 ? "left" : "right", absRel: Math.abs(rel) });
@@ -3213,9 +3212,9 @@
     if (!list.length) return [];
     const sorted = list.slice().sort((a, b) => a.s - b.s);
     const out = [sorted[0]];
-    for (let i = 1; i < sorted.length; i++) {
+    for (let i2 = 1; i2 < sorted.length; i2++) {
       const prev = out[out.length - 1];
-      const cur = sorted[i];
+      const cur = sorted[i2];
       if (cur.s - prev.s < CROSSING_MERGE_M) {
         const brgs = new Set(prev.sideBearings.concat(cur.sideBearings));
         prev.sideBearings = Array.from(brgs);
@@ -3289,9 +3288,9 @@
       let totalExits = null;
       if (mainIx.bearings?.length && inIdx != null) {
         const exitBearings = [];
-        for (let i = 0; i < mainIx.bearings.length; i++) {
-          if (i === inIdx) continue;
-          exitBearings.push(mainIx.bearings[i]);
+        for (let i2 = 0; i2 < mainIx.bearings.length; i2++) {
+          if (i2 === inIdx) continue;
+          exitBearings.push(mainIx.bearings[i2]);
         }
         totalExits = exitBearings.length || null;
         const targetBrg = outIdx != null ? mainIx.bearings[outIdx] : null;
@@ -3941,7 +3940,7 @@
         async getSupportedLanguages() {
           const voices = this.getSpeechSynthesisVoices();
           const languages = voices.map((voice) => voice.lang);
-          const filteredLanguages = languages.filter((v, i, a) => a.indexOf(v) == i);
+          const filteredLanguages = languages.filter((v, i2, a) => a.indexOf(v) == i2);
           return { languages: filteredLanguages };
         }
         async getSupportedVoices() {
@@ -4044,11 +4043,11 @@
         const list2 = res.voices || [];
         let best2 = -1;
         let bestScore2 = -1;
-        list2.forEach((v, i) => {
+        list2.forEach((v, i2) => {
           const sc = scoreRuVoice(v);
           if (sc > bestScore2) {
             bestScore2 = sc;
-            best2 = i;
+            best2 = i2;
           }
         });
         _nativeVoiceIdx = best2;
@@ -4259,7 +4258,7 @@
     const totalM = geom.s[geom.n - 1] || 0;
     if (totalM < 500) return RouteQuality.OK;
     let segSum = 0;
-    for (let i = 1; i < geom.n; i++) segSum += geom.s[i] - geom.s[i - 1];
+    for (let i2 = 1; i2 < geom.n; i2++) segSum += geom.s[i2] - geom.s[i2 - 1];
     const avgSeg = segSum / Math.max(1, geom.n - 1);
     const maneuvers = geom.maneuvers?.length || 0;
     const perKm = totalM > 0 ? maneuvers / totalM * 1e3 : 0;
@@ -4468,11 +4467,11 @@ out 1;`;
   }
   function distPointToWayPolyline(point, geom) {
     let best = Infinity;
-    for (let i = 0; i < geom.length - 1; i++) {
+    for (let i2 = 0; i2 < geom.length - 1; i2++) {
       const d = distToSegment(
         point,
-        { lat: geom[i].lat, lon: geom[i].lon },
-        { lat: geom[i + 1].lat, lon: geom[i + 1].lon }
+        { lat: geom[i2].lat, lon: geom[i2].lon },
+        { lat: geom[i2 + 1].lat, lon: geom[i2 + 1].lon }
       );
       if (d < best) best = d;
     }
@@ -4526,21 +4525,21 @@ out geom;`;
       return;
     }
     const urbanPending = /* @__PURE__ */ new Map();
-    for (let i = 0; i < n; i++) {
-      const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
-      const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
+    for (let i2 = 0; i2 < n; i2++) {
+      const lat = (route.coords[i2][0] + route.coords[i2 + 1][0]) / 2;
+      const lon = (route.coords[i2][1] + route.coords[i2 + 1][1]) / 2;
       const pt = { lat, lon };
       const way = matchWayAtPoint(pt, ways);
       if (way) {
-        highwayTypes[i] = way.highway;
-        wayTags[i] = {
+        highwayTypes[i2] = way.highway;
+        wayTags[i2] = {
           maxspeed: way.maxspeed,
           maxspeedConditional: way.maxspeedConditional
         };
       }
       const uk = urbanCacheKey(lat, lon);
       if (_urbanCache.has(uk)) {
-        urbanSegments[i] = _urbanCache.get(uk);
+        urbanSegments[i2] = _urbanCache.get(uk);
       } else if (!urbanPending.has(uk)) {
         urbanPending.set(uk, checkUrbanZone(lat, lon));
       }
@@ -4549,10 +4548,10 @@ out geom;`;
       const keys = [...urbanPending.keys()];
       const vals = await Promise.all([...urbanPending.values()]);
       const urbanByKey = new Map(keys.map((k, idx) => [k, vals[idx]]));
-      for (let i = 0; i < n; i++) {
-        const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
-        const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
-        urbanSegments[i] = urbanByKey.get(urbanCacheKey(lat, lon)) ?? false;
+      for (let i2 = 0; i2 < n; i2++) {
+        const lat = (route.coords[i2][0] + route.coords[i2 + 1][0]) / 2;
+        const lon = (route.coords[i2][1] + route.coords[i2 + 1][1]) / 2;
+        urbanSegments[i2] = urbanByKey.get(urbanCacheKey(lat, lon)) ?? false;
       }
     }
     route.highwayTypes = highwayTypes;
@@ -4599,15 +4598,15 @@ out geom;`;
       let best = 0;
       let bestD = Infinity;
       const c = S.route.coords;
-      for (let i = 0; i < c.length - 1; i++) {
+      for (let i2 = 0; i2 < c.length - 1; i2++) {
         const d = distToSegment(
           pos,
-          { lat: c[i][0], lon: c[i][1] },
-          { lat: c[i + 1][0], lon: c[i + 1][1] }
+          { lat: c[i2][0], lon: c[i2][1] },
+          { lat: c[i2 + 1][0], lon: c[i2 + 1][1] }
         );
         if (d < bestD) {
           bestD = d;
-          best = i;
+          best = i2;
         }
       }
       return best;
@@ -4618,8 +4617,8 @@ out geom;`;
     }
     return null;
   }
-  function lookupSpeedLimitAtSeg(i, route, userDefault, fallbackMode, now) {
-    const idx = Math.max(0, Math.min(i, route.maxspeeds.length - 1));
+  function lookupSpeedLimitAtSeg(i2, route, userDefault, fallbackMode, now) {
+    const idx = Math.max(0, Math.min(i2, route.maxspeeds.length - 1));
     const entry = route.maxspeeds[idx];
     if (entry?.none) return { limit: null, source: "none" };
     const kmh = maxspeedEntryToKmh(entry);
@@ -4651,13 +4650,13 @@ out geom;`;
     const curVal = cur.source === "none" ? null : cur.limit;
     const coords = route.coords;
     let dist = 0;
-    for (let i = startIdx + 1; i < route.maxspeeds.length && dist <= lookaheadM; i++) {
+    for (let i2 = startIdx + 1; i2 < route.maxspeeds.length && dist <= lookaheadM; i2++) {
       const segDist = haversine(
-        { lat: coords[i][0], lon: coords[i][1] },
-        { lat: coords[i + 1][0], lon: coords[i + 1][1] }
+        { lat: coords[i2][0], lon: coords[i2][1] },
+        { lat: coords[i2 + 1][0], lon: coords[i2 + 1][1] }
       );
       dist += segDist;
-      const next = getCurrentSpeedLimit({ segIdx: i });
+      const next = getCurrentSpeedLimit({ segIdx: i2 });
       const nextVal = next.source === "none" ? null : next.limit;
       if (!limitsEqual(curVal, nextVal)) {
         const direction = nextVal != null && (curVal == null || nextVal < curVal) ? "down" : "up";
@@ -4833,6 +4832,20 @@ out geom;`;
   });
 
   // js/route.js
+  function auditRouteDrivability(route) {
+    const types = route?.highwayTypes;
+    if (!types?.length) return { ok: true, bad: [], ratio: 0, label: "" };
+    const counts = {};
+    for (const hw of types) {
+      if (!hw || !NON_MOTOR_HIGHWAYS.has(hw)) continue;
+      counts[hw] = (counts[hw] || 0) + 1;
+    }
+    const bad = Object.entries(counts).map(([highway, n]) => ({ highway, n }));
+    const totalBad = bad.reduce((s2, x2) => s2 + x2.n, 0);
+    const ratio = totalBad / types.length;
+    const label = bad.length ? bad.map((x2) => `${x2.highway}\xD7${x2.n}`).join(", ") : "";
+    return { ok: totalBad === 0, bad, ratio, label };
+  }
   function getVisibleTurnManeuvers(geom, curS, limit) {
     const maxN = limit || 3;
     const sorted = geom.maneuvers.filter((m) => isSignificantManeuver(m, geom)).sort((a, b) => a.s - b.s);
@@ -4907,14 +4920,14 @@ out geom;`;
       if (onDone) onDone();
       return;
     }
-    let i = 0;
+    let i2 = 0;
     const step = () => {
-      if (i >= routes.length) {
+      if (i2 >= routes.length) {
         if (onDone) onDone();
         return;
       }
-      ensureRouteGeometry(routes[i]);
-      i++;
+      ensureRouteGeometry(routes[i2]);
+      i2++;
       setTimeout(step, 0);
     };
     setTimeout(step, 50);
@@ -5013,32 +5026,50 @@ out geom;`;
     const j = await r.json();
     return parseRouteResponse(j).map(parseOsrmRoute);
   }
-  async function fetchRouteThroughWaypoints(waypoints) {
+  async function fetchRouteThroughWaypoints(waypoints, opts = {}) {
     if (!waypoints || waypoints.length < 2) throw new Error("\u041D\u0443\u0436\u043D\u043E \u22652 \u0442\u043E\u0447\u0435\u043A");
     S._usedCache = false;
-    const url = buildRouteRequestUrl(null, null, { waypoints });
+    const tryAlternatives = opts.alternatives ?? waypoints.length === 2;
+    const url = buildRouteRequestUrl(null, null, { waypoints, alternatives: tryAlternatives });
     const r = await fetch(url);
     if (!r.ok) throw new Error("OSRM HTTP " + r.status);
     const j = await r.json();
-    return parseOsrmRoute(parseRouteResponse(j)[0]);
+    const routes = parseRouteResponse(j).map(parseOsrmRoute);
+    if (routes.length === 1) return routes[0];
+    let best = routes[0];
+    let bestScore = Infinity;
+    for (const route of routes) {
+      try {
+        await loadRouteHighwayTypes(route);
+        const audit = auditRouteDrivability(route);
+        const score = audit.ok ? route.distance : route.distance * (1 + audit.ratio * 20);
+        if (score < bestScore) {
+          bestScore = score;
+          best = route;
+        }
+      } catch (e) {
+        if (route.distance < best.distance) best = route;
+      }
+    }
+    return best;
   }
   function buildDirectRouteFromWaypoints(waypoints) {
     if (!waypoints || waypoints.length < 2) throw new Error("\u041D\u0443\u0436\u043D\u043E \u22652 \u0442\u043E\u0447\u0435\u043A");
     const coords = waypoints.map((w) => [w.lat, w.lon]);
     let distance = 0;
-    for (let i = 1; i < waypoints.length; i++) {
-      distance += haversine(waypoints[i - 1], waypoints[i]);
+    for (let i2 = 1; i2 < waypoints.length; i2++) {
+      distance += haversine(waypoints[i2 - 1], waypoints[i2]);
     }
     const duration = distance / (50 / 3.6);
-    const steps = waypoints.map((w, i) => ({
+    const steps = waypoints.map((w, i2) => ({
       lat: w.lat,
       lon: w.lon,
-      type: i === 0 ? "depart" : i === waypoints.length - 1 ? "arrive" : "turn",
+      type: i2 === 0 ? "depart" : i2 === waypoints.length - 1 ? "arrive" : "turn",
       modifier: "",
       name: w.label || "",
-      distance: i > 0 ? haversine(waypoints[i - 1], w) : 0,
-      bearing_before: i > 1 ? bearing(waypoints[i - 2], waypoints[i - 1]) : null,
-      bearing_after: i < waypoints.length - 1 ? bearing(w, waypoints[i + 1]) : null,
+      distance: i2 > 0 ? haversine(waypoints[i2 - 1], w) : 0,
+      bearing_before: i2 > 1 ? bearing(waypoints[i2 - 2], waypoints[i2 - 1]) : null,
+      bearing_after: i2 < waypoints.length - 1 ? bearing(w, waypoints[i2 + 1]) : null,
       highway: "",
       intersections: []
     }));
@@ -5085,9 +5116,9 @@ out geom;`;
       S.route = parseOsrmRoute(parseRouteResponse(j)[0]);
       attachRouteGeometry(S.route);
       if (!reroute) telemetry_default.log("nav", { sub: "route_built" });
-    } catch (err) {
+    } catch (err2) {
       if (!allowCache) {
-        throw err;
+        throw err2;
       }
       const last = loadLastRun();
       if (last && last.route && S.finish && last.finish && haversine(last.finish, S.finish) < 60) {
@@ -5101,9 +5132,9 @@ out geom;`;
       throw new Error("\u041D\u0435\u0442 \u0441\u0435\u0442\u0438 \u0438 \u043D\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u043E\u0433\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 \u043A \u044D\u0442\u043E\u0439 \u0442\u043E\u0447\u043A\u0435");
     }
   }
-  function classifyRerouteError(err) {
-    const msg = String(err?.message || err || "");
-    if (err instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg)) {
+  function classifyRerouteError(err2) {
+    const msg = String(err2?.message || err2 || "");
+    if (err2 instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg)) {
       return "network";
     }
     if (/не найден|no route|NoRoute/i.test(msg)) return "no_route";
@@ -5229,15 +5260,15 @@ out geom;`;
     if (!c || c.length < 2 || !pos) return 0;
     let best = 0;
     let bestD = Infinity;
-    for (let i = 0; i < c.length - 1; i++) {
+    for (let i2 = 0; i2 < c.length - 1; i2++) {
       const d = distToSegment(
         pos,
-        { lat: c[i][0], lon: c[i][1] },
-        { lat: c[i + 1][0], lon: c[i + 1][1] }
+        { lat: c[i2][0], lon: c[i2][1] },
+        { lat: c[i2 + 1][0], lon: c[i2 + 1][1] }
       );
       if (d < bestD) {
         bestD = d;
-        best = i;
+        best = i2;
       }
     }
     return best;
@@ -5261,15 +5292,15 @@ out geom;`;
     const c = S.route.coords, n = c.length;
     const scan = (lo2, hi2) => {
       let best2 = { idx: lo2, dist: Infinity };
-      for (let i = lo2; i < hi2; i++) {
+      for (let i2 = lo2; i2 < hi2; i2++) {
         const d = distToSegment(
           pos,
-          { lat: c[i][0], lon: c[i][1] },
-          { lat: c[i + 1][0], lon: c[i + 1][1] }
+          { lat: c[i2][0], lon: c[i2][1] },
+          { lat: c[i2 + 1][0], lon: c[i2 + 1][1] }
         );
         if (d < best2.dist) {
           best2.dist = d;
-          best2.idx = i;
+          best2.idx = i2;
         }
       }
       return best2;
@@ -5286,11 +5317,11 @@ out geom;`;
     if (step._ci != null) return step._ci;
     const c = S.route.coords;
     let bi = 0, bd = Infinity;
-    for (let i = 0; i < c.length; i++) {
-      const d = haversine({ lat: c[i][0], lon: c[i][1] }, step);
+    for (let i2 = 0; i2 < c.length; i2++) {
+      const d = haversine({ lat: c[i2][0], lon: c[i2][1] }, step);
       if (d < bd) {
         bd = d;
-        bi = i;
+        bi = i2;
       }
     }
     step._ci = bi;
@@ -5312,12 +5343,12 @@ out geom;`;
     const list = getStepSList(S.route);
     if (!list.length) return null;
     let idx = 0;
-    for (let i = 0; i < list.length; i++) {
-      if (curS + 1 >= list[i].s) idx = i;
+    for (let i2 = 0; i2 < list.length; i2++) {
+      if (curS + 1 >= list[i2].s) idx = i2;
       else break;
     }
-    for (let i = idx; i >= 0; i--) {
-      if (list[i].step.name?.trim()) return list[i].step;
+    for (let i2 = idx; i2 >= 0; i2--) {
+      if (list[i2].step.name?.trim()) return list[i2].step;
     }
     return list[idx]?.step || null;
   }
@@ -5366,10 +5397,10 @@ out geom;`;
         { lat: c[near.idx][0], lon: c[near.idx][1] },
         { lat: c[near.idx + 1][0], lon: c[near.idx + 1][1] }
       );
-      for (let i = near.idx + 1; i < c.length - 1; i++) {
+      for (let i2 = near.idx + 1; i2 < c.length - 1; i2++) {
         remaining += haversine(
-          { lat: c[i][0], lon: c[i][1] },
-          { lat: c[i + 1][0], lon: c[i + 1][1] }
+          { lat: c[i2][0], lon: c[i2][1] },
+          { lat: c[i2 + 1][0], lon: c[i2 + 1][1] }
         );
       }
     } else {
@@ -5381,8 +5412,8 @@ out geom;`;
     if (!S.route || !step) return 0;
     const coords = S.route.coords;
     const si = stepCoordIndex(step);
-    const distM = (i, j) => haversine(
-      { lat: coords[i][0], lon: coords[i][1] },
+    const distM = (i2, j) => haversine(
+      { lat: coords[i2][0], lon: coords[i2][1] },
       { lat: coords[j][0], lon: coords[j][1] }
     );
     let bi = si, ai = si;
@@ -5407,7 +5438,7 @@ out geom;`;
     );
     return (bOut - bIn + 540) % 360 - 180;
   }
-  var _nearMemoPos, _nearMemoVal, _nearIdx;
+  var NON_MOTOR_HIGHWAYS, _nearMemoPos, _nearMemoVal, _nearIdx;
   var init_route = __esm({
     "js/route.js"() {
       init_state();
@@ -5427,6 +5458,16 @@ out geom;`;
       init_maneuver_filter();
       init_route_quality();
       init_speed_limit();
+      NON_MOTOR_HIGHWAYS = /* @__PURE__ */ new Set([
+        "footway",
+        "pedestrian",
+        "steps",
+        "path",
+        "cycleway",
+        "bridleway",
+        "corridor",
+        "elevator"
+      ]);
       _nearMemoPos = null;
       _nearMemoVal = null;
       _nearIdx = 0;
@@ -5455,12 +5496,12 @@ out geom;`;
     if (_pairsCache && _pairsRouteId === key) return _pairsCache;
     const pairs = [];
     const steps = route.steps;
-    for (let i = 0; i < steps.length; i++) {
-      const st = steps[i];
+    for (let i2 = 0; i2 < steps.length; i2++) {
+      const st = steps[i2];
       if (st.type !== "roundabout" && st.type !== "rotary") continue;
       let exitSt = null;
       let exitIdx = -1;
-      for (let j = i + 1; j < steps.length; j++) {
+      for (let j = i2 + 1; j < steps.length; j++) {
         if (steps[j].type === "exit roundabout") {
           exitSt = steps[j];
           exitIdx = j;
@@ -5472,7 +5513,7 @@ out geom;`;
       const exitCi = exitSt ? stepCoordIndex(exitSt) : enterCi;
       const exitNum = st.exit != null && st.exit > 0 ? st.exit : exitSt?.exit != null && exitSt.exit > 0 ? exitSt.exit : null;
       pairs.push({
-        enterIdx: i,
+        enterIdx: i2,
         exitIdx,
         enterStep: st,
         exitStep: exitSt,
@@ -5503,16 +5544,16 @@ out geom;`;
     let lat = 0;
     let lon = 0;
     const n = hi - lo + 1;
-    for (let i = lo; i <= hi; i++) {
-      lat += c[i][0];
-      lon += c[i][1];
+    for (let i2 = lo; i2 <= hi; i2++) {
+      lat += c[i2][0];
+      lon += c[i2][1];
     }
     lat /= n;
     lon /= n;
     const center = { lat, lon };
     let maxD = 0;
-    for (let i = lo; i <= hi; i++) {
-      maxD = Math.max(maxD, haversine(center, { lat: c[i][0], lon: c[i][1] }));
+    for (let i2 = lo; i2 <= hi; i2++) {
+      maxD = Math.max(maxD, haversine(center, { lat: c[i2][0], lon: c[i2][1] }));
     }
     return maxD;
   }
@@ -5595,9 +5636,9 @@ out geom;`;
       const valid = lanes.filter((l) => l.valid);
       if (!valid.length) continue;
       const inds = valid.flatMap((l) => l.indications || []);
-      if (inds.some((i) => String(i).includes("left"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u043B\u0435\u0432\u0443\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
-      if (inds.some((i) => String(i).includes("right"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u043F\u0440\u0430\u0432\u0443\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
-      if (inds.some((i) => String(i).includes("straight"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u0441\u0440\u0435\u0434\u043D\u044E\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
+      if (inds.some((i2) => String(i2).includes("left"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u043B\u0435\u0432\u0443\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
+      if (inds.some((i2) => String(i2).includes("right"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u043F\u0440\u0430\u0432\u0443\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
+      if (inds.some((i2) => String(i2).includes("straight"))) return "\u0417\u0430\u0439\u043C\u0438\u0442\u0435 \u0441\u0440\u0435\u0434\u043D\u044E\u044E \u043F\u043E\u043B\u043E\u0441\u0443";
     }
     return null;
   }
@@ -5647,9 +5688,9 @@ out geom;`;
     const sweep = endDeg > startDeg ? 1 : 0;
     return "M" + s2.x.toFixed(1) + "," + s2.y.toFixed(1) + " A" + r + "," + r + " 0 " + large + " " + sweep + " " + e.x.toFixed(1) + "," + e.y.toFixed(1);
   }
-  function arrowHead(x, y, angleDeg, len, color, sw) {
+  function arrowHead(x2, y, angleDeg, len, color, sw) {
     const a = deg2rad(angleDeg);
-    const hx = x + len * Math.sin(a);
+    const hx = x2 + len * Math.sin(a);
     const hy = y - len * Math.cos(a);
     const wing = len * 0.55;
     const a1 = a + deg2rad(150);
@@ -5658,7 +5699,7 @@ out geom;`;
     const w1y = hy - wing * Math.cos(a1);
     const w2x = hx + wing * Math.sin(a2);
     const w2y = hy - wing * Math.cos(a2);
-    return '<line x1="' + x.toFixed(1) + '" y1="' + y.toFixed(1) + '" x2="' + hx.toFixed(1) + '" y2="' + hy.toFixed(1) + '" stroke="' + color + '" stroke-width="' + sw + '" stroke-linecap="round"/><polygon points="' + hx.toFixed(1) + "," + hy.toFixed(1) + " " + w1x.toFixed(1) + "," + w1y.toFixed(1) + " " + w2x.toFixed(1) + "," + w2y.toFixed(1) + '" fill="' + color + '"/>';
+    return '<line x1="' + x2.toFixed(1) + '" y1="' + y.toFixed(1) + '" x2="' + hx.toFixed(1) + '" y2="' + hy.toFixed(1) + '" stroke="' + color + '" stroke-width="' + sw + '" stroke-linecap="round"/><polygon points="' + hx.toFixed(1) + "," + hy.toFixed(1) + " " + w1x.toFixed(1) + "," + w1y.toFixed(1) + " " + w2x.toFixed(1) + "," + w2y.toFixed(1) + '" fill="' + color + '"/>';
   }
   function ghostExitAngles(exitN, activeDiff) {
     if (!exitN || exitN < 2) return [];
@@ -5935,10 +5976,10 @@ out geom;`;
     if (!coords || coords.length < 2) return { lat, lon };
     const first = { lat: coords[0][0], lon: coords[0][1] };
     pushUnique(lat, lon, first.lat, first.lon);
-    for (let i = 0; i < coords.length - 1; i++) {
-      const B = { lat: coords[i][0], lon: coords[i][1] };
-      const C = { lat: coords[i + 1][0], lon: coords[i + 1][1] };
-      const A = i > 0 ? { lat: coords[i - 1][0], lon: coords[i - 1][1] } : null;
+    for (let i2 = 0; i2 < coords.length - 1; i2++) {
+      const B = { lat: coords[i2][0], lon: coords[i2][1] };
+      const C = { lat: coords[i2 + 1][0], lon: coords[i2 + 1][1] };
+      const A = i2 > 0 ? { lat: coords[i2 - 1][0], lon: coords[i2 - 1][1] } : null;
       let segStart = B;
       if (A) {
         const arc = bezierCorner(A, B, C);
@@ -5958,10 +5999,10 @@ out geom;`;
   function buildArcLength(lat, lon) {
     const n = lat.length;
     const s2 = new Float64Array(n);
-    for (let i = 1; i < n; i++) {
-      s2[i] = s2[i - 1] + haversine(
-        { lat: lat[i - 1], lon: lon[i - 1] },
-        { lat: lat[i], lon: lon[i] }
+    for (let i2 = 1; i2 < n; i2++) {
+      s2[i2] = s2[i2 - 1] + haversine(
+        { lat: lat[i2 - 1], lon: lon[i2 - 1] },
+        { lat: lat[i2], lon: lon[i2] }
       );
     }
     return s2;
@@ -5974,16 +6015,16 @@ out geom;`;
     const gps = { lat, lon };
     let bestS = 0;
     let bestD = Infinity;
-    for (let i = 0; i < geom.n - 1; i++) {
+    for (let i2 = 0; i2 < geom.n - 1; i2++) {
       const proj = projectOnSegment(
         gps,
-        geom.lat[i],
-        geom.lon[i],
-        geom.lat[i + 1],
-        geom.lon[i + 1]
+        geom.lat[i2],
+        geom.lon[i2],
+        geom.lat[i2 + 1],
+        geom.lon[i2 + 1]
       );
-      const segLen = geom.s[i + 1] - geom.s[i];
-      const s2 = geom.s[i] + proj.t * segLen;
+      const segLen = geom.s[i2 + 1] - geom.s[i2];
+      const s2 = geom.s[i2] + proj.t * segLen;
       if (proj.lateral < bestD) {
         bestD = proj.lateral;
         bestS = s2;
@@ -6007,10 +6048,10 @@ out geom;`;
   }
   function denseStepForCoords(coords) {
     let total = 0;
-    for (let i = 0; i < coords.length - 1; i++) {
+    for (let i2 = 0; i2 < coords.length - 1; i2++) {
       total += haversine(
-        { lat: coords[i][0], lon: coords[i][1] },
-        { lat: coords[i + 1][0], lon: coords[i + 1][1] }
+        { lat: coords[i2][0], lon: coords[i2][1] },
+        { lat: coords[i2 + 1][0], lon: coords[i2 + 1][1] }
       );
     }
     if (total > 12e4) return 8;
@@ -6058,13 +6099,13 @@ out geom;`;
     if (s2 <= 0) return { lat: geom.lat[0], lon: geom.lon[0] };
     const total = geom.s[geom.n - 1];
     if (s2 >= total) return { lat: geom.lat[geom.n - 1], lon: geom.lon[geom.n - 1] };
-    const i = findSegAtS(geom, s2);
-    const s0 = geom.s[i];
-    const s1 = geom.s[i + 1];
+    const i2 = findSegAtS(geom, s2);
+    const s0 = geom.s[i2];
+    const s1 = geom.s[i2 + 1];
     const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
     return {
-      lat: geom.lat[i] + t * (geom.lat[i + 1] - geom.lat[i]),
-      lon: geom.lon[i] + t * (geom.lon[i + 1] - geom.lon[i])
+      lat: geom.lat[i2] + t * (geom.lat[i2 + 1] - geom.lat[i2]),
+      lon: geom.lon[i2] + t * (geom.lon[i2 + 1] - geom.lon[i2])
     };
   }
   function turnAngleAtS(geom, s2) {
@@ -6080,10 +6121,10 @@ out geom;`;
     const bOut = bearing(p1, p2);
     return (bOut - bIn + 540) % 360 - 180;
   }
-  function segmentBearing(geom, i) {
+  function segmentBearing(geom, i2) {
     return bearing(
-      { lat: geom.lat[i], lon: geom.lon[i] },
-      { lat: geom.lat[i + 1], lon: geom.lon[i + 1] }
+      { lat: geom.lat[i2], lon: geom.lon[i2] },
+      { lat: geom.lat[i2 + 1], lon: geom.lon[i2 + 1] }
     );
   }
   function projectOnSegment(gps, lat0, lon0, lat1, lon1) {
@@ -6141,21 +6182,21 @@ out geom;`;
     const prevS = ctx?.prevS ?? 0;
     const skipJump = ctx?.skipJumpPenalty ?? false;
     const dt = ctx?.dt ?? 1;
-    for (let i = i0; i < geom.n - 1; i++) {
-      if (geom.s[i] > sMax) break;
+    for (let i2 = i0; i2 < geom.n - 1; i2++) {
+      if (geom.s[i2] > sMax) break;
       const proj = projectOnSegment(
         gps,
-        geom.lat[i],
-        geom.lon[i],
-        geom.lat[i + 1],
-        geom.lon[i + 1]
+        geom.lat[i2],
+        geom.lon[i2],
+        geom.lat[i2 + 1],
+        geom.lon[i2 + 1]
       );
-      const segLen = geom.s[i + 1] - geom.s[i];
-      const s2 = geom.s[i] + proj.t * segLen;
+      const segLen = geom.s[i2 + 1] - geom.s[i2];
+      const s2 = geom.s[i2] + proj.t * segLen;
       if (s2 < sMin - 1 || s2 > sMax + 1) continue;
-      const tangent = segmentBearing(geom, i);
+      const tangent = segmentBearing(geom, i2);
       const dot = headingDot(tangent, gpsHdg);
-      if (requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, i)) continue;
+      if (requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, i2)) continue;
       if (requireDir && dot < SNAP_MIN_DOT) continue;
       if (requireDir && spd > 1 && ctx?.prevPos) {
         const moveBrg = bearing(ctx.prevPos, gps);
@@ -6170,7 +6211,7 @@ out geom;`;
       if (!best || score < best.score) {
         best = {
           s: s2,
-          segIdx: i,
+          segIdx: i2,
           lat: proj.lat,
           lon: proj.lon,
           lateral: proj.lateral,
@@ -6384,18 +6425,18 @@ out geom;`;
     let vx = 0;
     let vz = 0;
     const i0 = findSegAtS(geom, s2);
-    for (let i = i0; i < geom.n - 1 && geom.s[i] < end; i++) {
+    for (let i2 = i0; i2 < geom.n - 1 && geom.s[i2] < end; i2++) {
       const r = Math.PI / 180;
-      const midLat = (geom.lat[i] + geom.lat[i + 1]) / 2;
-      const dLon = (geom.lon[i + 1] - geom.lon[i]) * Math.cos(midLat * r) * 111320;
-      const dLat = (geom.lat[i + 1] - geom.lat[i]) * 110540;
+      const midLat = (geom.lat[i2] + geom.lat[i2 + 1]) / 2;
+      const dLon = (geom.lon[i2 + 1] - geom.lon[i2]) * Math.cos(midLat * r) * 111320;
+      const dLat = (geom.lat[i2 + 1] - geom.lat[i2]) * 110540;
       const len = Math.hypot(dLon, dLat) || 1;
       vx += dLon / len;
       vz += dLat / len;
     }
     if (vx === 0 && vz === 0) {
-      const i = findSegAtS(geom, s2);
-      return segmentBearing(geom, Math.min(i, geom.n - 2));
+      const i2 = findSegAtS(geom, s2);
+      return segmentBearing(geom, Math.min(i2, geom.n - 2));
     }
     return (Math.atan2(vx, vz) * 180 / Math.PI + 360) % 360;
   }
@@ -6454,11 +6495,11 @@ out geom;`;
   }
   function interpolateElevAtS(geom, s2) {
     if (!geom.elevReady || !geom.elev.length) return 0;
-    const i = findSegAtS(geom, s2);
-    const s0 = geom.s[i];
-    const s1 = geom.s[i + 1];
+    const i2 = findSegAtS(geom, s2);
+    const s0 = geom.s[i2];
+    const s1 = geom.s[i2 + 1];
     const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
-    return geom.elev[i] + t * (geom.elev[i + 1] - geom.elev[i]);
+    return geom.elev[i2] + t * (geom.elev[i2 + 1] - geom.elev[i2]);
   }
   function meterScale(lat) {
     const r = Math.PI / 180;
@@ -6546,11 +6587,11 @@ out geom;`;
     const sections = [];
     let prevNx = null;
     let prevNz = null;
-    for (let i = 0; i < samples.length; i++) {
-      const cur = samples[i];
+    for (let i2 = 0; i2 < samples.length; i2++) {
+      const cur = samples[i2];
       if (cur.z < 0.12) continue;
-      const i0 = Math.max(0, i - 1);
-      const i1 = Math.min(samples.length - 1, i + 1);
+      const i0 = Math.max(0, i2 - 1);
+      const i1 = Math.min(samples.length - 1, i2 + 1);
       let tx2 = samples[i1].x - samples[i0].x;
       let tz = samples[i1].z - samples[i0].z;
       const tl = Math.hypot(tx2, tz);
@@ -6602,18 +6643,18 @@ out geom;`;
   function projectPointToRoute(geom, point) {
     if (!geom || geom.n < 2 || !point) return null;
     let best = null;
-    for (let i = 0; i < geom.n - 1; i++) {
+    for (let i2 = 0; i2 < geom.n - 1; i2++) {
       const proj = projectOnSegment(
         point,
-        geom.lat[i],
-        geom.lon[i],
-        geom.lat[i + 1],
-        geom.lon[i + 1]
+        geom.lat[i2],
+        geom.lon[i2],
+        geom.lat[i2 + 1],
+        geom.lon[i2 + 1]
       );
-      const segLen = geom.s[i + 1] - geom.s[i];
-      const s2 = geom.s[i] + proj.t * segLen;
+      const segLen = geom.s[i2 + 1] - geom.s[i2];
+      const s2 = geom.s[i2] + proj.t * segLen;
       if (!best || proj.lateral < best.lateral) {
-        best = { s: s2, segIdx: i, lateral: proj.lateral, lat: proj.lat, lon: proj.lon };
+        best = { s: s2, segIdx: i2, lateral: proj.lateral, lat: proj.lat, lon: proj.lon };
       }
     }
     return best;
@@ -6629,9 +6670,9 @@ out geom;`;
     out.push([p0.lat, p0.lon]);
     const i0 = findSegAtS(geom, a);
     const i1 = findSegAtS(geom, b);
-    for (let i = i0 + 1; i <= i1 && i < geom.n; i++) {
-      if (geom.s[i] > a + 0.01 && geom.s[i] < b - 0.01) {
-        out.push([geom.lat[i], geom.lon[i]]);
+    for (let i2 = i0 + 1; i2 <= i1 && i2 < geom.n; i2++) {
+      if (geom.s[i2] > a + 0.01 && geom.s[i2] < b - 0.01) {
+        out.push([geom.lat[i2], geom.lon[i2]]);
       }
     }
     const p1 = interpolateAtS(geom, b);
@@ -6644,7 +6685,7 @@ out geom;`;
   function geometryToLatLngs(geom) {
     if (!geom) return [];
     const out = [];
-    for (let i = 0; i < geom.n; i++) out.push([geom.lat[i], geom.lon[i]]);
+    for (let i2 = 0; i2 < geom.n; i2++) out.push([geom.lat[i2], geom.lon[i2]]);
     return out;
   }
   function remainingDistanceS(geom, snap) {
@@ -6691,11 +6732,11 @@ out geom;`;
         "use strict";
         var version = "1.9.4";
         function extend(dest) {
-          var i, j, len, src;
+          var i2, j, len, src;
           for (j = 1, len = arguments.length; j < len; j++) {
             src = arguments[j];
-            for (i in src) {
-              dest[i] = src[i];
+            for (i2 in src) {
+              dest[i2] = src[i2];
             }
           }
           return dest;
@@ -6745,9 +6786,9 @@ out geom;`;
           };
           return wrapperFn;
         }
-        function wrapNum(x, range, includeMax) {
+        function wrapNum(x2, range, includeMax) {
           var max = range[1], min = range[0], d = max - min;
-          return x === max && includeMax ? x : ((x - min) % d + d) % d + min;
+          return x2 === max && includeMax ? x2 : ((x2 - min) % d + d) % d + min;
         }
         function falseFn() {
           return false;
@@ -6769,15 +6810,15 @@ out geom;`;
           if (!Object.prototype.hasOwnProperty.call(obj, "options")) {
             obj.options = obj.options ? create$2(obj.options) : {};
           }
-          for (var i in options) {
-            obj.options[i] = options[i];
+          for (var i2 in options) {
+            obj.options[i2] = options[i2];
           }
           return obj.options;
         }
         function getParamString(obj, existingUrl, uppercase) {
           var params = [];
-          for (var i in obj) {
-            params.push(encodeURIComponent(uppercase ? i.toUpperCase() : i) + "=" + encodeURIComponent(obj[i]));
+          for (var i2 in obj) {
+            params.push(encodeURIComponent(uppercase ? i2.toUpperCase() : i2) + "=" + encodeURIComponent(obj[i2]));
           }
           return (!existingUrl || existingUrl.indexOf("?") === -1 ? "?" : "&") + params.join("&");
         }
@@ -6797,9 +6838,9 @@ out geom;`;
           return Object.prototype.toString.call(obj) === "[object Array]";
         };
         function indexOf(array, el) {
-          for (var i = 0; i < array.length; i++) {
-            if (array[i] === el) {
-              return i;
+          for (var i2 = 0; i2 < array.length; i2++) {
+            if (array[i2] === el) {
+              return i2;
             }
           }
           return -1;
@@ -6870,9 +6911,9 @@ out geom;`;
           var proto = create$2(parentProto);
           proto.constructor = NewClass;
           NewClass.prototype = proto;
-          for (var i in this) {
-            if (Object.prototype.hasOwnProperty.call(this, i) && i !== "prototype" && i !== "__super__") {
-              NewClass[i] = this[i];
+          for (var i2 in this) {
+            if (Object.prototype.hasOwnProperty.call(this, i2) && i2 !== "prototype" && i2 !== "__super__") {
+              NewClass[i2] = this[i2];
             }
           }
           if (props.statics) {
@@ -6898,8 +6939,8 @@ out geom;`;
               parentProto.callInitHooks.call(this);
             }
             this._initHooksCalled = true;
-            for (var i2 = 0, len = proto._initHooks.length; i2 < len; i2++) {
-              proto._initHooks[i2].call(this);
+            for (var i3 = 0, len = proto._initHooks.length; i3 < len; i3++) {
+              proto._initHooks[i3].call(this);
             }
           };
           return NewClass;
@@ -6931,8 +6972,8 @@ out geom;`;
             return;
           }
           includes = isArray(includes) ? includes : [includes];
-          for (var i = 0; i < includes.length; i++) {
-            if (includes[i] === L.Mixin.Events) {
+          for (var i2 = 0; i2 < includes.length; i2++) {
+            if (includes[i2] === L.Mixin.Events) {
               console.warn("Deprecated include of L.Mixin.Events: this property will be removed in future releases, please inherit from L.Evented instead.", new Error().stack);
             }
           }
@@ -6952,8 +6993,8 @@ out geom;`;
               }
             } else {
               types = splitWords(types);
-              for (var i = 0, len = types.length; i < len; i++) {
-                this._on(types[i], fn, context);
+              for (var i2 = 0, len = types.length; i2 < len; i2++) {
+                this._on(types[i2], fn, context);
               }
             }
             return this;
@@ -6979,11 +7020,11 @@ out geom;`;
             } else {
               types = splitWords(types);
               var removeAll = arguments.length === 1;
-              for (var i = 0, len = types.length; i < len; i++) {
+              for (var i2 = 0, len = types.length; i2 < len; i2++) {
                 if (removeAll) {
-                  this._off(types[i]);
+                  this._off(types[i2]);
                 } else {
-                  this._off(types[i], fn, context);
+                  this._off(types[i2], fn, context);
                 }
               }
             }
@@ -7010,7 +7051,7 @@ out geom;`;
             this._events[type].push(newListener);
           },
           _off: function(type, fn, context) {
-            var listeners, i, len;
+            var listeners, i2, len;
             if (!this._events) {
               return;
             }
@@ -7020,8 +7061,8 @@ out geom;`;
             }
             if (arguments.length === 1) {
               if (this._firingCount) {
-                for (i = 0, len = listeners.length; i < len; i++) {
-                  listeners[i].fn = falseFn;
+                for (i2 = 0, len = listeners.length; i2 < len; i2++) {
+                  listeners[i2].fn = falseFn;
                 }
               }
               delete this._events[type];
@@ -7058,8 +7099,8 @@ out geom;`;
               var listeners = this._events[type];
               if (listeners) {
                 this._firingCount = this._firingCount + 1 || 1;
-                for (var i = 0, len = listeners.length; i < len; i++) {
-                  var l = listeners[i];
+                for (var i2 = 0, len = listeners.length; i2 < len; i2++) {
+                  var l = listeners[i2];
                   var fn = l.fn;
                   if (l.once) {
                     this.off(type, fn, l.ctx);
@@ -7115,9 +7156,9 @@ out geom;`;
             if (context === this) {
               context = void 0;
             }
-            for (var i = 0, len = listeners.length; i < len; i++) {
-              if (listeners[i].fn === fn && listeners[i].ctx === context) {
-                return i;
+            for (var i2 = 0, len = listeners.length; i2 < len; i2++) {
+              if (listeners[i2].fn === fn && listeners[i2].ctx === context) {
+                return i2;
               }
             }
             return false;
@@ -7131,8 +7172,8 @@ out geom;`;
               }
             } else {
               types = splitWords(types);
-              for (var i = 0, len = types.length; i < len; i++) {
-                this._on(types[i], fn, context, true);
+              for (var i2 = 0, len = types.length; i2 < len; i2++) {
+                this._on(types[i2], fn, context, true);
               }
             }
             return this;
@@ -7167,8 +7208,8 @@ out geom;`;
         Events.fireEvent = Events.fire;
         Events.hasEventListeners = Events.listens;
         var Evented = Class.extend(Events);
-        function Point(x, y, round) {
-          this.x = round ? Math.round(x) : x;
+        function Point(x2, y, round) {
+          this.x = round ? Math.round(x2) : x2;
           this.y = round ? Math.round(y) : y;
         }
         var trunc = Math.trunc || function(v) {
@@ -7278,8 +7319,8 @@ out geom;`;
           // Returns the cartesian distance between the current and the given points.
           distanceTo: function(point) {
             point = toPoint(point);
-            var x = point.x - this.x, y = point.y - this.y;
-            return Math.sqrt(x * x + y * y);
+            var x2 = point.x - this.x, y = point.y - this.y;
+            return Math.sqrt(x2 * x2 + y * y);
           },
           // @method equals(otherPoint: Point): Boolean
           // Returns `true` if the given point has the same coordinates.
@@ -7299,28 +7340,28 @@ out geom;`;
             return "Point(" + formatNum(this.x) + ", " + formatNum(this.y) + ")";
           }
         };
-        function toPoint(x, y, round) {
-          if (x instanceof Point) {
-            return x;
+        function toPoint(x2, y, round) {
+          if (x2 instanceof Point) {
+            return x2;
           }
-          if (isArray(x)) {
-            return new Point(x[0], x[1]);
+          if (isArray(x2)) {
+            return new Point(x2[0], x2[1]);
           }
-          if (x === void 0 || x === null) {
-            return x;
+          if (x2 === void 0 || x2 === null) {
+            return x2;
           }
-          if (typeof x === "object" && "x" in x && "y" in x) {
-            return new Point(x.x, x.y);
+          if (typeof x2 === "object" && "x" in x2 && "y" in x2) {
+            return new Point(x2.x, x2.y);
           }
-          return new Point(x, y, round);
+          return new Point(x2, y, round);
         }
         function Bounds(a, b) {
           if (!a) {
             return;
           }
           var points = b ? [a, b] : a;
-          for (var i = 0, len = points.length; i < len; i++) {
-            this.extend(points[i]);
+          for (var i2 = 0, len = points.length; i2 < len; i2++) {
+            this.extend(points[i2]);
           }
         }
         Bounds.prototype = {
@@ -7462,8 +7503,8 @@ out geom;`;
             return;
           }
           var latlngs = corner2 ? [corner1, corner2] : corner1;
-          for (var i = 0, len = latlngs.length; i < len; i++) {
-            this.extend(latlngs[i]);
+          for (var i2 = 0, len = latlngs.length; i2 < len; i2++) {
+            this.extend(latlngs[i2]);
           }
         }
         LatLngBounds.prototype = {
@@ -7868,9 +7909,9 @@ out geom;`;
           return document.createElementNS("http://www.w3.org/2000/svg", name);
         }
         function pointsToPath(rings, closed) {
-          var str = "", i, j, len, len2, points, p;
-          for (i = 0, len = rings.length; i < len; i++) {
-            points = rings[i];
+          var str = "", i2, j, len, len2, points, p;
+          for (i2 = 0, len = rings.length; i2 < len; i2++) {
+            points = rings[i2];
             for (j = 0, len2 = points.length; j < len2; j++) {
               p = points[j];
               str += (j ? "L" : "M") + p.x + " " + p.y;
@@ -8047,8 +8088,8 @@ out geom;`;
             return;
           }
           e.touches = [];
-          for (var i in _pointers) {
-            e.touches.push(_pointers[i]);
+          for (var i2 in _pointers) {
+            e.touches.push(_pointers[i2]);
           }
           e.changedTouches = [e];
           handler(e);
@@ -8060,10 +8101,10 @@ out geom;`;
           _handlePointer(handler, e);
         }
         function makeDblclick(event) {
-          var newEvent = {}, prop, i;
-          for (i in event) {
-            prop = event[i];
-            newEvent[i] = prop && prop.bind ? prop.bind(event) : prop;
+          var newEvent = {}, prop, i2;
+          for (i2 in event) {
+            prop = event[i2];
+            newEvent[i2] = prop && prop.bind ? prop.bind(event) : prop;
           }
           event = newEvent;
           newEvent.type = "dblclick";
@@ -8172,8 +8213,8 @@ out geom;`;
         function addClass(el, name) {
           if (el.classList !== void 0) {
             var classes = splitWords(name);
-            for (var i = 0, len = classes.length; i < len; i++) {
-              el.classList.add(classes[i]);
+            for (var i2 = 0, len = classes.length; i2 < len; i2++) {
+              el.classList.add(classes[i2]);
             }
           } else if (!hasClass(el, name)) {
             var className = getClass(el);
@@ -8226,9 +8267,9 @@ out geom;`;
         }
         function testProp(props) {
           var style2 = document.documentElement.style;
-          for (var i = 0; i < props.length; i++) {
-            if (props[i] in style2) {
-              return props[i];
+          for (var i2 = 0; i2 < props.length; i2++) {
+            if (props[i2] in style2) {
+              return props[i2];
             }
           }
           return false;
@@ -8362,8 +8403,8 @@ out geom;`;
             }
           } else {
             types = splitWords(types);
-            for (var i = 0, len = types.length; i < len; i++) {
-              addOne(obj, types[i], fn, context);
+            for (var i2 = 0, len = types.length; i2 < len; i2++) {
+              addOne(obj, types[i2], fn, context);
             }
           }
           return this;
@@ -8384,8 +8425,8 @@ out geom;`;
                 return indexOf(types, type2) !== -1;
               });
             } else {
-              for (var i = 0, len = types.length; i < len; i++) {
-                removeOne(obj, types[i], fn, context);
+              for (var i2 = 0, len = types.length; i2 < len; i2++) {
+                removeOne(obj, types[i2], fn, context);
               }
             }
           }
@@ -8547,7 +8588,7 @@ out geom;`;
             while (related && related !== el) {
               related = related.parentNode;
             }
-          } catch (err) {
+          } catch (err2) {
             return false;
           }
           return related !== el;
@@ -8867,8 +8908,8 @@ out geom;`;
             targetCenter = toLatLng(targetCenter);
             targetZoom = targetZoom === void 0 ? startZoom : targetZoom;
             var w0 = Math.max(size.x, size.y), w1 = w0 * this.getZoomScale(startZoom, targetZoom), u1 = to.distanceTo(from) || 1, rho = 1.42, rho2 = rho * rho;
-            function r(i) {
-              var s1 = i ? -1 : 1, s2 = i ? w1 : w0, t1 = w1 * w1 - w0 * w0 + s1 * rho2 * rho2 * u1 * u1, b1 = 2 * s2 * rho2 * u1, b = t1 / b1, sq = Math.sqrt(b * b + 1) - b;
+            function r(i2) {
+              var s1 = i2 ? -1 : 1, s2 = i2 ? w1 : w0, t1 = w1 * w1 - w0 * w0 + s1 * rho2 * rho2 * u1 * u1, b1 = 2 * s2 * rho2 * u1, b = t1 / b1, sq = Math.sqrt(b * b + 1) - b;
               var log2 = sq < 1e-9 ? -18 : Math.log(sq);
               return log2;
             }
@@ -9118,9 +9159,9 @@ out geom;`;
               bounds,
               timestamp: pos.timestamp
             };
-            for (var i in pos.coords) {
-              if (typeof pos.coords[i] === "number") {
-                data[i] = pos.coords[i];
+            for (var i2 in pos.coords) {
+              if (typeof pos.coords[i2] === "number") {
+                data[i2] = pos.coords[i2];
               }
             }
             this.fire("locationfound", data);
@@ -9173,12 +9214,12 @@ out geom;`;
             if (this._loaded) {
               this.fire("unload");
             }
-            var i;
-            for (i in this._layers) {
-              this._layers[i].remove();
+            var i2;
+            for (i2 in this._layers) {
+              this._layers[i2].remove();
             }
-            for (i in this._panes) {
-              remove(this._panes[i]);
+            for (i2 in this._panes) {
+              remove(this._panes[i2]);
             }
             this._layers = [];
             this._panes = [];
@@ -9612,9 +9653,9 @@ out geom;`;
             var targets = this._findEventTargets(e, type);
             if (canvasTargets) {
               var filtered = [];
-              for (var i = 0; i < canvasTargets.length; i++) {
-                if (canvasTargets[i].listens(type, true)) {
-                  filtered.push(canvasTargets[i]);
+              for (var i2 = 0; i2 < canvasTargets.length; i2++) {
+                if (canvasTargets[i2].listens(type, true)) {
+                  filtered.push(canvasTargets[i2]);
                 }
               }
               targets = filtered.concat(targets);
@@ -9635,9 +9676,9 @@ out geom;`;
               data.layerPoint = this.containerPointToLayerPoint(data.containerPoint);
               data.latlng = isMarker ? target.getLatLng() : this.layerPointToLatLng(data.layerPoint);
             }
-            for (i = 0; i < targets.length; i++) {
-              targets[i].fire(type, data, true);
-              if (data.originalEvent._stopped || targets[i].options.bubblingMouseEvents === false && indexOf(this._mouseEvents, type) !== -1) {
+            for (i2 = 0; i2 < targets.length; i2++) {
+              targets[i2].fire(type, data, true);
+              if (data.originalEvent._stopped || targets[i2].options.bubblingMouseEvents === false && indexOf(this._mouseEvents, type) !== -1) {
                 return;
               }
             }
@@ -9647,8 +9688,8 @@ out geom;`;
             return obj.dragging && obj.dragging.moved() || this.boxZoom && this.boxZoom.moved();
           },
           _clearHandlers: function() {
-            for (var i = 0, len = this._handlers.length; i < len; i++) {
-              this._handlers[i].disable();
+            for (var i2 = 0, len = this._handlers.length; i2 < len; i2++) {
+              this._handlers[i2].disable();
             }
           },
           // @section Other Methods
@@ -9943,8 +9984,8 @@ out geom;`;
             createCorner("bottom", "right");
           },
           _clearControlPos: function() {
-            for (var i in this._controlCorners) {
-              remove(this._controlCorners[i]);
+            for (var i2 in this._controlCorners) {
+              remove(this._controlCorners[i2]);
             }
             remove(this._controlContainer);
             delete this._controlCorners;
@@ -9986,11 +10027,11 @@ out geom;`;
             this._lastZIndex = 0;
             this._handlingClick = false;
             this._preventClick = false;
-            for (var i in baseLayers) {
-              this._addLayer(baseLayers[i], i);
+            for (var i2 in baseLayers) {
+              this._addLayer(baseLayers[i2], i2);
             }
-            for (i in overlays) {
-              this._addLayer(overlays[i], i, true);
+            for (i2 in overlays) {
+              this._addLayer(overlays[i2], i2, true);
             }
           },
           onAdd: function(map) {
@@ -9998,8 +10039,8 @@ out geom;`;
             this._update();
             this._map = map;
             map.on("zoomend", this._checkDisabledLayers, this);
-            for (var i = 0; i < this._layers.length; i++) {
-              this._layers[i].layer.on("add remove", this._onLayerChange, this);
+            for (var i2 = 0; i2 < this._layers.length; i2++) {
+              this._layers[i2].layer.on("add remove", this._onLayerChange, this);
             }
             return this._container;
           },
@@ -10009,8 +10050,8 @@ out geom;`;
           },
           onRemove: function() {
             this._map.off("zoomend", this._checkDisabledLayers, this);
-            for (var i = 0; i < this._layers.length; i++) {
-              this._layers[i].layer.off("add remove", this._onLayerChange, this);
+            for (var i2 = 0; i2 < this._layers.length; i2++) {
+              this._layers[i2].layer.off("add remove", this._onLayerChange, this);
             }
           },
           // @method addBaseLayer(layer: Layer, name: String): this
@@ -10094,9 +10135,9 @@ out geom;`;
             container.appendChild(section);
           },
           _getLayer: function(id) {
-            for (var i = 0; i < this._layers.length; i++) {
-              if (this._layers[i] && stamp(this._layers[i].layer) === id) {
-                return this._layers[i];
+            for (var i2 = 0; i2 < this._layers.length; i2++) {
+              if (this._layers[i2] && stamp(this._layers[i2].layer) === id) {
+                return this._layers[i2];
               }
             }
           },
@@ -10127,9 +10168,9 @@ out geom;`;
             empty(this._baseLayersList);
             empty(this._overlaysList);
             this._layerControlInputs = [];
-            var baseLayersPresent, overlaysPresent, i, obj, baseLayersCount = 0;
-            for (i = 0; i < this._layers.length; i++) {
-              obj = this._layers[i];
+            var baseLayersPresent, overlaysPresent, i2, obj, baseLayersCount = 0;
+            for (i2 = 0; i2 < this._layers.length; i2++) {
+              obj = this._layers[i2];
               this._addItem(obj);
               overlaysPresent = overlaysPresent || obj.overlay;
               baseLayersPresent = baseLayersPresent || !obj.overlay;
@@ -10190,8 +10231,8 @@ out geom;`;
             var inputs = this._layerControlInputs, input, layer;
             var addedLayers = [], removedLayers = [];
             this._handlingClick = true;
-            for (var i = inputs.length - 1; i >= 0; i--) {
-              input = inputs[i];
+            for (var i2 = inputs.length - 1; i2 >= 0; i2--) {
+              input = inputs[i2];
               layer = this._getLayer(input.layerId).layer;
               if (input.checked) {
                 addedLayers.push(layer);
@@ -10199,14 +10240,14 @@ out geom;`;
                 removedLayers.push(layer);
               }
             }
-            for (i = 0; i < removedLayers.length; i++) {
-              if (this._map.hasLayer(removedLayers[i])) {
-                this._map.removeLayer(removedLayers[i]);
+            for (i2 = 0; i2 < removedLayers.length; i2++) {
+              if (this._map.hasLayer(removedLayers[i2])) {
+                this._map.removeLayer(removedLayers[i2]);
               }
             }
-            for (i = 0; i < addedLayers.length; i++) {
-              if (!this._map.hasLayer(addedLayers[i])) {
-                this._map.addLayer(addedLayers[i]);
+            for (i2 = 0; i2 < addedLayers.length; i2++) {
+              if (!this._map.hasLayer(addedLayers[i2])) {
+                this._map.addLayer(addedLayers[i2]);
               }
             }
             this._handlingClick = false;
@@ -10214,8 +10255,8 @@ out geom;`;
           },
           _checkDisabledLayers: function() {
             var inputs = this._layerControlInputs, input, layer, zoom2 = this._map.getZoom();
-            for (var i = inputs.length - 1; i >= 0; i--) {
-              input = inputs[i];
+            for (var i2 = inputs.length - 1; i2 >= 0; i2--) {
+              input = inputs[i2];
               layer = this._getLayer(input.layerId).layer;
               input.disabled = layer.options.minZoom !== void 0 && zoom2 < layer.options.minZoom || layer.options.maxZoom !== void 0 && zoom2 > layer.options.maxZoom;
             }
@@ -10440,9 +10481,9 @@ out geom;`;
             map.attributionControl = this;
             this._container = create$1("div", "leaflet-control-attribution");
             disableClickPropagation(this._container);
-            for (var i in map._layers) {
-              if (map._layers[i].getAttribution) {
-                this.addAttribution(map._layers[i].getAttribution());
+            for (var i2 in map._layers) {
+              if (map._layers[i2].getAttribution) {
+                this.addAttribution(map._layers[i2].getAttribution());
               }
             }
             this._update();
@@ -10497,9 +10538,9 @@ out geom;`;
               return;
             }
             var attribs = [];
-            for (var i in this._attributions) {
-              if (this._attributions[i]) {
-                attribs.push(i);
+            for (var i2 in this._attributions) {
+              if (this._attributions[i2]) {
+                attribs.push(i2);
               }
             }
             var prefixAndAttribs = [];
@@ -10714,15 +10755,15 @@ out geom;`;
           }
         });
         function clipPolygon(points, bounds, round) {
-          var clippedPoints, edges = [1, 4, 2, 8], i, j, k, a, b, len, edge2, p;
-          for (i = 0, len = points.length; i < len; i++) {
-            points[i]._code = _getBitCode(points[i], bounds);
+          var clippedPoints, edges = [1, 4, 2, 8], i2, j, k, a, b, len, edge2, p;
+          for (i2 = 0, len = points.length; i2 < len; i2++) {
+            points[i2]._code = _getBitCode(points[i2], bounds);
           }
           for (k = 0; k < 4; k++) {
             edge2 = edges[k];
             clippedPoints = [];
-            for (i = 0, len = points.length, j = len - 1; i < len; j = i++) {
-              a = points[i];
+            for (i2 = 0, len = points.length, j = len - 1; i2 < len; j = i2++) {
+              a = points[i2];
               b = points[j];
               if (!(a._code & edge2)) {
                 if (b._code & edge2) {
@@ -10742,7 +10783,7 @@ out geom;`;
           return points;
         }
         function polygonCenter(latlngs, crs) {
-          var i, j, p1, p2, f2, area, x, y, center;
+          var i2, j, p1, p2, f2, area, x2, y, center;
           if (!latlngs || latlngs.length === 0) {
             throw new Error("latlngs not passed");
           }
@@ -10758,23 +10799,23 @@ out geom;`;
           }
           var len = latlngs.length;
           var points = [];
-          for (i = 0; i < len; i++) {
-            var latlng = toLatLng(latlngs[i]);
+          for (i2 = 0; i2 < len; i2++) {
+            var latlng = toLatLng(latlngs[i2]);
             points.push(crs.project(toLatLng([latlng.lat - centroidLatLng.lat, latlng.lng - centroidLatLng.lng])));
           }
-          area = x = y = 0;
-          for (i = 0, j = len - 1; i < len; j = i++) {
-            p1 = points[i];
+          area = x2 = y = 0;
+          for (i2 = 0, j = len - 1; i2 < len; j = i2++) {
+            p1 = points[i2];
             p2 = points[j];
             f2 = p1.y * p2.x - p2.y * p1.x;
-            x += (p1.x + p2.x) * f2;
+            x2 += (p1.x + p2.x) * f2;
             y += (p1.y + p2.y) * f2;
             area += f2 * 3;
           }
           if (area === 0) {
             center = points[0];
           } else {
-            center = [x / area, y / area];
+            center = [x2 / area, y / area];
           }
           var latlngCenter = crs.unproject(toPoint(center));
           return toLatLng([latlngCenter.lat + centroidLatLng.lat, latlngCenter.lng + centroidLatLng.lng]);
@@ -10783,8 +10824,8 @@ out geom;`;
           var latSum = 0;
           var lngSum = 0;
           var len = 0;
-          for (var i = 0; i < coords.length; i++) {
-            var latlng = toLatLng(coords[i]);
+          for (var i2 = 0; i2 < coords.length; i2++) {
+            var latlng = toLatLng(coords[i2]);
             latSum += latlng.lat;
             lngSum += latlng.lng;
             len++;
@@ -10816,20 +10857,20 @@ out geom;`;
           var len = points.length, ArrayConstructor = typeof Uint8Array !== "undefined" ? Uint8Array : Array, markers = new ArrayConstructor(len);
           markers[0] = markers[len - 1] = 1;
           _simplifyDPStep(points, markers, sqTolerance, 0, len - 1);
-          var i, newPoints = [];
-          for (i = 0; i < len; i++) {
-            if (markers[i]) {
-              newPoints.push(points[i]);
+          var i2, newPoints = [];
+          for (i2 = 0; i2 < len; i2++) {
+            if (markers[i2]) {
+              newPoints.push(points[i2]);
             }
           }
           return newPoints;
         }
         function _simplifyDPStep(points, markers, sqTolerance, first, last) {
-          var maxSqDist = 0, index2, i, sqDist;
-          for (i = first + 1; i <= last - 1; i++) {
-            sqDist = _sqClosestPointOnSegment(points[i], points[first], points[last], true);
+          var maxSqDist = 0, index2, i2, sqDist;
+          for (i2 = first + 1; i2 <= last - 1; i2++) {
+            sqDist = _sqClosestPointOnSegment(points[i2], points[first], points[last], true);
             if (sqDist > maxSqDist) {
-              index2 = i;
+              index2 = i2;
               maxSqDist = sqDist;
             }
           }
@@ -10841,10 +10882,10 @@ out geom;`;
         }
         function _reducePoints(points, sqTolerance) {
           var reducedPoints = [points[0]];
-          for (var i = 1, prev = 0, len = points.length; i < len; i++) {
-            if (_sqDist(points[i], points[prev]) > sqTolerance) {
-              reducedPoints.push(points[i]);
-              prev = i;
+          for (var i2 = 1, prev = 0, len = points.length; i2 < len; i2++) {
+            if (_sqDist(points[i2], points[prev]) > sqTolerance) {
+              reducedPoints.push(points[i2]);
+              prev = i2;
             }
           }
           if (prev < len - 1) {
@@ -10876,21 +10917,21 @@ out geom;`;
           }
         }
         function _getEdgeIntersection(a, b, code, bounds, round) {
-          var dx = b.x - a.x, dy = b.y - a.y, min = bounds.min, max = bounds.max, x, y;
+          var dx = b.x - a.x, dy = b.y - a.y, min = bounds.min, max = bounds.max, x2, y;
           if (code & 8) {
-            x = a.x + dx * (max.y - a.y) / dy;
+            x2 = a.x + dx * (max.y - a.y) / dy;
             y = max.y;
           } else if (code & 4) {
-            x = a.x + dx * (min.y - a.y) / dy;
+            x2 = a.x + dx * (min.y - a.y) / dy;
             y = min.y;
           } else if (code & 2) {
-            x = max.x;
+            x2 = max.x;
             y = a.y + dy * (max.x - a.x) / dx;
           } else if (code & 1) {
-            x = min.x;
+            x2 = min.x;
             y = a.y + dy * (min.x - a.x) / dx;
           }
-          return new Point(x, y, round);
+          return new Point(x2, y, round);
         }
         function _getBitCode(p, bounds) {
           var code = 0;
@@ -10911,20 +10952,20 @@ out geom;`;
           return dx * dx + dy * dy;
         }
         function _sqClosestPointOnSegment(p, p1, p2, sqDist) {
-          var x = p1.x, y = p1.y, dx = p2.x - x, dy = p2.y - y, dot = dx * dx + dy * dy, t;
+          var x2 = p1.x, y = p1.y, dx = p2.x - x2, dy = p2.y - y, dot = dx * dx + dy * dy, t;
           if (dot > 0) {
-            t = ((p.x - x) * dx + (p.y - y) * dy) / dot;
+            t = ((p.x - x2) * dx + (p.y - y) * dy) / dot;
             if (t > 1) {
-              x = p2.x;
+              x2 = p2.x;
               y = p2.y;
             } else if (t > 0) {
-              x += dx * t;
+              x2 += dx * t;
               y += dy * t;
             }
           }
-          dx = p.x - x;
+          dx = p.x - x2;
           dy = p.y - y;
-          return sqDist ? dx * dx + dy * dy : new Point(x, y);
+          return sqDist ? dx * dx + dy * dy : new Point(x2, y);
         }
         function isFlat(latlngs) {
           return !isArray(latlngs[0]) || typeof latlngs[0][0] !== "object" && typeof latlngs[0][0] !== "undefined";
@@ -10934,7 +10975,7 @@ out geom;`;
           return isFlat(latlngs);
         }
         function polylineCenter(latlngs, crs) {
-          var i, halfDist, segDist, dist, p1, p2, ratio, center;
+          var i2, halfDist, segDist, dist, p1, p2, ratio, center;
           if (!latlngs || latlngs.length === 0) {
             throw new Error("latlngs not passed");
           }
@@ -10950,19 +10991,19 @@ out geom;`;
           }
           var len = latlngs.length;
           var points = [];
-          for (i = 0; i < len; i++) {
-            var latlng = toLatLng(latlngs[i]);
+          for (i2 = 0; i2 < len; i2++) {
+            var latlng = toLatLng(latlngs[i2]);
             points.push(crs.project(toLatLng([latlng.lat - centroidLatLng.lat, latlng.lng - centroidLatLng.lng])));
           }
-          for (i = 0, halfDist = 0; i < len - 1; i++) {
-            halfDist += points[i].distanceTo(points[i + 1]) / 2;
+          for (i2 = 0, halfDist = 0; i2 < len - 1; i2++) {
+            halfDist += points[i2].distanceTo(points[i2 + 1]) / 2;
           }
           if (halfDist === 0) {
             center = points[0];
           } else {
-            for (i = 0, dist = 0; i < len - 1; i++) {
-              p1 = points[i];
-              p2 = points[i + 1];
+            for (i2 = 0, dist = 0; i2 < len - 1; i2++) {
+              p1 = points[i2];
+              p2 = points[i2 + 1];
               segDist = p1.distanceTo(p2);
               dist += segDist;
               if (dist > halfDist) {
@@ -11012,7 +11053,7 @@ out geom;`;
           },
           unproject: function(point) {
             var d = 180 / Math.PI, r = this.R, tmp = this.R_MINOR / r, e = Math.sqrt(1 - tmp * tmp), ts = Math.exp(-point.y / r), phi = Math.PI / 2 - 2 * Math.atan(ts);
-            for (var i = 0, dphi = 0.1, con; i < 15 && Math.abs(dphi) > 1e-7; i++) {
+            for (var i2 = 0, dphi = 0.1, con; i2 < 15 && Math.abs(dphi) > 1e-7; i2++) {
               con = e * Math.sin(phi);
               con = Math.pow((1 - con) / (1 + con), e / 2);
               dphi = Math.PI / 2 - 2 * Math.atan(ts * con) - phi;
@@ -11187,15 +11228,15 @@ out geom;`;
            * ```
            */
           eachLayer: function(method, context) {
-            for (var i in this._layers) {
-              method.call(context, this._layers[i]);
+            for (var i2 in this._layers) {
+              method.call(context, this._layers[i2]);
             }
             return this;
           },
           _addLayers: function(layers2) {
             layers2 = layers2 ? isArray(layers2) ? layers2 : [layers2] : [];
-            for (var i = 0, len = layers2.length; i < len; i++) {
-              this.addLayer(layers2[i]);
+            for (var i2 = 0, len = layers2.length; i2 < len; i2++) {
+              this.addLayer(layers2[i2]);
             }
           },
           _addZoomLimit: function(layer) {
@@ -11213,8 +11254,8 @@ out geom;`;
           },
           _updateZoomLevels: function() {
             var minZoom = Infinity, maxZoom = -Infinity, oldZoomSpan = this._getZoomSpan();
-            for (var i in this._zoomBoundLayers) {
-              var options = this._zoomBoundLayers[i].options;
+            for (var i2 in this._zoomBoundLayers) {
+              var options = this._zoomBoundLayers[i2].options;
               minZoom = options.minZoom === void 0 ? minZoom : Math.min(minZoom, options.minZoom);
               maxZoom = options.maxZoom === void 0 ? maxZoom : Math.max(maxZoom, options.maxZoom);
             }
@@ -11235,10 +11276,10 @@ out geom;`;
           initialize: function(layers2, options) {
             setOptions(this, options);
             this._layers = {};
-            var i, len;
+            var i2, len;
             if (layers2) {
-              for (i = 0, len = layers2.length; i < len; i++) {
-                this.addLayer(layers2[i]);
+              for (i2 = 0, len = layers2.length; i2 < len; i2++) {
+                this.addLayer(layers2[i2]);
               }
             }
           },
@@ -11284,9 +11325,9 @@ out geom;`;
           // additional parameters. Has no effect if the layers contained do not
           // implement `methodName`.
           invoke: function(methodName) {
-            var args = Array.prototype.slice.call(arguments, 1), i, layer;
-            for (i in this._layers) {
-              layer = this._layers[i];
+            var args = Array.prototype.slice.call(arguments, 1), i2, layer;
+            for (i2 in this._layers) {
+              layer = this._layers[i2];
               if (layer[methodName]) {
                 layer[methodName].apply(layer, args);
               }
@@ -11307,8 +11348,8 @@ out geom;`;
           // });
           // ```
           eachLayer: function(method, context) {
-            for (var i in this._layers) {
-              method.call(context, this._layers[i]);
+            for (var i2 in this._layers) {
+              method.call(context, this._layers[i2]);
             }
             return this;
           },
@@ -12180,9 +12221,9 @@ out geom;`;
             var minDistance = Infinity, minPoint = null, closest = _sqClosestPointOnSegment, p1, p2;
             for (var j = 0, jLen = this._parts.length; j < jLen; j++) {
               var points = this._parts[j];
-              for (var i = 1, len = points.length; i < len; i++) {
-                p1 = points[i - 1];
-                p2 = points[i];
+              for (var i2 = 1, len = points.length; i2 < len; i2++) {
+                p1 = points[i2 - 1];
+                p2 = points[i2];
                 var sqDist = closest(p, p1, p2, true);
                 if (sqDist < minDistance) {
                   minDistance = sqDist;
@@ -12229,12 +12270,12 @@ out geom;`;
           // recursively convert latlngs input into actual LatLng instances; calculate bounds along the way
           _convertLatLngs: function(latlngs) {
             var result = [], flat = isFlat(latlngs);
-            for (var i = 0, len = latlngs.length; i < len; i++) {
+            for (var i2 = 0, len = latlngs.length; i2 < len; i2++) {
               if (flat) {
-                result[i] = toLatLng(latlngs[i]);
-                this._bounds.extend(result[i]);
+                result[i2] = toLatLng(latlngs[i2]);
+                this._bounds.extend(result[i2]);
               } else {
-                result[i] = this._convertLatLngs(latlngs[i]);
+                result[i2] = this._convertLatLngs(latlngs[i2]);
               }
             }
             return result;
@@ -12260,17 +12301,17 @@ out geom;`;
           },
           // recursively turns latlngs into a set of rings with projected coordinates
           _projectLatlngs: function(latlngs, result, projectedBounds) {
-            var flat = latlngs[0] instanceof LatLng, len = latlngs.length, i, ring;
+            var flat = latlngs[0] instanceof LatLng, len = latlngs.length, i2, ring;
             if (flat) {
               ring = [];
-              for (i = 0; i < len; i++) {
-                ring[i] = this._map.latLngToLayerPoint(latlngs[i]);
-                projectedBounds.extend(ring[i]);
+              for (i2 = 0; i2 < len; i2++) {
+                ring[i2] = this._map.latLngToLayerPoint(latlngs[i2]);
+                projectedBounds.extend(ring[i2]);
               }
               result.push(ring);
             } else {
-              for (i = 0; i < len; i++) {
-                this._projectLatlngs(latlngs[i], result, projectedBounds);
+              for (i2 = 0; i2 < len; i2++) {
+                this._projectLatlngs(latlngs[i2], result, projectedBounds);
               }
             }
           },
@@ -12285,9 +12326,9 @@ out geom;`;
               this._parts = this._rings;
               return;
             }
-            var parts = this._parts, i, j, k, len, len2, segment, points;
-            for (i = 0, k = 0, len = this._rings.length; i < len; i++) {
-              points = this._rings[i];
+            var parts = this._parts, i2, j, k, len, len2, segment, points;
+            for (i2 = 0, k = 0, len = this._rings.length; i2 < len; i2++) {
+              points = this._rings[i2];
               for (j = 0, len2 = points.length; j < len2 - 1; j++) {
                 segment = clipSegment(points[j], points[j + 1], bounds, j, true);
                 if (!segment) {
@@ -12305,8 +12346,8 @@ out geom;`;
           // simplify each clipped part of the polyline for performance
           _simplifyPoints: function() {
             var parts = this._parts, tolerance = this.options.smoothFactor;
-            for (var i = 0, len = parts.length; i < len; i++) {
-              parts[i] = simplify(parts[i], tolerance);
+            for (var i2 = 0, len = parts.length; i2 < len; i2++) {
+              parts[i2] = simplify(parts[i2], tolerance);
             }
           },
           _update: function() {
@@ -12322,12 +12363,12 @@ out geom;`;
           },
           // Needed by the `Canvas` renderer for interactivity
           _containsPoint: function(p, closed) {
-            var i, j, k, len, len2, part, w = this._clickTolerance();
+            var i2, j, k, len, len2, part, w = this._clickTolerance();
             if (!this._pxBounds || !this._pxBounds.contains(p)) {
               return false;
             }
-            for (i = 0, len = this._parts.length; i < len; i++) {
-              part = this._parts[i];
+            for (i2 = 0, len = this._parts.length; i2 < len; i2++) {
+              part = this._parts[i2];
               for (j = 0, len2 = part.length, k = len2 - 1; j < len2; k = j++) {
                 if (!closed && j === 0) {
                   continue;
@@ -12386,8 +12427,8 @@ out geom;`;
               this._parts = this._rings;
               return;
             }
-            for (var i = 0, len = this._rings.length, clipped; i < len; i++) {
-              clipped = clipPolygon(this._rings[i], bounds, true);
+            for (var i2 = 0, len = this._rings.length, clipped; i2 < len; i2++) {
+              clipped = clipPolygon(this._rings[i2], bounds, true);
               if (clipped.length) {
                 this._parts.push(clipped);
               }
@@ -12398,12 +12439,12 @@ out geom;`;
           },
           // Needed by the `Canvas` renderer for interactivity
           _containsPoint: function(p) {
-            var inside = false, part, p1, p2, i, j, k, len, len2;
+            var inside = false, part, p1, p2, i2, j, k, len, len2;
             if (!this._pxBounds || !this._pxBounds.contains(p)) {
               return false;
             }
-            for (i = 0, len = this._parts.length; i < len; i++) {
-              part = this._parts[i];
+            for (i2 = 0, len = this._parts.length; i2 < len; i2++) {
+              part = this._parts[i2];
               for (j = 0, len2 = part.length, k = len2 - 1; j < len2; k = j++) {
                 p1 = part[j];
                 p2 = part[k];
@@ -12478,10 +12519,10 @@ out geom;`;
           // @method addData( <GeoJSON> data ): this
           // Adds a GeoJSON object to the layer.
           addData: function(geojson) {
-            var features = isArray(geojson) ? geojson : geojson.features, i, len, feature;
+            var features = isArray(geojson) ? geojson : geojson.features, i2, len, feature;
             if (features) {
-              for (i = 0, len = features.length; i < len; i++) {
-                feature = features[i];
+              for (i2 = 0, len = features.length; i2 < len; i2++) {
+                feature = features[i2];
                 if (feature.geometries || feature.geometry || feature.features || feature.coordinates) {
                   this.addData(feature);
                 }
@@ -12532,7 +12573,7 @@ out geom;`;
           }
         });
         function geometryToLayer(geojson, options) {
-          var geometry = geojson.type === "Feature" ? geojson.geometry : geojson, coords = geometry ? geometry.coordinates : null, layers2 = [], pointToLayer = options && options.pointToLayer, _coordsToLatLng = options && options.coordsToLatLng || coordsToLatLng, latlng, latlngs, i, len;
+          var geometry = geojson.type === "Feature" ? geojson.geometry : geojson, coords = geometry ? geometry.coordinates : null, layers2 = [], pointToLayer = options && options.pointToLayer, _coordsToLatLng = options && options.coordsToLatLng || coordsToLatLng, latlng, latlngs, i2, len;
           if (!coords && !geometry) {
             return null;
           }
@@ -12541,8 +12582,8 @@ out geom;`;
               latlng = _coordsToLatLng(coords);
               return _pointToLayer(pointToLayer, geojson, latlng, options);
             case "MultiPoint":
-              for (i = 0, len = coords.length; i < len; i++) {
-                latlng = _coordsToLatLng(coords[i]);
+              for (i2 = 0, len = coords.length; i2 < len; i2++) {
+                latlng = _coordsToLatLng(coords[i2]);
                 layers2.push(_pointToLayer(pointToLayer, geojson, latlng, options));
               }
               return new FeatureGroup(layers2);
@@ -12555,9 +12596,9 @@ out geom;`;
               latlngs = coordsToLatLngs(coords, geometry.type === "Polygon" ? 1 : 2, _coordsToLatLng);
               return new Polygon(latlngs, options);
             case "GeometryCollection":
-              for (i = 0, len = geometry.geometries.length; i < len; i++) {
+              for (i2 = 0, len = geometry.geometries.length; i2 < len; i2++) {
                 var geoLayer = geometryToLayer({
-                  geometry: geometry.geometries[i],
+                  geometry: geometry.geometries[i2],
                   type: "Feature",
                   properties: geojson.properties
                 }, options);
@@ -12567,8 +12608,8 @@ out geom;`;
               }
               return new FeatureGroup(layers2);
             case "FeatureCollection":
-              for (i = 0, len = geometry.features.length; i < len; i++) {
-                var featureLayer = geometryToLayer(geometry.features[i], options);
+              for (i2 = 0, len = geometry.features.length; i2 < len; i2++) {
+                var featureLayer = geometryToLayer(geometry.features[i2], options);
                 if (featureLayer) {
                   layers2.push(featureLayer);
                 }
@@ -12586,8 +12627,8 @@ out geom;`;
         }
         function coordsToLatLngs(coords, levelsDeep, _coordsToLatLng) {
           var latlngs = [];
-          for (var i = 0, len = coords.length, latlng; i < len; i++) {
-            latlng = levelsDeep ? coordsToLatLngs(coords[i], levelsDeep - 1, _coordsToLatLng) : (_coordsToLatLng || coordsToLatLng)(coords[i]);
+          for (var i2 = 0, len = coords.length, latlng; i2 < len; i2++) {
+            latlng = levelsDeep ? coordsToLatLngs(coords[i2], levelsDeep - 1, _coordsToLatLng) : (_coordsToLatLng || coordsToLatLng)(coords[i2]);
             latlngs.push(latlng);
           }
           return latlngs;
@@ -12598,8 +12639,8 @@ out geom;`;
         }
         function latLngsToCoords(latlngs, levelsDeep, closed, precision) {
           var coords = [];
-          for (var i = 0, len = latlngs.length; i < len; i++) {
-            coords.push(levelsDeep ? latLngsToCoords(latlngs[i], isFlat(latlngs[i]) ? 0 : levelsDeep - 1, closed, precision) : latLngToCoords(latlngs[i], precision));
+          for (var i2 = 0, len = latlngs.length; i2 < len; i2++) {
+            coords.push(levelsDeep ? latLngsToCoords(latlngs[i2], isFlat(latlngs[i2]) ? 0 : levelsDeep - 1, closed, precision) : latLngToCoords(latlngs[i2], precision));
           }
           if (!levelsDeep && closed && coords.length > 0) {
             coords.push(coords[0].slice());
@@ -12953,9 +12994,9 @@ out geom;`;
             vid.loop = !!this.options.loop;
             vid.muted = !!this.options.muted;
             vid.playsInline = !!this.options.playsInline;
-            for (var i = 0; i < this._url.length; i++) {
+            for (var i2 = 0; i2 < this._url.length; i2++) {
               var source = create$1("source");
-              source.src = this._url[i];
+              source.src = this._url[i2];
               vid.appendChild(source);
             }
           }
@@ -14081,9 +14122,9 @@ out geom;`;
           },
           _setAutoZIndex: function(compare) {
             var layers2 = this.getPane().children, edgeZIndex = -compare(-Infinity, Infinity);
-            for (var i = 0, len = layers2.length, zIndex; i < len; i++) {
-              zIndex = layers2[i].style.zIndex;
-              if (layers2[i] !== this._container && zIndex) {
+            for (var i2 = 0, len = layers2.length, zIndex; i2 < len; i2++) {
+              zIndex = layers2[i2].style.zIndex;
+              if (layers2[i2] !== this._container && zIndex) {
                 edgeZIndex = compare(edgeZIndex, +zIndex);
               }
             }
@@ -14224,8 +14265,8 @@ out geom;`;
             this._removeAllTiles();
             this._tileZoom = void 0;
           },
-          _retainParent: function(x, y, z, minZoom) {
-            var x2 = Math.floor(x / 2), y2 = Math.floor(y / 2), z2 = z - 1, coords2 = new Point(+x2, +y2);
+          _retainParent: function(x2, y, z, minZoom) {
+            var x22 = Math.floor(x2 / 2), y2 = Math.floor(y / 2), z2 = z - 1, coords2 = new Point(+x22, +y2);
             coords2.z = +z2;
             var key = this._tileCoordsToKey(coords2), tile = this._tiles[key];
             if (tile && tile.active) {
@@ -14235,14 +14276,14 @@ out geom;`;
               tile.retain = true;
             }
             if (z2 > minZoom) {
-              return this._retainParent(x2, y2, z2, minZoom);
+              return this._retainParent(x22, y2, z2, minZoom);
             }
             return false;
           },
-          _retainChildren: function(x, y, z, maxZoom) {
-            for (var i = 2 * x; i < 2 * x + 2; i++) {
+          _retainChildren: function(x2, y, z, maxZoom) {
+            for (var i2 = 2 * x2; i2 < 2 * x2 + 2; i2++) {
               for (var j = 2 * y; j < 2 * y + 2; j++) {
-                var coords = new Point(i, j);
+                var coords = new Point(i2, j);
                 coords.z = z + 1;
                 var key = this._tileCoordsToKey(coords), tile = this._tiles[key];
                 if (tile && tile.active) {
@@ -14252,7 +14293,7 @@ out geom;`;
                   tile.retain = true;
                 }
                 if (z + 1 < maxZoom) {
-                  this._retainChildren(i, j, z + 1, maxZoom);
+                  this._retainChildren(i2, j, z + 1, maxZoom);
                 }
               }
             }
@@ -14300,8 +14341,8 @@ out geom;`;
             this._setZoomTransforms(center, zoom2);
           },
           _setZoomTransforms: function(center, zoom2) {
-            for (var i in this._levels) {
-              this._setZoomTransform(this._levels[i], center, zoom2);
+            for (var i2 in this._levels) {
+              this._setZoomTransform(this._levels[i2], center, zoom2);
             }
           },
           _setZoomTransform: function(level, center, zoom2) {
@@ -14368,8 +14409,8 @@ out geom;`;
               return;
             }
             for (var j = tileRange.min.y; j <= tileRange.max.y; j++) {
-              for (var i = tileRange.min.x; i <= tileRange.max.x; i++) {
-                var coords = new Point(i, j);
+              for (var i2 = tileRange.min.x; i2 <= tileRange.max.x; i2++) {
+                var coords = new Point(i2, j);
                 coords.z = this._tileZoom;
                 if (!this._isValidTile(coords)) {
                   continue;
@@ -14391,8 +14432,8 @@ out geom;`;
                 this.fire("loading");
               }
               var fragment = document.createDocumentFragment();
-              for (i = 0; i < queue.length; i++) {
-                this._addTile(queue[i], fragment);
+              for (i2 = 0; i2 < queue.length; i2++) {
+                this._addTile(queue[i2], fragment);
               }
               this._level.el.appendChild(fragment);
             }
@@ -14478,10 +14519,10 @@ out geom;`;
               coords
             });
           },
-          _tileReady: function(coords, err, tile) {
-            if (err) {
+          _tileReady: function(coords, err2, tile) {
+            if (err2) {
               this.fire("tileerror", {
-                error: err,
+                error: err2,
                 tile,
                 coords
               });
@@ -14500,7 +14541,7 @@ out geom;`;
               tile.active = true;
               this._pruneTiles();
             }
-            if (!err) {
+            if (!err2) {
               addClass(tile.el, "leaflet-tile-loaded");
               this.fire("tileload", {
                 tile: tile.el,
@@ -14696,17 +14737,17 @@ out geom;`;
           },
           // stops loading all tiles in the background layer
           _abortLoading: function() {
-            var i, tile;
-            for (i in this._tiles) {
-              if (this._tiles[i].coords.z !== this._tileZoom) {
-                tile = this._tiles[i].el;
+            var i2, tile;
+            for (i2 in this._tiles) {
+              if (this._tiles[i2].coords.z !== this._tileZoom) {
+                tile = this._tiles[i2].el;
                 tile.onload = falseFn;
                 tile.onerror = falseFn;
                 if (!tile.complete) {
                   tile.src = emptyImageUrl;
-                  var coords = this._tiles[i].coords;
+                  var coords = this._tiles[i2].coords;
                   remove(tile);
-                  delete this._tiles[i];
+                  delete this._tiles[i2];
                   this.fire("tileabort", {
                     tile,
                     coords
@@ -14723,11 +14764,11 @@ out geom;`;
             tile.el.setAttribute("src", emptyImageUrl);
             return GridLayer.prototype._removeTile.call(this, key);
           },
-          _tileReady: function(coords, err, tile) {
+          _tileReady: function(coords, err2, tile) {
             if (!this._map || tile && tile.getAttribute("src") === emptyImageUrl) {
               return;
             }
-            return GridLayer.prototype._tileReady.call(this, coords, err, tile);
+            return GridLayer.prototype._tileReady.call(this, coords, err2, tile);
           }
         });
         function tileLayer(url, options) {
@@ -14770,9 +14811,9 @@ out geom;`;
           initialize: function(url, options) {
             this._url = url;
             var wmsParams = extend({}, this.defaultWmsParams);
-            for (var i in options) {
-              if (!(i in this.options)) {
-                wmsParams[i] = options[i];
+            for (var i2 in options) {
+              if (!(i2 in this.options)) {
+                wmsParams[i2] = options[i2];
               }
             }
             options = setOptions(this, options);
@@ -15003,9 +15044,9 @@ out geom;`;
           },
           _updateDashArray: function(layer) {
             if (typeof layer.options.dashArray === "string") {
-              var parts = layer.options.dashArray.split(/[, ]+/), dashArray = [], dashValue, i;
-              for (i = 0; i < parts.length; i++) {
-                dashValue = Number(parts[i]);
+              var parts = layer.options.dashArray.split(/[, ]+/), dashArray = [], dashValue, i2;
+              for (i2 = 0; i2 < parts.length; i2++) {
+                dashValue = Number(parts[i2]);
                 if (isNaN(dashValue)) {
                   return;
                 }
@@ -15076,14 +15117,14 @@ out geom;`;
             if (!this._drawing) {
               return;
             }
-            var i, j, len2, p, parts = layer._parts, len = parts.length, ctx = this._ctx;
+            var i2, j, len2, p, parts = layer._parts, len = parts.length, ctx = this._ctx;
             if (!len) {
               return;
             }
             ctx.beginPath();
-            for (i = 0; i < len; i++) {
-              for (j = 0, len2 = parts[i].length; j < len2; j++) {
-                p = parts[i][j];
+            for (i2 = 0; i2 < len; i2++) {
+              for (j = 0, len2 = parts[i2].length; j < len2; j++) {
+                p = parts[i2][j];
                 ctx[j ? "lineTo" : "moveTo"](p.x, p.y);
               }
               if (closed) {
@@ -15766,7 +15807,7 @@ out geom;`;
             this._draggable._newPos = this._draggable._startPos.add(offset);
           },
           _onPreDragWrap: function() {
-            var worldWidth = this._worldWidth, halfWidth = Math.round(worldWidth / 2), dx = this._initialWorldOffset, x = this._draggable._newPos.x, newX1 = (x - halfWidth + dx) % worldWidth + halfWidth - dx, newX2 = (x + halfWidth + dx) % worldWidth - halfWidth - dx, newX = Math.abs(newX1 + dx) < Math.abs(newX2 + dx) ? newX1 : newX2;
+            var worldWidth = this._worldWidth, halfWidth = Math.round(worldWidth / 2), dx = this._initialWorldOffset, x2 = this._draggable._newPos.x, newX1 = (x2 - halfWidth + dx) % worldWidth + halfWidth - dx, newX2 = (x2 + halfWidth + dx) % worldWidth - halfWidth - dx, newX = Math.abs(newX1 + dx) < Math.abs(newX2 + dx) ? newX1 : newX2;
             this._draggable._absPos = this._draggable._newPos.clone();
             this._draggable._newPos.x = newX;
           },
@@ -15862,27 +15903,27 @@ out geom;`;
             this._map.fire("blur");
           },
           _setPanDelta: function(panDelta) {
-            var keys = this._panKeys = {}, codes = this.keyCodes, i, len;
-            for (i = 0, len = codes.left.length; i < len; i++) {
-              keys[codes.left[i]] = [-1 * panDelta, 0];
+            var keys = this._panKeys = {}, codes = this.keyCodes, i2, len;
+            for (i2 = 0, len = codes.left.length; i2 < len; i2++) {
+              keys[codes.left[i2]] = [-1 * panDelta, 0];
             }
-            for (i = 0, len = codes.right.length; i < len; i++) {
-              keys[codes.right[i]] = [panDelta, 0];
+            for (i2 = 0, len = codes.right.length; i2 < len; i2++) {
+              keys[codes.right[i2]] = [panDelta, 0];
             }
-            for (i = 0, len = codes.down.length; i < len; i++) {
-              keys[codes.down[i]] = [0, panDelta];
+            for (i2 = 0, len = codes.down.length; i2 < len; i2++) {
+              keys[codes.down[i2]] = [0, panDelta];
             }
-            for (i = 0, len = codes.up.length; i < len; i++) {
-              keys[codes.up[i]] = [0, -1 * panDelta];
+            for (i2 = 0, len = codes.up.length; i2 < len; i2++) {
+              keys[codes.up[i2]] = [0, -1 * panDelta];
             }
           },
           _setZoomDelta: function(zoomDelta) {
-            var keys = this._zoomKeys = {}, codes = this.keyCodes, i, len;
-            for (i = 0, len = codes.zoomIn.length; i < len; i++) {
-              keys[codes.zoomIn[i]] = zoomDelta;
+            var keys = this._zoomKeys = {}, codes = this.keyCodes, i2, len;
+            for (i2 = 0, len = codes.zoomIn.length; i2 < len; i2++) {
+              keys[codes.zoomIn[i2]] = zoomDelta;
             }
-            for (i = 0, len = codes.zoomOut.length; i < len; i++) {
-              keys[codes.zoomOut[i]] = -zoomDelta;
+            for (i2 = 0, len = codes.zoomOut.length; i2 < len; i2++) {
+              keys[codes.zoomOut[i2]] = -zoomDelta;
             }
           },
           _addHooks: function() {
@@ -16908,9 +16949,9 @@ out geom;`;
       else gpsStreak++;
     }
     if (gpsStreak < 2) return { ok: false, fail_detail: "gps_streak_low" };
-    for (let i = 1; i < recent.length; i++) {
-      const a = recent[i - 1];
-      const b = recent[i];
+    for (let i2 = 1; i2 < recent.length; i2++) {
+      const a = recent[i2 - 1];
+      const b = recent[i2];
       const d = haversine(a, b);
       const accA = a.acc != null ? a.acc : accLimit;
       const accB = b.acc != null ? b.acc : accLimit;
@@ -17056,7 +17097,7 @@ out geom;`;
   }
   function parseRtextWaypoints(rtext) {
     const parts = String(rtext || "").split("~").map((p) => p.trim()).filter(Boolean);
-    const waypoints = parts.map((part, i) => parseRtextPoint(part, i, parts.length)).filter(Boolean);
+    const waypoints = parts.map((part, i2) => parseRtextPoint(part, i2, parts.length)).filter(Boolean);
     if (waypoints.length < 2) {
       throw new Error("\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A \u0432 rtext (\u043D\u0443\u0436\u043D\u043E \u22652 \u0441 \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u0430\u043C\u0438 lat,lon)");
     }
@@ -17116,10 +17157,10 @@ out geom;`;
       YANDEX_URL_RE = /https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/(?:maps|navi)[^\s"'<>]*/gi;
       SHORT_RE = /^https?:\/\/(?:[a-z0-9-]+\.)?(?:yandex\.(?:ru|com|by|kz|uz)|ya\.ru)\/maps\/-/i;
       RTEXT_RE = /[?&#]rtext=([^&#]+)/i;
-      DEFAULT_LABELS = (i, total) => {
-        if (i === 0) return "\u0421\u0442\u0430\u0440\u0442";
-        if (i === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
-        return `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
+      DEFAULT_LABELS = (i2, total) => {
+        if (i2 === 0) return "\u0421\u0442\u0430\u0440\u0442";
+        if (i2 === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
+        return `\u0422\u043E\u0447\u043A\u0430 ${i2 + 1}`;
       };
     }
   });
@@ -17393,8 +17434,8 @@ out geom;`;
   function cycleViewMode() {
     if (isBearingMode()) return;
     onUserViewModeChange();
-    const i = VIEW_ORDER.indexOf(S.viewMode || "hud");
-    setViewMode(VIEW_ORDER[(i + 1) % VIEW_ORDER.length]);
+    const i2 = VIEW_ORDER.indexOf(S.viewMode || "hud");
+    setViewMode(VIEW_ORDER[(i2 + 1) % VIEW_ORDER.length]);
   }
   function registerTap(clientX, clientY, target, preventDefault) {
     if (!document.getElementById("hud")?.classList.contains("on")) return false;
@@ -17825,17 +17866,27 @@ out geom;`;
     if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
     return simScaledDelta(now - _ctx.headingDivergeSince) >= OFF_ROUTE_HEADING_DIVERGE_MS;
   }
+  function lateralAfterReroute() {
+    const geom = S.route?.geometry;
+    const gps = S.gps;
+    if (!geom || !gps) return null;
+    return projectPointToRoute(geom, gps)?.lateral ?? null;
+  }
   function canTriggerReroute(feed, now) {
     const distNeed = confirmDistForSpeed(feed.spdMps);
     const msNeed = confirmMsForSpeed(feed.spdMps);
     const distOk = _ctx.suspectDistM >= distNeed;
     const timeOk = _ctx.confirmMs >= msNeed;
     const hdgOk = headingDiverged(feed, now);
-    const snapBad = S.snapQuality !== SnapQuality.GOOD || feed.lateral != null && feed.lateral > 80;
-    if (!snapBad) return null;
+    const lat = feed.lateral;
+    if (S.snapQuality === SnapQuality.LOST && lat != null && lat >= OFF_ROUTE_ENTER_M) {
+      if (_ctx.confirmMs >= 4e3 || _ctx.suspectDistM >= 40) return "snap_lost";
+    }
+    const offConfirmed = S.snapQuality !== SnapQuality.GOOD || lat != null && lat >= OFF_ROUTE_ENTER_M;
+    if (!offConfirmed) return null;
     if (distOk && hdgOk) return "dist_heading";
     if (distOk && timeOk && hdgOk) return "conjunct";
-    if (timeOk && hdgOk && feed.lateral > OFF_ROUTE_ENTER_M) return "time_heading";
+    if (timeOk && hdgOk && lat > OFF_ROUTE_ENTER_M) return "time_heading";
     return null;
   }
   function enterOfflineGuide(feed) {
@@ -17874,7 +17925,14 @@ out geom;`;
     recalcRoute().then((ok) => {
       _ctx.rerouteBusy = false;
       if (ok) {
-        transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, metaFromFeed(feed));
+        const latAfter = lateralAfterReroute();
+        const meta = latAfter != null ? { ...metaFromFeed(feed), lateral: latAfter } : metaFromFeed(feed);
+        if (latAfter != null && latAfter > OFF_ROUTE_EXIT_M) {
+          transition(OffRouteState.REROUTING, OffRouteState.SUSPECT, meta);
+          resetSuspectCtx();
+          return;
+        }
+        transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, meta);
         resetBackoff();
         resetSuspectCtx();
         showRerouteOk();
@@ -17906,6 +17964,11 @@ out geom;`;
   }
   function tryReturnOnRoute(feed) {
     if (feed.lateral >= OFF_ROUTE_EXIT_M) return false;
+    if (S.snapQuality === SnapQuality.LOST) return false;
+    if (S.snapQuality === SnapQuality.DEGRADED && feed.lateral >= OFF_ROUTE_EXIT_M * 0.6) return false;
+    if (feed.spdMps > OFF_ROUTE_HEADING_MIN_SPD && feed.heading != null && !isNaN(feed.heading) && feed.tangent != null && !isNaN(feed.tangent) && angleDiff(feed.heading, feed.tangent) > OFF_ROUTE_HEADING_DIVERGE_DEG) {
+      return false;
+    }
     const from = S.offRouteState;
     transition(from, OffRouteState.ON_ROUTE, metaFromFeed(feed));
     resetBackoff();
@@ -17952,6 +18015,7 @@ out geom;`;
       init_util();
       init_geo();
       init_route();
+      init_route_geometry();
       init_voice();
       init_telemetry();
       init_snap_quality();
@@ -17980,84 +18044,18 @@ out geom;`;
   });
 
   // js/low-speed-map.js
-  function canUseLowSpeedMap(waitConverge) {
-    return !!$2("hud")?.classList.contains("on") && !!S.route && !waitConverge && !isBearingMode();
-  }
-  function isNavOnRoad(ctx = {}) {
-    if (!S.route?.geometry) return false;
-    const lat = ctx.lateral;
-    if (S.offRouteState === OffRouteState.OFFLINE_GUIDE) return false;
-    if (S.offRouteState === OffRouteState.SUSPECT) return false;
-    if (S.snapQuality === SnapQuality.LOST) return false;
-    if (lat != null && lat > OFF_ROUTE_EXIT_M) return false;
-    if (S.snapQuality === SnapQuality.GOOD) return true;
-    if (S.snapQuality === SnapQuality.DEGRADED && lat != null && lat <= OFF_ROUTE_EXIT_M) return true;
-    return false;
-  }
-  function shouldEnterOffRoadMap(ctx, waitConverge) {
-    if (S.lowSpeedMap === false || !canUseLowSpeedMap(waitConverge) || _userPinned) return false;
-    if (isNavOnRoad(ctx)) {
-      _offRoadSince = 0;
-      return false;
-    }
-    const now = Date.now();
-    if (!_offRoadSince) _offRoadSince = now;
-    return now - _offRoadSince >= OFF_ROAD_MAP_ENTER_MS;
-  }
-  function shouldExitOffRoadMap(ctx) {
-    return isNavOnRoad(ctx);
-  }
-  function logAutoMap(on, ctx) {
-    if (!telemetry_default.isActive?.()) return;
-    telemetry_default.log("nav", {
-      sub: "view_auto_map",
-      on,
-      lateral: ctx.lateral != null ? Math.round(ctx.lateral) : null,
-      snap: S.snapQuality,
-      off: S.offRouteState
-    });
-  }
-  function tickLowSpeedMap(kmh, waitConverge, ctx = {}) {
-    if (S.lowSpeedMap === false) {
-      if (_autoActive) {
-        _autoActive = false;
-        _offRoadSince = 0;
-        setViewMode("hud");
-      }
-      return;
-    }
-    if (shouldEnterOffRoadMap(ctx, waitConverge)) {
-      if (S.viewMode === "hud" || _autoActive) {
-        setViewMode("map_zoom");
-        if (!_autoActive) logAutoMap(true, ctx);
-        _autoActive = true;
-      }
-    } else if (_autoActive && shouldExitOffRoadMap(ctx)) {
-      setViewMode("hud");
-      logAutoMap(false, ctx);
-      _autoActive = false;
-      _userPinned = false;
-      _offRoadSince = 0;
-    }
+  function tickLowSpeedMap(_kmh, _waitConverge, _ctx4 = {}) {
     if (S.viewMode !== "hud") tickNavMap();
   }
   function onUserViewModeChange() {
-    if (_autoActive) _userPinned = true;
-  }
-  function isAutoMapActive() {
-    return _autoActive;
   }
   function resetLowSpeedMap() {
-    _autoActive = false;
-    _userPinned = false;
-    _offRoadSince = 0;
   }
   function clampPathMinSpeedKmh(n) {
     const v = parseInt(n, 10);
     if (!Number.isFinite(v)) return DEFAULT_PATH_MIN_SPEED_KMH;
     return Math.max(0, Math.min(MAX_PATH_MIN_SPEED_KMH, v));
   }
-  var _autoActive, _userPinned, _offRoadSince;
   var init_low_speed_map = __esm({
     "js/low-speed-map.js"() {
       init_state();
@@ -18065,13 +18063,7 @@ out geom;`;
       init_nav_constants();
       init_snap_quality();
       init_offroute();
-      init_bearing_mode();
-      init_view_mode();
       init_nav_map();
-      init_telemetry();
-      _autoActive = false;
-      _userPinned = false;
-      _offRoadSince = 0;
     }
   });
 
@@ -18080,14 +18072,16 @@ out geom;`;
     const aspect = Math.max(0.2, w / Math.max(1, h));
     L2.W = 1e3;
     L2.H = Math.max(480, Math.min(2400, Math.round(L2.W / aspect)));
-    L2.roadH = L2.H;
+    const profileBand = S.showElevProfile && S.route?.geometry?.elevReady ? getElevProfileH() + PROFILE_GAP + 12 : 0;
+    L2.profileBand = profileBand;
+    L2.roadH = Math.max(240, L2.H - profileBand);
     L2.cx = L2.W / 2;
     L2.land = aspect > 1;
     L2.camFocal = L2.land ? 900 : 1300;
-    L2.camVoff = L2.H * 0.78;
+    L2.camVoff = L2.roadH * 0.78;
     L2.horizonY = L2.camVoff - L2.camFocal * Math.tan(CAM_PITCH);
   }
-  function projectGround2(x, z, elevDelta) {
+  function projectGround2(x2, z, elevDelta) {
     const pitch = getCamPitchRad();
     const cp = Math.cos(pitch);
     const sp = Math.sin(pitch);
@@ -18098,7 +18092,7 @@ out geom;`;
     const Yc = dy * cp + dz * sp - elevLift;
     const Zc = -dy * sp + dz * cp;
     if (Zc < 0.85) return null;
-    const sx = L2.cx + L2.camFocal * x / Zc;
+    const sx = L2.cx + L2.camFocal * x2 / Zc;
     const sy = L2.camVoff - L2.camFocal * Yc / Zc;
     if (sx < -L2.W * 0.4 || sx > L2.W * 1.4) return null;
     return { x: sx, y: sy };
@@ -18107,15 +18101,15 @@ out geom;`;
     return worldToCamXZ(lat, lon, snap, headingRad);
   }
   function projectWorld(lat, lon, elev, snap, headingRad) {
-    const { x, z } = worldToCamXZ(lat, lon, snap, headingRad);
-    return projectGround2(x, z, elev);
+    const { x: x2, z } = worldToCamXZ(lat, lon, snap, headingRad);
+    return projectGround2(x2, z, elev);
   }
   function triArea2(a, b, c) {
     if (!a || !b || !c) return 0;
     return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
   }
-  function projectCam(x, z, elev) {
-    return projectGround2(x, z, elev);
+  function projectCam(x2, z, elev) {
+    return projectGround2(x2, z, elev);
   }
   function buildStripMeshSvg(sections, geom, speedMps) {
     if (sections.length < 2) return { fill: "", edges: "" };
@@ -18126,9 +18120,9 @@ out geom;`;
     const pt = (p) => p.x.toFixed(1) + "," + p.y.toFixed(1);
     const edgeW = tok.pathEdgeW;
     const glowExtra = tok.glow !== "none" ? ' opacity="' + Math.max(0.1, tok.glowOpacity || 0.25) + '"' : "";
-    for (let i = sections.length - 2; i >= 0; i--) {
-      const a = sections[i];
-      const b = sections[i + 1];
+    for (let i2 = sections.length - 2; i2 >= 0; i2--) {
+      const a = sections[i2];
+      const b = sections[i2 + 1];
       if (b.cz <= a.cz + 0.05) continue;
       const aL = projectCam(a.lx, a.lz, a.elev);
       const aR = projectCam(a.rx, a.rz, a.elev);
@@ -18172,11 +18166,11 @@ out geom;`;
     const coords = S.route.coords;
     let bi = 0;
     let bd = Infinity;
-    for (let i = 0; i < coords.length; i++) {
-      const d = haversine({ lat: coords[i][0], lon: coords[i][1] }, step);
+    for (let i2 = 0; i2 < coords.length; i2++) {
+      const d = haversine({ lat: coords[i2][0], lon: coords[i2][1] }, step);
       if (d < bd) {
         bd = d;
-        bi = i;
+        bi = i2;
       }
     }
     if (bi <= 0 || bi >= coords.length - 1) return null;
@@ -18284,16 +18278,16 @@ out geom;`;
     const placed = [];
     const minSep = vb * 0.07;
     const pad = vb * 0.014;
-    for (let i = 0; i < markers.length; i++) {
-      const m = markers[i];
+    for (let i2 = 0; i2 < markers.length; i2++) {
+      const m = markers[i2];
       m.degX = null;
       m.degY = null;
       m.distX = null;
       m.distY = null;
-      const prev = i > 0 ? markers[i - 1] : null;
+      const prev = i2 > 0 ? markers[i2 - 1] : null;
       const sep = prev ? Math.hypot(m.P.x - prev.P.x, m.P.y - prev.P.y) : Infinity;
-      const wantDeg = i === 0 && !!m.deg;
-      const wantDist = i === 0 ? true : sep >= minSep;
+      const wantDeg = i2 === 0 && !!m.deg;
+      const wantDist = i2 === 0 ? true : sep >= minSep;
       if (wantDeg) {
         const sides = [m.labelSide, -m.labelSide];
         for (const side of sides) {
@@ -18320,23 +18314,23 @@ out geom;`;
       const distText = m.dist + " \u043C";
       const slots = [
         () => ({
-          x: m.P.x + m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
+          x: m.P.x + m.nx * m.arm * (1.5 + i2 * 0.25) * m.labelSide,
           y: m.P.y + m.ny * m.arm * 0.35 * m.labelSide + m.distFont * 0.15
         }),
-        () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.1 + i * 0.35) }),
+        () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.1 + i2 * 0.35) }),
         () => ({
-          x: m.P.x - m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
+          x: m.P.x - m.nx * m.arm * (1.5 + i2 * 0.25) * m.labelSide,
           y: m.P.y - m.ny * m.arm * 0.35 * m.labelSide
         }),
-        () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.6 + i * 0.4) })
+        () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.6 + i2 * 0.4) })
       ];
       for (const slot of slots) {
-        let { x, y } = slot();
-        x = clampLabelX(x, m.distFont * distText.length * 0.32, vbX, vbW);
+        let { x: x2, y } = slot();
+        x2 = clampLabelX(x2, m.distFont * distText.length * 0.32, vbX, vbW);
         y = clampLabelY(y, m.distFont, vbY, vbH);
-        const box = textBBox(x, y, m.distFont, distText);
+        const box = textBBox(x2, y, m.distFont, distText);
         if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
-          m.distX = x;
+          m.distX = x2;
           m.distY = y;
           placed.push(box);
           break;
@@ -18460,12 +18454,6 @@ out geom;`;
       return;
     }
     tickLowSpeedMap(kmh, waitConverge, pathCtx);
-    if (isAutoMapActive()) {
-      block.classList.add("hidden");
-      hud.classList.add("no-path");
-      svg.innerHTML = "";
-      return;
-    }
     block.classList.remove("hidden");
     hud.classList.remove("no-path");
     const gpsHdg = S.smoothedHeading;
@@ -18514,7 +18502,7 @@ out geom;`;
     const mesh = buildStripMeshSvg(sections, geomReady, speedMps);
     html += mesh.fill + mesh.edges;
     const tok = getThemeTokens();
-    const centerS = sections.map((sec) => ({ p: projectCam(sec.cx, sec.cz, sec.elev), s: sec.s })).filter((x) => x.p);
+    const centerS = sections.map((sec) => ({ p: projectCam(sec.cx, sec.cz, sec.elev), s: sec.s })).filter((x2) => x2.p);
     for (let ci = 0; ci < centerS.length - 1; ci++) {
       const a = centerS[ci];
       const b = centerS[ci + 1];
@@ -18544,27 +18532,27 @@ out geom;`;
       const a2 = aDeg * Math.PI / 180;
       return [Math.sin(a2), -Math.cos(a2)];
     };
-    let a = 0, x = 0, y = 0;
-    const pts = [[x, y]];
+    let a = 0, x2 = 0, y = 0;
+    const pts = [[x2, y]];
     let d = dirVec(a);
-    x += d[0] * stemLen;
+    x2 += d[0] * stemLen;
     y += d[1] * stemLen;
-    pts.push([x, y]);
+    pts.push([x2, y]);
     const N = Math.max(3, Math.round(Math.abs(turnDeg) / 5));
     const dA = turnDeg / N;
     const segLen = R * Math.abs(turnDeg) * Math.PI / 180 / N;
-    for (let i = 0; i < N; i++) {
+    for (let i2 = 0; i2 < N; i2++) {
       a += dA;
       d = dirVec(a);
-      x += d[0] * segLen;
+      x2 += d[0] * segLen;
       y += d[1] * segLen;
-      pts.push([x, y]);
+      pts.push([x2, y]);
     }
     d = dirVec(a);
-    x += d[0] * exitLen;
+    x2 += d[0] * exitLen;
     y += d[1] * exitLen;
-    pts.push([x, y]);
-    return { pts, dir: d, tip: [x, y] };
+    pts.push([x2, y]);
+    return { pts, dir: d, tip: [x2, y] };
   }
   function arrowViewBox(all, pad) {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -18615,14 +18603,14 @@ out geom;`;
     const wingB = [back[0] - perp[0] * hw, back[1] - perp[1] * hw];
     const stem = pts.slice(0, pts.length - 1).concat([back]);
     const left = [], right = [];
-    for (let i = 0; i < stem.length; i++) {
-      const p = stem[i];
+    for (let i2 = 0; i2 < stem.length; i2++) {
+      const p = stem[i2];
       let t;
-      if (i < stem.length - 1) {
-        const q = stem[i + 1];
+      if (i2 < stem.length - 1) {
+        const q = stem[i2 + 1];
         t = [q[0] - p[0], q[1] - p[1]];
-      } else if (i > 0) {
-        const q = stem[i - 1];
+      } else if (i2 > 0) {
+        const q = stem[i2 - 1];
         t = [p[0] - q[0], p[1] - q[1]];
       } else {
         t = dir;
@@ -18645,15 +18633,15 @@ out geom;`;
   }
   function offsetRibbonPoints(centerPts, halfW) {
     const left = [], right = [];
-    for (let i = 0; i < centerPts.length; i++) {
-      const p = centerPts[i];
+    for (let i2 = 0; i2 < centerPts.length; i2++) {
+      const p = centerPts[i2];
       let dx, dy;
-      if (i < centerPts.length - 1) {
-        dx = centerPts[i + 1][0] - p[0];
-        dy = centerPts[i + 1][1] - p[1];
+      if (i2 < centerPts.length - 1) {
+        dx = centerPts[i2 + 1][0] - p[0];
+        dy = centerPts[i2 + 1][1] - p[1];
       } else {
-        dx = p[0] - centerPts[i - 1][0];
-        dy = p[1] - centerPts[i - 1][1];
+        dx = p[0] - centerPts[i2 - 1][0];
+        dy = p[1] - centerPts[i2 - 1][1];
       }
       const len = Math.hypot(dx, dy) || 1;
       const nx = -dy / len, ny = dx / len;
@@ -18741,10 +18729,10 @@ out geom;`;
     if (hdg != null && !isNaN(hdg)) {
       [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
         let diff = (d[1] - hdg + 540) % 360 - 180;
-        const x = cx + diff * px;
-        if (x < 14 || x > W - 14) return;
+        const x2 = cx + diff * px;
+        if (x2 < 14 || x2 > W - 14) return;
         const near = Math.abs(diff) < 12;
-        html += '<text x="' + x.toFixed(1) + '" y="29" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="27" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
+        html += '<text x="' + x2.toFixed(1) + '" y="29" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="27" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
       });
     }
     el.setAttribute("viewBox", "0 0 " + W + " " + H);
@@ -18758,10 +18746,10 @@ out geom;`;
     if (hdg != null && !isNaN(hdg)) {
       [["N", 0], ["E", 90], ["S", 180], ["W", 270]].forEach((d) => {
         const a2 = (d[1] - hdg) * Math.PI / 180;
-        const x = cx + Math.sin(a2) * r;
+        const x2 = cx + Math.sin(a2) * r;
         const y = cy - Math.cos(a2) * r;
         const near = Math.abs((d[1] - hdg + 540) % 360 - 180) < 18;
-        html += '<text x="' + x.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="' + fs + '" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
+        html += '<text x="' + x2.toFixed(1) + '" y="' + (y + 8).toFixed(1) + '" text-anchor="middle" font-family="' + tok.fontLabel + ',sans-serif" font-size="' + fs + '" font-weight="900" fill="' + (near ? tok.accent : tok.fg) + '">' + d[0] + "</text>";
       });
       const a = -hdg * Math.PI / 180;
       html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + Math.sin(a) * (r - 10)).toFixed(1) + '" y2="' + (cy - Math.cos(a) * (r - 10)).toFixed(1) + '" stroke="' + tok.accent + '" stroke-width="' + (chopper ? 4 : 3) + '"/>';
@@ -19373,8 +19361,8 @@ out geom;`;
         if (typeof reloadAllOpts === "function") reloadAllOpts();
         logSettingsEvent("settings_import", {});
         alert("\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0438\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u044B");
-      } catch (err) {
-        alert("\u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043C\u043F\u043E\u0440\u0442\u0430: " + (err.message || err));
+      } catch (err2) {
+        alert("\u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043C\u043F\u043E\u0440\u0442\u0430: " + (err2.message || err2));
       }
     });
     $2("btn-settings-reset")?.addEventListener("click", () => {
@@ -19422,7 +19410,6 @@ out geom;`;
       setCheck("opt-path-chevrons", o.showPathChevrons !== false);
       setCheck("opt-chevron-labels", o.pathChevronLabels !== false);
       setVal("opt-chevron-max", o.pathChevronMax != null ? o.pathChevronMax : DEFAULT_PATH_CHEVRON_MAX);
-      setCheck("opt-low-speed-map", o.lowSpeedMap !== false);
       if (o.pathMinSpeedKmh != null) S.pathMinSpeedKmh = clampPathMinSpeedKmh(o.pathMinSpeedKmh);
       setCheck("opt-heading", o.showCompass);
       setCheck("opt-cams", o.cams);
@@ -19440,6 +19427,7 @@ out geom;`;
       setCheck("opt-roundabout-schema", o.roundaboutSchema !== false);
       if (typeof o.roundaboutSchema === "boolean") S.roundaboutSchema = o.roundaboutSchema;
       setVal("opt-cam-speed-tol", o.camSpeedTol != null ? o.camSpeedTol : DEFAULT_CAM_SPEED_TOL);
+      S.lowSpeedMap = false;
     } catch (e) {
     }
   }
@@ -19452,7 +19440,6 @@ out geom;`;
         showPathChevrons: S.showPathChevrons !== false,
         pathChevronLabels: S.pathChevronLabels !== false,
         pathChevronMax: S.pathChevronMax,
-        lowSpeedMap: S.lowSpeedMap !== false,
         pathMinSpeedKmh: clampPathMinSpeedKmh(S.pathMinSpeedKmh),
         showCompass: !!S.showCompass,
         cams: !!S.cams,
@@ -19696,7 +19683,7 @@ out geom;`;
       if (!raw) return [];
       const arr = JSON.parse(raw);
       if (!Array.isArray(arr)) return [];
-      return arr.map((f2, i) => normalizeFav(f2, i)).filter(Boolean);
+      return arr.map((f2, i2) => normalizeFav(f2, i2)).filter(Boolean);
     } catch (e) {
       return [];
     }
@@ -19770,7 +19757,7 @@ out geom;`;
     box.querySelectorAll(".fav-del").forEach((b) => {
       b.addEventListener("click", () => {
         const id = b.getAttribute("data-del");
-        const fav = loadFavs().find((x) => x.id === id);
+        const fav = loadFavs().find((x2) => x2.id === id);
         if (fav && confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \xAB" + fav.name + "\xBB?")) deleteFav(id);
       });
     });
@@ -19816,7 +19803,7 @@ out geom;`;
     row.querySelectorAll("button").forEach((b) => {
       b.addEventListener("click", () => {
         favModalState.emoji = b.getAttribute("data-e");
-        row.querySelectorAll("button").forEach((x) => x.classList.remove("sel"));
+        row.querySelectorAll("button").forEach((x2) => x2.classList.remove("sel"));
         b.classList.add("sel");
       });
     });
@@ -19908,7 +19895,7 @@ out geom;`;
         try {
           const imported = JSON.parse(reader.result);
           if (!Array.isArray(imported)) throw new Error("format");
-          const valid = imported.map((f2, i) => normalizeFav(f2, i)).filter(Boolean);
+          const valid = imported.map((f2, i2) => normalizeFav(f2, i2)).filter(Boolean);
           if (!valid.length) {
             alert("\u0412 \u0444\u0430\u0439\u043B\u0435 \u043D\u0435\u0442 \u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0445 \u043C\u0435\u0441\u0442");
             return;
@@ -19926,8 +19913,8 @@ out geom;`;
           saveFavs(cur);
           refreshFavLists();
           alert("\u0418\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043E \u043C\u0435\u0441\u0442: " + added + (valid.length - added ? " (\u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u0434\u0443\u0431\u043B\u0435\u0439: " + (valid.length - added) + ")" : ""));
-        } catch (err) {
-          alert("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u0444\u0430\u0439\u043B: " + err.message);
+        } catch (err2) {
+          alert("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u0444\u0430\u0439\u043B: " + err2.message);
         }
       };
       reader.readAsText(file);
@@ -20003,11 +19990,11 @@ out geom;`;
           document.addEventListener("fullscreenchange", this.handleVisibilityChange);
         }
         async allowSleep() {
-          var _a;
+          var _a2;
           if (!this._isSupported) {
             this.throwUnsupportedError();
           }
-          (_a = this.wakeLock) === null || _a === void 0 ? void 0 : _a.release();
+          (_a2 = this.wakeLock) === null || _a2 === void 0 ? void 0 : _a2.release();
           this.wakeLock = null;
           document.removeEventListener("visibilitychange", this.handleVisibilityChange);
           document.removeEventListener("fullscreenchange", this.handleVisibilityChange);
@@ -20131,10 +20118,10 @@ out geom;`;
   // js/trip-model.js
   function parseRtext(rtext) {
     if (!rtext?.trim()) return [];
-    return rtext.split("~").map((part, i) => {
+    return rtext.split("~").map((part, i2) => {
       const c = part.trim().match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
       if (!c) return null;
-      return { lat: +c[1], lon: +c[2], label: i === 0 ? "\u0421\u0442\u0430\u0440\u0442" : i === rtext.split("~").length - 1 ? "\u0424\u0438\u043D\u0438\u0448" : `\u0422\u043E\u0447\u043A\u0430 ${i + 1}` };
+      return { lat: +c[1], lon: +c[2], label: i2 === 0 ? "\u0421\u0442\u0430\u0440\u0442" : i2 === rtext.split("~").length - 1 ? "\u0424\u0438\u043D\u0438\u0448" : `\u0422\u043E\u0447\u043A\u0430 ${i2 + 1}` };
     }).filter(Boolean);
   }
   function rtextFromPoints(points) {
@@ -20147,8 +20134,8 @@ out geom;`;
       return { ok: false, km: 0, warnings: ["\u041C\u0430\u043B\u043E \u0442\u043E\u0447\u0435\u043A"] };
     }
     let km = 0;
-    for (let i = 1; i < pts.length; i++) {
-      const seg = haversine(pts[i - 1], pts[i]) / 1e3;
+    for (let i2 = 1; i2 < pts.length; i2++) {
+      const seg = haversine(pts[i2 - 1], pts[i2]) / 1e3;
       km += seg;
       if (seg > 250) warnings.push(`\u0414\u043B\u0438\u043D\u043D\u044B\u0439 \u0441\u0435\u0433\u043C\u0435\u043D\u0442 ${Math.round(seg)} \u043A\u043C`);
     }
@@ -20182,20 +20169,20 @@ out geom;`;
     };
     const chain = [start2, ...nights || [], finish];
     const baseDate = startDate ? /* @__PURE__ */ new Date(startDate + "T12:00:00") : null;
-    for (let i = 0; i < chain.length - 1; i++) {
-      const a = chain[i];
-      const b = chain[i + 1];
+    for (let i2 = 0; i2 < chain.length - 1; i2++) {
+      const a = chain[i2];
+      const b = chain[i2 + 1];
       const rtext = rtextFromPoints([a, b]);
       let dateLabel = "";
       if (baseDate && !isNaN(baseDate.getTime())) {
         const d = new Date(baseDate.getTime());
-        d.setDate(d.getDate() + i);
+        d.setDate(d.getDate() + i2);
         dateLabel = formatTripDayDate(d);
       }
       trip.days.push({
-        n: i + 1,
+        n: i2 + 1,
         date: dateLabel,
-        badge: i === chain.length - 2 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D",
+        badge: i2 === chain.length - 2 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D",
         variants: [{
           id: "calm",
           label: "\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439",
@@ -20296,10 +20283,10 @@ out geom;`;
     const lines = String(text || "").split(/\n/).map((l) => l.trim()).filter(Boolean);
     if (lines.length < 2) throw new Error("\u041D\u0443\u0436\u043D\u043E \u043C\u0438\u043D\u0438\u043C\u0443\u043C 2 \u0442\u043E\u0447\u043A\u0438 (\u043F\u043E \u043E\u0434\u043D\u043E\u0439 \u043D\u0430 \u0441\u0442\u0440\u043E\u043A\u0443)");
     const pts = [];
-    for (let i = 0; i < lines.length; i++) {
-      const fb = i === 0 ? "\u0421\u0442\u0430\u0440\u0442" : i === lines.length - 1 ? "\u0424\u0438\u043D\u0438\u0448" : `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
-      const p = parseTripPoint(lines[i], fb);
-      if (!p) throw new Error(`\u0421\u0442\u0440\u043E\u043A\u0430 ${i + 1}: \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D\u044B \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B`);
+    for (let i2 = 0; i2 < lines.length; i2++) {
+      const fb = i2 === 0 ? "\u0421\u0442\u0430\u0440\u0442" : i2 === lines.length - 1 ? "\u0424\u0438\u043D\u0438\u0448" : `\u0422\u043E\u0447\u043A\u0430 ${i2 + 1}`;
+      const p = parseTripPoint(lines[i2], fb);
+      if (!p) throw new Error(`\u0421\u0442\u0440\u043E\u043A\u0430 ${i2 + 1}: \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D\u044B \u043A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u044B`);
       pts.push(p);
     }
     return { rtext: rtextFromPoints(pts), points: pts };
@@ -20478,10 +20465,10 @@ out geom;`;
       return inner.map((c) => ({ lat: c[0], lon: c[1] }));
     }
     const out = [];
-    for (let i = 0; i < maxVia; i++) {
+    for (let i2 = 0; i2 < maxVia; i2++) {
       const idx = Math.min(
         inner.length - 1,
-        Math.round((i + 1) * inner.length / (maxVia + 1)) - 1
+        Math.round((i2 + 1) * inner.length / (maxVia + 1)) - 1
       );
       const c = inner[Math.max(0, idx)];
       out.push({ lat: c[0], lon: c[1] });
@@ -20496,9 +20483,9 @@ out geom;`;
     }
     p.set("lat_to", String(round6(to.lat)));
     p.set("lon_to", String(round6(to.lon)));
-    via.forEach((pt, i) => {
-      p.set(`lat_via_${i}`, String(round6(pt.lat)));
-      p.set(`lon_via_${i}`, String(round6(pt.lon)));
+    via.forEach((pt, i2) => {
+      p.set(`lat_via_${i2}`, String(round6(pt.lat)));
+      p.set(`lon_via_${i2}`, String(round6(pt.lon)));
     });
     return `yandexnavi://build_route_on_map?${p.toString()}`;
   }
@@ -20596,7 +20583,7 @@ ${trkpts}
     const pts = parseRtext(segment.rtext);
     if (pts.length < 2) return false;
     const ts = Date.now();
-    const track = pts.map((p, i) => ({ ...p, ts: ts + i * 6e4 }));
+    const track = pts.map((p, i2) => ({ ...p, ts: ts + i2 * 6e4 }));
     const xml = serializeGpxTrack(track, name || segment.label);
     const blob = new Blob([xml], { type: "application/gpx+xml" });
     const a = document.createElement("a");
@@ -20625,7 +20612,7 @@ ${trkpts}
   function base64UrlEncode(bytes) {
     let bin = "";
     const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-    for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+    for (let i2 = 0; i2 < arr.length; i2++) bin += String.fromCharCode(arr[i2]);
     return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
   function base64UrlDecode(str) {
@@ -20633,7 +20620,7 @@ ${trkpts}
     const b64 = str.replace(/-/g, "+").replace(/_/g, "/") + pad;
     const bin = atob(b64);
     const out = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    for (let i2 = 0; i2 < bin.length; i2++) out[i2] = bin.charCodeAt(i2);
     return out;
   }
   async function gzipBytes(text) {
@@ -20828,12 +20815,12 @@ ${trkpts}
     const all = readJson(PROGRESS_KEY);
     const cur = all[tripId] || { done: [] };
     cur.done = cur.done || [];
-    const i = cur.done.findIndex((d) => d.dayN === dayN && d.segIdx === segIdx);
-    if (i >= 0) cur.done.splice(i, 1);
+    const i2 = cur.done.findIndex((d) => d.dayN === dayN && d.segIdx === segIdx);
+    if (i2 >= 0) cur.done.splice(i2, 1);
     else cur.done.push({ dayN, segIdx, at: Date.now() });
     all[tripId] = cur;
     writeJson(PROGRESS_KEY, all);
-    return i < 0;
+    return i2 < 0;
   }
   function clearTripProgress(tripId) {
     const all = readJson(PROGRESS_KEY);
@@ -21070,9 +21057,9 @@ ${trkpts}
     if (pts.length < 2) return { verts: [], totalM: 0, totalKm: 0 };
     const verts = [{ ...pts[0], s: 0 }];
     let s2 = 0;
-    for (let i = 1; i < pts.length; i++) {
-      s2 += haversine(pts[i - 1], pts[i]);
-      verts.push({ ...pts[i], s: s2 });
+    for (let i2 = 1; i2 < pts.length; i2++) {
+      s2 += haversine(pts[i2 - 1], pts[i2]);
+      verts.push({ ...pts[i2], s: s2 });
     }
     return { verts, totalM: s2, totalKm: s2 / 1e3 };
   }
@@ -21081,9 +21068,9 @@ ${trkpts}
     if (verts.length < 2) return { routeM: 0, lateralM: Infinity };
     let bestS = 0;
     let bestLat = Infinity;
-    for (let i = 0; i < verts.length - 1; i++) {
-      const a = verts[i];
-      const b = verts[i + 1];
+    for (let i2 = 0; i2 < verts.length - 1; i2++) {
+      const a = verts[i2];
+      const b = verts[i2 + 1];
       const segLen = haversine(a, b) || 1;
       const latM = distToSegment(point, a, b);
       const r = Math.PI / 180;
@@ -21133,7 +21120,7 @@ ${trkpts}
       const candidates = stations.map((st) => {
         const proj = projectToPolyline(poly, st);
         return { st, ...proj };
-      }).filter((x) => x.lateralM <= corridorM && x.routeM > posM + 400 && x.routeM <= reachableM).sort((a, b) => b.routeM - a.routeM);
+      }).filter((x2) => x2.lateralM <= corridorM && x2.routeM > posM + 400 && x2.routeM <= reachableM).sort((a, b) => b.routeM - a.routeM);
       if (!candidates.length) {
         const fromKm = Math.round(posM / 1e3);
         const toKm = Math.round(reachableM / 1e3);
@@ -21226,7 +21213,7 @@ ${trkpts}
     return lines.join("");
   }
   function assessDayFuel(day, variantId, profile) {
-    const v = day?.variants?.find((x) => x.id === variantId) || day?.variants?.[0];
+    const v = day?.variants?.find((x2) => x2.id === variantId) || day?.variants?.[0];
     if (!v?.segments?.length) return null;
     let totalKm = 0;
     let totalLiters = 0;
@@ -21337,7 +21324,7 @@ ${trkpts}
         const { rtext, points } = parseSegmentEditorText($2("trip-seg-edit-points")?.value || "");
         const audit = auditSegment(rtext);
         const day = _ctx2.trip.days.find((d) => d.n === _ctx2.dayN);
-        const v = day?.variants?.find((x) => x.id === _ctx2.variantId) || day?.variants?.[0];
+        const v = day?.variants?.find((x2) => x2.id === _ctx2.variantId) || day?.variants?.[0];
         const seg = v?.segments?.[_ctx2.segIdx];
         if (!seg) throw new Error("\u0421\u0435\u0433\u043C\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
         seg.label = label;
@@ -21381,10 +21368,10 @@ ${trkpts}
     if (_tileLayer2) _map2.removeLayer(_tileLayer2);
     _tileLayer2 = import_leaflet2.default.tileLayer(layers.base.url, layers.base.opts).addTo(_map2);
   }
-  function markerLabel(i, total) {
-    if (i === 0) return "\u0421\u0442\u0430\u0440\u0442";
-    if (i === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
-    return `\u0422\u043E\u0447\u043A\u0430 ${i + 1}`;
+  function markerLabel(i2, total) {
+    if (i2 === 0) return "\u0421\u0442\u0430\u0440\u0442";
+    if (i2 === total - 1) return "\u0424\u0438\u043D\u0438\u0448";
+    return `\u0422\u043E\u0447\u043A\u0430 ${i2 + 1}`;
   }
   function syncPolyline() {
     const latlngs = _markers.map((m) => m.getLatLng());
@@ -21412,10 +21399,10 @@ ${trkpts}
     return m;
   }
   function pointsFromMarkers() {
-    return _markers.map((m, i) => ({
+    return _markers.map((m, i2) => ({
       lat: m.getLatLng().lat,
       lon: m.getLatLng().lng,
-      label: m._wpLabel || markerLabel(i, _markers.length)
+      label: m._wpLabel || markerLabel(i2, _markers.length)
     }));
   }
   function fitBounds() {
@@ -21440,7 +21427,7 @@ ${trkpts}
       _map2.on("click", onMapClick);
       return;
     }
-    pts.forEach((p, i) => addMarker(p.lat, p.lon, p.label || markerLabel(i, pts.length)));
+    pts.forEach((p, i2) => addMarker(p.lat, p.lon, p.label || markerLabel(i2, pts.length)));
     fitBounds();
     _map2.on("click", onMapClick);
   }
@@ -21489,7 +21476,7 @@ ${trkpts}
         const rtext = rtextFromPoints(points);
         const audit = auditSegment(rtext);
         const day = _ctx3.trip.days.find((d) => d.n === _ctx3.dayN);
-        const v = day?.variants?.find((x) => x.id === _ctx3.variantId) || day?.variants?.[0];
+        const v = day?.variants?.find((x2) => x2.id === _ctx3.variantId) || day?.variants?.[0];
         const seg = v?.segments?.[_ctx3.segIdx];
         if (!seg) throw new Error("\u0421\u0435\u0433\u043C\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
         seg.rtext = rtext;
@@ -21524,10 +21511,10 @@ ${trkpts}
     if (existing.id !== incoming.id) return null;
     const er = existing.meta?.revision ?? 0;
     const ir = incoming.meta?.revision ?? 0;
-    const et = existing.updatedAt || 0;
+    const et2 = existing.updatedAt || 0;
     const it = incoming.updatedAt || 0;
-    if (er === ir && Math.abs(et - it) < 1500) return null;
-    return { existing, incoming, localNewer: et >= it };
+    if (er === ir && Math.abs(et2 - it) < 1500) return null;
+    return { existing, incoming, localNewer: et2 >= it };
   }
   function segmentSignature(day, variantId) {
     const v = getDayVariant(day, variantId);
@@ -21547,9 +21534,9 @@ ${trkpts}
     if (ld !== rd) lines.push(`\u0427\u0438\u0441\u043B\u043E \u0434\u043D\u0435\u0439: ${ld} \u2192 ${rd}`);
     lines.push(`Revision: ${local.meta?.revision ?? 0} \u2192 ${remote.meta?.revision ?? 0}`);
     const max = Math.max(ld, rd);
-    for (let i = 0; i < max; i++) {
-      const a = local.days?.[i];
-      const b = remote.days?.[i];
+    for (let i2 = 0; i2 < max; i2++) {
+      const a = local.days?.[i2];
+      const b = remote.days?.[i2];
       if (!a && b) lines.push(`\u0414\u0435\u043D\u044C ${b.n}: \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0438\u043C\u043F\u043E\u0440\u0442\u0435`);
       else if (a && !b) lines.push(`\u0414\u0435\u043D\u044C ${a.n}: \u0442\u043E\u043B\u044C\u043A\u043E \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E`);
       else if (a && b) {
@@ -21725,10 +21712,10 @@ ${trkpts}
     let cur = { lat: startPoint.lat, lon: startPoint.lon, label: startPoint.label || "\u0421\u0435\u0439\u0447\u0430\u0441" };
     const newDays = [];
     const previewLines = [`\u0421\u0442\u0430\u0440\u0442 \u043F\u0435\u0440\u0435\u0441\u0431\u043E\u0440\u043A\u0438: ${cur.label}`, `\u0414\u043D\u0435\u0439 \u0437\u0430\u0442\u0440\u043E\u043D\u0443\u0442\u043E: ${rest.length}`];
-    for (let i = 0; i < targets.length; i++) {
-      const t = targets[i];
-      const oldDay = rest[i] || rest[rest.length - 1];
-      const dayN = fromDayN + i;
+    for (let i2 = 0; i2 < targets.length; i2++) {
+      const t = targets[i2];
+      const oldDay = rest[i2] || rest[rest.length - 1];
+      const dayN = fromDayN + i2;
       const cal = calendarDateForDay(trip, dayN);
       const rtext = rtextFromPoints([cur, t]);
       previewLines.push(`\u0414\u0435\u043D\u044C ${dayN}: ${cur.label} \u2192 ${t.label}`);
@@ -21744,7 +21731,7 @@ ${trkpts}
       newDays.push({
         n: dayN,
         date: oldDay?.date || (cal ? formatTripDayDate(cal) : ""),
-        badge: oldDay?.badge || (i === targets.length - 1 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D"),
+        badge: oldDay?.badge || (i2 === targets.length - 1 ? "\u0444\u0438\u043D\u0438\u0448" : "\u043F\u0435\u0440\u0435\u0433\u043E\u043D"),
         variants
       });
       cur = t;
@@ -22052,11 +22039,11 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       if (res) res.value = String(profile.reserveKm);
     }
   }
-  function setStatus(msg, err) {
+  function setStatus(msg, err2) {
     const el = $2("trip-status");
     if (!el) return;
     el.textContent = msg || "";
-    el.className = "status" + (err ? " err" : msg ? " ok" : "");
+    el.className = "status" + (err2 ? " err" : msg ? " ok" : "");
   }
   function dayDateLabel(trip, day) {
     if (day.date) return day.date;
@@ -22141,10 +22128,10 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       ${v?.lunch ? `<p class="trip-lunch">${escapeHtml(v.lunch)}</p>` : ""}
       ${v?.night ? `<p class="trip-night">${escapeHtml(v.night)}</p>` : ""}
       <div class="trip-segments">
-        ${segs.map((seg, i) => {
-        const done = isSegmentDone(trip.id, day.n, i);
+        ${segs.map((seg, i2) => {
+        const done = isSegmentDone(trip.id, day.n, i2);
         const active = ctx?.tripId === trip.id && ctx?.dayN === day.n && ctx?.segmentLabel === seg.label;
-        const wasLast = last?.dayN === day.n && last?.segIdx === i;
+        const wasLast = last?.dayN === day.n && last?.segIdx === i2;
         const fuel = bikeProf ? assessSegmentFuel(seg, bikeProf) : null;
         const cls = ["trip-seg", done ? "is-done" : "", active ? "is-active" : "", wasLast && !active ? "is-last" : ""].filter(Boolean).join(" ");
         return `
@@ -22154,16 +22141,16 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
             ${fuel ? `<span class="trip-seg-fuel fuel-${fuel.level}">${escapeHtml(formatFuelHint(fuel))}</span>` : ""}
             ${seg.fuelPlan ? `<div class="trip-fuel-plan">${formatFuelPlanHtml(seg.fuelPlan)}</div>` : ""}
             <div class="btnrow c3 trip-seg-actions">
-              <button type="button" class="secondary trip-osrm" data-day="${day.n}" data-seg="${i}">\u{1F5FA} OSRM</button>
-              <button type="button" class="secondary trip-yandex" data-day="${day.n}" data-seg="${i}">\u{1F9ED} \u042F\u043D\u0434\u0435\u043A\u0441</button>
-              <button type="button" class="secondary trip-gpx" data-day="${day.n}" data-seg="${i}">GPX</button>
+              <button type="button" class="secondary trip-osrm" data-day="${day.n}" data-seg="${i2}">\u{1F5FA} OSRM</button>
+              <button type="button" class="secondary trip-yandex" data-day="${day.n}" data-seg="${i2}">\u{1F9ED} \u042F\u043D\u0434\u0435\u043A\u0441</button>
+              <button type="button" class="secondary trip-gpx" data-day="${day.n}" data-seg="${i2}">GPX</button>
             </div>
             <div class="btnrow c3 trip-seg-edit-row">
-              <button type="button" class="secondary trip-edit-btn" data-day="${day.n}" data-seg="${i}">\u270E \u0422\u0435\u043A\u0441\u0442</button>
-              <button type="button" class="secondary trip-map-btn" data-day="${day.n}" data-seg="${i}">\u{1F4CD} \u041A\u0430\u0440\u0442\u0430</button>
-              ${bikeProf ? `<button type="button" class="secondary trip-fuel-btn" data-day="${day.n}" data-seg="${i}">\u26FD \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438</button>` : ""}
+              <button type="button" class="secondary trip-edit-btn" data-day="${day.n}" data-seg="${i2}">\u270E \u0422\u0435\u043A\u0441\u0442</button>
+              <button type="button" class="secondary trip-map-btn" data-day="${day.n}" data-seg="${i2}">\u{1F4CD} \u041A\u0430\u0440\u0442\u0430</button>
+              ${bikeProf ? `<button type="button" class="secondary trip-fuel-btn" data-day="${day.n}" data-seg="${i2}">\u26FD \u0417\u0430\u043F\u0440\u0430\u0432\u043A\u0438</button>` : ""}
             </div>
-            <button type="button" class="trip-done-btn" data-day="${day.n}" data-seg="${i}">${done ? "\u21A9 \u0421\u043D\u044F\u0442\u044C \xAB\u0433\u043E\u0442\u043E\u0432\u043E\xBB" : "\u2713 \u041E\u0442\u043C\u0435\u0442\u0438\u0442\u044C \u0433\u043E\u0442\u043E\u0432\u043E"}</button>
+            <button type="button" class="trip-done-btn" data-day="${day.n}" data-seg="${i2}">${done ? "\u21A9 \u0421\u043D\u044F\u0442\u044C \xAB\u0433\u043E\u0442\u043E\u0432\u043E\xBB" : "\u2713 \u041E\u0442\u043C\u0435\u0442\u0438\u0442\u044C \u0433\u043E\u0442\u043E\u0432\u043E"}</button>
           </div>`;
       }).join("")}
       </div>
@@ -22628,7 +22615,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       const file = e.target.files?.[0];
       e.target.value = "";
       if (!file) return;
-      importTripFromFile(file).catch((err) => setStatus("\u274C " + (err.message || err), true));
+      importTripFromFile(file).catch((err2) => setStatus("\u274C " + (err2.message || err2), true));
     });
     $2("btn-trip-clear")?.addEventListener("click", () => {
       S.activeTrip = null;
@@ -22804,6 +22791,782 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     }
   });
 
+  // node_modules/fflate/esm/browser.js
+  function deflateSync(data, opts) {
+    return dopt(data, opts || {}, 0, 0);
+  }
+  function strToU8(str, latin1) {
+    if (latin1) {
+      var ar_1 = new u8(str.length);
+      for (var i2 = 0; i2 < str.length; ++i2)
+        ar_1[i2] = str.charCodeAt(i2);
+      return ar_1;
+    }
+    if (te)
+      return te.encode(str);
+    var l = str.length;
+    var ar = new u8(str.length + (str.length >> 1));
+    var ai = 0;
+    var w = function(v) {
+      ar[ai++] = v;
+    };
+    for (var i2 = 0; i2 < l; ++i2) {
+      if (ai + 5 > ar.length) {
+        var n = new u8(ai + 8 + (l - i2 << 1));
+        n.set(ar);
+        ar = n;
+      }
+      var c = str.charCodeAt(i2);
+      if (c < 128 || latin1)
+        w(c);
+      else if (c < 2048)
+        w(192 | c >> 6), w(128 | c & 63);
+      else if (c > 55295 && c < 57344)
+        c = 65536 + (c & 1023 << 10) | str.charCodeAt(++i2) & 1023, w(240 | c >> 18), w(128 | c >> 12 & 63), w(128 | c >> 6 & 63), w(128 | c & 63);
+      else
+        w(224 | c >> 12), w(128 | c >> 6 & 63), w(128 | c & 63);
+    }
+    return slc(ar, 0, ai);
+  }
+  function zipSync(data, opts) {
+    if (!opts)
+      opts = {};
+    var r = {};
+    var files = [];
+    fltn(data, "", r, opts);
+    var o = 0;
+    var tot = 0;
+    for (var fn in r) {
+      var _a2 = r[fn], file = _a2[0], p = _a2[1];
+      var compression = p.level == 0 ? 0 : 8;
+      var f2 = strToU8(fn), s2 = f2.length;
+      var com = p.comment, m = com && strToU8(com), ms = m && m.length;
+      var exl = exfl(p.extra);
+      if (s2 > 65535)
+        err(11);
+      var d = compression ? deflateSync(file, p) : file, l = d.length;
+      var c = crc();
+      c.p(file);
+      files.push(mrg(p, {
+        size: file.length,
+        crc: c.d(),
+        c: d,
+        f: f2,
+        m,
+        u: s2 != fn.length || m && com.length != ms,
+        o,
+        compression
+      }));
+      o += 30 + s2 + exl + l;
+      tot += 76 + 2 * (s2 + exl) + (ms || 0) + l;
+    }
+    var out = new u8(tot + 22), oe = o, cdl = tot - o;
+    for (var i2 = 0; i2 < files.length; ++i2) {
+      var f2 = files[i2];
+      wzh(out, f2.o, f2, f2.f, f2.u, f2.c.length);
+      var badd = 30 + f2.f.length + exfl(f2.extra);
+      out.set(f2.c, f2.o + badd);
+      wzh(out, o, f2, f2.f, f2.u, f2.c.length, f2.o, f2.m), o += 16 + badd + (f2.m ? f2.m.length : 0);
+    }
+    wzf(out, o, files.length, cdl, oe);
+    return out;
+  }
+  var u8, u16, i32, fleb, fdeb, clim, freb, _a, fl, revfl, _b, fd, revfd, rev, x, i, hMap, flt, i, i, i, i, fdt, i, flm, fdm, shft, slc, ec, err, wbits, wbits16, hTree, ln, lc, clen, wfblk, wblk, deo, et, dflt, crct, crc, dopt, mrg, wbytes, fltn, te, td, tds, exfl, wzh, wzf;
+  var init_browser = __esm({
+    "node_modules/fflate/esm/browser.js"() {
+      u8 = Uint8Array;
+      u16 = Uint16Array;
+      i32 = Int32Array;
+      fleb = new u8([
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        0,
+        /* unused */
+        0,
+        0,
+        /* impossible */
+        0
+      ]);
+      fdeb = new u8([
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        4,
+        4,
+        5,
+        5,
+        6,
+        6,
+        7,
+        7,
+        8,
+        8,
+        9,
+        9,
+        10,
+        10,
+        11,
+        11,
+        12,
+        12,
+        13,
+        13,
+        /* unused */
+        0,
+        0
+      ]);
+      clim = new u8([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
+      freb = function(eb, start2) {
+        var b = new u16(31);
+        for (var i2 = 0; i2 < 31; ++i2) {
+          b[i2] = start2 += 1 << eb[i2 - 1];
+        }
+        var r = new i32(b[30]);
+        for (var i2 = 1; i2 < 30; ++i2) {
+          for (var j = b[i2]; j < b[i2 + 1]; ++j) {
+            r[j] = j - b[i2] << 5 | i2;
+          }
+        }
+        return { b, r };
+      };
+      _a = freb(fleb, 2);
+      fl = _a.b;
+      revfl = _a.r;
+      fl[28] = 258, revfl[258] = 28;
+      _b = freb(fdeb, 0);
+      fd = _b.b;
+      revfd = _b.r;
+      rev = new u16(32768);
+      for (i = 0; i < 32768; ++i) {
+        x = (i & 43690) >> 1 | (i & 21845) << 1;
+        x = (x & 52428) >> 2 | (x & 13107) << 2;
+        x = (x & 61680) >> 4 | (x & 3855) << 4;
+        rev[i] = ((x & 65280) >> 8 | (x & 255) << 8) >> 1;
+      }
+      hMap = (function(cd, mb, r) {
+        var s2 = cd.length;
+        var i2 = 0;
+        var l = new u16(mb);
+        for (; i2 < s2; ++i2) {
+          if (cd[i2])
+            ++l[cd[i2] - 1];
+        }
+        var le = new u16(mb);
+        for (i2 = 1; i2 < mb; ++i2) {
+          le[i2] = le[i2 - 1] + l[i2 - 1] << 1;
+        }
+        var co;
+        if (r) {
+          co = new u16(1 << mb);
+          var rvb = 15 - mb;
+          for (i2 = 0; i2 < s2; ++i2) {
+            if (cd[i2]) {
+              var sv = i2 << 4 | cd[i2];
+              var r_1 = mb - cd[i2];
+              var v = le[cd[i2] - 1]++ << r_1;
+              for (var m = v | (1 << r_1) - 1; v <= m; ++v) {
+                co[rev[v] >> rvb] = sv;
+              }
+            }
+          }
+        } else {
+          co = new u16(s2);
+          for (i2 = 0; i2 < s2; ++i2) {
+            if (cd[i2]) {
+              co[i2] = rev[le[cd[i2] - 1]++] >> 15 - cd[i2];
+            }
+          }
+        }
+        return co;
+      });
+      flt = new u8(288);
+      for (i = 0; i < 144; ++i)
+        flt[i] = 8;
+      for (i = 144; i < 256; ++i)
+        flt[i] = 9;
+      for (i = 256; i < 280; ++i)
+        flt[i] = 7;
+      for (i = 280; i < 288; ++i)
+        flt[i] = 8;
+      fdt = new u8(32);
+      for (i = 0; i < 32; ++i)
+        fdt[i] = 5;
+      flm = /* @__PURE__ */ hMap(flt, 9, 0);
+      fdm = /* @__PURE__ */ hMap(fdt, 5, 0);
+      shft = function(p) {
+        return (p + 7) / 8 | 0;
+      };
+      slc = function(v, s2, e) {
+        if (s2 == null || s2 < 0)
+          s2 = 0;
+        if (e == null || e > v.length)
+          e = v.length;
+        return new u8(v.subarray(s2, e));
+      };
+      ec = [
+        "unexpected EOF",
+        "invalid block type",
+        "invalid length/literal",
+        "invalid distance",
+        "stream finished",
+        "no stream handler",
+        ,
+        // determined by compression function
+        "no callback",
+        "invalid UTF-8 data",
+        "extra field too long",
+        "date not in range 1980-2099",
+        "filename too long",
+        "stream finishing",
+        "invalid zip data"
+        // determined by unknown compression method
+      ];
+      err = function(ind, msg, nt) {
+        var e = new Error(msg || ec[ind]);
+        e.code = ind;
+        if (Error.captureStackTrace)
+          Error.captureStackTrace(e, err);
+        if (!nt)
+          throw e;
+        return e;
+      };
+      wbits = function(d, p, v) {
+        v <<= p & 7;
+        var o = p / 8 | 0;
+        d[o] |= v;
+        d[o + 1] |= v >> 8;
+      };
+      wbits16 = function(d, p, v) {
+        v <<= p & 7;
+        var o = p / 8 | 0;
+        d[o] |= v;
+        d[o + 1] |= v >> 8;
+        d[o + 2] |= v >> 16;
+      };
+      hTree = function(d, mb) {
+        var t = [];
+        for (var i2 = 0; i2 < d.length; ++i2) {
+          if (d[i2])
+            t.push({ s: i2, f: d[i2] });
+        }
+        var s2 = t.length;
+        var t2 = t.slice();
+        if (!s2)
+          return { t: et, l: 0 };
+        if (s2 == 1) {
+          var v = new u8(t[0].s + 1);
+          v[t[0].s] = 1;
+          return { t: v, l: 1 };
+        }
+        t.sort(function(a, b) {
+          return a.f - b.f;
+        });
+        t.push({ s: -1, f: 25001 });
+        var l = t[0], r = t[1], i0 = 0, i1 = 1, i22 = 2;
+        t[0] = { s: -1, f: l.f + r.f, l, r };
+        while (i1 != s2 - 1) {
+          l = t[t[i0].f < t[i22].f ? i0++ : i22++];
+          r = t[i0 != i1 && t[i0].f < t[i22].f ? i0++ : i22++];
+          t[i1++] = { s: -1, f: l.f + r.f, l, r };
+        }
+        var maxSym = t2[0].s;
+        for (var i2 = 1; i2 < s2; ++i2) {
+          if (t2[i2].s > maxSym)
+            maxSym = t2[i2].s;
+        }
+        var tr = new u16(maxSym + 1);
+        var mbt = ln(t[i1 - 1], tr, 0);
+        if (mbt > mb) {
+          var i2 = 0, dt = 0;
+          var lft = mbt - mb, cst = 1 << lft;
+          t2.sort(function(a, b) {
+            return tr[b.s] - tr[a.s] || a.f - b.f;
+          });
+          for (; i2 < s2; ++i2) {
+            var i2_1 = t2[i2].s;
+            if (tr[i2_1] > mb) {
+              dt += cst - (1 << mbt - tr[i2_1]);
+              tr[i2_1] = mb;
+            } else
+              break;
+          }
+          dt >>= lft;
+          while (dt > 0) {
+            var i2_2 = t2[i2].s;
+            if (tr[i2_2] < mb)
+              dt -= 1 << mb - tr[i2_2]++ - 1;
+            else
+              ++i2;
+          }
+          for (; i2 >= 0 && dt; --i2) {
+            var i2_3 = t2[i2].s;
+            if (tr[i2_3] == mb) {
+              --tr[i2_3];
+              ++dt;
+            }
+          }
+          mbt = mb;
+        }
+        return { t: new u8(tr), l: mbt };
+      };
+      ln = function(n, l, d) {
+        return n.s == -1 ? Math.max(ln(n.l, l, d + 1), ln(n.r, l, d + 1)) : l[n.s] = d;
+      };
+      lc = function(c) {
+        var s2 = c.length;
+        while (s2 && !c[--s2])
+          ;
+        var cl = new u16(++s2);
+        var cli = 0, cln = c[0], cls = 1;
+        var w = function(v) {
+          cl[cli++] = v;
+        };
+        for (var i2 = 1; i2 <= s2; ++i2) {
+          if (c[i2] == cln && i2 != s2)
+            ++cls;
+          else {
+            if (!cln && cls > 2) {
+              for (; cls > 138; cls -= 138)
+                w(32754);
+              if (cls > 2) {
+                w(cls > 10 ? cls - 11 << 5 | 28690 : cls - 3 << 5 | 12305);
+                cls = 0;
+              }
+            } else if (cls > 3) {
+              w(cln), --cls;
+              for (; cls > 6; cls -= 6)
+                w(8304);
+              if (cls > 2)
+                w(cls - 3 << 5 | 8208), cls = 0;
+            }
+            while (cls--)
+              w(cln);
+            cls = 1;
+            cln = c[i2];
+          }
+        }
+        return { c: cl.subarray(0, cli), n: s2 };
+      };
+      clen = function(cf, cl) {
+        var l = 0;
+        for (var i2 = 0; i2 < cl.length; ++i2)
+          l += cf[i2] * cl[i2];
+        return l;
+      };
+      wfblk = function(out, pos, dat) {
+        var s2 = dat.length;
+        var o = shft(pos + 2);
+        out[o] = s2 & 255;
+        out[o + 1] = s2 >> 8;
+        out[o + 2] = out[o] ^ 255;
+        out[o + 3] = out[o + 1] ^ 255;
+        for (var i2 = 0; i2 < s2; ++i2)
+          out[o + i2 + 4] = dat[i2];
+        return (o + 4 + s2) * 8;
+      };
+      wblk = function(dat, out, final, syms, lf, df, eb, li, bs, bl, p) {
+        wbits(out, p++, final);
+        ++lf[256];
+        var _a2 = hTree(lf, 15), dlt = _a2.t, mlb = _a2.l;
+        var _b2 = hTree(df, 15), ddt = _b2.t, mdb = _b2.l;
+        var _c = lc(dlt), lclt = _c.c, nlc = _c.n;
+        var _d = lc(ddt), lcdt = _d.c, ndc = _d.n;
+        var lcfreq = new u16(19);
+        for (var i2 = 0; i2 < lclt.length; ++i2)
+          ++lcfreq[lclt[i2] & 31];
+        for (var i2 = 0; i2 < lcdt.length; ++i2)
+          ++lcfreq[lcdt[i2] & 31];
+        var _e = hTree(lcfreq, 7), lct = _e.t, mlcb = _e.l;
+        var nlcc = 19;
+        for (; nlcc > 4 && !lct[clim[nlcc - 1]]; --nlcc)
+          ;
+        var flen = bl + 5 << 3;
+        var ftlen = clen(lf, flt) + clen(df, fdt) + eb;
+        var dtlen = clen(lf, dlt) + clen(df, ddt) + eb + 14 + 3 * nlcc + clen(lcfreq, lct) + 2 * lcfreq[16] + 3 * lcfreq[17] + 7 * lcfreq[18];
+        if (bs >= 0 && flen <= ftlen && flen <= dtlen)
+          return wfblk(out, p, dat.subarray(bs, bs + bl));
+        var lm, ll, dm, dl;
+        wbits(out, p, 1 + (dtlen < ftlen)), p += 2;
+        if (dtlen < ftlen) {
+          lm = hMap(dlt, mlb, 0), ll = dlt, dm = hMap(ddt, mdb, 0), dl = ddt;
+          var llm = hMap(lct, mlcb, 0);
+          wbits(out, p, nlc - 257);
+          wbits(out, p + 5, ndc - 1);
+          wbits(out, p + 10, nlcc - 4);
+          p += 14;
+          for (var i2 = 0; i2 < nlcc; ++i2)
+            wbits(out, p + 3 * i2, lct[clim[i2]]);
+          p += 3 * nlcc;
+          var lcts = [lclt, lcdt];
+          for (var it = 0; it < 2; ++it) {
+            var clct = lcts[it];
+            for (var i2 = 0; i2 < clct.length; ++i2) {
+              var len = clct[i2] & 31;
+              wbits(out, p, llm[len]), p += lct[len];
+              if (len > 15)
+                wbits(out, p, clct[i2] >> 5 & 127), p += clct[i2] >> 12;
+            }
+          }
+        } else {
+          lm = flm, ll = flt, dm = fdm, dl = fdt;
+        }
+        for (var i2 = 0; i2 < li; ++i2) {
+          var sym = syms[i2];
+          if (sym > 255) {
+            var len = sym >> 18 & 31;
+            wbits16(out, p, lm[len + 257]), p += ll[len + 257];
+            if (len > 7)
+              wbits(out, p, sym >> 23 & 31), p += fleb[len];
+            var dst = sym & 31;
+            wbits16(out, p, dm[dst]), p += dl[dst];
+            if (dst > 3)
+              wbits16(out, p, sym >> 5 & 8191), p += fdeb[dst];
+          } else {
+            wbits16(out, p, lm[sym]), p += ll[sym];
+          }
+        }
+        wbits16(out, p, lm[256]);
+        return p + ll[256];
+      };
+      deo = /* @__PURE__ */ new i32([65540, 131080, 131088, 131104, 262176, 1048704, 1048832, 2114560, 2117632]);
+      et = /* @__PURE__ */ new u8(0);
+      dflt = function(dat, lvl, plvl, pre, post, st) {
+        var s2 = st.z || dat.length;
+        var o = new u8(pre + s2 + 5 * (1 + Math.ceil(s2 / 7e3)) + post);
+        var w = o.subarray(pre, o.length - post);
+        var lst = st.l;
+        var pos = (st.r || 0) & 7;
+        if (lvl) {
+          if (pos)
+            w[0] = st.r >> 3;
+          var opt = deo[lvl - 1];
+          var n = opt >> 13, c = opt & 8191;
+          var msk_1 = (1 << plvl) - 1;
+          var prev = st.p || new u16(32768), head = st.h || new u16(msk_1 + 1);
+          var bs1_1 = Math.ceil(plvl / 3), bs2_1 = 2 * bs1_1;
+          var hsh = function(i3) {
+            return (dat[i3] ^ dat[i3 + 1] << bs1_1 ^ dat[i3 + 2] << bs2_1) & msk_1;
+          };
+          var syms = new i32(25e3);
+          var lf = new u16(288), df = new u16(32);
+          var lc_1 = 0, eb = 0, i2 = st.i || 0, li = 0, wi = st.w || 0, bs = 0;
+          for (; i2 + 2 < s2; ++i2) {
+            var hv = hsh(i2);
+            var imod = i2 & 32767, pimod = head[hv];
+            prev[imod] = pimod;
+            head[hv] = imod;
+            if (wi <= i2) {
+              var rem = s2 - i2;
+              if ((lc_1 > 7e3 || li > 24576) && (rem > 423 || !lst)) {
+                pos = wblk(dat, w, 0, syms, lf, df, eb, li, bs, i2 - bs, pos);
+                li = lc_1 = eb = 0, bs = i2;
+                for (var j = 0; j < 286; ++j)
+                  lf[j] = 0;
+                for (var j = 0; j < 30; ++j)
+                  df[j] = 0;
+              }
+              var l = 2, d = 0, ch_1 = c, dif = imod - pimod & 32767;
+              if (rem > 2 && hv == hsh(i2 - dif)) {
+                var maxn = Math.min(n, rem) - 1;
+                var maxd = Math.min(32767, i2);
+                var ml = Math.min(258, rem);
+                while (dif <= maxd && --ch_1 && imod != pimod) {
+                  if (dat[i2 + l] == dat[i2 + l - dif]) {
+                    var nl = 0;
+                    for (; nl < ml && dat[i2 + nl] == dat[i2 + nl - dif]; ++nl)
+                      ;
+                    if (nl > l) {
+                      l = nl, d = dif;
+                      if (nl > maxn)
+                        break;
+                      var mmd = Math.min(dif, nl - 2);
+                      var md = 0;
+                      for (var j = 0; j < mmd; ++j) {
+                        var ti = i2 - dif + j & 32767;
+                        var pti = prev[ti];
+                        var cd = ti - pti & 32767;
+                        if (cd > md)
+                          md = cd, pimod = ti;
+                      }
+                    }
+                  }
+                  imod = pimod, pimod = prev[imod];
+                  dif += imod - pimod & 32767;
+                }
+              }
+              if (d) {
+                syms[li++] = 268435456 | revfl[l] << 18 | revfd[d];
+                var lin = revfl[l] & 31, din = revfd[d] & 31;
+                eb += fleb[lin] + fdeb[din];
+                ++lf[257 + lin];
+                ++df[din];
+                wi = i2 + l;
+                ++lc_1;
+              } else {
+                syms[li++] = dat[i2];
+                ++lf[dat[i2]];
+              }
+            }
+          }
+          for (i2 = Math.max(i2, wi); i2 < s2; ++i2) {
+            syms[li++] = dat[i2];
+            ++lf[dat[i2]];
+          }
+          pos = wblk(dat, w, lst, syms, lf, df, eb, li, bs, i2 - bs, pos);
+          if (!lst) {
+            st.r = pos & 7 | w[pos / 8 | 0] << 3;
+            pos -= 7;
+            st.h = head, st.p = prev, st.i = i2, st.w = wi;
+          }
+        } else {
+          for (var i2 = st.w || 0; i2 < s2 + lst; i2 += 65535) {
+            var e = i2 + 65535;
+            if (e >= s2) {
+              w[pos / 8 | 0] = lst;
+              e = s2;
+            }
+            pos = wfblk(w, pos + 1, dat.subarray(i2, e));
+          }
+          st.i = s2;
+        }
+        return slc(o, 0, pre + shft(pos) + post);
+      };
+      crct = /* @__PURE__ */ (function() {
+        var t = new Int32Array(256);
+        for (var i2 = 0; i2 < 256; ++i2) {
+          var c = i2, k = 9;
+          while (--k)
+            c = (c & 1 && -306674912) ^ c >>> 1;
+          t[i2] = c;
+        }
+        return t;
+      })();
+      crc = function() {
+        var c = -1;
+        return {
+          p: function(d) {
+            var cr = c;
+            for (var i2 = 0; i2 < d.length; ++i2)
+              cr = crct[cr & 255 ^ d[i2]] ^ cr >>> 8;
+            c = cr;
+          },
+          d: function() {
+            return ~c;
+          }
+        };
+      };
+      dopt = function(dat, opt, pre, post, st) {
+        if (!st) {
+          st = { l: 1 };
+          if (opt.dictionary) {
+            var dict = opt.dictionary.subarray(-32768);
+            var newDat = new u8(dict.length + dat.length);
+            newDat.set(dict);
+            newDat.set(dat, dict.length);
+            dat = newDat;
+            st.w = dict.length;
+          }
+        }
+        return dflt(dat, opt.level == null ? 6 : opt.level, opt.mem == null ? st.l ? Math.ceil(Math.max(8, Math.min(13, Math.log(dat.length))) * 1.5) : 20 : 12 + opt.mem, pre, post, st);
+      };
+      mrg = function(a, b) {
+        var o = {};
+        for (var k in a)
+          o[k] = a[k];
+        for (var k in b)
+          o[k] = b[k];
+        return o;
+      };
+      wbytes = function(d, b, v) {
+        for (; v; ++b)
+          d[b] = v, v >>>= 8;
+      };
+      fltn = function(d, p, t, o) {
+        for (var k in d) {
+          var val = d[k], n = p + k, op = o;
+          if (Array.isArray(val))
+            op = mrg(o, val[1]), val = val[0];
+          if (ArrayBuffer.isView(val))
+            t[n] = [val, op];
+          else {
+            t[n += "/"] = [new u8(0), op];
+            fltn(val, n, t, o);
+          }
+        }
+      };
+      te = typeof TextEncoder != "undefined" && /* @__PURE__ */ new TextEncoder();
+      td = typeof TextDecoder != "undefined" && /* @__PURE__ */ new TextDecoder();
+      tds = 0;
+      try {
+        td.decode(et, { stream: true });
+        tds = 1;
+      } catch (e) {
+      }
+      exfl = function(ex) {
+        var le = 0;
+        if (ex) {
+          for (var k in ex) {
+            var l = ex[k].length;
+            if (l > 65535)
+              err(9);
+            le += l + 4;
+          }
+        }
+        return le;
+      };
+      wzh = function(d, b, f2, fn, u2, c, ce, co) {
+        var fl2 = fn.length, ex = f2.extra, col = co && co.length;
+        var exl = exfl(ex);
+        wbytes(d, b, ce != null ? 33639248 : 67324752), b += 4;
+        if (ce != null)
+          d[b++] = 20, d[b++] = f2.os;
+        d[b] = 20, b += 2;
+        d[b++] = f2.flag << 1 | (c < 0 && 8), d[b++] = u2 && 8;
+        d[b++] = f2.compression & 255, d[b++] = f2.compression >> 8;
+        var dt = new Date(f2.mtime == null ? Date.now() : f2.mtime), y = dt.getFullYear() - 1980;
+        if (y < 0 || y > 119)
+          err(10);
+        wbytes(d, b, y << 25 | dt.getMonth() + 1 << 21 | dt.getDate() << 16 | dt.getHours() << 11 | dt.getMinutes() << 5 | dt.getSeconds() >> 1), b += 4;
+        if (c != -1) {
+          wbytes(d, b, f2.crc);
+          wbytes(d, b + 4, c < 0 ? -c - 2 : c);
+          wbytes(d, b + 8, f2.size);
+        }
+        wbytes(d, b + 12, fl2);
+        wbytes(d, b + 14, exl), b += 16;
+        if (ce != null) {
+          wbytes(d, b, col);
+          wbytes(d, b + 6, f2.attrs);
+          wbytes(d, b + 10, ce), b += 14;
+        }
+        d.set(fn, b);
+        b += fl2;
+        if (exl) {
+          for (var k in ex) {
+            var exf = ex[k], l = exf.length;
+            wbytes(d, b, +k);
+            wbytes(d, b + 2, l);
+            d.set(exf, b + 4), b += 4 + l;
+          }
+        }
+        if (col)
+          d.set(co, b), b += col;
+        return b;
+      };
+      wzf = function(o, b, c, d, e) {
+        wbytes(o, b, 101010256);
+        wbytes(o, b + 8, c);
+        wbytes(o, b + 10, c);
+        wbytes(o, b + 12, d);
+        wbytes(o, b + 16, e);
+      };
+    }
+  });
+
+  // js/telemetry-export.js
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+  function fmtLocal(ts) {
+    const d = new Date(ts || Date.now());
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + "_" + pad2(d.getHours()) + "-" + pad2(d.getMinutes());
+  }
+  function buildReadme(exports) {
+    const lines = [
+      "\u041C\u043E\u0442\u043E \u0418\u041B\u0421 \u2014 \u0442\u0435\u043B\u0435\u043C\u0435\u0442\u0440\u0438\u044F \u043F\u043E\u0435\u0437\u0434\u043E\u043A",
+      "\u0421\u0435\u0441\u0441\u0438\u0439 \u0432 \u0430\u0440\u0445\u0438\u0432\u0435: " + exports.length,
+      "",
+      "\u041A\u0430\u0436\u0434\u044B\u0439 \u0444\u0430\u0439\u043B .jsonl \u2014 \u043E\u0434\u043D\u0430 \u043F\u043E\u0435\u0437\u0434\u043A\u0430 (\u043E\u0442\u0434\u0435\u043B\u044C\u043D\u0430\u044F \u0437\u0430\u043F\u0438\u0441\u044C HUD).",
+      "\u042D\u0442\u043E \u043D\u0435 \u043E\u0434\u0438\u043D \u043E\u0431\u0449\u0438\u0439 JSON: \u0432\u043D\u0443\u0442\u0440\u0438 \u0430\u0440\u0445\u0438\u0432\u0430 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0444\u0430\u0439\u043B\u043E\u0432 \u043F\u043E \u0447\u0438\u0441\u043B\u0443 \u043F\u043E\u0435\u0437\u0434\u043E\u043A.",
+      "",
+      "\u0424\u0430\u0439\u043B\u044B:"
+    ];
+    for (const ex of exports) {
+      const durMin = ex.sess.startedAt && ex.sess.endedAt ? Math.round((ex.sess.endedAt - ex.sess.startedAt) / 6e4) : "?";
+      lines.push("- " + ex.filename + " \xB7 " + durMin + " \u043C\u0438\u043D \xB7 \u0441\u043E\u0431\u044B\u0442\u0438\u0439 " + ex.events.length);
+    }
+    lines.push("", "\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 .jsonl \u0432 sim.html \u0438\u043B\u0438 \u043E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 \u0440\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A\u0443.");
+    return lines.join("\n") + "\n";
+  }
+  function formatZipFilename(exports) {
+    const starts = exports.map((e) => e.sess.startedAt || Date.now());
+    const base = fmtLocal(Math.min(...starts));
+    if (exports.length === 1) return "telemetry_" + base + ".zip";
+    return "telemetry_" + base + "_" + exports.length + "sessions.zip";
+  }
+  function triggerDownload(blob, filename) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5e3);
+  }
+  function buildTelemetryZip(exports) {
+    if (!exports.length) throw new Error("\u041D\u0435\u0442 \u0441\u0435\u0441\u0441\u0438\u0439 \u0434\u043B\u044F \u0430\u0440\u0445\u0438\u0432\u0430");
+    const files = {};
+    for (const ex of exports) {
+      files[ex.filename] = strToU8(ex.body);
+    }
+    files["README.txt"] = strToU8(buildReadme(exports));
+    const bytes = zipSync(files, { level: 6 });
+    return new Blob([bytes], { type: "application/zip" });
+  }
+  async function exportSessionsArchive(sessionIds) {
+    const ids = [...new Set(sessionIds.filter(Boolean))];
+    if (!ids.length) throw new Error("\u041D\u0435 \u0432\u044B\u0431\u0440\u0430\u043D\u044B \u0441\u0435\u0441\u0441\u0438\u0438");
+    const exports = [];
+    for (const id of ids) {
+      exports.push(await telemetry_default.buildSessionExport(id));
+    }
+    if (exports.length === 1) {
+      const ex = exports[0];
+      triggerDownload(ex.blob, ex.filename);
+      return "jsonl";
+    }
+    const zip = buildTelemetryZip(exports);
+    triggerDownload(zip, formatZipFilename(exports));
+    return "zip";
+  }
+  var init_telemetry_export = __esm({
+    "js/telemetry-export.js"() {
+      init_browser();
+      init_telemetry();
+    }
+  });
+
   // js/telemetry-ui.js
   function bindMarkButton() {
     const btn = $2("btn-telemetry-mark");
@@ -22882,7 +23645,11 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     const hasSessions = ids.length > 0;
     if (bar) bar.classList.toggle("hidden", !hasSessions);
     if (countEl) countEl.textContent = n ? "\u0412\u044B\u0431\u0440\u0430\u043D\u043E: " + n : "\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0432\u044B\u0431\u0440\u0430\u043D\u043E";
-    if (exportBtn) exportBtn.disabled = n === 0;
+    if (exportBtn) {
+      exportBtn.disabled = n === 0;
+      exportBtn.textContent = n <= 1 ? "\u{1F4E5} JSONL \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439" : "\u{1F4E6} ZIP (" + n + " \u043F\u043E\u0435\u0437\u0434\u043E\u043A)";
+      exportBtn.title = n <= 1 ? "\u0421\u043A\u0430\u0447\u0430\u0442\u044C \u043E\u0434\u0438\u043D \u0444\u0430\u0439\u043B JSONL \u0434\u043B\u044F \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439 \u043F\u043E\u0435\u0437\u0434\u043A\u0438" : "\u0421\u043A\u0430\u0447\u0430\u0442\u044C \u043E\u0434\u0438\u043D ZIP \u2014 \u0432\u043D\u0443\u0442\u0440\u0438 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u044B\u0439 JSONL \u043D\u0430 \u043A\u0430\u0436\u0434\u0443\u044E \u043F\u043E\u0435\u0437\u0434\u043A\u0443";
+    }
     if (deleteBtn) deleteBtn.disabled = n === 0;
     if (selectAll) {
       selectAll.indeterminate = n > 0 && n < ids.length;
@@ -22914,13 +23681,12 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     updateBulkBar();
   }
   async function exportSessions(ids) {
-    for (const id of ids) {
-      try {
-        await telemetry_default.export(id);
-      } catch (e) {
-        console.warn(e);
-      }
-      await new Promise((r) => setTimeout(r, 300));
+    if (!ids.length) return;
+    try {
+      await exportSessionsArchive(ids);
+    } catch (e) {
+      console.warn(e);
+      alert(e.message || String(e));
     }
   }
   async function deleteSessions(ids) {
@@ -22939,7 +23705,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       shareBadge = ' <span class="tel-share-done">\u043F\u0435\u0440\u0435\u0434\u0430\u043D\u043E</span>';
     }
     const checked = _selected.has(s2.id);
-    return '<div class="tel-row' + (checked ? " tel-row--selected" : "") + '" data-id="' + s2.id + '"><label class="tel-check" title="\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E"><input type="checkbox" data-act="select" data-id="' + s2.id + '"' + (checked ? " checked" : "") + '></label><div class="tel-main"><strong>' + fmtDate(s2.startedAt) + "</strong>" + dirty + shareBadge + '<span class="tel-meta">' + fmtDur(s2.durationMs) + " \xB7 " + s2.eventCount + " \u0441\u043E\u0431. \xB7 \u043C\u0435\u0442\u043E\u043A " + s2.markCount + '</span></div><div class="tel-actions"><button type="button" class="tel-btn" data-act="export" data-id="' + s2.id + '" title="\u042D\u043A\u0441\u043F\u043E\u0440\u0442">\u{1F4E4}</button><button type="button" class="tel-btn" data-act="delete" data-id="' + s2.id + '" title="\u0423\u0434\u0430\u043B\u0438\u0442\u044C">\u{1F5D1}</button></div></div>';
+    return '<div class="tel-row' + (checked ? " tel-row--selected" : "") + '" data-id="' + s2.id + '"><label class="tel-check" title="\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E"><input type="checkbox" data-act="select" data-id="' + s2.id + '"' + (checked ? " checked" : "") + '></label><div class="tel-main"><strong>' + fmtDate(s2.startedAt) + "</strong>" + dirty + shareBadge + '<span class="tel-meta">' + fmtDur(s2.durationMs) + " \xB7 " + s2.eventCount + " \u0441\u043E\u0431. \xB7 \u043C\u0435\u0442\u043E\u043A " + s2.markCount + '</span></div><div class="tel-actions"><button type="button" class="tel-btn" data-act="export" data-id="' + s2.id + '" title="\u0421\u043A\u0430\u0447\u0430\u0442\u044C JSONL \u044D\u0442\u043E\u0439 \u043F\u043E\u0435\u0437\u0434\u043A\u0438">\u{1F4E5}</button><button type="button" class="tel-btn" data-act="delete" data-id="' + s2.id + '" title="\u0423\u0434\u0430\u043B\u0438\u0442\u044C">\u{1F5D1}</button></div></div>';
   }
   async function refreshSessionsList() {
     const list = $2("telemetry-sessions");
@@ -22962,6 +23728,13 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
         return;
       }
       list.innerHTML = sessions.map(renderSessionRow).join("");
+      const exportAllBtn = $2("btn-telemetry-export-all");
+      if (exportAllBtn) {
+        const cnt = sessions.length;
+        exportAllBtn.classList.toggle("hidden", cnt === 0);
+        exportAllBtn.textContent = cnt <= 1 ? "\u{1F4E5} \u0421\u043A\u0430\u0447\u0430\u0442\u044C JSONL" : "\u{1F4E6} ZIP \u0432\u0441\u0435\u0445 \u043F\u043E\u0435\u0437\u0434\u043E\u043A (" + cnt + ")";
+        exportAllBtn.title = cnt <= 1 ? "\u0421\u043A\u0430\u0447\u0430\u0442\u044C JSONL \u0435\u0434\u0438\u043D\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0439 \u0437\u0430\u043F\u0438\u0441\u0438" : "\u041E\u0434\u0438\u043D ZIP-\u0430\u0440\u0445\u0438\u0432: \u0432\u043D\u0443\u0442\u0440\u0438 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u044B\u0439 .jsonl \u043D\u0430 \u043A\u0430\u0436\u0434\u0443\u044E \u043F\u043E\u0435\u0437\u0434\u043A\u0443";
+      }
       updateBulkBar();
     } catch (e) {
       list.innerHTML = '<div class="hint err">IndexedDB: ' + e.message + "</div>";
@@ -22985,11 +23758,11 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       if (btn.dataset.act === "export") {
         try {
           await telemetry_default.export(id);
-        } catch (err) {
-          alert(err.message);
+        } catch (err2) {
+          alert(err2.message);
         }
       } else if (btn.dataset.act === "delete") {
-        if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F?")) return;
+        if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F? \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 JSONL \u2014 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0431\u0443\u0434\u0435\u0442 \u043D\u0435\u043B\u044C\u0437\u044F.")) return;
         _selected.delete(id);
         await telemetry_default.deleteSession(id);
         await refreshSessionsList();
@@ -23006,7 +23779,8 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     $2("btn-telemetry-delete-selected")?.addEventListener("click", async () => {
       const ids = [..._selected];
       if (!ids.length) return;
-      if (!confirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C " + ids.length + " \u0441\u0435\u0441\u0441\u0438\u0439 \u0438 \u0432\u0441\u0435 \u0438\u0445 \u0441\u043E\u0431\u044B\u0442\u0438\u044F?")) return;
+      const msg = ids.length === 1 ? "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F? \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 JSONL/ZIP \u2014 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0431\u0443\u0434\u0435\u0442 \u043D\u0435\u043B\u044C\u0437\u044F." : "\u0423\u0434\u0430\u043B\u0438\u0442\u044C " + ids.length + " \u0441\u0435\u0441\u0441\u0438\u0439 \u0438 \u0432\u0441\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F? \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 ZIP \u2014 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0431\u0443\u0434\u0435\u0442 \u043D\u0435\u043B\u044C\u0437\u044F.";
+      if (!confirm(msg)) return;
       await deleteSessions(ids);
     });
     $2("btn-telemetry-export-all")?.addEventListener("click", async () => {
@@ -23037,6 +23811,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
   var init_telemetry_ui = __esm({
     "js/telemetry-ui.js"() {
       init_telemetry();
+      init_telemetry_export();
       init_hud();
       init_util();
       init_telemetry_funnel();
@@ -23443,9 +24218,9 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
         );
         $2("telemetry-send-confirm")?.classList.remove("hidden");
         await refreshSessionsList();
-      } catch (err) {
-        if (err?.name === "AbortError") return;
-        const msg = err?.message || String(err);
+      } catch (err2) {
+        if (err2?.name === "AbortError") return;
+        const msg = err2?.message || String(err2);
         if (/Share API|нельзя передать/i.test(msg)) {
           setSendStatus("Share \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u2014 \u0441\u043A\u0430\u0447\u0430\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0438 \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u0432\u0440\u0443\u0447\u043D\u0443\u044E.", "warn");
         } else {
@@ -23466,8 +24241,8 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
         }
         await downloadSession(sid);
         setSendStatus("\u0424\u0430\u0439\u043B \u0441\u043A\u0430\u0447\u0430\u043D \u2014 \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u043A \u043F\u0438\u0441\u044C\u043C\u0443 \u0438\u043B\u0438 \u0432 Telegram.", "ok");
-      } catch (err) {
-        alert(err.message || String(err));
+      } catch (err2) {
+        alert(err2.message || String(err2));
       }
     });
     $2("telemetry-send-email")?.addEventListener("click", async () => {
@@ -23485,8 +24260,8 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
         const note = $2("telemetry-send-note")?.value || "";
         openShareEmail(summary, note);
         setSendStatus("\u041E\u0442\u043A\u0440\u044B\u0442\u0430 \u043F\u043E\u0447\u0442\u0430 \u2014 \u043F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u0435 \u0441\u043A\u0430\u0447\u0430\u043D\u043D\u044B\u0439 JSONL \u0432\u0440\u0443\u0447\u043D\u0443\u044E.", "warn");
-      } catch (err) {
-        alert(err.message || String(err));
+      } catch (err2) {
+        alert(err2.message || String(err2));
       }
     });
     $2("telemetry-send-telegram")?.addEventListener("click", () => {
@@ -23540,7 +24315,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     let durationMs = 0;
     try {
       const sessions = await telemetry_default.listSessions();
-      const s2 = sessions.find((x) => x.id === sessionId);
+      const s2 = sessions.find((x2) => x2.id === sessionId);
       if (!s2) return;
       eventCount = s2.eventCount || 0;
       durationMs = s2.durationMs || 0;
@@ -23687,14 +24462,14 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     const radius = Math.max(200, Math.min(1e3, kmh * 10));
     const tol = S.camSpeedTol != null ? S.camSpeedTol : 15;
     let closest = null;
-    S.cameras.forEach((c, i) => {
+    S.cameras.forEach((c, i2) => {
       const d = haversine(S.gps, c);
       if (d > radius) return;
       if (!c.speed) return;
       if (kmh <= c.speed + tol) return;
       if (S.backOnly && !isCameraBehind(c, heading)) return;
       if (heading != null && angleDiff(bearing(S.gps, c), heading) > 90) return;
-      if (!closest || d < closest.dist) closest = { cam: c, dist: d, id: i };
+      if (!closest || d < closest.dist) closest = { cam: c, dist: d, id: i2 };
     });
     const alertEl = $2("camAlert");
     if (closest) {
@@ -23709,8 +24484,8 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       }
     } else {
       alertEl.classList.remove("on");
-      S.cameras.forEach((c, i) => {
-        if (S.camWarned.has(i) && haversine(S.gps, c) > 2e3) S.camWarned.delete(i);
+      S.cameras.forEach((c, i2) => {
+        if (S.camWarned.has(i2) && haversine(S.gps, c) > 2e3) S.camWarned.delete(i2);
       });
     }
   }
@@ -23764,6 +24539,31 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     if (!isSnapLost()) return false;
     const lat = lateralForOffRoute(snap);
     return lat == null || lat > OFF_ROUTE_ENTER_M;
+  }
+  function shouldUseReturnArrow(snap) {
+    const lat = lateralForOffRoute(snap);
+    if (isOfflineGuide()) return true;
+    if (S.offRouteState === OffRouteState.SUSPECT && lat != null && lat > OFF_ROUTE_ENTER_M) return true;
+    if (isSnapLost() && lat != null && lat > OFF_ROUTE_ENTER_M) return true;
+    return false;
+  }
+  function paintReturnToRouteArrow(snap) {
+    const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
+    const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
+    let turn = 0;
+    if (hdg != null && !isNaN(hdg)) turn = (brg - hdg + 540) % 360 - 180;
+    $2("arrow-box").innerHTML = buildTurnArrowSVG(turn);
+    const dSnap = haversine(S.gps, { lat: snap.lat, lon: snap.lon });
+    if (dSnap < 1e3) {
+      $2("v-mdist").textContent = Math.max(0, Math.round(dSnap / 10) * 10);
+      $2("v-mdist-u").textContent = "\u043C";
+    } else {
+      $2("v-mdist").textContent = (dSnap / 1e3).toFixed(1);
+      $2("v-mdist-u").textContent = "\u043A\u043C";
+    }
+    const label = isOfflineGuide() ? "\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422" : "\u0421\u042A\u0415\u0417\u0414 \u0421 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0410";
+    setHudStreetLabels(label, hudCurrentStreetLabel(snap));
+    $2("rb-exit-label")?.classList.add("hidden");
   }
   function onTick() {
     if (!S.gps) return;
@@ -23838,22 +24638,8 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     const near = findNearestOnRoute();
     if (!gpsOk) return;
     if (snapLostBlocksNav(snap)) return;
-    if (isOfflineGuide() && snap && S.gps) {
-      const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
-      const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
-      let turn = 0;
-      if (hdg != null && !isNaN(hdg)) turn = (brg - hdg + 540) % 360 - 180;
-      $2("arrow-box").innerHTML = buildTurnArrowSVG(turn);
-      const dSnap = haversine(S.gps, { lat: snap.lat, lon: snap.lon });
-      if (dSnap < 1e3) {
-        $2("v-mdist").textContent = Math.max(0, Math.round(dSnap / 10) * 10);
-        $2("v-mdist-u").textContent = "\u043C";
-      } else {
-        $2("v-mdist").textContent = (dSnap / 1e3).toFixed(1);
-        $2("v-mdist-u").textContent = "\u043A\u043C";
-      }
-      setHudStreetLabels("\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422", hudCurrentStreetLabel(snap));
-      $2("rb-exit-label")?.classList.add("hidden");
+    if (shouldUseReturnArrow(snap) && snap && S.gps) {
+      paintReturnToRouteArrow(snap);
     } else {
       let nm = isSnapDegraded() ? getCachedManeuver() : null;
       if (!nm) nm = findNextManeuver();
@@ -23933,6 +24719,10 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
         }
       } else {
         setHudStreetLabels("\u2014", hudCurrentStreetLabel(snap));
+        $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
+        $2("v-mdist").textContent = "\u2014";
+        $2("v-mdist-u").textContent = "";
+        $2("rb-exit-label")?.classList.add("hidden");
       }
     }
     updateFinishInfo(remaining, kmh, now);
@@ -24297,6 +25087,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       init_hud_opts();
       init_hud_chrome();
       init_offroute();
+      init_nav_constants();
       init_telemetry();
       init_telemetry_funnel();
       init_view_mode();
@@ -24308,7 +25099,6 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       init_speed_limit();
       init_roundabout();
       init_converge_telemetry();
-      init_nav_constants();
       _lastMarkCtx = null;
       _fuelBusy = false;
       _fuelPanelShownAt = 0;
@@ -24341,9 +25131,9 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     if (!coords || coords.length < 2) return [];
     const out = [[coords[0][0], coords[0][1]]];
     let acc = 0;
-    for (let i = 0; i < coords.length - 1 && acc < maxM; i++) {
-      const a = { lat: coords[i][0], lon: coords[i][1] };
-      const b = { lat: coords[i + 1][0], lon: coords[i + 1][1] };
+    for (let i2 = 0; i2 < coords.length - 1 && acc < maxM; i2++) {
+      const a = { lat: coords[i2][0], lon: coords[i2][1] };
+      const b = { lat: coords[i2 + 1][0], lon: coords[i2 + 1][1] };
       const seg = haversine(a, b);
       if (acc + seg >= maxM) {
         const t = (maxM - acc) / seg;
@@ -24415,19 +25205,19 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     if (!map) return;
     clearLayers();
     const bounds = import_leaflet3.default.latLngBounds([]);
-    alternatives.forEach((r, i) => {
+    alternatives.forEach((r, i2) => {
       const latlngs = routePolylineLatLngs(r);
       latlngs.forEach((ll) => bounds.extend(ll));
-      const sel = i === selectedIdx;
+      const sel = i2 === selectedIdx;
       const layer = import_leaflet3.default.polyline(latlngs, {
-        color: ROUTE_COLORS[i % ROUTE_COLORS.length],
+        color: ROUTE_COLORS[i2 % ROUTE_COLORS.length],
         weight: sel ? 7 : 4,
         opacity: sel ? 1 : 0.45,
         lineCap: "round",
         lineJoin: "round"
       }).addTo(map);
       layer.on("click", () => {
-        if (_onSelect) _onSelect(i);
+        if (_onSelect) _onSelect(i2);
       });
       _routeLayers.push(layer);
       if (sel) {
@@ -24442,7 +25232,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
             lineJoin: "round"
           }).addTo(map);
           const core = import_leaflet3.default.polyline(hudWin, {
-            color: ROUTE_COLORS[i % ROUTE_COLORS.length],
+            color: ROUTE_COLORS[i2 % ROUTE_COLORS.length],
             weight: 5,
             opacity: 0.95,
             dashArray: "10,8",
@@ -24500,12 +25290,12 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       box.innerHTML = "";
       return;
     }
-    box.innerHTML = alternatives.map((r, i) => {
+    box.innerHTML = alternatives.map((r, i2) => {
       const km = (r.distance / 1e3).toFixed(1);
       const min = Math.max(1, Math.round(r.duration / 60));
-      const sel = i === selectedIdx;
-      const col = ROUTE_COLORS[i % ROUTE_COLORS.length];
-      return '<button type="button" class="route-alt' + (sel ? " sel" : "") + '" data-ri="' + i + '"><span class="ra-dot" style="background:' + col + '"></span><span class="ra-main">\u0412\u0430\u0440\u0438\u0430\u043D\u0442 ' + (i + 1) + '</span><span class="ra-meta">' + km + " \u043A\u043C \xB7 ~" + min + " \u043C\u0438\u043D</span></button>";
+      const sel = i2 === selectedIdx;
+      const col = ROUTE_COLORS[i2 % ROUTE_COLORS.length];
+      return '<button type="button" class="route-alt' + (sel ? " sel" : "") + '" data-ri="' + i2 + '"><span class="ra-dot" style="background:' + col + '"></span><span class="ra-main">\u0412\u0430\u0440\u0438\u0430\u043D\u0442 ' + (i2 + 1) + '</span><span class="ra-meta">' + km + " \u043A\u043C \xB7 ~" + min + " \u043C\u0438\u043D</span></button>";
     }).join("");
     box.querySelectorAll(".route-alt").forEach((b) => {
       b.addEventListener("click", () => {
@@ -25041,10 +25831,6 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       syncChevronInputs();
       saveAppOptsToStorage();
     });
-    $2("opt-low-speed-map")?.addEventListener("change", (e) => {
-      S.lowSpeedMap = e.target.checked;
-      saveAppOptsToStorage();
-    });
     $2("opt-chevron-labels")?.addEventListener("change", (e) => {
       S.pathChevronLabels = e.target.checked;
       saveAppOptsToStorage();
@@ -25246,7 +26032,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       3,
       parseInt($2("opt-chevron-max")?.value, 10) || DEFAULT_PATH_CHEVRON_MAX
     ));
-    S.lowSpeedMap = $2("opt-low-speed-map")?.checked !== false;
+    S.lowSpeedMap = false;
     if ($2("opt-chevron-max")) $2("opt-chevron-max").value = String(S.pathChevronMax);
     if ($2("opt-chevron-labels")) $2("opt-chevron-labels").disabled = !S.showPathChevrons;
     if ($2("opt-chevron-max")) $2("opt-chevron-max").disabled = !S.showPathChevrons;
@@ -25817,8 +26603,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
   ];
   var HELP_TEXTS = {
     "opt-voice": "\u0413\u043E\u043B\u043E\u0441\u043E\u0432\u044B\u0435 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438 \u043C\u0430\u043D\u0451\u0432\u0440\u043E\u0432 \u0438 \u043A\u0430\u043C\u0435\u0440. \u0420\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0447\u0435\u0440\u0435\u0437 \u0441\u0438\u043D\u0442\u0435\u0437 \u0440\u0435\u0447\u0438 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430.",
-    "opt-path": "\u041F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430 \u043D\u0430 HUD: \u0440\u0435\u043B\u044C\u0435\u0444, \u0448\u0435\u0432\u0440\u043E\u043D\u044B, \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u043F\u0435\u0440\u0435\u043A\u0440\u0451\u0441\u0442\u043A\u043E\u0432. \u041D\u0430 \u0434\u043E\u0440\u043E\u0433\u0435 \u2014 \u043F\u0440\u0438 \u043B\u044E\u0431\u043E\u0439 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u0438.",
-    "opt-low-speed-map": "\u0412\u043D\u0435 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430 (\u0434\u0432\u043E\u0440, \u043F\u0430\u0440\u043A\u043E\u0432\u043A\u0430): \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u043A\u0430\u0440\u0442\u0430 \u043A\u0440\u0443\u043F\u043D\u044B\u043C \u043F\u043B\u0430\u043D\u043E\u043C. \u041D\u0430 \u0434\u043E\u0440\u043E\u0433\u0435 \u043A\u0430\u0440\u0442\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u0440\u0443\u0447\u043D\u0443\u044E (\u0434\u0432\u043E\u0439\u043D\u043E\u0439 \u0442\u0430\u043F).",
+    "opt-path": "\u041F\u0440\u043E\u0433\u043D\u043E\u0437-\u0434\u043E\u0440\u043E\u0436\u043A\u0430 \u043D\u0430 HUD: \u0440\u0435\u043B\u044C\u0435\u0444, \u0448\u0435\u0432\u0440\u043E\u043D\u044B, \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u043F\u0435\u0440\u0435\u043A\u0440\u0451\u0441\u0442\u043A\u043E\u0432. \u041D\u0430 \u0434\u043E\u0440\u043E\u0433\u0435 \u2014 \u043F\u0440\u0438 \u043B\u044E\u0431\u043E\u0439 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u0438. \u041A\u0430\u0440\u0442\u0430 \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u0440\u0443\u0447\u043D\u0443\u044E (\u041A\u0410\u0420\u0422 / \u0434\u0432\u043E\u0439\u043D\u043E\u0439 \u0442\u0430\u043F).",
     "opt-limit": "\u041B\u0438\u043C\u0438\u0442 \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E, \u043A\u043E\u0433\u0434\u0430 OSM \u043D\u0435 \u0437\u043D\u0430\u0435\u0442 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0438\u0435. \u041F\u0440\u0438 \u0434\u0438\u043D\u0430\u043C\u0438\u043A\u0435 \u2014 fallback.",
     "opt-speed-limit-dynamic": "\u0414\u0438\u043D\u0430\u043C\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u043B\u0438\u043C\u0438\u0442 \u043F\u043E \u0442\u0435\u0433\u0443 maxspeed OSM \u0432\u0434\u043E\u043B\u044C \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0430. \u0412\u044B\u043A\u043B. \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u0435\u0444\u043E\u043B\u0442 \u0438\u0437 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438.",
     "opt-speed-limit-fallback": "\u0415\u0441\u043B\u0438 OSM \u0438 implicit \u043D\u0435 \u0434\u0430\u043B\u0438 \u043B\u0438\u043C\u0438\u0442: \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0432\u0430\u0448 \u0434\u0435\u0444\u043E\u043B\u0442 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u0437\u043D\u0430\u043A.",
@@ -26114,13 +26899,16 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
   function sampleRegressionState(extra = {}) {
     let lateral = null;
     let maneuverType = null;
+    const lat = S.gps?.lat ?? null;
+    const lon = S.gps?.lon ?? null;
+    const heading = S.smoothedHeading ?? S.gps?.heading ?? null;
     if (S.route && S.gps) {
       const snap = getNavSnap(S.smoothedHeading);
       lateral = snap?.lateral ?? null;
       if (lateral != null && (!Number.isFinite(lateral) || lateral > 300)) lateral = null;
       const steps = S.route.steps || [];
-      for (let i = 1; i < steps.length; i++) {
-        const st = steps[i];
+      for (let i2 = 1; i2 < steps.length; i2++) {
+        const st = steps[i2];
         if (haversine(S.gps, st) < 120) {
           maneuverType = st.type;
           break;
@@ -26130,6 +26918,10 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     return {
       ts: Date.now(),
       type: "regression_tick",
+      lat: lat != null ? Math.round(lat * 1e6) / 1e6 : null,
+      lon: lon != null ? Math.round(lon * 1e6) / 1e6 : null,
+      heading: heading != null ? Math.round(heading * 10) / 10 : null,
+      dist_m: extra.dist_m ?? extra.routeDistM ?? null,
       lateral_m: lateral != null ? Math.round(lateral * 10) / 10 : null,
       snap_quality: S.snapQuality,
       off_route_state: S.offRouteState,
@@ -26148,6 +26940,8 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
   init_theme_manager();
   init_setup();
   init_route();
+  init_speed_limit();
+  init_yandex_link();
   var DEMO_FINISH = [55.827099, 37.632066];
   function isSimPage() {
     return new URLSearchParams(location.search).get("sim") === "1";
@@ -26242,6 +27036,83 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     }
     const errText = ($2("route-info")?.textContent || $2("s-finish")?.textContent || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D").replace(/^❌\s*/, "");
     return { ok: false, error: errText };
+  }
+  async function simImportYandexRoute(rawText, opts = {}) {
+    const mode = opts.mode === "direct" ? "direct" : "routed";
+    const url = extractYandexUrl(rawText) || String(rawText || "").trim();
+    if (!url) return { ok: false, error: "\u041F\u0443\u0441\u0442\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430" };
+    let wps;
+    try {
+      wps = await parseYandexRouteLink(url);
+    } catch (e) {
+      return { ok: false, error: e.message || String(e) };
+    }
+    const first = wps[0];
+    const last = wps[wps.length - 1];
+    const sim = window.__SIM__;
+    if (sim?.setStartPoint) {
+      sim.setStartPoint(first.lat, first.lon, { rebuildRoute: false });
+    } else {
+      simKickGps();
+    }
+    const pts = wps.map((w) => ({ lat: w.lat, lon: w.lon, label: w.label }));
+    let via = mode;
+    try {
+      if (mode === "direct") {
+        attachRouteFromImport(buildDirectRouteFromWaypoints(pts), pts);
+      } else {
+        const route = await fetchRouteThroughWaypoints(pts);
+        attachRouteFromImport(route, pts);
+      }
+    } catch (e) {
+      if (!isSimPage()) return { ok: false, error: e.message || String(e) };
+      try {
+        attachRouteFromImport(buildDirectRouteFromWaypoints(pts), pts);
+        via = "direct";
+      } catch (e2) {
+        return { ok: false, error: e2.message || String(e2) };
+      }
+    }
+    refreshRouteUi();
+    setGoBarVisible(true);
+    syncSimPathFromRoute();
+    if (S.routeAlternatives?.length) {
+      scheduleGeometryBuild(S.routeAlternatives, () => refreshRouteUi());
+    }
+    const inp = $2("finish-input");
+    if (inp) {
+      inp.value = url;
+      inp.dataset.userEdited = "1";
+    }
+    if ($2("s-finish")) {
+      $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + last.lat.toFixed(5) + ", " + last.lon.toFixed(5);
+      $2("s-finish").className = "status ok";
+    }
+    let warn = null;
+    if (via !== "direct" && S.route) {
+      try {
+        await loadRouteHighwayTypes(S.route);
+        const audit = auditRouteDrivability(S.route);
+        if (!audit.ok) {
+          warn = "OSRM \u0432\u0435\u0434\u0451\u0442 \u043F\u043E \u0441\u0435\u0433\u043C\u0435\u043D\u0442\u0430\u043C: " + audit.label + ". ";
+        }
+      } catch (e) {
+      }
+    }
+    if (wps.length <= 3) {
+      const hint = "\u0418\u0437 \u0441\u0441\u044B\u043B\u043A\u0438 \u0431\u0435\u0440\u0443\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u043E\u0447\u043A\u0438 rtext \u2014 \u0434\u043E\u0440\u043E\u0433\u0443 \u0441\u0442\u0440\u043E\u0438\u0442 OSRM (OpenStreetMap), \u043D\u0435 \u042F\u043D\u0434\u0435\u043A\u0441. \u0414\u043B\u044F \u0441\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u044F \u0434\u043E\u0431\u0430\u0432\u044C\u0442\u0435 \u043F\u0440\u043E\u043C\u0435\u0436\u0443\u0442\u043E\u0447\u043D\u044B\u0435 \u0442\u043E\u0447\u043A\u0438 \u0432 \u042F\u043D\u0434\u0435\u043A\u0441.\u041A\u0430\u0440\u0442\u0430\u0445 \u043A\u0430\u0436\u0434\u044B\u0435 3\u20135 \u043A\u043C.";
+      warn = warn ? warn + hint : wps.length === 2 ? hint : null;
+    }
+    return {
+      ok: true,
+      url,
+      waypoints: wps.length,
+      start: first,
+      finish: last,
+      pts: S.route?.coords?.length || S.route?.geometry?.n || 0,
+      via,
+      warn
+    };
   }
   async function simNavAction(kind) {
     const hud = $2("hud");
@@ -26368,6 +27239,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     simNavAction,
     simApplyTheme,
     simBuildRoute,
+    simImportYandexRoute,
     simGetStatus,
     simKickGps,
     simEnsureDemoFinish,

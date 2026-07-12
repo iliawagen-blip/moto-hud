@@ -590,11 +590,6 @@ export function bindSetupUI(){
     saveAppOptsToStorage();
   });
 
-  $('opt-low-speed-map')?.addEventListener('change', e => {
-    S.lowSpeedMap = e.target.checked;
-    saveAppOptsToStorage();
-  });
-
   $('opt-chevron-labels')?.addEventListener('change', e => {
     S.pathChevronLabels = e.target.checked;
     saveAppOptsToStorage();
@@ -853,7 +848,7 @@ export function syncOptionsFromDom(){
   S.pathChevronLabels = $('opt-chevron-labels')?.checked ?? true;
   S.pathChevronMax = Math.max(1, Math.min(3,
     parseInt($('opt-chevron-max')?.value, 10) || DEFAULT_PATH_CHEVRON_MAX));
-  S.lowSpeedMap = $('opt-low-speed-map')?.checked !== false;
+  S.lowSpeedMap = false;
   if($('opt-chevron-max')) $('opt-chevron-max').value = String(S.pathChevronMax);
   if($('opt-chevron-labels')) $('opt-chevron-labels').disabled = !S.showPathChevrons;
   if($('opt-chevron-max')) $('opt-chevron-max').disabled = !S.showPathChevrons;

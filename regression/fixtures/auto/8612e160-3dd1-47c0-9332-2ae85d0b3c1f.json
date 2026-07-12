@@ -1,0 +1,118 @@
+{
+  "fixture_id": "8612e160-3dd1-47c0-9332-2ae85d0b3c1f",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:11:35.243Z",
+  "last_verified_at": "2026-07-12T06:52:52.383Z",
+  "source": "auto_generator",
+  "category": "many_waypoints",
+  "region": "caucasus_serpentines",
+  "tags": [
+    "auto_v1",
+    "many_waypoints",
+    "caucasus_serpentines"
+  ],
+  "waypoints": [
+    {
+      "lat": 43.465399,
+      "lon": 41.980656,
+      "label": "start"
+    },
+    {
+      "lat": 43.735321,
+      "lon": 42.298114,
+      "label": "via_1"
+    },
+    {
+      "lat": 43.499922,
+      "lon": 42.249975,
+      "label": "via_2"
+    },
+    {
+      "lat": 44.086739,
+      "lon": 42.265953,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 70
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 254096,
+      "duration_s": 17663,
+      "maneuver_count": 32,
+      "roundabout_count": 1,
+      "fetched_at": "2026-07-12T10:55:36.400Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 4,
+        "points_original": 4,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": null,
+      "duration_s": null,
+      "maneuver_count": null,
+      "roundabout_count": null,
+      "fetched_at": "2026-07-12T11:07:11.213Z",
+      "fetch_error": "Could not find routable point within a radius of 350.0 meters of specified coordinate 2: 42.2499750 43.4999220."
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 257267,
+    "duration_s": 27229,
+    "step_count": 33,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:30:14.099Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 4810.306493638379,
+      "avg_lateral_m": 190.946269145759,
+      "p50_lateral_m": 17.93518456383251,
+      "p95_lateral_m": 1282.1643422522259,
+      "max_lateral_m": 4810.306493638379,
+      "length_diff_pct": 1.2325716084845706,
+      "duration_diff_pct": 35.131661096624924,
+      "maneuver_count_diff": 1,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.19279519679786525,
+      "waypoint_deviations_m": [
+        0,
+        150.4879359027641,
+        1660.6929500546535,
+        0
+      ]
+    },
+    "ors_vs_motohud": null,
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": null,
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 1282.1643422522259,
+      "motohud_vs_consensus_avg_m": 190.946269145759,
+      "signal": "insufficient_refs"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Кавказ — серпантины · many_waypoints · OSRM 257.3 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

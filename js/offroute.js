@@ -2,6 +2,7 @@ import { S } from './state.js';
 import { $ } from './util.js';
 import { angleDiff } from './geo.js';
 import { recalcRoute } from './route.js';
+import { projectPointToRoute } from './route-geometry.js';
 import { speak } from './voice.js';
 import telemetry from './telemetry.js';
 import { SnapQuality } from './snap-quality.js';
@@ -143,17 +144,32 @@ function headingDiverged(feed, now){
   return simScaledDelta(now - _ctx.headingDivergeSince) >= OFF_ROUTE_HEADING_DIVERGE_MS;
 }
 
+function lateralAfterReroute(){
+  const geom = S.route?.geometry;
+  const gps = S.gps;
+  if(!geom || !gps) return null;
+  return projectPointToRoute(geom, gps)?.lateral ?? null;
+}
+
 function canTriggerReroute(feed, now){
   const distNeed = confirmDistForSpeed(feed.spdMps);
   const msNeed = confirmMsForSpeed(feed.spdMps);
   const distOk = _ctx.suspectDistM >= distNeed;
   const timeOk = _ctx.confirmMs >= msNeed;
   const hdgOk = headingDiverged(feed, now);
-  const snapBad = S.snapQuality !== SnapQuality.GOOD || (feed.lateral != null && feed.lateral > 80);
-  if(!snapBad) return null;
+  const lat = feed.lateral;
+
+  if(S.snapQuality === SnapQuality.LOST && lat != null && lat >= OFF_ROUTE_ENTER_M){
+    if(_ctx.confirmMs >= 4000 || _ctx.suspectDistM >= 40) return 'snap_lost';
+  }
+
+  const offConfirmed = S.snapQuality !== SnapQuality.GOOD
+    || (lat != null && lat >= OFF_ROUTE_ENTER_M);
+  if(!offConfirmed) return null;
+
   if(distOk && hdgOk) return 'dist_heading';
   if(distOk && timeOk && hdgOk) return 'conjunct';
-  if(timeOk && hdgOk && feed.lateral > OFF_ROUTE_ENTER_M) return 'time_heading';
+  if(timeOk && hdgOk && lat > OFF_ROUTE_ENTER_M) return 'time_heading';
   return null;
 }
 
@@ -195,7 +211,14 @@ function beginReroute(fromState, feed, trigger){
   recalcRoute().then(ok => {
     _ctx.rerouteBusy = false;
     if(ok){
-      transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, metaFromFeed(feed));
+      const latAfter = lateralAfterReroute();
+      const meta = latAfter != null ? { ...metaFromFeed(feed), lateral: latAfter } : metaFromFeed(feed);
+      if(latAfter != null && latAfter > OFF_ROUTE_EXIT_M){
+        transition(OffRouteState.REROUTING, OffRouteState.SUSPECT, meta);
+        resetSuspectCtx();
+        return;
+      }
+      transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, meta);
       resetBackoff();
       resetSuspectCtx();
       showRerouteOk();
@@ -233,6 +256,14 @@ function tickSuspectConfirm(feed, inDeadZone){
 
 function tryReturnOnRoute(feed){
   if(feed.lateral >= OFF_ROUTE_EXIT_M) return false;
+  if(S.snapQuality === SnapQuality.LOST) return false;
+  if(S.snapQuality === SnapQuality.DEGRADED && feed.lateral >= OFF_ROUTE_EXIT_M * 0.6) return false;
+  if(feed.spdMps > OFF_ROUTE_HEADING_MIN_SPD &&
+     feed.heading != null && !isNaN(feed.heading) &&
+     feed.tangent != null && !isNaN(feed.tangent) &&
+     angleDiff(feed.heading, feed.tangent) > OFF_ROUTE_HEADING_DIVERGE_DEG){
+    return false;
+  }
   const from = S.offRouteState;
   transition(from, OffRouteState.ON_ROUTE, metaFromFeed(feed));
   resetBackoff();

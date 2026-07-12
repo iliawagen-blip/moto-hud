@@ -16,7 +16,7 @@ import {
 } from './route-geometry.js';
 import { hasEverConverged } from './gps-converge.js';
 import { PATH_SKIP_DS_M, PATH_SKIP_FRAMES } from './nav-constants.js';
-import { tickLowSpeedMap, isAutoMapActive } from './low-speed-map.js';
+import { tickLowSpeedMap } from './low-speed-map.js';
 import { isBearingMode } from './bearing-mode.js';
 
 let _pathLastS = null;
@@ -35,11 +35,14 @@ export function computePathLayout(w, h){
   const aspect = Math.max(0.2, w / Math.max(1, h));
   L.W = 1000;
   L.H = Math.max(480, Math.min(2400, Math.round(L.W / aspect)));
-  L.roadH = L.H;
+  const profileBand = (S.showElevProfile && S.route?.geometry?.elevReady)
+    ? getElevProfileH() + PROFILE_GAP + 12 : 0;
+  L.profileBand = profileBand;
+  L.roadH = Math.max(240, L.H - profileBand);
   L.cx = L.W / 2;
   L.land = aspect > 1;
   L.camFocal = L.land ? 900 : 1300;
-  L.camVoff = L.H * 0.78;
+  L.camVoff = L.roadH * 0.78;
   L.horizonY = L.camVoff - L.camFocal * Math.tan(CAM_PITCH);
 }
 
@@ -491,13 +494,6 @@ export function renderPathway(){
   }
 
   tickLowSpeedMap(kmh, waitConverge, pathCtx);
-
-  if(isAutoMapActive()){
-    block.classList.add('hidden');
-    hud.classList.add('no-path');
-    svg.innerHTML = '';
-    return;
-  }
 
   block.classList.remove('hidden');
   hud.classList.remove('no-path');

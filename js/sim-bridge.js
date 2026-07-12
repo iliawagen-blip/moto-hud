@@ -12,7 +12,9 @@ import {
 } from './bearing-mode.js';
 import { applyTheme, THEME_IDS, MODE_PREFS } from './theme-manager.js';
 import { doBuildRoute, refreshRouteUi, setGoBarVisible, setFinishQuiet } from './setup.js';
-import { buildDirectRouteFromWaypoints, attachRouteFromImport, scheduleGeometryBuild } from './route.js';
+import { buildDirectRouteFromWaypoints, attachRouteFromImport, scheduleGeometryBuild, fetchRouteThroughWaypoints, auditRouteDrivability } from './route.js';
+import { loadRouteHighwayTypes } from './speed-limit.js';
+import { parseYandexRouteLink, extractYandexUrl } from './yandex-link.js';
 
 const DEMO_FINISH = [55.827099, 37.632066];
 
@@ -124,6 +126,96 @@ export async function simBuildRoute(){
 
   const errText = ($('route-info')?.textContent || $('s-finish')?.textContent || 'Маршрут не построен').replace(/^❌\s*/, '');
   return { ok: false, error: errText };
+}
+
+/**
+ * Импорт маршрута из ссылки Яндекс.Карт (rtext → OSRM; fallback — прямая линия в sim).
+ * @param {string} rawText
+ * @param {{ mode?: 'routed'|'direct' }} [opts]
+ */
+export async function simImportYandexRoute(rawText, opts = {}){
+  const mode = opts.mode === 'direct' ? 'direct' : 'routed';
+  const url = extractYandexUrl(rawText) || String(rawText || '').trim();
+  if(!url) return { ok: false, error: 'Пустая ссылка' };
+
+  let wps;
+  try{
+    wps = await parseYandexRouteLink(url);
+  }catch(e){
+    return { ok: false, error: e.message || String(e) };
+  }
+
+  const first = wps[0];
+  const last = wps[wps.length - 1];
+  const sim = window.__SIM__;
+  if(sim?.setStartPoint){
+    sim.setStartPoint(first.lat, first.lon, { rebuildRoute: false });
+  }else{
+    simKickGps();
+  }
+
+  const pts = wps.map(w => ({ lat: w.lat, lon: w.lon, label: w.label }));
+  let via = mode;
+
+  try{
+    if(mode === 'direct'){
+      attachRouteFromImport(buildDirectRouteFromWaypoints(pts), pts);
+    }else{
+      const route = await fetchRouteThroughWaypoints(pts);
+      attachRouteFromImport(route, pts);
+    }
+  }catch(e){
+    if(!isSimPage()) return { ok: false, error: e.message || String(e) };
+    try{
+      attachRouteFromImport(buildDirectRouteFromWaypoints(pts), pts);
+      via = 'direct';
+    }catch(e2){
+      return { ok: false, error: e2.message || String(e2) };
+    }
+  }
+
+  refreshRouteUi();
+  setGoBarVisible(true);
+  syncSimPathFromRoute();
+  if(S.routeAlternatives?.length){
+    scheduleGeometryBuild(S.routeAlternatives, () => refreshRouteUi());
+  }
+
+  const inp = $('finish-input');
+  if(inp){
+    inp.value = url;
+    inp.dataset.userEdited = '1';
+  }
+  if($('s-finish')){
+    $('s-finish').textContent = '✅ Финиш: ' + last.lat.toFixed(5) + ', ' + last.lon.toFixed(5);
+    $('s-finish').className = 'status ok';
+  }
+
+  let warn = null;
+  if(via !== 'direct' && S.route){
+    try{
+      await loadRouteHighwayTypes(S.route);
+      const audit = auditRouteDrivability(S.route);
+      if(!audit.ok){
+        warn = 'OSRM ведёт по сегментам: ' + audit.label + '. ';
+      }
+    }catch(e){ /* Overpass недоступен — без аудита */ }
+  }
+  if(wps.length <= 3){
+    const hint = 'Из ссылки берутся только точки rtext — дорогу строит OSRM (OpenStreetMap), не Яндекс. Для совпадения добавьте промежуточные точки в Яндекс.Картах каждые 3–5 км.';
+    warn = warn ? warn + hint : (wps.length === 2 ? hint : null);
+  }
+
+  return {
+    ok: true,
+    url,
+    waypoints: wps.length,
+    start: first,
+    finish: last,
+    pts: S.route?.coords?.length || S.route?.geometry?.n || 0,
+    via,
+    warn
+  };
 }
 
 /**

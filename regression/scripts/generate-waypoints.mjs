@@ -11,6 +11,7 @@ import { fetchOsrmRoute } from './lib/osrm.mjs';
 import { sleep, throttle } from './lib/rate-limit.mjs';
 import { saveFixture } from './lib/fixtures-io.mjs';
 import { emptyFixture } from './validate-schema.mjs';
+import { GRAPHHOPPER_MAX_POINTS, downsampleWaypoints } from './lib/waypoints.mjs';
 
 const CATEGORIES = ['city', 'highway', 'roundabouts', 'many_waypoints', 'mountain'];
 const OSRM_DELAY_MS = 1500;
@@ -106,7 +107,7 @@ async function buildRandomWaypoints(region, category, cfg, rng){
     const start = await snapPoint(rawStart.lat, rawStart.lon);
     const finish = await snapPoint(rawFinish.lat, rawFinish.lon);
     const viaN = category === 'many_waypoints'
-      ? 2 + Math.floor(rng() * 3)
+      ? 2 + Math.floor(rng() * 2)
       : Math.floor(rng() * 4);
     const wps = [{ ...start, label: 'start' }];
     for(let i = 0; i < viaN; i++){
@@ -115,6 +116,9 @@ async function buildRandomWaypoints(region, category, cfg, rng){
       wps.push({ ...via, label: `via_${i + 1}` });
     }
     wps.push({ ...finish, label: 'finish' });
+    if(wps.length > GRAPHHOPPER_MAX_POINTS){
+      return downsampleWaypoints(wps, GRAPHHOPPER_MAX_POINTS);
+    }
     const km = totalPathKm(wps);
     if(km >= dMin * 0.7 && km <= dMax * 1.2) return wps;
   }

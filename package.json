@@ -4,9 +4,9 @@
   "private": true,
   "description": "Мото ИЛС — HUD-навигатор для мотоцикла",
   "scripts": {
-    "dev": "node scripts/build-web.mjs && npx --yes serve -l 3456 -c serve.json .",
+    "dev": "node scripts/build-web.mjs && node scripts/regression-results-manifest.mjs && npx --yes serve -l 3456 -c serve.json .",
     "fuel:spike": "node scripts/fuel-gdzapravka-spike.mjs",
-    "build": "node scripts/build-web.mjs",
+    "build": "node scripts/build-web.mjs && node scripts/regression-results-manifest.mjs",
     "nav:replay": "node scripts/nav-replay.mjs --baseline fixtures/baseline_v1.json",
     "nav:baseline": "node scripts/nav-replay.mjs --capture --baseline fixtures/baseline_v1.json",
     "nav:test": "node scripts/nav-replay.mjs --self-test",
@@ -34,6 +34,8 @@
     "regression:nightly": "node regression/scripts/run-nightly.mjs",
     "regression:smoke": "node regression/scripts/run-nightly.mjs --fixtures 5 --skip-yandex",
     "regression:state": "node regression/scripts/update-state.mjs",
+    "regression:rebuild-sim-summary": "node regression/scripts/rebuild-sim-summary.mjs",
+    "regression:gh-burn": "node regression/scripts/gh-burn-loop.mjs",
     "regression:cleanup": "node regression/scripts/cleanup-cache.mjs"
   },
   "dependencies": {
@@ -45,6 +47,7 @@
     "@capacitor/core": "^7.2.0",
     "@capacitor/geolocation": "^7.1.2",
     "@capacitor/local-notifications": "^7.0.7",
+    "fflate": "^0.8.3",
     "leaflet": "^1.9.4"
   },
   "devDependencies": {

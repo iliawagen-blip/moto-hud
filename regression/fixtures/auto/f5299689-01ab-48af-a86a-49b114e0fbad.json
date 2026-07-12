@@ -1,0 +1,148 @@
+{
+  "fixture_id": "f5299689-01ab-48af-a86a-49b114e0fbad",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T14:54:46.486Z",
+  "last_verified_at": "2026-07-12T07:04:50.384Z",
+  "source": "auto_generator",
+  "category": "roundabouts",
+  "region": "yekaterinburg",
+  "tags": [
+    "auto_v1",
+    "roundabouts",
+    "yekaterinburg"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.794939,
+      "lon": 49.10772,
+      "label": "start_ring"
+    },
+    {
+      "lat": 55.796385,
+      "lon": 49.103616,
+      "label": "via_ring_1"
+    },
+    {
+      "lat": 55.801205,
+      "lon": 49.104322,
+      "label": "finish_ring"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 45
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 5166,
+      "duration_s": 829,
+      "maneuver_count": 14,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:05:09.204Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 3,
+        "points_original": 3,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 3748,
+      "duration_s": 531,
+      "maneuver_count": 9,
+      "roundabout_count": 0,
+      "fetched_at": "2026-07-12T11:09:10.163Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 4745,
+    "duration_s": 599,
+    "step_count": 22,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:32:10.340Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 212.74097745001797,
+      "avg_lateral_m": 0.11146190252125437,
+      "p50_lateral_m": 0.0674179866148938,
+      "p95_lateral_m": 0.40672514754798994,
+      "max_lateral_m": 0.4657602517858396,
+      "length_diff_pct": 8.872497365648051,
+      "duration_diff_pct": 38.397328881469114,
+      "maneuver_count_diff": 8,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.43157894736842106,
+      "waypoint_deviations_m": [
+        0,
+        0.05399111982863954,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 188.4015499594712,
+      "avg_lateral_m": 67.41097442000206,
+      "p50_lateral_m": 14.872633484335969,
+      "p95_lateral_m": 182.4000727668407,
+      "max_lateral_m": 188.4015499594712,
+      "length_diff_pct": 21.01159114857745,
+      "duration_diff_pct": 11.352253756260435,
+      "maneuver_count_diff": 13,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.7466666666666667,
+      "waypoint_deviations_m": [
+        0,
+        0.054418396759007066,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 252.7753393570092,
+      "avg_lateral_m": 85.12374577553578,
+      "p50_lateral_m": 64.92251055951837,
+      "p95_lateral_m": 202.35793208905778,
+      "max_lateral_m": 252.7753393570092,
+      "length_diff_pct": 27.448703058459156,
+      "duration_diff_pct": 35.94692400482509,
+      "maneuver_count_diff": 5,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.76,
+      "waypoint_deviations_m": [
+        0,
+        0.054418396759007066,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 182.4000727668407,
+      "motohud_vs_consensus_avg_m": 33.76121816126166,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Екатеринбург · roundabouts · OSRM 4.7 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

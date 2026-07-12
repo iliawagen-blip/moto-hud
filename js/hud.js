@@ -33,7 +33,8 @@ import { getHeadingHealth } from './heading.js';
 import { tickAutoMode } from './theme-manager.js';
 import { applyFinishInfoVisibility } from './hud-opts.js';
 import { clearHudChromeReveal, applyHudChrome } from './hud-chrome.js';
-import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide } from './offroute.js';
+import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide, OffRouteState } from './offroute.js';
+import { OFF_ROUTE_ENTER_M } from './nav-constants.js';
 import telemetry from './telemetry.js';
 import { logFunnel } from './telemetry-funnel.js';
 import { tickNavMap, resetViewMode } from './view-mode.js';
@@ -51,7 +52,6 @@ import {
   roundaboutManeuverText, logRoundaboutTelemetry, resetRoundaboutState
 } from './roundabout.js';
 import { resetConvergeTelemetryRide, flushConvergeSummary } from './converge-telemetry.js';
-import { OFF_ROUTE_ENTER_M } from './nav-constants.js';
 
 /** @type {object|null} */
 let _lastMarkCtx = null;
@@ -233,6 +233,34 @@ function snapLostBlocksNav(snap){
   return lat == null || lat > OFF_ROUTE_ENTER_M;
 }
 
+function shouldUseReturnArrow(snap){
+  const lat = lateralForOffRoute(snap);
+  if(isOfflineGuide()) return true;
+  if(S.offRouteState === OffRouteState.SUSPECT && lat != null && lat > OFF_ROUTE_ENTER_M) return true;
+  if(isSnapLost() && lat != null && lat > OFF_ROUTE_ENTER_M) return true;
+  return false;
+}
+
+function paintReturnToRouteArrow(snap){
+  const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
+  const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading)
+    ? S.smoothedHeading : S.gps.heading;
+  let turn = 0;
+  if(hdg != null && !isNaN(hdg)) turn = ((brg - hdg + 540) % 360) - 180;
+  $('arrow-box').innerHTML = buildTurnArrowSVG(turn);
+  const dSnap = haversine(S.gps, { lat: snap.lat, lon: snap.lon });
+  if(dSnap < 1000){
+    $('v-mdist').textContent = Math.max(0, Math.round(dSnap / 10) * 10);
+    $('v-mdist-u').textContent = 'м';
+  } else {
+    $('v-mdist').textContent = (dSnap / 1000).toFixed(1);
+    $('v-mdist-u').textContent = 'км';
+  }
+  const label = isOfflineGuide() ? 'ВОЗВРАТ НА МАРШРУТ' : 'СЪЕЗД С МАРШРУТА';
+  setHudStreetLabels(label, hudCurrentStreetLabel(snap));
+  $('rb-exit-label')?.classList.add('hidden');
+}
+
 export function onTick(){
   if(!S.gps) return;
   if($('hud').classList.contains('on')){
@@ -317,23 +345,8 @@ export function onTick(){
 
   if(snapLostBlocksNav(snap)) return;
 
-  if(isOfflineGuide() && snap && S.gps){
-    const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
-    const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading)
-      ? S.smoothedHeading : S.gps.heading;
-    let turn = 0;
-    if(hdg != null && !isNaN(hdg)) turn = ((brg - hdg + 540) % 360) - 180;
-    $('arrow-box').innerHTML = buildTurnArrowSVG(turn);
-    const dSnap = haversine(S.gps, { lat: snap.lat, lon: snap.lon });
-    if(dSnap < 1000){
-      $('v-mdist').textContent = Math.max(0, Math.round(dSnap / 10) * 10);
-      $('v-mdist-u').textContent = 'м';
-    } else {
-      $('v-mdist').textContent = (dSnap / 1000).toFixed(1);
-      $('v-mdist-u').textContent = 'км';
-    }
-    setHudStreetLabels('ВОЗВРАТ НА МАРШРУТ', hudCurrentStreetLabel(snap));
-    $('rb-exit-label')?.classList.add('hidden');
+  if(shouldUseReturnArrow(snap) && snap && S.gps){
+    paintReturnToRouteArrow(snap);
   } else {
     let nm = isSnapDegraded() ? getCachedManeuver() : null;
     if(!nm) nm = findNextManeuver();
@@ -415,6 +428,10 @@ export function onTick(){
       }
     }else{
       setHudStreetLabels('—', hudCurrentStreetLabel(snap));
+      $('arrow-box').innerHTML = buildTurnArrowSVG(0);
+      $('v-mdist').textContent = '—';
+      $('v-mdist-u').textContent = '';
+      $('rb-exit-label')?.classList.add('hidden');
     }
   }
   updateFinishInfo(remaining, kmh, now);

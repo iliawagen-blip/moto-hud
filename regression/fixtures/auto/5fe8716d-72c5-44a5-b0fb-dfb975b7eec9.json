@@ -2,7 +2,7 @@
   "fixture_id": "5fe8716d-72c5-44a5-b0fb-dfb975b7eec9",
   "corpus_version": 1,
   "created_at": "2026-07-09T07:37:26.323Z",
-  "last_verified_at": "2026-07-10T12:27:25.401Z",
+  "last_verified_at": "2026-07-12T06:51:12.615Z",
   "source": "auto_generator",
   "category": "highway",
   "region": "m4_don_mid",
@@ -44,10 +44,13 @@
       "duration_s": 14733,
       "maneuver_count": 35,
       "roundabout_count": 0,
-      "fetched_at": "2026-07-09T07:37:53.023Z",
+      "fetched_at": "2026-07-12T10:54:51.331Z",
       "fetch_error": null,
       "provider_meta": {
-        "profile": "car"
+        "profile": "car",
+        "points_sent": 4,
+        "points_original": 4,
+        "downsampled": false
       }
     },
     "openrouteservice": {
@@ -55,7 +58,7 @@
       "duration_s": 16674,
       "maneuver_count": 36,
       "roundabout_count": 0,
-      "fetched_at": "2026-07-10T12:24:05.949Z",
+      "fetched_at": "2026-07-12T11:06:53.303Z",
       "fetch_error": null,
       "provider_meta": {
         "profile": "driving-car"
@@ -68,21 +71,21 @@
     "duration_s": 17740,
     "step_count": 68,
     "router": "osrm",
-    "fetched_at": "2026-07-10T12:22:44.135Z",
+    "fetched_at": "2026-07-12T05:30:00.065Z",
     "fetch_error": null
   },
   "metrics": {
     "graphhopper_vs_motohud": {
-      "hausdorff_m": 2854.1189746449522,
-      "avg_lateral_m": 110.31011950571704,
-      "p50_lateral_m": 2.7796374501030146,
+      "hausdorff_m": 2813.4685215912727,
+      "avg_lateral_m": 110.19840491366988,
+      "p50_lateral_m": 2.703671770338042,
       "p95_lateral_m": 1032.7998562764894,
-      "max_lateral_m": 2854.1189746449522,
+      "max_lateral_m": 2813.4685215912727,
       "length_diff_pct": 1.5888617583357474,
       "duration_diff_pct": 16.950394588500565,
       "maneuver_count_diff": 33,
       "roundabout_count_diff": null,
-      "direction_mismatch_ratio": 0.11389280677009873,
+      "direction_mismatch_ratio": 0.1000667111407605,
       "waypoint_deviations_m": [
         0,
         0,
@@ -91,16 +94,16 @@
       ]
     },
     "ors_vs_motohud": {
-      "hausdorff_m": 6398.233051813494,
-      "avg_lateral_m": 793.567295167551,
-      "p50_lateral_m": 3.7916011595594292,
-      "p95_lateral_m": 4972.417718320711,
-      "max_lateral_m": 6398.233051813494,
+      "hausdorff_m": 6395.187360132785,
+      "avg_lateral_m": 793.1044555701101,
+      "p50_lateral_m": 3.796468839269181,
+      "p95_lateral_m": 4953.430830876703,
+      "max_lateral_m": 6395.187360132785,
       "length_diff_pct": 2.28069086344135,
       "duration_diff_pct": 6.00901916572717,
       "maneuver_count_diff": 32,
       "roundabout_count_diff": null,
-      "direction_mismatch_ratio": 0.2224595123687489,
+      "direction_mismatch_ratio": 0.14342895263509006,
       "waypoint_deviations_m": [
         0,
         33.42497951501055,
@@ -110,16 +113,16 @@
     },
     "yandex_vs_motohud": null,
     "graphhopper_vs_ors": {
-      "hausdorff_m": 6397.831459656623,
-      "avg_lateral_m": 869.7783855924719,
-      "p50_lateral_m": 3.9112328097810596,
-      "p95_lateral_m": 5006.76736847012,
-      "max_lateral_m": 6397.831459656623,
+      "hausdorff_m": 6395.045606933251,
+      "avg_lateral_m": 869.3550604666779,
+      "p50_lateral_m": 3.8776411035336866,
+      "p95_lateral_m": 4972.632867199264,
+      "max_lateral_m": 6395.045606933251,
       "length_diff_pct": 0.702998783945274,
       "duration_diff_pct": 13.17450621054775,
       "maneuver_count_diff": -1,
       "roundabout_count_diff": 0,
-      "direction_mismatch_ratio": 0.18526428190069408,
+      "direction_mismatch_ratio": 0.15877251501000667,
       "waypoint_deviations_m": [
         0,
         33.42497951501055,
@@ -131,8 +134,8 @@
     "ors_vs_yandex": null,
     "consensus_deviation": {
       "refs_agree": false,
-      "motohud_vs_consensus_p95_m": 4972.417718320711,
-      "motohud_vs_consensus_avg_m": 451.938707336634,
+      "motohud_vs_consensus_p95_m": 4953.430830876703,
+      "motohud_vs_consensus_avg_m": 451.65143024188995,
       "signal": "fail"
     },
     "coverage": {

@@ -1,0 +1,164 @@
+{
+  "fixture_id": "6b3462f6-f376-40d3-a26d-2e14d2e6686b",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:02:26.732Z",
+  "last_verified_at": "2026-07-12T06:51:50.320Z",
+  "source": "auto_generator",
+  "category": "many_waypoints",
+  "region": "novosibirsk",
+  "tags": [
+    "auto_v1",
+    "many_waypoints",
+    "novosibirsk"
+  ],
+  "waypoints": [
+    {
+      "lat": 54.987225,
+      "lon": 83.12509,
+      "label": "start"
+    },
+    {
+      "lat": 55.019275,
+      "lon": 83.113145,
+      "label": "via_1"
+    },
+    {
+      "lat": 55.060188,
+      "lon": 82.895474,
+      "label": "via_2"
+    },
+    {
+      "lat": 55.088978,
+      "lon": 83.070387,
+      "label": "via_3"
+    },
+    {
+      "lat": 54.963599,
+      "lon": 82.93607,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 70
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 66900,
+      "duration_s": 8621,
+      "maneuver_count": 54,
+      "roundabout_count": 6,
+      "fetched_at": "2026-07-12T10:55:06.272Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 5,
+        "points_original": 5,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": 67870,
+      "duration_s": 6492,
+      "maneuver_count": 53,
+      "roundabout_count": 2,
+      "fetched_at": "2026-07-12T11:06:59.251Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "driving-car"
+      }
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 69880,
+    "duration_s": 9862,
+    "step_count": 75,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:30:03.996Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 2580.2653017381094,
+      "avg_lateral_m": 326.3214691506956,
+      "p50_lateral_m": 2.0591823722822107,
+      "p95_lateral_m": 1706.9574902084848,
+      "max_lateral_m": 2357.632548742002,
+      "length_diff_pct": 4.264453348597596,
+      "duration_diff_pct": 12.583654431149869,
+      "maneuver_count_diff": 21,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.45324283559577677,
+      "waypoint_deviations_m": [
+        0,
+        0.061816211223633115,
+        5.529223801739215,
+        0,
+        0
+      ]
+    },
+    "ors_vs_motohud": {
+      "hausdorff_m": 2592.2651194488835,
+      "avg_lateral_m": 287.708166065175,
+      "p50_lateral_m": 2.1088837697842893,
+      "p95_lateral_m": 1574.0926039175756,
+      "max_lateral_m": 2358.497677828601,
+      "length_diff_pct": 2.876359473382942,
+      "duration_diff_pct": 34.171567633340096,
+      "maneuver_count_diff": 22,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.42963514519731943,
+      "waypoint_deviations_m": [
+        0,
+        0.061816211223633115,
+        0,
+        42.22596576596925,
+        0
+      ]
+    },
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 1730.7246357644724,
+      "avg_lateral_m": 174.7517579669622,
+      "p50_lateral_m": 1.2669854148782516,
+      "p95_lateral_m": 872.1868804315459,
+      "max_lateral_m": 1556.2652764460036,
+      "length_diff_pct": 1.4499252615844545,
+      "duration_diff_pct": 24.695510961605383,
+      "maneuver_count_diff": 1,
+      "roundabout_count_diff": 4,
+      "direction_mismatch_ratio": 0.22699849170437406,
+      "waypoint_deviations_m": [
+        0,
+        0.061816211223633115,
+        0,
+        42.22596576596925,
+        0
+      ]
+    },
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 1706.9574902084848,
+      "motohud_vs_consensus_avg_m": 307.0148176079353,
+      "signal": "fail"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper",
+        "openrouteservice"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Новосибирск · many_waypoints · OSRM 69.9 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}

@@ -354,7 +354,8 @@ export function renderElevProfile(snap, geom, W, H){
       'y2="' + (my + ph) + '" stroke="' + tok.accent + '" stroke-width="1" opacity="0.5"/>';
   });
 
-  return '<g class="elev-profile" fill="none">' +
+  return '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#000" opacity="0.5"/>' +
+    '<g class="elev-profile" fill="none">' +
     marks +
     pathSegs +
     '</g>';

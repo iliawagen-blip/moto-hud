@@ -8,6 +8,7 @@ import { haversine } from './geo.mjs';
 
 const SAMPLE_STEP_M = 50;
 const MAX_POLYLINE_POINTS = 500;
+const MAX_SAMPLED_POINTS = 1500;
 
 /** Равномерное прореживание до maxPoints вершин. */
 function capPolyline(polyline, maxPoints = MAX_POLYLINE_POINTS){
@@ -21,7 +22,15 @@ function capPolyline(polyline, maxPoints = MAX_POLYLINE_POINTS){
 }
 
 function prepPolyline(polyline){
-  return samplePolyline(capPolyline(polyline));
+  const capped = capPolyline(polyline);
+  const sampled = samplePolyline(capped);
+  if(!sampled.length || sampled.length <= MAX_SAMPLED_POINTS) return sampled;
+  const out = [];
+  const step = (sampled.length - 1) / (MAX_SAMPLED_POINTS - 1);
+  for(let i = 0; i < MAX_SAMPLED_POINTS; i++){
+    out.push(sampled[Math.round(i * step)]);
+  }
+  return out;
 }
 
 function bearingDeg(a, b){

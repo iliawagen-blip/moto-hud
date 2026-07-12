@@ -52,8 +52,9 @@ function lastNightlySim(){
   if(!fs.existsSync(summaryPath)) return { date, pass: null, total: null, rate_pct: null };
   const s = loadJson(summaryPath);
   const pass = s.pass ?? 0;
+  const fail = s.fail ?? 0;
   const total = s.total ?? 0;
-  return { date, pass, total, rate_pct: total ? Math.round(100 * pass / total) : null };
+  return { date, pass, fail, total, rate_pct: total ? Math.round(100 * pass / total) : null };
 }
 
 function median(arr){
@@ -130,6 +131,25 @@ function buildState(){
     ? fs.readdirSync(INVESTIGATIONS_DIR).filter(f => f.endsWith('.md')).length
     : 0;
 
+  const pending = [];
+  if(nightly?.fail > 0 && nightly?.date){
+    const summaryPath = path.join(RESULTS_DIR, nightly.date, 'sim-summary.json');
+    if(fs.existsSync(summaryPath)){
+      for(const r of loadJson(summaryPath).results || []){
+        if(!r.pass && !r.skipped){
+          pending.push(`${r.fixture_id.slice(0, 8)}: sim fail ${r.mode}`);
+        }
+      }
+    }
+  }
+  for(const f of valid){
+    for(const i of f.metadata?.known_issues ?? f.known_issues ?? []){
+      if(i.includes('data_gap') || i.includes('ors_bad')) pending.push(`${f.fixture_id.slice(0, 8)}: ${i}`);
+    }
+  }
+
+  const ghRemaining = Math.max(0, 450 - (gh.count ?? 0));
+
   return {
     updated_at: new Date().toISOString(),
     fixtures: {
@@ -143,16 +163,24 @@ function buildState(){
       last_pass: nightly?.pass ?? null,
       last_total: nightly?.total ?? null,
       last_pass_rate_pct: nightly?.rate_pct ?? null,
+      sim_gate_pass: nightly ? nightly.fail === 0 && nightly.total > 0 : null,
       fixtures_tested: nightly?.total
         ? [...new Set(loadJson(path.join(RESULTS_DIR, nightly.date, 'sim-summary.json')).results?.map(r => r.fixture_id) ?? [])].length
-        : 1
+        : null
     },
     metrics: {
       median_p95_lateral_m: median(p95Values),
       refs_agree_pct: refsTotal ? Math.round(100 * refsAgree / refsTotal) : null
     },
     api_counters: {
-      graphhopper: { today: gh.count, limit: 500, reset_at: gh.reset_at, resets_in_h: hoursUntilReset(gh.reset_at) },
+      graphhopper: {
+        today: gh.count,
+        limit: 500,
+        safety_stop_at: 450,
+        remaining_to_burn: ghRemaining,
+        reset_at: gh.reset_at,
+        resets_in_h: hoursUntilReset(gh.reset_at)
+      },
       openrouteservice: { today: readOrsCounter(), limit: 2000 }
     },
     yandex: {
@@ -160,7 +188,7 @@ function buildState(){
       blocked_until: null
     },
     known_issues: collectKnownIssues(valid),
-    investigations_pending: investigations,
+    investigations_pending: [...new Set(pending)],
     git: gitRegressionCommit()
   };
 }

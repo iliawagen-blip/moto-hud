@@ -39,6 +39,11 @@ const FIXTURES = [
     minPoints: 2
   },
   {
+    name: 'yandex-com-moscow',
+    url: 'https://yandex.com/maps/213/moscow/?ll=37.598966%2C55.657143&mode=routes&rtd=0&rtext=55.592730%2C37.542630~55.711209%2C37.652844&rtt=auto&ruri=~&utm_campaign=desktop&utm_medium=search&utm_source=maps&z=12',
+    minPoints: 2
+  },
+  {
     name: 'hash-rtext',
     url: 'https://yandex.ru/maps/#rtext=55.75,37.62~55.80,37.70',
     minPoints: 2

@@ -1,0 +1,124 @@
+{
+  "fixture_id": "3d7200f8-e6ed-45b7-a8fd-36ec8f896e47",
+  "corpus_version": 1,
+  "created_at": "2026-07-11T22:11:43.422Z",
+  "last_verified_at": "2026-07-12T06:47:39.689Z",
+  "source": "auto_generator",
+  "category": "many_waypoints",
+  "region": "kazan",
+  "tags": [
+    "auto_v1",
+    "many_waypoints",
+    "kazan"
+  ],
+  "waypoints": [
+    {
+      "lat": 55.780857,
+      "lon": 49.08479,
+      "label": "start"
+    },
+    {
+      "lat": 55.864546,
+      "lon": 49.119234,
+      "label": "via_1"
+    },
+    {
+      "lat": 55.714508,
+      "lon": 49.064458,
+      "label": "via_2"
+    },
+    {
+      "lat": 55.798476,
+      "lon": 49.0435,
+      "label": "via_3"
+    },
+    {
+      "lat": 55.856457,
+      "lon": 48.99276,
+      "label": "finish"
+    }
+  ],
+  "constraints": {
+    "distance_km_min": 5,
+    "distance_km_max": 300,
+    "sim_speed_kmh": 70
+  },
+  "references": {
+    "graphhopper": {
+      "distance_m": 67600,
+      "duration_s": 9232,
+      "maneuver_count": 60,
+      "roundabout_count": 2,
+      "fetched_at": "2026-07-12T10:43:43.236Z",
+      "fetch_error": null,
+      "provider_meta": {
+        "profile": "car",
+        "points_sent": 5,
+        "points_original": 5,
+        "downsampled": false
+      }
+    },
+    "openrouteservice": {
+      "distance_m": null,
+      "duration_s": null,
+      "maneuver_count": null,
+      "roundabout_count": null,
+      "fetched_at": "2026-07-12T11:06:21.049Z",
+      "fetch_error": "Could not find routable point within a radius of 350.0 meters of specified coordinate 1: 49.1192340 55.8645460."
+    },
+    "yandex_web": null
+  },
+  "motohud": {
+    "distance_m": 71582,
+    "duration_s": 8155,
+    "step_count": 92,
+    "router": "osrm",
+    "fetched_at": "2026-07-12T05:29:31.957Z",
+    "fetch_error": null
+  },
+  "metrics": {
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 1239.102507746596,
+      "avg_lateral_m": 62.664587027457046,
+      "p50_lateral_m": 1.2800149015874402,
+      "p95_lateral_m": 493.427112907776,
+      "max_lateral_m": 1239.102507746596,
+      "length_diff_pct": 5.562850996060463,
+      "duration_diff_pct": 13.206621704475783,
+      "maneuver_count_diff": 32,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.3977611940298508,
+      "waypoint_deviations_m": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "ors_vs_motohud": null,
+    "yandex_vs_motohud": null,
+    "graphhopper_vs_ors": null,
+    "graphhopper_vs_yandex": null,
+    "ors_vs_yandex": null,
+    "consensus_deviation": {
+      "refs_agree": false,
+      "motohud_vs_consensus_p95_m": 493.427112907776,
+      "motohud_vs_consensus_avg_m": 62.664587027457046,
+      "signal": "insufficient_refs"
+    },
+    "coverage": {
+      "references_available": [
+        "graphhopper"
+      ]
+    }
+  },
+  "metadata": {
+    "author": "generate-waypoints.mjs",
+    "notes": "Казань · many_waypoints · OSRM 71.6 km",
+    "known_issues": [],
+    "compare_interpretation": null,
+    "priority": "normal"
+  },
+  "status": "valid"
+}
