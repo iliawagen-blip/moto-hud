@@ -1,29 +1,29 @@
 {
-  "updated_at": "2026-07-12T08:33:51.201Z",
+  "updated_at": "2026-07-14T11:38:00.556Z",
   "fixtures": {
     "total": 116,
     "valid": 116,
-    "full_coverage": 89,
-    "full_coverage_pct": 77
+    "full_coverage": 99,
+    "full_coverage_pct": 85
   },
   "sim": {
-    "last_nightly_date": "2026-07-12",
-    "last_pass": 334,
+    "last_nightly_date": "2026-07-14",
+    "last_pass": 333,
     "last_total": 348,
     "last_pass_rate_pct": 96,
     "sim_gate_pass": false,
     "fixtures_tested": 116
   },
   "metrics": {
-    "median_p95_lateral_m": 529.6843795001668,
-    "refs_agree_pct": 21
+    "median_p95_lateral_m": 1177.4764633530674,
+    "refs_agree_pct": 22
   },
   "api_counters": {
     "graphhopper": {
-      "today": 264,
+      "today": 0,
       "limit": 500,
       "safety_stop_at": 450,
-      "remaining_to_burn": 186,
+      "remaining_to_burn": 450,
       "reset_at": null,
       "resets_in_h": null
     },
@@ -51,6 +51,7 @@
     "8f5656aa: sim fail deviation",
     "9b63130e: sim fail on_route",
     "bd7a87a4: sim fail on_route",
+    "c82c1a2e: sim fail on_route",
     "cb9b0fef: sim fail deviation",
     "ce5522bc: sim fail deviation",
     "cfd81eec: sim fail on_route",
@@ -58,7 +59,7 @@
     "eb1e26e7: ors_bad_route: 4130km vs OSRM 47km"
   ],
   "git": {
-    "hash": "e9bee844a041db9bd1b16182d98fb7d694b66834",
-    "date": "2026-07-10 16:03:10 +0300"
+    "hash": "8c9e32fb44b4f7fd501400c5d7280fb74f277456",
+    "date": "2026-07-12 14:13:43 +0300"
   }
 }

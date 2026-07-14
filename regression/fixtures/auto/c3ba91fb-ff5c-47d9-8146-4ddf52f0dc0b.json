@@ -2,7 +2,7 @@
   "fixture_id": "c3ba91fb-ff5c-47d9-8146-4ddf52f0dc0b",
   "corpus_version": 1,
   "created_at": "2026-07-11T14:54:36.814Z",
-  "last_verified_at": "2026-07-12T06:58:34.799Z",
+  "last_verified_at": "2026-07-12T11:31:01.453Z",
   "source": "auto_generator",
   "category": "many_waypoints",
   "region": "moscow_center",
@@ -85,7 +85,26 @@
     "fetch_error": null
   },
   "metrics": {
-    "graphhopper_vs_motohud": null,
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 3708.2757949079196,
+      "avg_lateral_m": 647.8224183020194,
+      "p50_lateral_m": 1.0626617629460553,
+      "p95_lateral_m": 3146.3885859158368,
+      "max_lateral_m": 3708.2757949079196,
+      "length_diff_pct": 28.391640035068868,
+      "duration_diff_pct": 11.263818344786376,
+      "maneuver_count_diff": 78,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.5474308300395256,
+      "waypoint_deviations_m": [
+        0,
+        0,
+        3671.237721137821,
+        0.11119507995279233,
+        0,
+        0
+      ]
+    },
     "ors_vs_motohud": {
       "hausdorff_m": 355.9306960715452,
       "avg_lateral_m": 14.025701503019633,
@@ -107,17 +126,37 @@
       ]
     },
     "yandex_vs_motohud": null,
-    "graphhopper_vs_ors": null,
+    "graphhopper_vs_ors": {
+      "hausdorff_m": 3667.9136791202773,
+      "avg_lateral_m": 12.935084257505448,
+      "p50_lateral_m": 0.30171347999594267,
+      "p95_lateral_m": 84.7232065742207,
+      "max_lateral_m": 238.32967070136442,
+      "length_diff_pct": 40.01184834123222,
+      "duration_diff_pct": 44.17508417508417,
+      "maneuver_count_diff": -16,
+      "roundabout_count_diff": 0,
+      "direction_mismatch_ratio": 0.541501976284585,
+      "waypoint_deviations_m": [
+        0,
+        37.42800410864857,
+        0,
+        0.106204632889201,
+        27.52637037705122,
+        0
+      ]
+    },
     "graphhopper_vs_yandex": null,
     "ors_vs_yandex": null,
     "consensus_deviation": {
       "refs_agree": false,
-      "motohud_vs_consensus_p95_m": 123.6781519340858,
-      "motohud_vs_consensus_avg_m": 14.025701503019633,
-      "signal": "insufficient_refs"
+      "motohud_vs_consensus_p95_m": 3146.3885859158368,
+      "motohud_vs_consensus_avg_m": 330.9240599025195,
+      "signal": "fail"
     },
     "coverage": {
       "references_available": [
+        "graphhopper",
         "openrouteservice"
       ]
     }

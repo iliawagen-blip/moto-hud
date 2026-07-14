@@ -28,6 +28,7 @@ function parseArgs(){
   }
   return {
     id: args.includes('--id') ? args[args.indexOf('--id') + 1] : null,
+    fixturesLimit: args.includes('--fixtures') ? Number(args[args.indexOf('--fixtures') + 1]) : null,
     force: args.includes('--force'),
     mode,
     date: args.includes('--date') ? args[args.indexOf('--date') + 1] : new Date().toISOString().slice(0, 10),
@@ -57,12 +58,14 @@ function isDone(checkpoint, fixtureId, mode){
 }
 
 async function main(){
-  const { id, mode: onlyMode, date, port, headless, force } = parseArgs();
+  const { id, fixturesLimit, mode: onlyMode, date, port, headless, force } = parseArgs();
   const simCfg = loadConfig('sim');
   const thresholds = loadConfig('thresholds');
   const modes = onlyMode ? [onlyMode] : (simCfg.modes || ['on_route', 'deviation', 'noise_stress']);
 
   let files = listFixtureFiles();
+  files.sort();
+  if(fixturesLimit && fixturesLimit > 0) files = files.slice(0, fixturesLimit);
   if(id) files = files.filter(f => f.includes(id));
 
   const checkpoint = loadCheckpoint(date);

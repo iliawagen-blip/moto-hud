@@ -19,9 +19,18 @@ import {
 /** @typedef {'osm'|'implicit'|'default'|'none'} SpeedLimitSource */
 /** @typedef {{ speed?: number, unit?: string, unknown?: boolean, none?: boolean }} MaxspeedEntry */
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+const OVERPASS_MIRRORS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://lz4.overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter'
+];
 const WAY_MATCH_MAX_M = 40;
+const CORRIDOR_AROUND_M = 45;
+const SAMPLE_STEP_M = 350;
+const SAMPLE_BATCH = 36;
 const COV_FLUSH_TICKS = 120;
+let _highwayLoadToken = 0;
+let _highwayRetryTimer = null;
 
 let _graceUntil = 0;
 let _lastLimitKey = '';
@@ -111,11 +120,26 @@ export function maxspeedEntryToKmh(entry){
   return Math.round(e.speed);
 }
 
+/** Зоны maxspeed OSM (РФ и распространённые коды) → км/ч */
+const MAXSPEED_ZONE_KMH = {
+  'ru:urban': 60,
+  'ru:rural': 90,
+  'ru:motorway': 110,
+  'ru:living_street': 20,
+  'ru:highway': 90,
+  'de:urban': 50,
+  'de:rural': 100,
+  'de:motorway': 130
+};
+
 /** Числовой maxspeed из OSM-тега way */
 export function parseMaxspeedTag(tag){
   if(tag == null) return null;
   const s = String(tag).trim();
-  if(!s || /^(walk|none|signals|variable|ru:|de:)/i.test(s)) return null;
+  if(!s || /^(walk|none|signals|variable)$/i.test(s)) return null;
+  const zone = MAXSPEED_ZONE_KMH[s.toLowerCase()];
+  if(zone != null) return zone;
+  if(/^(ru:|de:)/i.test(s)) return null;
   const n = parseInt(s, 10);
   return !isNaN(n) && n > 0 ? n : null;
 }
@@ -197,6 +221,32 @@ function urbanCacheKey(lat, lon){
  * @param {number} lon
  * @returns {Promise<boolean>}
  */
+async function overpassFetch(query, timeoutMs = 45000){
+  const body = 'data=' + encodeURIComponent(query);
+  let lastErr = null;
+  for(const url of OVERPASS_MIRRORS){
+    try{
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body,
+        signal: ctrl?.signal
+      });
+      if(timer) clearTimeout(timer);
+      if(!res.ok){
+        lastErr = new Error('Overpass ' + res.status + ' @ ' + url);
+        continue;
+      }
+      return await res.json();
+    }catch(e){
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('Overpass unreachable');
+}
+
 export async function checkUrbanZone(lat, lon){
   const key = urbanCacheKey(lat, lon);
   if(_urbanCache.has(key)) return _urbanCache.get(key);
@@ -211,16 +261,73 @@ out 1;`;
 
   let urban = false;
   try{
-    const res = await fetch(OVERPASS_URL, { method: 'POST', body: 'data=' + encodeURIComponent(q) });
-    if(res.ok){
-      const j = await res.json();
-      urban = (j.elements?.length ?? 0) > 0;
-    }
+    const j = await overpassFetch(q, 20000);
+    urban = (j.elements?.length ?? 0) > 0;
   }catch(e){
     console.warn('urban check:', e);
   }
   _urbanCache.set(key, urban);
   return urban;
+}
+
+/** Точки вдоль polyline с шагом ~SAMPLE_STEP_M (коридор Overpass). */
+function sampleRoutePoints(coords, stepM = SAMPLE_STEP_M){
+  const pts = [{ lat: coords[0][0], lon: coords[0][1] }];
+  let acc = 0;
+  for(let i = 1; i < coords.length; i++){
+    const a = { lat: coords[i - 1][0], lon: coords[i - 1][1] };
+    const b = { lat: coords[i][0], lon: coords[i][1] };
+    acc += haversine(a, b);
+    if(acc >= stepM){
+      pts.push(b);
+      acc = 0;
+    }
+  }
+  const last = { lat: coords[coords.length - 1][0], lon: coords[coords.length - 1][1] };
+  if(haversine(pts[pts.length - 1], last) > 40) pts.push(last);
+  return pts;
+}
+
+function parseOverpassWays(elements){
+  return (elements || [])
+    .filter(e => e.type === 'way' && e.tags?.highway && Array.isArray(e.geometry) && e.geometry.length >= 2)
+    .map(e => ({
+      id: e.id,
+      highway: e.tags.highway,
+      maxspeed: e.tags.maxspeed || null,
+      maxspeedConditional: e.tags['maxspeed:conditional'] || null,
+      geom: e.geometry
+    }));
+}
+
+/** Коридор around: вместо bbox — иначе Overpass таймаутит на длинных маршрутах (field known_pct=0). */
+async function fetchWaysAlongRoute(coords){
+  const samples = sampleRoutePoints(coords);
+  const byId = new Map();
+  for(let i = 0; i < samples.length; i += SAMPLE_BATCH){
+    const batch = samples.slice(i, i + SAMPLE_BATCH);
+    const parts = batch.map(p =>
+      `way["highway"](around:${CORRIDOR_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
+    ).join('\n');
+    const q = `[out:json][timeout:45];\n(\n${parts}\n);\nout tags geom;`;
+    const j = await overpassFetch(q, 55000);
+    for(const w of parseOverpassWays(j.elements)){
+      if(!byId.has(w.id)) byId.set(w.id, w);
+    }
+  }
+  return [...byId.values()];
+}
+
+function scheduleHighwayRetry(route){
+  if(_highwayRetryTimer) clearTimeout(_highwayRetryTimer);
+  _highwayRetryTimer = setTimeout(() => {
+    _highwayRetryTimer = null;
+    if(S.route !== route) return;
+    const matched = route.highwayTypes?.filter(Boolean).length || 0;
+    const need = Math.max(1, (route.coords?.length || 1) - 1);
+    if(matched / need >= 0.4) return;
+    loadRouteHighwayTypes(route).catch(e => console.warn('highway retry:', e));
+  }, 12000);
 }
 
 /**
@@ -302,54 +409,87 @@ function matchWayAtPoint(point, ways){
 
 /**
  * Overpass: highway-теги ways вдоль маршрута + urban-флаги.
+ * Коридор around: + зеркала — bbox-запрос на длинных маршрутах почти всегда падает
+ * (поле: known_pct=0, кроме одного удачного `06-34`).
  * @param {object} route
  */
 export async function loadRouteHighwayTypes(route){
   if(!route?.coords || route.coords.length < 2) return;
+  const token = ++_highwayLoadToken;
+  const t0 = Date.now();
   const n = route.coords.length - 1;
   const highwayTypes = new Array(n).fill(null);
   const wayTags = new Array(n).fill(null);
   const urbanSegments = new Array(n).fill(false);
 
-  const bb = routeBbox(route.coords);
-  const q = `[out:json][timeout:28];
-way["highway"](${bb.s},${bb.w},${bb.n},${bb.e});
-out geom;`;
-
   let ways = [];
   try{
-    const res = await fetch(OVERPASS_URL, { method: 'POST', body: 'data=' + encodeURIComponent(q) });
-    if(!res.ok) throw new Error('Overpass ' + res.status);
-    const j = await res.json();
-    ways = (j.elements || [])
-      .filter(e => e.type === 'way' && e.tags?.highway && Array.isArray(e.geometry) && e.geometry.length >= 2)
-      .map(e => ({
-        highway: e.tags.highway,
-        maxspeed: e.tags.maxspeed || null,
-        maxspeedConditional: e.tags['maxspeed:conditional'] || null,
-        geom: e.geometry
-      }));
+    ways = await fetchWaysAlongRoute(route.coords);
   }catch(e){
     console.warn('loadRouteHighwayTypes:', e);
     route.highwayTypes = highwayTypes;
     route.wayTags = wayTags;
     route.urbanSegments = urbanSegments;
+    telemetry.log('nav', {
+      sub: 'highway_types_failed',
+      segments: n,
+      ms: Date.now() - t0,
+      message: String(e?.message || e).slice(0, 120)
+    });
+    scheduleHighwayRetry(route);
     return;
   }
 
-  const urbanPending = new Map();
+  if(token !== _highwayLoadToken || S.route !== route) return;
+
   for(let i = 0; i < n; i++){
     const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
     const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
-    const pt = { lat, lon };
-    const way = matchWayAtPoint(pt, ways);
+    const way = matchWayAtPoint({ lat, lon }, ways);
     if(way){
       highwayTypes[i] = way.highway;
       wayTags[i] = {
         maxspeed: way.maxspeed,
         maxspeedConditional: way.maxspeedConditional
       };
+      // residential / living — явно «город» без второго Overpass-запроса
+      const hw = String(way.highway).toLowerCase();
+      if(hw === 'residential' || hw === 'living_street' || hw === 'service'){
+        urbanSegments[i] = true;
+      }
     }
+  }
+
+  route.highwayTypes = highwayTypes;
+  route.wayTags = wayTags;
+  route.urbanSegments = urbanSegments;
+  const matched = highwayTypes.filter(Boolean).length;
+  telemetry.log('nav', {
+    sub: 'highway_types_loaded',
+    segments: n,
+    matched,
+    ways: ways.length,
+    ms: Date.now() - t0,
+    mode: 'corridor'
+  });
+
+  if(matched / n < 0.4) scheduleHighwayRetry(route);
+
+  // Urban refine в фоне — не блокирует появление лимитов
+  refineUrbanSegments(route, highwayTypes, urbanSegments, token).catch(() => {});
+}
+
+async function refineUrbanSegments(route, highwayTypes, urbanSegments, token){
+  const n = highwayTypes.length;
+  const urbanPending = new Map();
+  for(let i = 0; i < n; i++){
+    if(urbanSegments[i]) continue;
+    const hw = highwayTypes[i];
+    if(!hw) continue;
+    const needUrban = /^(primary|secondary|tertiary)/i.test(hw);
+    if(!needUrban) continue;
+    const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
+    const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
     const uk = urbanCacheKey(lat, lon);
     if(_urbanCache.has(uk)){
       urbanSegments[i] = _urbanCache.get(uk);
@@ -357,27 +497,20 @@ out geom;`;
       urbanPending.set(uk, checkUrbanZone(lat, lon));
     }
   }
-
-  if(urbanPending.size){
-    const keys = [...urbanPending.keys()];
-    const vals = await Promise.all([...urbanPending.values()]);
-    const urbanByKey = new Map(keys.map((k, idx) => [k, vals[idx]]));
-    for(let i = 0; i < n; i++){
-      const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
-      const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
-      urbanSegments[i] = urbanByKey.get(urbanCacheKey(lat, lon)) ?? false;
-    }
+  if(!urbanPending.size) return;
+  const keys = [...urbanPending.keys()];
+  const vals = await Promise.all([...urbanPending.values()]);
+  if(token !== _highwayLoadToken || S.route !== route) return;
+  const urbanByKey = new Map(keys.map((k, idx) => [k, vals[idx]]));
+  for(let i = 0; i < n; i++){
+    if(urbanSegments[i] || !highwayTypes[i]) continue;
+    if(!/^(primary|secondary|tertiary)/i.test(highwayTypes[i])) continue;
+    const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
+    const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
+    const u = urbanByKey.get(urbanCacheKey(lat, lon));
+    if(u != null) urbanSegments[i] = u;
   }
-
-  route.highwayTypes = highwayTypes;
-  route.wayTags = wayTags;
   route.urbanSegments = urbanSegments;
-  telemetry.log('nav', {
-    sub: 'highway_types_loaded',
-    segments: n,
-    matched: highwayTypes.filter(Boolean).length,
-    ways: ways.length
-  });
 }
 
 function limitFromWayTags(tags, now){
@@ -421,6 +554,11 @@ export function getCurrentSpeedLimit(snap, opts = {}){
 }
 
 function resolveSparseSegIdx(snap){
+  const raw = snap?.segIdx ?? snap?.idx;
+  // Lookahead передаёт только segIdx — не подменять GPS-позицией
+  if(snap && snap.lat == null && snap.lon == null && raw != null && S.route?.maxspeeds?.length){
+    return Math.max(0, Math.min(raw, S.route.maxspeeds.length - 1));
+  }
   const pos = snap?.lat != null && snap?.lon != null
     ? { lat: snap.lat, lon: snap.lon }
     : S.gps;
@@ -436,7 +574,6 @@ function resolveSparseSegIdx(snap){
     }
     return best;
   }
-  const raw = snap?.segIdx ?? snap?.idx;
   if(raw != null && S.route?.maxspeeds?.length){
     return Math.max(0, Math.min(raw, S.route.maxspeeds.length - 1));
   }

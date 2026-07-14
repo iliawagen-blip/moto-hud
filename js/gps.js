@@ -98,7 +98,9 @@ function resolveGpsSpeed(next, prev){
   }
 
   if(meas > GPS_SPEED_MAX_MPS) meas = 0;
-  if(meas > 0 && (acc <= GPS_SPEED_ACC_TRUST_M * 2 || dist > acc)){
+  // Не доверять meas при плохом acc — иначе «пыление» скорости после cold-start / тоннеля
+  // (field 17-35: acc 80–370 м + dist>acc → скачки 0↔65 км/ч).
+  if(meas > 0 && acc <= GPS_SPEED_ACC_TRUST_M * 2 && dist <= Math.max(80, acc * 1.2)){
     const mps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
     return { ...base, meas, mps, src: 'meas' };
   }

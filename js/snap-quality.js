@@ -152,5 +152,6 @@ export function lostDurationMs(){
   return _lostSince ? Date.now() - _lostSince : 0;
 }
 
-export function cacheLastManeuver(nm){ _lastNm = nm; }
+export function cacheLastManeuver(nm){ _lastNm = nm || null; }
 export function getCachedManeuver(){ return _lastNm; }
+export function clearCachedManeuver(){ _lastNm = null; }

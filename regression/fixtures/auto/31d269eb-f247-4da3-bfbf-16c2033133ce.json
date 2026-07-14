@@ -2,7 +2,7 @@
   "fixture_id": "31d269eb-f247-4da3-bfbf-16c2033133ce",
   "corpus_version": 1,
   "created_at": "2026-07-12T05:27:35.049Z",
-  "last_verified_at": "2026-07-12T06:46:27.990Z",
+  "last_verified_at": "2026-07-12T11:16:19.747Z",
   "source": "auto_generator",
   "category": "many_waypoints",
   "region": "sochi_adler",
@@ -82,7 +82,26 @@
     "fetch_error": null
   },
   "metrics": {
-    "graphhopper_vs_motohud": null,
+    "graphhopper_vs_motohud": {
+      "hausdorff_m": 7443.283589705478,
+      "avg_lateral_m": 885.7723300285637,
+      "p50_lateral_m": 19.131841698818757,
+      "p95_lateral_m": 6546.3365064819245,
+      "max_lateral_m": 7443.283589705478,
+      "length_diff_pct": 24.848816306769532,
+      "duration_diff_pct": 54.86140936271433,
+      "maneuver_count_diff": 34,
+      "roundabout_count_diff": null,
+      "direction_mismatch_ratio": 0.6104069379586391,
+      "waypoint_deviations_m": [
+        0,
+        0,
+        7285.8300427544455,
+        535.4893915655264,
+        12.090303697042565,
+        38.83657707631536
+      ]
+    },
     "ors_vs_motohud": null,
     "yandex_vs_motohud": null,
     "graphhopper_vs_ors": null,
@@ -90,12 +109,14 @@
     "ors_vs_yandex": null,
     "consensus_deviation": {
       "refs_agree": false,
-      "motohud_vs_consensus_p95_m": null,
-      "motohud_vs_consensus_avg_m": null,
+      "motohud_vs_consensus_p95_m": 6546.3365064819245,
+      "motohud_vs_consensus_avg_m": 885.7723300285637,
       "signal": "insufficient_refs"
     },
     "coverage": {
-      "references_available": []
+      "references_available": [
+        "graphhopper"
+      ]
     }
   },
   "metadata": {

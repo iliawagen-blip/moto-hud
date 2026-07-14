@@ -2,6 +2,7 @@
  * Wake-lock: Screen Wake Lock API (PWA) + KeepAwake (Capacitor Android).
  */
 import { S } from './state.js';
+import { $ } from './util.js';
 import { isNative } from './platform.js';
 import telemetry from './telemetry.js';
 
@@ -38,4 +39,14 @@ export async function releaseWakeLock(){
     try{ S.wakeLock.release(); }catch(e){}
     S.wakeLock = null;
   }
+}
+
+/** Повторный запрос wake-lock после visibility (Android/PWA теряют при сворачивании). */
+export function initWakeLockResume(){
+  if(typeof document === 'undefined') return;
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState !== 'visible') return;
+    if(!$('hud')?.classList.contains('on')) return;
+    acquireWakeLock();
+  });
 }
