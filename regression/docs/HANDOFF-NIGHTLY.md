@@ -1,170 +1,176 @@
-# Handoff: Nightly regression agent — AUTONOMOUS GH BURN
+# Handoff: Nightly regression agent — OFF-ROUTE SIM FIX
 
-> **Режим:** без вопросов пользователю до `graphhopper-counter.count >= 440`  
+> **Режим:** без вопросов пользователю до закрытия sim-gate или явного stop  
 > **Проект:** `C:\Users\Илья\Documents\jul26\moto-hud`  
-> **Handoff:** 2026-07-11T16:46 UTC (sync артеfactов)  
-> **Лог:** `regression/results/2026-07-11/session-log.md`
+> **Handoff:** 2026-07-13T14:00 UTC  
+> **Git baseline:** `8c9e32fb44b4f7fd501400c5d7280fb74f277456` (main)  
+> **Лог:** `regression/results/2026-07-12/session-log.md` → append **«Цикл 3 — off-route sim fix»**
 
 ---
 
 ## TL;DR — что делать прямо сейчас
 
-1. Прочитать `regression/state/current.json` → `api_counters.graphhopper.remaining_to_burn` (**388** на старт).
-2. **Цикл GH burn** (ниже) пока `count < 440` — **не спрашивать пользователя**.
-3. Каждые **50 GH** или **30 мин** — append checkpoint в session-log.
-4. При `count >= 440` — `regression:metrics`, `regression:report`, `regression:state`, `regression:rebuild-sim-summary`, manifest, финальный session-log.
-5. **Sim не гонять** в этом режиме (слишком долго); только references.
+1. Прочитать `regression/reports/2026-07-12/summary.md` и `regression/state/current.json`.
+2. **P0:** починить регрессию **`false_reroute`** в `js/offroute.js` (коммит `8c9e32f` сломал sim `on_route`).
+3. **P0:** прогнать smoke sim → полный sim 116×3 → `rebuild-sim-summary` → `report` → `state`.
+4. **P1:** сверить с полевой телеметрией `fixtures/field/telemetry_2026-07-13_07-09.jsonl` (reroute на реальном съезде **должен** остаться).
+5. **GH burn — STOP** (`count=387/500`, до 440 осталось ~53). Новые GH **не тратить**, пока sim gate не зелёный.
 
 ---
 
-## Состояние после sync (2026-07-11)
+## Контекст (почему эта задача)
 
-| Метрика | Значение |
-|---------|----------|
-| Fixtures valid | **39** |
-| Full coverage (MH+GH+ORS) | **33/39 (85%)** |
-| GH counter | **62/500** (осталось до stop: **388**) |
-| ORS counter (state) | 0 _(счётчик слабый — ориентир: лог fetch)_ |
-| **Sim gate (merged)** | **44/45** — fail `bd7a87a4` on_route (snap **0.583**) |
-| **Smoke sim (10×3)** | **30/30 PASS** _(9b63130e закрыт re-run 0.750)_ |
-| **Consensus gate** | **21 fail / 39** — ожидаемо после expansion |
-| refs_agree | **21%** |
-| median p95 vs consensus | **182 m** (было ~1267 m на smoke — новые fx тянут вниз) |
+| Источник | Sim | Главная причина fail |
+|----------|-----|----------------------|
+| `8c9e32f` report 2026-07-12 | **262/348 (75%)** | **~78× `on_route` + `false_reroute`** |
+| rebuild до fix (`e9bee84`) | 334/348 (96%) | 14 fail (snap / deviation) |
+| Поле 13.07 `07-09.jsonl` | — | 6 reroute по `snap_lost` — **корректно на съезде** |
 
-### Единственный sim fail (corpus)
+**Диагноз:** быстрый триггер `snap_lost` + смягчение `canTriggerReroute` в `offroute.js` дают **ложный reroute на маршруте** в sim (`false_reroute_max: 0` в `regression/config/thresholds.json`).
 
-| Fixture | mode | good_snap | p95 | Примечание |
-|---------|------|-----------|-----|------------|
-| `bd7a87a4` | on_route | **0.583** | 36.6 m | не borderline — `recovered_good=false` |
-
-### Data gaps (не чинить ORS в burn-режиме)
-
-- `eb1e26e7` — ORS permanent gap (GH ok)
-- `089c5f22` — router_diff GH↔ORS
+**Цель fix:** на `on_route` sim — **0 reroute**; на `deviation` sim и в поле — reroute при подтверждённом съезде.
 
 ---
 
-## AUTONOMOUS LOOP — GH burn до 440
+## P0 — правка off-route (гипотезы, проверить по коду)
+
+Файлы: `js/offroute.js`, `js/hud.js`, `regression/playwright/lib/assertions-shared.mjs` (только читать).
+
+| # | Изменение | Зачем |
+|---|-----------|--------|
+| 1 | **`snap_lost` reroute** — только если уже `SUSPECT` **и** `lateral >= OFF_ROUTE_ENTER_M` **и** (heading diverged **или** `suspectDistM >= 40`) | убрать reroute от краткого LOST на линии |
+| 2 | **Не reroute** при `lateral < OFF_ROUTE_EXIT_M` после recalc (уже есть — проверить) | |
+| 3 | **`tryReturnOnRoute`** — не сбрасывать в ON_ROUTE при LOST + lateral > EXIT (уже есть — проверить) | |
+| 4 | Опционально: **`offConfirmed`** для `canTriggerReroute` — lateral ≥ ENTER, но **не** триггерить без heading/time/dist если snap ещё GOOD и lateral < 80 | баланс field vs sim |
+
+**Не ломать поле:** после правки сравнить replay `fixtures/field/telemetry_2026-07-13_07-09.jsonl` в sim (если есть harness) или ручной чек nav subs: `reroute` на ~138s, 1953s… должны сохраниться.
 
 ```bash
-cd C:\Users\Илья\Documents\jul26\moto-hud
-```
-
-### Перед циклом (один раз)
-
-```bash
-type regression\cache\graphhopper-counter.json
 npm run build
 ```
 
-### Итерация (повторять без паузы на вопросы)
-
-```bash
-# 0. STOP?
-#    если count >= 440 → выйти в финализацию
-
-# 1. Генерация (бесплатно по API GH)
-npm run regression:generate -- --count 10 --seed <NEXT_SEED>
-# NEXT_SEED: 20260711d, e, f… или timestamp
-
-# 2. Motohud (OSRM — delay 2s, не параллелить)
-npm run regression:fetch:motohud
-
-# 3. GraphHopper — ТРАТИТ КВОТУ
-npm run regression:fetch:gh
-
-# 4. ORS (пока лимит 2000 — fetch для всех без cache)
-npm run regression:fetch:ors
-
-# 5. Metrics (локально, без API)
-npm run regression:metrics
-
-# 6. Checkpoint
-# append session-log: GH count, fixtures valid, batch seed
-```
-
-**Правила:**
-
-| Правило | Деталь |
-|---------|--------|
-| **Stop** | `graphhopper-counter.json` → `count >= 440` |
-| **Hard stop** | HTTP 429 GH после retry → checkpoint, sleep 60s, retry 1×; если снова — стоп с логом |
-| **Skip sim** | `--skip-sim` всегда в burn-режиме |
-| **Не тратить GH** | `--force` на уже закэшированных без `--id` |
-| **4xx waypoints** | fixture `invalid` / skip ORS — не зацикливаться |
-| **Corrupt fixture** | удалить 0-byte JSON, записать в log |
-| **Yandex web** | **ЗАПРЕЩЕНО** |
-
-### Оценка итерации
-
-~10 fixtures × 1 GH = **10–12 req/iter** (retry) → **~35 iter** до 440 → **~350 новых fixtures** (целевой corpus **~390**).
-
 ---
 
-## Финализация (после stop)
+## P0 — verification loop (без вопросов)
 
 ```bash
-npm run regression:metrics
-npm run regression:rebuild-sim-summary -- --date 2026-07-11
-npm run regression:report -- --date 2026-07-11 || true
+cd C:\Users\Илья\Documents\jul26\moto-hud
+npm run build
+```
+
+### Smoke (быстро, ~10 fixture × 3 mode)
+
+```bash
+node regression/scripts/run-sim.mjs --fixtures 10 --modes on_route,deviation,noise_stress
+```
+
+Ожидание smoke: **0 `false_reroute`** на `on_route`.
+
+### Полный sim (116 fixtures)
+
+```bash
+node regression/scripts/run-sim.mjs --date 2026-07-13
+npm run regression:rebuild-sim-summary -- --date 2026-07-13
+npm run regression:report -- --date 2026-07-13
 npm run regression:state
 node scripts/regression-results-manifest.mjs
 ```
 
-Append session-log блок **«mode: GH-BURN complete»**:
+### Критерии успеха P0
 
-- GH: 62 → N/500
-- Fixtures: 39 → M
-- Full coverage: 33/M
-- Consensus fail count
-- **Не** ожидать CI gate PASS (consensus долг)
+| Gate | Было (`8c9e32f`) | Цель |
+|------|------------------|------|
+| Sim `on_route` false_reroute | ~78 fail | **0 fail** |
+| Sim total | 262/348 | **≥ 330/348** (не хуже pre-fix) |
+| deviation `off_route_trigger` | 2 fail | **≤ 8** (не регресснуть vs e9bee84) |
+
+Append в `regression/results/2026-07-13/session-log.md` (создать если нет):
+
+- commit hash после fix
+- sim pass/fail по режимам
+- список оставшихся fail (если есть)
+- ссылка на field fixture check
 
 ---
 
-## Решения без эскалации (не спрашивать)
+## P1 — если P0 закрыт (остаток ночи)
+
+1. **Оставшиеся sim fail** (не false_reroute): `019f1539` p95, `0f6d2613`/`9b63130e`/`bd7a87a4`/`cfd81eec` good_snap — точечный разбор в sim UI:
+   ```
+   sim.html?mode=regression&regressionDate=2026-07-13&fixture=<id>&runMode=on_route
+   ```
+2. **Consensus** (71 fail) — **не блокирует** P0; только log top-10 p95 из report, без массового GH/ORS.
+3. **GH:** если `count < 440` и sim gate PASS — можно добить burn **≤ 10 req** (1 batch generate), иначе **skip**.
+
+---
+
+## Запрещено / defer
+
+| Действие | Причина |
+|----------|---------|
+| Массовый `regression:generate` + GH fetch | квота 387/500, приоритет sim |
+| Yandex web fetch | blocked policy |
+| Ослаблять `false_reroute_max` в thresholds | маскирует баг |
+| `--skip-sim` в финале | нужен sim gate |
+
+---
+
+## Решения без эскалации
 
 | Ситуация | Действие |
 |----------|----------|
-| `bd7a87a4` sim fail | **defer** — не блокирует burn; investigation после burn |
-| `9b63130e` borderline | **closed** — smoke 30/30 |
-| Consensus fail | **ignore** для gate в burn-режиме |
-| ORS fail на новом fx | metrics `insufficient_refs`, продолжать |
-| GH ECONNRESET | retry 2×, иначе skip fixture, продолжить |
-| OSRM 429 | sleep 5s, продолжить |
-| generate < 10/10 | log failed categories, следующий seed |
+| smoke still false_reroute | итерация offroute.js, повтор smoke |
+| deviation off_route_trigger fail | проверить sim track lateral, не ослаблять порог без field check |
+| sim < 330/348 после fix | зафиксировать delta vs summary 2026-07-12, продолжить точечный разбор |
+| CI consensus FAIL | log only, не блокирует handoff complete |
+| GH 429 | sleep 60s, 1 retry, иначе stop GH |
 
 ---
 
-## Команды
+## Артефакты (обновить)
+
+```
+js/offroute.js                    ← главная правка
+regression/results/2026-07-13/sim-summary.json
+regression/reports/2026-07-13/summary.md
+regression/state/current.json
+regression/results/2026-07-13/session-log.md
+fixtures/field/telemetry_2026-07-13_07-09.jsonl   ← эталон поля (read-only)
+```
+
+---
+
+## Справка: поле 13.07 (не регресснуть)
+
+`fixtures/field/telemetry_2026-07-13_07-09.jsonl` — 36.7 min, ~21 km, build `mrhp4bs9`:
+
+- 6× `reroute` с trigger `snap_lost` на реальных съездах (~138s, 1953s…)
+- 0× `reroute_failed`
+- Последний reroute ~2125s без `ON_ROUTE` до СТОП — отдельный edge (не приоритет P0)
+
+---
+
+## Команды (копипаст)
 
 ```bash
-npm run regression:generate -- --count 10 --seed 20260711d
-npm run regression:fetch:motohud
-npm run regression:fetch:gh
-npm run regression:fetch:ors
-npm run regression:metrics
-npm run regression:rebuild-sim-summary -- --date 2026-07-11
-npm run regression:report -- --date 2026-07-11
+npm run build
+node regression/scripts/run-sim.mjs --fixtures 10 --modes on_route,deviation,noise_stress
+node regression/scripts/run-sim.mjs --date 2026-07-13
+npm run regression:rebuild-sim-summary -- --date 2026-07-13
+npm run regression:report -- --date 2026-07-13
 npm run regression:state
+node scripts/regression-results-manifest.mjs
+node scripts/analyze-telemetry-full.mjs fixtures/field/telemetry_2026-07-13_07-09.jsonl
 ```
 
 ---
 
-## Артефакты (обновлять)
+## Stop condition для агента
 
-```
-regression/cache/graphhopper-counter.json   ← главный стоп-критерий
-regression/fixtures/auto/*.json
-regression/state/current.json
-regression/results/2026-07-11/session-log.md
-regression/reports/2026-07-11/summary.md
-regression/results/2026-07-11/sim-summary.json
-```
+**DONE** когда:
 
----
+1. Sim gate: `false_reroute` fail count = **0** на `on_route`, и  
+2. `sim_gate_pass: true` в `current.json` **ИЛИ** total pass **≥ 330/348** с перечислением оставшихся fail в session-log, и  
+3. `npm run build` OK.
 
-## После reset GH (следующая сессия)
-
-1. sim on_route на накопленном corpus (batch по 25)
-2. `bd7a87a4` investigation / product fix
-3. trend report vs 2026-07-11
+После DONE — commit с message `fix(offroute): …` (один коммит на fix + артефакты sim **не** коммитить unless repo convention says so — **артефакты results/** обычно коммитятся в этом проекте).

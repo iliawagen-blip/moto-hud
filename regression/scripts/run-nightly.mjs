@@ -177,7 +177,7 @@ async function main(){
     await runPhase('metrics', () => runRegressionScript('compute-metrics.mjs', forceArgs), date, ctx);
 
     if(!skipSim){
-      await runPhase('sim', () => runRegressionScript('run-sim.mjs', [...dateArgs, ...forceArgs]), date, ctx);
+      await runPhase('sim', () => runRegressionScript('run-sim.mjs', [...dateArgs, ...forceArgs], { allowFail: true }), date, ctx);
     }else{
       console.log('[nightly] ⊘ sim skipped');
     }

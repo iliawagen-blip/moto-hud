@@ -26,6 +26,7 @@ import { buildRouteRequestUrl, parseRouteResponse } from './router.js';
 import { HIGHWAY_CLASSES } from './maneuver-filter.js';
 import { assessRouteQuality, RouteQuality } from './route-quality.js';
 import { parseMaxspeedsFromRoute, parseSegmentSpeedsFromRoute, loadRouteHighwayTypes } from './speed-limit.js';
+import { clearCachedManeuver } from './snap-quality.js';
 
 /** Типы OSM highway без проезда для мото/авто (аудит после Overpass). */
 export const NON_MOTOR_HIGHWAYS = new Set([
@@ -135,7 +136,21 @@ export function seedSnapFromGps(opts = {}){
 }
 
 function seedSnapAfterReroute(){
-  seedSnapFromGps({ relaxed: false });
+  const ok = seedSnapFromGps({ relaxed: false });
+  if(ok){
+    telemetry.log('nav', { sub: 'reroute_seed', mode: 'strict' });
+    return true;
+  }
+  const soft = seedSnapFromGps({ relaxed: true });
+  telemetry.log('nav', {
+    sub: 'reroute_seed',
+    mode: soft ? 'relaxed' : 'failed',
+    lateral: S.gps && S.route?.geometry
+      ? Math.round(haversine(S.gps, interpolateAtS(S.route.geometry,
+          findSForLatLon(S.route.geometry, S.gps.lat, S.gps.lon))) || 0)
+      : null
+  });
+  return soft;
 }
 
 /** Фоновая сборка geometry для всех вариантов после открытия карты */
@@ -384,6 +399,7 @@ export async function recalcRoute(){
     S.routeAlternatives = [];
     await buildRoute({ reroute: true, allowCache: false });
     seedSnapAfterReroute();
+    clearCachedManeuver();
     telemetry.log('nav', { sub: 'reroute' });
     Array.from(S.camWarned).forEach(k => {
       if(typeof k === 'string' && k.startsWith('st_')) S.camWarned.delete(k);
@@ -564,6 +580,16 @@ export function getCurrentRouteStepAtS(curS){
   return list[idx]?.step || null;
 }
 
+function softNavManeuver(m){
+  const st = m?.step;
+  if(!st || st.type === 'depart') return false;
+  if(st.type === 'arrive') return true;
+  if(st.type === 'roundabout' || st.type === 'rotary' || st.type === 'exit roundabout') return true;
+  if(st.type === 'on ramp' || st.type === 'off ramp' || st.type === 'fork' || st.type === 'end of road') return true;
+  const mod = st.modifier || '';
+  return !!(mod && mod !== 'straight');
+}
+
 export function findNextManeuver(){
   if(!S.route || !S.route.steps.length) return null;
   const geom = S.route.geometry;
@@ -574,22 +600,29 @@ export function findNextManeuver(){
     : (findNearestOnRoute()?.idx ?? 0);
 
   if(geom && curS != null){
-    const sorted = geom.maneuvers
-      .filter(m => m.step.type !== 'depart' && m.step.type !== 'arrive')
+    const sorted = [...(geom.maneuvers || [])]
+      .filter(m => m.step && m.step.type !== 'depart')
       .sort((a, b) => a.s - b.s);
 
+    // 1) строгие значимые манёвры
     for(const m of sorted){
-      if(m.step.type === 'arrive'){
-        if(curS <= m.s + MANEUVER_PASSED_M){
-          const along = Math.max(0, m.s - curS);
-          return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
-        }
-        continue;
-      }
+      if(m.step.type === 'arrive') continue;
       if(!isSignificantManeuver(m, geom)) continue;
       if(curS > m.s + MANEUVER_PASSED_M) continue;
       const along = Math.max(0, m.s - curS);
       return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
+    }
+
+    // 2) fallback: любой поворот/съезд/arrive впереди (вечерний баг — фильтр «съедал» всё)
+    for(const m of sorted){
+      if(!softNavManeuver(m)) continue;
+      if(curS > m.s + MANEUVER_PASSED_M) continue;
+      const along = Math.max(0, m.s - curS);
+      return {
+        step: m.step,
+        dist: along > 0 ? along : haversine(S.gps, m.step),
+        soft: true
+      };
     }
     return null;
   }

@@ -21,7 +21,7 @@ import {
 import { updateCamStatusUI } from './cam-status.js';
 import { resetRouteSnap, getNavSnap, projectPointToRoute } from './route-geometry.js';
 import { hasEverConverged } from './gps-converge.js';
-import { isSnapLost, isSnapDegraded, getCachedManeuver, cacheLastManeuver, resetSnapQuality } from './snap-quality.js';
+import { isSnapLost, isSnapDegraded, getCachedManeuver, cacheLastManeuver, resetSnapQuality, clearCachedManeuver } from './snap-quality.js';
 import { RouteQuality } from './route-quality.js';
 import { stepTurnAngleDeg } from './maneuver-filter.js';
 import { ensureRouteGeometry } from './route.js';
@@ -281,10 +281,13 @@ export function onTick(){
   const hh = getHeadingHealth();
   const hw = $('heading-warn');
   if(hw){
-    hw.classList.toggle('on', !!hh.interference && kmh < 25);
-    hw.textContent = hh.calibrating
-      ? '🧭 Калибровка компаса — восьмёрка 15 с'
-      : '⚠ Помехи компаса — курс по GPS';
+    // Баннер «помехи компаса» убран — только прогресс явной калибровки.
+    if(hh.calibrating){
+      hw.classList.add('on');
+      hw.textContent = '🧭 Калибровка компаса — восьмёрка 15 с';
+    } else {
+      hw.classList.remove('on');
+    }
   }
 
   if(isBearingMode() && S.finish && S.gps){
@@ -352,7 +355,7 @@ export function onTick(){
     if(!nm) nm = findNextManeuver();
     if(nm){
       cacheLastManeuver(nm);
-      logManeuverContext(nm, snap, true, null);
+      logManeuverContext(nm, snap, true, nm.soft ? 'soft_fallback' : null);
       const rbCtx = snap ? getRoundaboutContext(snap, S.route) : null;
       if(rbCtx) logRoundaboutTelemetry(rbCtx);
       const displayStep = (rbCtx?.isOnRoundabout && rbCtx.enterStep) ? rbCtx.enterStep :
@@ -427,11 +430,26 @@ export function onTick(){
         }
       }
     }else{
-      setHudStreetLabels('—', hudCurrentStreetLabel(snap));
+      clearCachedManeuver();
+      setHudStreetLabels('ПРЯМО', hudCurrentStreetLabel(snap));
       $('arrow-box').innerHTML = buildTurnArrowSVG(0);
-      $('v-mdist').textContent = '—';
-      $('v-mdist-u').textContent = '';
+      if(remaining < 1000){
+        $('v-mdist').textContent = Math.max(0, Math.round(remaining / 10) * 10);
+        $('v-mdist-u').textContent = 'м';
+      } else if(remaining > 0){
+        $('v-mdist').textContent = (remaining / 1000).toFixed(1);
+        $('v-mdist-u').textContent = 'км';
+      } else {
+        $('v-mdist').textContent = '—';
+        $('v-mdist-u').textContent = '';
+      }
       $('rb-exit-label')?.classList.add('hidden');
+      telemetry.log('nav', {
+        sub: 'maneuver_none',
+        s0: snap?.s != null ? Math.round(snap.s) : null,
+        lat_off: snap?.lateral != null ? Math.round(snap.lateral) : null,
+        snap_quality: S.snapQuality
+      });
     }
   }
   updateFinishInfo(remaining, kmh, now);

@@ -32,6 +32,7 @@ import { initTrackRecorderUi } from './track-recorder.js';
 import { initTripPlannerUi } from './trip-ui.js';
 import { initTripRefuelHud } from './trip-refuel-hud.js';
 import { initHudChrome } from './hud-chrome.js';
+import { initHudResume } from './hud-resume.js';
 import { initSettingsUi } from './settings-ui.js';
 import { initHudSettingsSheet } from './hud-settings-sheet.js';
 import { prepareRegressionHud, sampleRegressionState, regressionPrimeSnap } from './regression-sim-bridge.js';
@@ -48,6 +49,7 @@ initYandexExportUi();
 initTrackRecorderUi();
 initTripPlannerUi();
 initHudChrome();
+initHudResume();
 
 function persistSettingsFromDom(){
   syncOptionsFromDom();
