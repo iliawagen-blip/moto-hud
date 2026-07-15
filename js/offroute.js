@@ -14,7 +14,8 @@ import {
   OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS,
   OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR,
   OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS,
-  OFF_ROUTE_HEADING_MIN_SPD
+  OFF_ROUTE_HEADING_MIN_SPD,
+  OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M
 } from './nav-constants.js';
 
 export const OffRouteState = {
@@ -44,7 +45,9 @@ const _ctx = {
   lastFeedMs: 0,
   rerouteBusy: false,
   offlineEntryVoice: false,
-  offlineVoiceBucket: null
+  offlineVoiceBucket: null,
+  peakLateral: 0,
+  returnBelowExitSince: 0
 };
 
 function clearOffRouteWarn(){
@@ -78,6 +81,8 @@ function resetSuspectCtx(){
   _ctx.confirmMs = 0;
   _ctx.suspectDistM = 0;
   _ctx.headingDivergeSince = 0;
+  _ctx.peakLateral = 0;
+  _ctx.returnBelowExitSince = 0;
 }
 
 function resetOfflineCtx(){
@@ -157,11 +162,20 @@ function canTriggerReroute(feed, now){
   const distOk = _ctx.suspectDistM >= distNeed;
   const timeOk = _ctx.confirmMs >= msNeed;
   const hdgOk = headingDiverged(feed, now);
-  const snapBad = S.snapQuality !== SnapQuality.GOOD || (feed.lateral != null && feed.lateral > 80);
+  const lat = feed.lateral;
+  const snapBad = S.snapQuality !== SnapQuality.GOOD || (lat != null && lat > 80);
   if(!snapBad) return null;
+
+  // Вечерний field-баг: в пробке spd≈0 → heading/dist не копятся, reroute не срабатывает.
+  const lateralHard = lat != null && lat >= OFF_ROUTE_LATERAL_HARD_M;
+  if(lateralHard && timeOk) return 'lateral_time';
+  if(lateralHard && _ctx.confirmMs >= msNeed * 1.5) return 'lateral_hold';
+
   if(distOk && hdgOk) return 'dist_heading';
   if(distOk && timeOk && hdgOk) return 'conjunct';
-  if(timeOk && hdgOk && feed.lateral > OFF_ROUTE_ENTER_M) return 'time_heading';
+  if(timeOk && hdgOk && lat > OFF_ROUTE_ENTER_M) return 'time_heading';
+  // Подтверждённый уход по дистанции+времени даже без heading (параллель / нет курса)
+  if(distOk && timeOk && lat > OFF_ROUTE_ENTER_M) return 'dist_time';
   return null;
 }
 
@@ -220,6 +234,9 @@ function tickSuspectConfirm(feed, inDeadZone){
   const dtMs = feed.dtMs || 0;
   _ctx.confirmMs += dtMs;
   if(feed.spdMps > 0) _ctx.suspectDistM += feed.spdMps * (dtMs / 1000);
+  if(feed.lateral != null && feed.lateral > _ctx.peakLateral){
+    _ctx.peakLateral = feed.lateral;
+  }
 
   if(feed.spdMps > OFF_ROUTE_HEADING_MIN_SPD &&
      feed.heading != null && !isNaN(feed.heading) &&
@@ -240,7 +257,19 @@ function tickSuspectConfirm(feed, inDeadZone){
 }
 
 function tryReturnOnRoute(feed){
-  if(feed.lateral >= OFF_ROUTE_EXIT_M) return false;
+  const now = Date.now();
+  if(feed.lateral >= OFF_ROUTE_EXIT_M){
+    _ctx.returnBelowExitSince = 0;
+    return false;
+  }
+  // Анти-дребезг: вечером lateral 176→12 м при spd=0 на секунду сбрасывал SUSPECT без reroute
+  if(!_ctx.returnBelowExitSince) _ctx.returnBelowExitSince = now;
+  if(simScaledDelta(now - _ctx.returnBelowExitSince) < OFF_ROUTE_RETURN_HOLD_MS) return false;
+  if(S.snapQuality === SnapQuality.LOST) return false;
+  if(_ctx.peakLateral >= OFF_ROUTE_LATERAL_HARD_M && feed.lateral > OFF_ROUTE_EXIT_M * 0.6){
+    return false;
+  }
+
   const from = S.offRouteState;
   transition(from, OffRouteState.ON_ROUTE, metaFromFeed(feed));
   resetBackoff();
@@ -272,12 +301,12 @@ export function tickOffRouteMachine(feed){
     return;
   }
 
-  if(feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
-
   const enterM = Math.max(OFF_ROUTE_ENTER_M, OFF_ROUTE_ACC_FACTOR * feed.acc);
   const inDeadZone = feed.lateral >= OFF_ROUTE_EXIT_M && feed.lateral <= OFF_ROUTE_ENTER_M;
 
   if(S.offRouteState === OffRouteState.ON_ROUTE){
+    // плохой GPS — не входим в SUSPECT (шум)
+    if(feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
     if(feed.lateral > enterM){
       resetSuspectCtx();
       transition(OffRouteState.ON_ROUTE, OffRouteState.SUSPECT, metaFromFeed(feed));
@@ -286,6 +315,8 @@ export function tickOffRouteMachine(feed){
   }
 
   if(S.offRouteState === OffRouteState.SUSPECT){
+    // уже в SUSPECT — продолжаем подтверждение даже при acc чуть хуже гейта
+    if(feed.acc > OFF_ROUTE_GPS_ACC_GATE_M * 2.5 && feed.lateral < OFF_ROUTE_ENTER_M) return;
     tickSuspectConfirm(feed, inDeadZone);
   }
 }

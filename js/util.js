@@ -9,11 +9,11 @@ export function fmtTime(sec){
   return m + ':' + String(s).padStart(2, '0');
 }
 
-/** Оставшееся время до финиша для HUD */
+/** Оставшееся время до финиша для HUD (компактно, крупный шрифт). */
 export function fmtRemainDur(sec){
   if(!isFinite(sec) || sec < 0) return '—';
   sec = Math.round(sec);
-  if(sec < 60) return sec + ' сек';
+  if(sec < 60) return sec + ' с';
   const m = Math.round(sec / 60);
   if(m < 60) return m + ' мин';
   const h = Math.floor(m / 60);

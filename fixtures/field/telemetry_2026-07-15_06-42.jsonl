@@ -1,0 +1,25 @@
+{"type":"session","id":"mrljb5jc47jfhty","startedAt":1784086955976,"endedAt":1784086965769,"dirty":false,"userAgent":"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36","appVersion":"1.0.0","buildId":"mrko01hh","eventCount":24,"markCount":0}
+{"t":23,"type":"meta","sub":"start","appVersion":"1.0.0","routeKm":null}
+{"t":785,"type":"nav","sub":"converge_blocked_tick","dur_blocked_ms":0,"hud_on":true,"phase":"riding","acc":19.15,"spd_kmh":6.6,"buf_len":null,"buf_acc_max":null,"fix_age_ms":35,"snap_quality":"GOOD","lat_off":null,"re_converge":false,"gps_fix_count":2,"had_route":false,"off_route_state":"ON_ROUTE"}
+{"t":787,"type":"nav","sub":"bearing_tick","dist_m":14845,"rel":40,"hdg":265,"gps_lost":false}
+{"t":788,"type":"fix","lat":55.592918,"lon":37.542996,"acc":19.15,"spd":1.83,"hdg":266.16,"alt":221.3,"ts":1784086956726,"rcv":1784086956763,"dev":1.83,"meas":3.58,"spd_src":"device","step_m":17.17,"drift_m":0.6,"step_dt":4.79}
+{"t":788,"type":"track","lat":55.592918,"lon":37.542996,"spd":1.83,"acc":19.15,"hdg":266.16,"ts":1784086956726}
+{"t":1772,"type":"fix","lat":55.592904,"lon":37.542983,"acc":14.83,"spd":1.26,"hdg":265.69,"alt":221.3,"ts":1784086957722,"rcv":1784086957748,"dev":1.26,"meas":1.77,"spd_src":"device","step_m":1.76,"drift_m":0.6,"step_dt":1}
+{"t":2796,"type":"fix","lat":55.592863,"lon":37.542968,"acc":12.89,"spd":0.55,"hdg":263.91,"alt":221.3,"ts":1784086958718,"rcv":1784086958771,"dev":0.55,"meas":4.71,"spd_src":"device","step_m":4.69,"drift_m":0.6,"step_dt":1}
+{"t":2796,"type":"track","lat":55.592863,"lon":37.542968,"spd":0.55,"acc":12.89,"hdg":263.91,"ts":1784086958718}
+{"t":3829,"type":"nav","sub":"converge_first","time_to_first_converge_ms":3994,"hud_on":true,"phase":"riding","acc":11.69,"spd_kmh":2.72,"buf_len":5,"buf_acc_max":21.2,"fix_age_ms":76,"snap_quality":"GOOD","lat_off":null,"re_converge":false,"gps_fix_count":5,"had_route":false,"off_route_state":"ON_ROUTE"}
+{"t":3830,"type":"nav","sub":"converge_transition","from":false,"to":true,"reason":"converged","hud_on":true,"phase":"riding","acc":11.69,"spd_kmh":2.72,"buf_len":5,"buf_acc_max":21.2,"fix_age_ms":77,"snap_quality":"GOOD","lat_off":null,"re_converge":false,"gps_fix_count":5,"had_route":false,"off_route_state":"ON_ROUTE"}
+{"t":3831,"type":"fix","lat":55.592843,"lon":37.542946,"acc":11.69,"spd":0.76,"hdg":263.62,"alt":221.3,"ts":1784086959729,"rcv":1784086959807,"dev":0.76,"meas":2.57,"spd_src":"device","step_m":2.6,"drift_m":0.6,"step_dt":1.01}
+{"t":3831,"type":"track","lat":55.592843,"lon":37.542946,"spd":0.76,"acc":11.69,"hdg":263.62,"ts":1784086959729}
+{"t":4063,"type":"nav","sub":"bearing_exit"}
+{"t":4785,"type":"fix","lat":55.59282,"lon":37.542937,"acc":10.82,"spd":1.18,"hdg":264.86,"alt":221.3,"ts":1784086960717,"rcv":1784086960760,"dev":1.18,"meas":2.65,"spd_src":"device","step_m":2.62,"drift_m":0.6,"step_dt":0.99}
+{"t":5781,"type":"fix","lat":55.592823,"lon":37.542925,"acc":11.98,"spd":1.04,"hdg":264.13,"alt":221.3,"ts":1784086961716,"rcv":1784086961757,"dev":0.03,"meas":0.87,"spd_src":"meas","step_m":0.87,"drift_m":0.6,"step_dt":1}
+{"t":5781,"type":"track","lat":55.592823,"lon":37.542925,"spd":1.04,"acc":11.98,"hdg":264.13,"ts":1784086961716}
+{"t":6835,"type":"fix","lat":55.59282,"lon":37.542912,"acc":11.58,"spd":0.95,"hdg":264.2,"alt":221.3,"ts":1784086962715,"rcv":1784086962811,"dev":0.03,"meas":0.83,"spd_src":"meas","step_m":0.83,"drift_m":0.6,"step_dt":1}
+{"t":9493,"type":"meta","sub":"converge_session_summary","converge_false_events":0,"converge_blocked_total_ms":3045,"converge_blocked_while_moving_ms":0,"invalidate_acc_count":0,"invalidate_lost_count":0,"re_converge_count":0,"max_blocked_streak_ms":3045,"reached_converge":true}
+{"t":9495,"type":"perf","frames":406,"avg_ms":18.45,"frames_over_32ms":22}
+{"t":9500,"type":"meta","sub":"session_aggregate","snap_count":0,"track_count":4,"lat_off_p50":null,"lat_off_p95":null,"snap_jumps":0,"snap_lost":0,"snap_degraded":0,"mark_count":0,"phantom_marks":0}
+{"t":9500,"type":"meta","sub":"stop"}
+{"t":9675,"type":"fix","lat":55.592818,"lon":37.542906,"acc":12.15,"spd":0,"hdg":264.96,"alt":221.3,"ts":1784086963717,"rcv":1784086965651,"dev":0.05,"meas":0,"spd_src":"drift","step_m":0.46,"drift_m":0.6,"step_dt":1}
+{"t":9680,"type":"track","lat":55.592818,"lon":37.542906,"spd":0,"acc":12.15,"hdg":264.96,"ts":1784086963717}
+{"t":9705,"type":"fix","lat":55.592816,"lon":37.542904,"acc":12.08,"spd":0,"hdg":265.08,"alt":221.3,"ts":1784086964716,"rcv":1784086965680,"dev":0.06,"meas":0,"spd_src":"drift","step_m":0.26,"drift_m":0.6,"step_dt":1}

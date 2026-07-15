@@ -63,6 +63,10 @@ export const OFF_ROUTE_ACC_FACTOR = 1.5;
 export const OFF_ROUTE_HEADING_DIVERGE_DEG = 45;
 export const OFF_ROUTE_HEADING_DIVERGE_MS = 3000;
 export const OFF_ROUTE_HEADING_MIN_SPD = 5;
+/** Устойчивое возвращение на маршрут (анти-дребезг lateral на пробке) */
+export const OFF_ROUTE_RETURN_HOLD_MS = 2000;
+/** Боковой уход «жёсткий» — reroute без heading (стоянка / пробка вечером) */
+export const OFF_ROUTE_LATERAL_HARD_M = 80;
 export const REROUTE_SEED_MAX_LATERAL_M = 80;
 export const REROUTE_SEED_MAX_ANGLE_DEG = 90;
 

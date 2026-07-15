@@ -411,7 +411,7 @@ function fmtTime(sec) {
 function fmtRemainDur(sec) {
   if (!isFinite(sec) || sec < 0) return "\u2014";
   sec = Math.round(sec);
-  if (sec < 60) return sec + " \u0441\u0435\u043A";
+  if (sec < 60) return sec + " \u0441";
   const m = Math.round(sec / 60);
   if (m < 60) return m + " \u043C\u0438\u043D";
   const h = Math.floor(m / 60);
@@ -1417,7 +1417,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1468,6 +1468,8 @@ var init_nav_constants = __esm({
     OFF_ROUTE_HEADING_DIVERGE_DEG = 45;
     OFF_ROUTE_HEADING_DIVERGE_MS = 3e3;
     OFF_ROUTE_HEADING_MIN_SPD = 5;
+    OFF_ROUTE_RETURN_HOLD_MS = 2e3;
+    OFF_ROUTE_LATERAL_HARD_M = 80;
     REROUTE_SEED_MAX_LATERAL_M = 80;
     REROUTE_SEED_MAX_ANGLE_DEG = 90;
     MANEUVER_BEND_DEFAULT_DEG = 20;
@@ -5518,6 +5520,12 @@ function findNextManeuver() {
         dist: along > 0 ? along : haversine(S.gps, m.step),
         soft: true
       };
+    }
+    for (const st of S.route.steps) {
+      if (st.type === "depart") continue;
+      if (stepCoordIndex(st) >= curIdx) {
+        return { step: st, dist: haversine(S.gps, st), soft: true };
+      }
     }
     return null;
   }
@@ -17961,6 +17969,8 @@ function resetSuspectCtx() {
   _ctx.confirmMs = 0;
   _ctx.suspectDistM = 0;
   _ctx.headingDivergeSince = 0;
+  _ctx.peakLateral = 0;
+  _ctx.returnBelowExitSince = 0;
 }
 function resetOfflineCtx() {
   _ctx.offlineEntryVoice = false;
@@ -18019,11 +18029,16 @@ function canTriggerReroute(feed, now) {
   const distOk = _ctx.suspectDistM >= distNeed;
   const timeOk = _ctx.confirmMs >= msNeed;
   const hdgOk = headingDiverged(feed, now);
-  const snapBad = S.snapQuality !== SnapQuality.GOOD || feed.lateral != null && feed.lateral > 80;
+  const lat = feed.lateral;
+  const snapBad = S.snapQuality !== SnapQuality.GOOD || lat != null && lat > 80;
   if (!snapBad) return null;
+  const lateralHard = lat != null && lat >= OFF_ROUTE_LATERAL_HARD_M;
+  if (lateralHard && timeOk) return "lateral_time";
+  if (lateralHard && _ctx.confirmMs >= msNeed * 1.5) return "lateral_hold";
   if (distOk && hdgOk) return "dist_heading";
   if (distOk && timeOk && hdgOk) return "conjunct";
-  if (timeOk && hdgOk && feed.lateral > OFF_ROUTE_ENTER_M) return "time_heading";
+  if (timeOk && hdgOk && lat > OFF_ROUTE_ENTER_M) return "time_heading";
+  if (distOk && timeOk && lat > OFF_ROUTE_ENTER_M) return "dist_time";
   return null;
 }
 function enterOfflineGuide(feed) {
@@ -18078,6 +18093,9 @@ function tickSuspectConfirm(feed, inDeadZone) {
   const dtMs = feed.dtMs || 0;
   _ctx.confirmMs += dtMs;
   if (feed.spdMps > 0) _ctx.suspectDistM += feed.spdMps * (dtMs / 1e3);
+  if (feed.lateral != null && feed.lateral > _ctx.peakLateral) {
+    _ctx.peakLateral = feed.lateral;
+  }
   if (feed.spdMps > OFF_ROUTE_HEADING_MIN_SPD && feed.heading != null && !isNaN(feed.heading) && feed.tangent != null && !isNaN(feed.tangent)) {
     if (angleDiff(feed.heading, feed.tangent) > OFF_ROUTE_HEADING_DIVERGE_DEG) {
       if (!_ctx.headingDivergeSince) _ctx.headingDivergeSince = now;
@@ -18093,7 +18111,17 @@ function tickSuspectConfirm(feed, inDeadZone) {
   beginReroute(OffRouteState.SUSPECT, { ...feed, trigger }, trigger);
 }
 function tryReturnOnRoute(feed) {
-  if (feed.lateral >= OFF_ROUTE_EXIT_M) return false;
+  const now = Date.now();
+  if (feed.lateral >= OFF_ROUTE_EXIT_M) {
+    _ctx.returnBelowExitSince = 0;
+    return false;
+  }
+  if (!_ctx.returnBelowExitSince) _ctx.returnBelowExitSince = now;
+  if (simScaledDelta(now - _ctx.returnBelowExitSince) < OFF_ROUTE_RETURN_HOLD_MS) return false;
+  if (S.snapQuality === SnapQuality.LOST) return false;
+  if (_ctx.peakLateral >= OFF_ROUTE_LATERAL_HARD_M && feed.lateral > OFF_ROUTE_EXIT_M * 0.6) {
+    return false;
+  }
   const from = S.offRouteState;
   transition(from, OffRouteState.ON_ROUTE, metaFromFeed(feed));
   resetBackoff();
@@ -18119,10 +18147,10 @@ function tickOffRouteMachine(feed) {
     }
     return;
   }
-  if (feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
   const enterM = Math.max(OFF_ROUTE_ENTER_M, OFF_ROUTE_ACC_FACTOR * feed.acc);
   const inDeadZone = feed.lateral >= OFF_ROUTE_EXIT_M && feed.lateral <= OFF_ROUTE_ENTER_M;
   if (S.offRouteState === OffRouteState.ON_ROUTE) {
+    if (feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
     if (feed.lateral > enterM) {
       resetSuspectCtx();
       transition(OffRouteState.ON_ROUTE, OffRouteState.SUSPECT, metaFromFeed(feed));
@@ -18130,6 +18158,7 @@ function tickOffRouteMachine(feed) {
     return;
   }
   if (S.offRouteState === OffRouteState.SUSPECT) {
+    if (feed.acc > OFF_ROUTE_GPS_ACC_GATE_M * 2.5 && feed.lateral < OFF_ROUTE_ENTER_M) return;
     tickSuspectConfirm(feed, inDeadZone);
   }
 }
@@ -18163,7 +18192,9 @@ var init_offroute = __esm({
       lastFeedMs: 0,
       rerouteBusy: false,
       offlineEntryVoice: false,
-      offlineVoiceBucket: null
+      offlineVoiceBucket: null,
+      peakLateral: 0,
+      returnBelowExitSince: 0
     };
   }
 });
@@ -26769,7 +26800,7 @@ var HELP_TEXTS = {
   "opt-tol": "\u0414\u043E\u043F\u0443\u0441\u043A \u0443\u0433\u043B\u0430 \u043D\u0430\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044F \u043A\u0430\u043C\u0435\u0440\u044B \u043E\u0442\u043D\u043E\u0441\u0438\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u0430\u0448\u0435\u0433\u043E \u043A\u0443\u0440\u0441\u0430 (\u0433\u0440\u0430\u0434\u0443\u0441\u044B).",
   "opt-fuel-proxy": "\u041F\u0440\u043E\u043A\u0441\u0438 Cloudflare Workers \u0434\u043B\u044F \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u0442\u043E\u043F\u043B\u0438\u0432\u0430 \u0441 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430.",
   "opt-hud-status-mode": "\u0421\u0442\u0440\u043E\u043A\u0430 GPS/CAM/T+ \u043D\u0430 HUD: \u0432\u0441\u0435\u0433\u0434\u0430, \u043F\u043E \u0442\u0430\u043F\u0443 15 \u0441 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u0430.",
-  "opt-hud-finish-mode": "\u041D\u0438\u0436\u043D\u044F\u044F \u0441\u0442\u0440\u043E\u043A\u0430 \xAB\u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C/ETA\xBB: \u0432\u0441\u0435\u0433\u0434\u0430, \u043F\u043E \u0442\u0430\u043F\u0443 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u0430."
+  "opt-hud-finish-mode": "\u0414\u043E \u0444\u0438\u043D\u0438\u0448\u0430: \u043A\u043C / \u043C\u0438\u043D / ETA \u2014 \u0432\u0441\u0435\u0433\u0434\u0430, \u043F\u043E \u0442\u0430\u043F\u0443 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u043E. \u0422\u043E\u043B\u044C\u043A\u043E \u0446\u0438\u0444\u0440\u044B, \u0431\u0435\u0437 \u043F\u043E\u0434\u043F\u0438\u0441\u0435\u0439."
 };
 var activeTip = null;
 function closeTip() {

@@ -201,18 +201,18 @@
             </select>
           </div>
           <div class="toggle opt-row">
-            📊 Нижняя строка (осталось/ETA)
+            📊 До финиша (км / мин / ETA)
             <select id="opt-hud-finish-mode" class="opt-select">
               <option value="tap" selected>по тапу (15 с)</option>
               <option value="always">всегда</option>
               <option value="off">откл.</option>
             </select>
           </div>
-          <p class="opt-hint opt-hint--short">Кнопки HUD — по тапу 15 с. Двойной тап — карта.</p>
+          <p class="opt-hint opt-hint--short">Крупные цифры без подписей. Кнопки HUD — по тапу 15 с. Двойной тап — карта.</p>
           <div class="opt-finish-group">
-            <div class="toggle opt-row">📍 Расстояние <input type="checkbox" id="opt-finish-dist" checked></div>
-            <div class="toggle opt-row">⏱ Оставшееся время <input type="checkbox" id="opt-finish-time" checked></div>
-            <div class="toggle opt-row">🕐 ETA (прибытие) <input type="checkbox" id="opt-finish-eta" checked></div>
+            <div class="toggle opt-row">📍 Осталось (км) <input type="checkbox" id="opt-finish-dist" checked></div>
+            <div class="toggle opt-row">⏱ В пути (мин) <input type="checkbox" id="opt-finish-time" checked></div>
+            <div class="toggle opt-row">🕐 Прибытие (ETA) <input type="checkbox" id="opt-finish-eta" checked></div>
           </div>
           <div class="toggle opt-row">🔀 Контекст перекрёстков <input type="checkbox" id="opt-crossings" checked></div>
           <div class="toggle opt-row">🧭 Компас N/E/S/W <input type="checkbox" id="opt-heading"></div>
@@ -847,10 +847,10 @@
       <div class="speed-val" id="v-speed">0</div>
       <div class="speed-unit">км/ч</div>
     </div>
-    <div class="finish-info" id="finish-info">
-      <div class="fi-line" id="fi-dist-line"><span class="fi-k">Осталось</span><span class="fi-v" id="fi-dist-val">—</span></div>
-      <div class="fi-line" id="fi-time-line"><span class="fi-k">В пути</span><span class="fi-v" id="fi-time-val">—</span></div>
-      <div class="fi-line" id="fi-eta-line"><span class="fi-k">Прибытие</span><span class="fi-v" id="fi-eta-val">—</span></div>
+    <div class="finish-info" id="finish-info" role="group" aria-label="До финиша">
+      <div class="fi-line" id="fi-dist-line" aria-label="Осталось"><span class="fi-v" id="fi-dist-val">—</span></div>
+      <div class="fi-line" id="fi-time-line" aria-label="В пути"><span class="fi-v" id="fi-time-val">—</span></div>
+      <div class="fi-line" id="fi-eta-line" aria-label="Прибытие"><span class="fi-v" id="fi-eta-val">—</span></div>
     </div>
   </div>
 
@@ -932,8 +932,8 @@
   ⚠ Не удалось загрузить JS. Для полной работы запустите <strong>preview.bat</strong> или <code>npm run dev</code> — откроется <code>http://localhost:3456</code>.
 </div>
 
-<script>window.__BUILD_ID__='mrko01hh';</script>
-<script src="js/sim.js?v=mrko01hh"></script>
+<script>window.__BUILD_ID__='mrlnlu0n';</script>
+<script src="js/sim.js?v=mrlnlu0n"></script>
 <script>
 (function(){
   var v = window.__BUILD_ID__ || '';
