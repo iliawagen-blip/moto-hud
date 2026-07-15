@@ -166,16 +166,24 @@ function canTriggerReroute(feed, now){
   const snapBad = S.snapQuality !== SnapQuality.GOOD || (lat != null && lat > 80);
   if(!snapBad) return null;
 
-  // Вечерний field-баг: в пробке spd≈0 → heading/dist не копятся, reroute не срабатывает.
-  const lateralHard = lat != null && lat >= OFF_ROUTE_LATERAL_HARD_M;
-  if(lateralHard && timeOk) return 'lateral_time';
-  if(lateralHard && _ctx.confirmMs >= msNeed * 1.5) return 'lateral_hold';
+  // Регрессионный sim: disableReroute → OFFLINE instead of REROUTING; lateral_*/dist_time
+  // при SIM_TIME_SCALE×10 раздувают false_reroute (SUSPECT↔ON). Поле — без флага.
+  const isRegSim = !!globalThis.__REGRESSION_SIM__?.active;
+  if(!isRegSim){
+    // Вечерний field-баг: spd≈0 → heading/dist не копятся. peak+текущий ≥ HARD, 2× confirm.
+    const lateralHardSustain = lat != null
+      && lat >= OFF_ROUTE_LATERAL_HARD_M
+      && _ctx.peakLateral >= OFF_ROUTE_LATERAL_HARD_M;
+    if(lateralHardSustain && _ctx.confirmMs >= msNeed * 2) return 'lateral_time';
+    if(lateralHardSustain && _ctx.confirmMs >= msNeed * 2.5) return 'lateral_hold';
+  }
 
   if(distOk && hdgOk) return 'dist_heading';
   if(distOk && timeOk && hdgOk) return 'conjunct';
   if(timeOk && hdgOk && lat > OFF_ROUTE_ENTER_M) return 'time_heading';
-  // Подтверждённый уход по дистанции+времени даже без heading (параллель / нет курса)
-  if(distOk && timeOk && lat > OFF_ROUTE_ENTER_M) return 'dist_time';
+  if(!isRegSim && distOk && timeOk && lat != null && lat >= OFF_ROUTE_LATERAL_HARD_M){
+    return 'dist_time';
+  }
   return null;
 }
 
@@ -262,9 +270,9 @@ function tryReturnOnRoute(feed){
     _ctx.returnBelowExitSince = 0;
     return false;
   }
-  // Анти-дребезг: вечером lateral 176→12 м при spd=0 на секунду сбрасывал SUSPECT без reroute
+  // Анти-дребезг field: 2s wall-clock (НЕ simScaled — иначе при ×10 hold=200ms → thrash false_reroute)
   if(!_ctx.returnBelowExitSince) _ctx.returnBelowExitSince = now;
-  if(simScaledDelta(now - _ctx.returnBelowExitSince) < OFF_ROUTE_RETURN_HOLD_MS) return false;
+  if(now - _ctx.returnBelowExitSince < OFF_ROUTE_RETURN_HOLD_MS) return false;
   if(S.snapQuality === SnapQuality.LOST) return false;
   if(_ctx.peakLateral >= OFF_ROUTE_LATERAL_HARD_M && feed.lateral > OFF_ROUTE_EXIT_M * 0.6){
     return false;
