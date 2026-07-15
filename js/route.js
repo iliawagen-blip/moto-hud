@@ -613,7 +613,7 @@ export function findNextManeuver(){
       return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
     }
 
-    // 2) fallback: любой поворот/съезд/arrive впереди (вечерний баг — фильтр «съедал» всё)
+    // 2) fallback: любой поворот/съезд/arrive впереди
     for(const m of sorted){
       if(!softNavManeuver(m)) continue;
       if(curS > m.s + MANEUVER_PASSED_M) continue;
@@ -623,6 +623,14 @@ export function findNextManeuver(){
         dist: along > 0 ? along : haversine(S.gps, m.step),
         soft: true
       };
+    }
+
+    // 3) steps fallback — прямые участки без tag (вечер 16-15: maneuver_none при живом snap)
+    for(const st of S.route.steps){
+      if(st.type === 'depart') continue;
+      if(stepCoordIndex(st) >= curIdx){
+        return { step: st, dist: haversine(S.gps, st), soft: true };
+      }
     }
     return null;
   }
