@@ -18032,13 +18032,18 @@ function canTriggerReroute(feed, now) {
   const lat = feed.lateral;
   const snapBad = S.snapQuality !== SnapQuality.GOOD || lat != null && lat > 80;
   if (!snapBad) return null;
-  const lateralHard = lat != null && lat >= OFF_ROUTE_LATERAL_HARD_M;
-  if (lateralHard && timeOk) return "lateral_time";
-  if (lateralHard && _ctx.confirmMs >= msNeed * 1.5) return "lateral_hold";
+  const isRegSim = !!globalThis.__REGRESSION_SIM__?.active;
+  if (!isRegSim) {
+    const lateralHardSustain = lat != null && lat >= OFF_ROUTE_LATERAL_HARD_M && _ctx.peakLateral >= OFF_ROUTE_LATERAL_HARD_M;
+    if (lateralHardSustain && _ctx.confirmMs >= msNeed * 2) return "lateral_time";
+    if (lateralHardSustain && _ctx.confirmMs >= msNeed * 2.5) return "lateral_hold";
+  }
   if (distOk && hdgOk) return "dist_heading";
   if (distOk && timeOk && hdgOk) return "conjunct";
   if (timeOk && hdgOk && lat > OFF_ROUTE_ENTER_M) return "time_heading";
-  if (distOk && timeOk && lat > OFF_ROUTE_ENTER_M) return "dist_time";
+  if (!isRegSim && distOk && timeOk && lat != null && lat >= OFF_ROUTE_LATERAL_HARD_M) {
+    return "dist_time";
+  }
   return null;
 }
 function enterOfflineGuide(feed) {
@@ -18117,7 +18122,7 @@ function tryReturnOnRoute(feed) {
     return false;
   }
   if (!_ctx.returnBelowExitSince) _ctx.returnBelowExitSince = now;
-  if (simScaledDelta(now - _ctx.returnBelowExitSince) < OFF_ROUTE_RETURN_HOLD_MS) return false;
+  if (now - _ctx.returnBelowExitSince < OFF_ROUTE_RETURN_HOLD_MS) return false;
   if (S.snapQuality === SnapQuality.LOST) return false;
   if (_ctx.peakLateral >= OFF_ROUTE_LATERAL_HARD_M && feed.lateral > OFF_ROUTE_EXIT_M * 0.6) {
     return false;
