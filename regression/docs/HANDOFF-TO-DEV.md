@@ -1,13 +1,43 @@
 # Handoff: Regression agent → Dev agent
 
-> **Дата:** 2026-07-14 (обновлено Dev agent)  
-> **От:** nightly/regression agent  
-> **Кому:** Dev agent (продуктовый код HUD + sim)  
-> **Статус:** P0 `false_reroute` **закрыт на smoke**; полный sim и field — следующий шаг
+> **Дата:** 2026-07-15 (Nightly DONE)  
+> **От:** Nightly regression agent  
+> **Статус:** P0 sim gate **PASS** after `f50c875` (on top of `c28efbe`)
 
 ---
 
-## TL;DR (актуально 2026-07-14)
+## TL;DR Nightly 2026-07-15
+
+| Gate | Цель | Результат |
+|------|------|-----------|
+| Full sim | ≥ 330/348 | **343/348 (99%)** ✓ |
+| false_reroute on_route | ≤ 1 | **0** ✓ |
+| deviation fails | ≤ 10 | **0** ✓ |
+| vs 2026-07-14 | 333/348 | **+10** |
+
+**P0b:** `c28efbe` lateral_* thrashеd sim under `SIM_TIME_SCALE=10` + `disableReroute`. Fix `f50c875`:
+- gate `lateral_time`/`lateral_hold`/`dist_time` **off** `__REGRESSION_SIM__` (field keeps evening paths)
+- RETURN_HOLD = wall-clock (not `simScaledDelta`)
+
+**P2 remains:** 5 on_route fails — p95×1 (`019f1539`), good_snap×4 (`0f6d2613`,`3142523b`,`bd7a87a4`,`cfd81eec`). Consensus 71 — not touched. GH burn — defer.
+
+**Артефакты:** `regression/results/2026-07-15/`, `regression/reports/2026-07-15/`, `session-log.md`
+
+**ready to push:** `f50c875` (ahead of origin/main)
+
+---
+
+## TL;DR (архив Dev 2026-07-15 morning)
+
+| Что | Статус |
+|-----|--------|
+| `c28efbe` evening off-route + finish ETA | **на main / pushed** |
+| Full sim после `c28efbe` | → см. Nightly DONE выше |
+| Full sim `2026-07-14` (pre-evening-fix) | **333/348**, false_reroute×1 (`c82c1a2e`) |
+
+---
+
+## TL;DR (архив 2026-07-14)
 
 | Gate | Baseline `e9bee84` | Было `8c9e32f` | **Smoke Dev 2026-07-14** |
 |------|-------------------|----------------|--------------------------|
