@@ -663,18 +663,24 @@ body.legal-blocked #hud{display:none!important}
 .speed-limit-sign{
   position:absolute;z-index:6;pointer-events:none;
   width:clamp(68px,min(22vw,20vh),116px);height:clamp(68px,min(22vw,20vh),116px);
-  top:6px;right:6px;left:auto;bottom:auto;transform:none
+  top:8px;right:8px;left:auto;bottom:auto;transform:none
 }
-.speed-limit-sign .sls-svg{width:100%;height:100%;display:block}
+.speed-limit-sign .sls-svg{width:100%;height:100%;display:block;overflow:visible}
+/* font-size в единицах viewBox (0…100), не CSS px — иначе цифры вылезают из кольца */
 .speed-limit-sign .sls-num{
-  font-family:var(--font-num);font-weight:900;font-size:clamp(44px,11vw,68px);fill:#111;stroke:none
+  font-family:var(--font-num);font-weight:900;font-size:38px;fill:#111;stroke:none;
+  text-anchor:middle
 }
+.speed-limit-sign .sls-num.sls-digits-1{font-size:44px}
+.speed-limit-sign .sls-num.sls-digits-2{font-size:36px}
+.speed-limit-sign .sls-num.sls-digits-3{font-size:28px}
 .speed-limit-sign .sls-tilde{fill:var(--fg-dim);font-weight:900}
-.speed-limit-sign .sls-none{font-family:var(--font-label);font-weight:800;fill:#111}
+.speed-limit-sign .sls-none{
+  font-family:var(--font-label);font-weight:800;fill:#111;font-size:24px;text-anchor:middle
+}
 .speed-limit-sign.sls-default .sls-ring{stroke:#888}
 .speed-limit-sign.sls-implicit{opacity:.7}
 .speed-limit-sign.sls-none .sls-ring{stroke:#666}
-.speed-limit-sign.sls-none .sls-none{font-size:32px}
 .speed-limit-sign.sls-preview-down .sls-ring{
   stroke:var(--sem-warn);transition:stroke .4s ease
 }
@@ -702,6 +708,11 @@ body.legal-blocked #hud{display:none!important}
   .finish-info{padding:6px 6px calc(env(safe-area-inset-bottom) + 4px);min-height:44px}
   .fi-line{font-size:clamp(14px,3.8vw,20px);padding:4px 6px}
   .block-speed{min-height:64px}
+  .speed-limit-sign{
+    width:clamp(52px,min(16vw,14vh),88px);height:clamp(52px,min(16vw,14vh),88px);
+    top:36px;right:6px
+  }
+  #hud:not(.show-compass) .speed-limit-sign{top:8px}
 }
 @container hud (max-height: 280px) and (aspect-ratio < 1/1){
   #hud.on.chrome-status-on:not(.no-path){grid-template-rows:minmax(var(--hud-statusbar-h),auto) minmax(0,1fr) minmax(0,14vh) minmax(64px,1fr)}
@@ -732,8 +743,22 @@ body.legal-blocked #hud{display:none!important}
   /* Узкая колонка скорости: столбик крупных значений под км/ч */
   #hud{
     --hud-finish-font:clamp(17px,min(4.8vw,6.2vh),28px);
-    --hud-finish-pad-y:8px
+    --hud-finish-pad-y:8px;
+    /* доля колонки sp — компас не заезжает под знак лимита */
+    --hud-sp-frac:0.25333
   }
+  #hud.on.no-path{--hud-sp-frac:0.475}
+  #hud.show-compass .compass-slot{
+    right:calc(100% * var(--hud-sp-frac, 0.25));
+    border-right:1px solid var(--line)
+  }
+  /* Лимит ниже ленты компаса / края кадра — без пересечений */
+  .speed-limit-sign{
+    top:clamp(40px,11vh,56px);right:10px
+  }
+  #hud:not(.show-compass) .speed-limit-sign{top:12px}
+  .speed-limit-grace{top:clamp(40px,11vh,56px)}
+  #hud:not(.show-compass) .speed-limit-grace{top:12px}
   .finish-info{
     flex-direction:column;align-items:stretch;justify-content:center;
     min-height:0;gap:0;

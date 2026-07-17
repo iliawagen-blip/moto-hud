@@ -280,12 +280,24 @@ function clampLabelY(cy, fontSize, vbY, vbH){
   return Math.min(vbY + vbH - 4, Math.max(vbY + fontSize + 4, cy));
 }
 
-/** Размещение подписей без наложений: ближний — полный, дальние — дистанция или только шеврон */
+function chevronApproxBBox(m){
+  const r = m.arm * 1.35;
+  const tipX = m.P.x + m.ex * m.arm;
+  const tipY = m.P.y + m.ey * m.arm;
+  return {
+    left: Math.min(m.P.x, tipX) - r,
+    right: Math.max(m.P.x, tipX) + r,
+    top: Math.min(m.P.y, tipY) - r * 0.45,
+    bottom: Math.max(m.P.y, tipY) + r * 0.55
+  };
+}
+
+/** Размещение подписей: градус в верхнем углу дорожки (L/R), без пересечения с шевронами */
 function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH){
   if(S.pathChevronLabels === false) return;
-  const placed = [];
+  const placed = markers.map(chevronApproxBBox);
   const minSep = vb * 0.07;
-  const pad = vb * 0.014;
+  const pad = vb * 0.018;
 
   for(let i = 0; i < markers.length; i++){
     const m = markers[i];
@@ -300,14 +312,17 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH){
     const wantDist = i === 0 ? true : sep >= minSep;
 
     if(wantDeg){
-      const sides = [m.labelSide, -m.labelSide];
-      for(const side of sides){
-        const off = m.arm + m.degFont * 0.35;
-        let dx = m.P.x + m.nx * off * side;
-        const halfW = m.degFont * Math.max(m.deg.length, 1) * 0.34;
-        dx = clampLabelX(dx, halfW, vbX, vbW);
-        let dy = clampLabelY(
-          m.P.y + m.ny * off * side * 0.35 + m.degFont * 0.34, m.degFont, vbY, vbH);
+      /* Правый поворот → верхний правый угол; левый → верхний левый */
+      const isLeft = m.turnSide < 0;
+      const halfW = m.degFont * Math.max(m.deg.length, 1) * 0.34;
+      const marginX = Math.max(halfW + vb * 0.03, 8);
+      const dy = clampLabelY(vbY + m.degFont * 0.92 + vb * 0.02, m.degFont, vbY, vbH);
+      const candidates = [
+        isLeft ? vbX + marginX : vbX + vbW - marginX,
+        isLeft ? vbX + vbW - marginX : vbX + marginX
+      ];
+      for(const rawX of candidates){
+        const dx = clampLabelX(rawX, halfW, vbX, vbW);
         const box = textBBox(dx, dy, m.degFont, m.deg);
         if(!placed.some(p => bboxOverlap(box, p, pad))){
           m.degX = dx;
@@ -321,17 +336,18 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH){
     if(!wantDist) continue;
 
     const distText = m.dist + ' м';
+    const cornerSide = m.turnSide < 0 ? -1 : 1;
     const slots = [
       () => ({
-        x: m.P.x + m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
-        y: m.P.y + m.ny * m.arm * 0.35 * m.labelSide + m.distFont * 0.15
+        x: m.P.x + m.nx * m.arm * (1.85 + i * 0.25) * cornerSide,
+        y: m.P.y + m.ny * m.arm * 0.2 * cornerSide + m.distFont * 0.15
       }),
-      () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.1 + i * 0.35) }),
+      () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.25 + i * 0.35) }),
       () => ({
-        x: m.P.x - m.nx * m.arm * (1.5 + i * 0.25) * m.labelSide,
-        y: m.P.y - m.ny * m.arm * 0.35 * m.labelSide
+        x: m.P.x - m.nx * m.arm * (1.85 + i * 0.25) * cornerSide,
+        y: m.P.y - m.ny * m.arm * 0.2 * cornerSide
       }),
-      () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.6 + i * 0.4) })
+      () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.85 + i * 0.4) })
     ];
 
     for(const slot of slots){
@@ -418,6 +434,7 @@ function renderTurnsStr(svg, snap, headingRad, geom, curS){
       degFont,
       distFont,
       tipY,
+      turnSide: ang < 0 ? -1 : ang > 0 ? 1 : 0,
       labelSide: ang < 0 ? 1 : -1
     });
   }
