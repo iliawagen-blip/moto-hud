@@ -1,12 +1,40 @@
 # Handoff: Regression agent → Dev agent
 
-> **Дата:** 2026-07-15 (Nightly DONE)  
+> **Дата:** 2026-07-17 (Nightly DONE — Moscow interchanges)  
 > **От:** Nightly regression agent  
-> **Статус:** P0 sim gate **PASS** after `f50c875` (on top of `c28efbe`)
+> **Статус:** moscow on_route gate **PASS**
 
 ---
 
-## TL;DR Nightly 2026-07-15
+## TL;DR Nightly 2026-07-17 — развязки
+
+| Gate | Цель | Результат |
+|------|------|-----------|
+| `interchange-test.mjs` | OK | **OK** ✓ |
+| Moscow on_route (26 fx) | ≥ 90%, false_reroute ≤1 | **25/26 (96%)**, **0** false_reroute ✓ |
+| Fail | — | `019f1539` p95_lateral only (P2) |
+
+Команда: `npm run regression:sim:moscow -- --date 2026-07-17 --force --mode on_route`  
+Лог: `regression/results/2026-07-17/session-log.md`  
+HEAD: `1143e47`, build `mron04x7`. Код развязок не менялся. GH — defer.
+
+---
+
+## TL;DR Dev 2026-07-17 — развязки (архив утро)
+
+| Что | Статус |
+|-----|--------|
+| Ramp/fork всегда значимы + голос «Съезд» | `js/interchange.js` + filter/voice |
+| Path-diverge (дорожка → keep L/R) | `detectPathDiverge` в `findNextManeuver` |
+| UI СЪЕЗД + lanes + ранний анонс 800–1200 м | hud/render |
+| Unit | `npm run interchange:test` |
+| Nightly | → DONE выше |
+
+Не ломать: `__REGRESSION_SIM__` gate для lateral_*; sim smoke false_reroute.
+
+---
+
+## TL;DR Nightly 2026-07-15 (архив)
 
 | Gate | Цель | Результат |
 |------|------|-----------|

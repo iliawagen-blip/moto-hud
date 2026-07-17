@@ -15,7 +15,8 @@ import {
   OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR,
   OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS,
   OFF_ROUTE_HEADING_MIN_SPD,
-  OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M
+  OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M,
+  OFF_ROUTE_LOST_HOLD_CONFIRM_MULT
 } from './nav-constants.js';
 
 export const OffRouteState = {
@@ -176,6 +177,11 @@ function canTriggerReroute(feed, now){
       && _ctx.peakLateral >= OFF_ROUTE_LATERAL_HARD_M;
     if(lateralHardSustain && _ctx.confirmMs >= msNeed * 2) return 'lateral_time';
     if(lateralHardSustain && _ctx.confirmMs >= msNeed * 2.5) return 'lateral_hold';
+    // LOST при lat≥ENTER без HARD 80 (field 07-00: lat≈60, acc≈4, 2+ мин без REROUTING)
+    if(S.snapQuality === SnapQuality.LOST && lat != null && lat >= OFF_ROUTE_ENTER_M
+        && _ctx.confirmMs >= msNeed * OFF_ROUTE_LOST_HOLD_CONFIRM_MULT){
+      return 'lost_lateral_hold';
+    }
   }
 
   if(distOk && hdgOk) return 'dist_heading';
@@ -226,7 +232,7 @@ function beginReroute(fromState, feed, trigger){
     _ctx.rerouteBusy = false;
     if(ok){
       transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, metaFromFeed(feed));
-      resetBackoff();
+      // cooldown уже выставлен в recalcRoute; не обнулять
       resetSuspectCtx();
       showRerouteOk();
     } else {
@@ -315,7 +321,8 @@ export function tickOffRouteMachine(feed){
   if(S.offRouteState === OffRouteState.ON_ROUTE){
     // плохой GPS — не входим в SUSPECT (шум)
     if(feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
-    if(feed.lateral > enterM){
+    const lostOff = S.snapQuality === SnapQuality.LOST && feed.lateral > OFF_ROUTE_ENTER_M;
+    if(feed.lateral > enterM || lostOff){
       resetSuspectCtx();
       transition(OffRouteState.ON_ROUTE, OffRouteState.SUSPECT, metaFromFeed(feed));
     }

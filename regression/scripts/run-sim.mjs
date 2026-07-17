@@ -26,11 +26,13 @@ function parseArgs(){
     mode = args[args.indexOf('--mode') + 1];
     if(!modes.includes(mode)) throw new Error(`unknown mode: ${mode}`);
   }
+  const regionRaw = args.includes('--region') ? args[args.indexOf('--region') + 1] : null;
   return {
     id: args.includes('--id') ? args[args.indexOf('--id') + 1] : null,
     fixturesLimit: args.includes('--fixtures') ? Number(args[args.indexOf('--fixtures') + 1]) : null,
     force: args.includes('--force'),
     mode,
+    region: regionRaw ? regionRaw.split(',').map(s => s.trim()).filter(Boolean) : null,
     date: args.includes('--date') ? args[args.indexOf('--date') + 1] : new Date().toISOString().slice(0, 10),
     port: args.includes('--port') ? Number(args[args.indexOf('--port') + 1]) : 3477 + Math.floor(Math.random() * 50),
     headless: !args.includes('--headed')
@@ -58,13 +60,24 @@ function isDone(checkpoint, fixtureId, mode){
 }
 
 async function main(){
-  const { id, fixturesLimit, mode: onlyMode, date, port, headless, force } = parseArgs();
+  const { id, fixturesLimit, mode: onlyMode, region, date, port, headless, force } = parseArgs();
   const simCfg = loadConfig('sim');
   const thresholds = loadConfig('thresholds');
   const modes = onlyMode ? [onlyMode] : (simCfg.modes || ['on_route', 'deviation', 'noise_stress']);
 
   let files = listFixtureFiles();
   files.sort();
+  if(region?.length){
+    const want = new Set(region);
+    files = files.filter(f => {
+      try{
+        const j = loadFixtureFile(f);
+        return want.has(j.region);
+      }catch{
+        return false;
+      }
+    });
+  }
   if(fixturesLimit && fixturesLimit > 0) files = files.slice(0, fixturesLimit);
   if(id) files = files.filter(f => f.includes(id));
 
@@ -72,7 +85,8 @@ async function main(){
   const outRoot = path.join(RESULTS_DIR, date, 'sim');
   fs.mkdirSync(outRoot, { recursive: true });
 
-  console.log(`[sim] date=${date} fixtures=${files.length} modes=${modes.join(',')} port=${port}`);
+  console.log(`[sim] date=${date} fixtures=${files.length} modes=${modes.join(',')} port=${port}` +
+    (region?.length ? ` region=${region.join(',')}` : ''));
 
   const server = await startStaticServer(port, PROJECT_ROOT);
   const browser = await chromium.launch({ headless });

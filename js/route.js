@@ -14,18 +14,24 @@ import { isTurnStep } from './voice.js';
 import telemetry from './telemetry.js';
 import {
   isSignificantManeuver,
+  stepTurnAngleDeg,
+  isInterchangeStep,
   MANEUVER_MIN_ANGLE,
   MANEUVER_BEND_ANGLE
 } from './maneuver-filter.js';
+import {
+  detectPathDiverge, syntheticDivergeStep
+} from './interchange.js';
 
 import {
   MANEUVER_PASSED_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG,
-  STREET_LABEL_MANEUVER_M
+  STREET_LABEL_MANEUVER_M, MANEUVER_SOFT_MAX_AHEAD_M, REROUTE_SUCCESS_COOLDOWN_MS,
+  MANEUVER_TURN_MIN_ANGLE_DEG, INTERCHANGE_DIVERGE_MAX_M
 } from './nav-constants.js';
 import { buildRouteRequestUrl, parseRouteResponse } from './router.js';
 import { HIGHWAY_CLASSES } from './maneuver-filter.js';
 import { assessRouteQuality, RouteQuality } from './route-quality.js';
-import { parseMaxspeedsFromRoute, parseSegmentSpeedsFromRoute, loadRouteHighwayTypes } from './speed-limit.js';
+import { parseMaxspeedsFromRoute, parseSegmentSpeedsFromRoute, loadRouteHighwayTypes, overpassFetch, sampleRoutePoints } from './speed-limit.js';
 import { clearCachedManeuver } from './snap-quality.js';
 
 /** Типы OSM highway без проезда для мото/авто (аудит после Overpass). */
@@ -66,7 +72,8 @@ export function getVisibleTurnManeuvers(geom, curS, limit){
   for(const m of sorted){
     if(curS > m.s + MANEUVER_PASSED_M) continue;
     const ahead = m.s - curS;
-    if(ahead > 500) continue;
+    const maxAhead = isInterchangeStep(m.step) ? INTERCHANGE_DIVERGE_MAX_M : 500;
+    if(ahead > maxAhead) continue;
     out.push({ maneuver: m, distAhead: Math.max(0, ahead) });
     if(out.length >= maxN) break;
   }
@@ -409,8 +416,9 @@ export async function recalcRoute(){
       console.warn('Камеры после пересчёта не загрузились');
       telemetry.log('nav', { sub: 'cameras_reload_failed' });
     }
+    // Успех: cooldown вместо полного сброса — иначе thrash (field 07-21)
     S.rerouteBackoffStep = 0;
-    S.rerouteBackoffUntil = 0;
+    S.rerouteBackoffUntil = Date.now() + REROUTE_SUCCESS_COOLDOWN_MS;
     return true;
   }catch(e){
     console.warn('Пересчёт не удался:', e);
@@ -444,45 +452,73 @@ export async function loadCameras(){
   }
   S.camLoadStatus = 'loading';
   updateCamStatusUI();
-  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
-  S.route.coords.forEach(c => {
-    if(c[0] < minLat) minLat = c[0];
-    if(c[0] > maxLat) maxLat = c[0];
-    if(c[1] < minLon) minLon = c[1];
-    if(c[1] > maxLon) maxLon = c[1];
-  });
-  const buf = 0.02;
-  minLat -= buf; maxLat += buf; minLon -= buf; maxLon += buf;
-  const q = `[out:json][timeout:20];
-    (node["highway"="speed_camera"](${minLat},${minLon},${maxLat},${maxLon});
-     node["enforcement"="maxspeed"](${minLat},${minLon},${maxLat},${maxLon}););
-    out body;`;
+  const t0 = Date.now();
+  const coords = S.route.coords;
+  if(!coords?.length){
+    S.cameras = [];
+    S.camLoadStatus = 'err';
+    updateCamStatusUI();
+    return;
+  }
+  // Коридор вдоль маршрута (не bbox) — иначе Overpass таймаутит на длинных трассах
+  const samples = sampleRoutePoints(coords, 600);
+  const CAM_AROUND_M = 80;
+  const byKey = new Map();
+  const CARD = { N:0, NNE:22.5, NE:45, ENE:67.5, E:90, ESE:112.5, SE:135, SSE:157.5,
+                 S:180, SSW:202.5, SW:225, WSW:247.5, W:270, WNW:292.5, NW:315, NNW:337.5 };
   try{
-    const r = await fetch('https://overpass-api.de/api/interpreter',
-      { method: 'POST', body: 'data=' + encodeURIComponent(q) });
-    if(!r.ok) throw new Error('Overpass ' + r.status);
-    const j = await r.json();
-    S.cameras = (j.elements || []).map(e => {
-      const t = e.tags || {};
-      let dir = null;
-      if(t.direction != null){
-        const raw = String(t.direction).trim();
-        const num = parseFloat(raw);
-        if(!isNaN(num)) dir = ((num % 360) + 360) % 360;
-        else {
-          const CARD = { N:0, NNE:22.5, NE:45, ENE:67.5, E:90, ESE:112.5, SE:135, SSE:157.5,
-                         S:180, SSW:202.5, SW:225, WSW:247.5, W:270, WNW:292.5, NW:315, NNW:337.5 };
-          const up = raw.toUpperCase();
-          if(CARD[up] != null) dir = CARD[up];
+    const BATCH = 16;
+    for(let i = 0; i < samples.length; i += BATCH){
+      const batch = samples.slice(i, i + BATCH);
+      const parts = batch.map(p =>
+        `node["highway"="speed_camera"](around:${CAM_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});\n` +
+        `node["enforcement"="maxspeed"](around:${CAM_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
+      ).join('\n');
+      const q = `[out:json][timeout:18];\n(\n${parts}\n);\nout body;`;
+      const j = await overpassFetch(q, 22000);
+      for(const e of (j.elements || [])){
+        if(e.type !== 'node' || e.lat == null) continue;
+        const key = e.id != null ? String(e.id) : (e.lat.toFixed(5) + ',' + e.lon.toFixed(5));
+        if(byKey.has(key)) continue;
+        const t = e.tags || {};
+        let dir = null;
+        if(t.direction != null){
+          const raw = String(t.direction).trim();
+          const num = parseFloat(raw);
+          if(!isNaN(num)) dir = ((num % 360) + 360) % 360;
+          else {
+            const up = raw.toUpperCase();
+            if(CARD[up] != null) dir = CARD[up];
+          }
         }
+        const speed = t.maxspeed ? parseInt(t.maxspeed, 10) : null;
+        byKey.set(key, {
+          lat: e.lat,
+          lon: e.lon,
+          speed: Number.isFinite(speed) ? speed : null,
+          dir
+        });
       }
-      return { lat: e.lat, lon: e.lon, speed: t.maxspeed ? parseInt(t.maxspeed, 10) : null, dir };
-    });
+    }
+    S.cameras = [...byKey.values()];
     S.camLoadStatus = 'ok';
+    const withSpeed = S.cameras.filter(c => c.speed != null).length;
+    telemetry.log('nav', {
+      sub: 'cameras_loaded',
+      count: S.cameras.length,
+      with_speed: withSpeed,
+      ms: Date.now() - t0,
+      mode: 'corridor'
+    });
   }catch(e){
     console.warn('Камеры не загрузились:', e);
     S.cameras = [];
     S.camLoadStatus = 'err';
+    telemetry.log('nav', {
+      sub: 'cameras_reload_failed',
+      message: String(e?.message || e).slice(0, 120),
+      ms: Date.now() - t0
+    });
   }
   updateCamStatusUI();
 }
@@ -585,8 +621,14 @@ function softNavManeuver(m){
   if(!st || st.type === 'depart') return false;
   if(st.type === 'arrive') return true;
   if(st.type === 'roundabout' || st.type === 'rotary' || st.type === 'exit roundabout') return true;
-  if(st.type === 'on ramp' || st.type === 'off ramp' || st.type === 'fork' || st.type === 'end of road') return true;
+  if(st.type === 'on ramp' || st.type === 'off ramp' || st.type === 'fork') return true;
+  // end of road — только в soft-окне (иначе залипает на 10–30 мин, field 20-23/18-06)
+  if(st.type === 'end of road') return true;
   const mod = st.modifier || '';
+  if(mod === 'left' || mod === 'right'){
+    const ang = stepTurnAngleDeg(st, m);
+    if(ang != null && ang < MANEUVER_TURN_MIN_ANGLE_DEG) return false;
+  }
   return !!(mod && mod !== 'straight');
 }
 
@@ -604,33 +646,71 @@ export function findNextManeuver(){
       .filter(m => m.step && m.step.type !== 'depart')
       .sort((a, b) => a.s - b.s);
 
-    // 1) строгие значимые манёвры
+    function pack(m, soft){
+      const along = Math.max(0, m.s - curS);
+      return {
+        step: m.step,
+        dist: along > 0 ? along : haversine(S.gps, m.step),
+        soft: !!soft
+      };
+    }
+
+    // 1) значимые в окне развязки (≤800 м) — съезды раньше «далёкого» поворота
     for(const m of sorted){
       if(m.step.type === 'arrive') continue;
       if(!isSignificantManeuver(m, geom)) continue;
       if(curS > m.s + MANEUVER_PASSED_M) continue;
       const along = Math.max(0, m.s - curS);
-      return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
+      if(m.step.type === 'end of road' && along > MANEUVER_SOFT_MAX_AHEAD_M) continue;
+      if(along > INTERCHANGE_DIVERGE_MAX_M) continue;
+      return pack(m, false);
     }
 
-    // 2) fallback: любой поворот/съезд/arrive впереди
+    // 1b) дорожка уходит с касательной, а OSRM сказал «прямо»
+    const hasIx = sorted.some(m =>
+      isInterchangeStep(m.step) &&
+      isSignificantManeuver(m, geom) &&
+      curS <= m.s + MANEUVER_PASSED_M &&
+      (m.s - curS) <= INTERCHANGE_DIVERGE_MAX_M
+    );
+    if(!hasIx){
+      const div = detectPathDiverge(geom, curS);
+      if(div){
+        return {
+          step: syntheticDivergeStep(div),
+          dist: div.distM,
+          pathDiverge: true
+        };
+      }
+    }
+
+    // 2) soft в 500 м
     for(const m of sorted){
       if(!softNavManeuver(m)) continue;
       if(curS > m.s + MANEUVER_PASSED_M) continue;
       const along = Math.max(0, m.s - curS);
-      return {
-        step: m.step,
-        dist: along > 0 ? along : haversine(S.gps, m.step),
-        soft: true
-      };
+      if(m.step.type !== 'arrive' && along > MANEUVER_SOFT_MAX_AHEAD_M) continue;
+      return pack(m, true);
     }
 
-    // 3) steps fallback — прямые участки без tag (вечер 16-15: maneuver_none при живом snap)
+    // 3) далёкие значимые (>800 м)
+    for(const m of sorted){
+      if(m.step.type === 'arrive') continue;
+      if(!isSignificantManeuver(m, geom)) continue;
+      if(curS > m.s + MANEUVER_PASSED_M) continue;
+      const along = Math.max(0, m.s - curS);
+      if(m.step.type === 'end of road') continue;
+      if(along <= INTERCHANGE_DIVERGE_MAX_M) continue;
+      return pack(m, false);
+    }
+
+    // 4) steps fallback
     for(const st of S.route.steps){
       if(st.type === 'depart') continue;
-      if(stepCoordIndex(st) >= curIdx){
-        return { step: st, dist: haversine(S.gps, st), soft: true };
-      }
+      if(stepCoordIndex(st) < curIdx) continue;
+      const dist = haversine(S.gps, st);
+      if(st.type !== 'arrive' && dist > MANEUVER_SOFT_MAX_AHEAD_M) continue;
+      return { step: st, dist, soft: true };
     }
     return null;
   }

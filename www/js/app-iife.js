@@ -1418,7 +1418,7 @@
   });
 
   // js/nav-constants.js
-  var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+  var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, OFF_ROUTE_LOST_HOLD_CONFIRM_MULT, REROUTE_SUCCESS_COOLDOWN_MS, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_TURN_MIN_ANGLE_DEG, MANEUVER_SOFT_MAX_AHEAD_M, INTERCHANGE_DIVERGE_MIN_M, INTERCHANGE_DIVERGE_MAX_M, INTERCHANGE_DIVERGE_LATERAL_M, INTERCHANGE_DIVERGE_STEP_M, INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
   var init_nav_constants = __esm({
     "js/nav-constants.js"() {
       SNAP_QUALITY_GOOD_OUT = 1;
@@ -1471,10 +1471,22 @@
       OFF_ROUTE_HEADING_MIN_SPD = 5;
       OFF_ROUTE_RETURN_HOLD_MS = 2e3;
       OFF_ROUTE_LATERAL_HARD_M = 80;
+      OFF_ROUTE_LOST_HOLD_CONFIRM_MULT = 2;
+      REROUTE_SUCCESS_COOLDOWN_MS = 3e4;
       REROUTE_SEED_MAX_LATERAL_M = 80;
       REROUTE_SEED_MAX_ANGLE_DEG = 90;
       MANEUVER_BEND_DEFAULT_DEG = 20;
       MANEUVER_MIN_ANGLE_DEG = 12;
+      MANEUVER_TURN_MIN_ANGLE_DEG = 25;
+      MANEUVER_SOFT_MAX_AHEAD_M = 500;
+      INTERCHANGE_DIVERGE_MIN_M = 80;
+      INTERCHANGE_DIVERGE_MAX_M = 800;
+      INTERCHANGE_DIVERGE_LATERAL_M = 28;
+      INTERCHANGE_DIVERGE_STEP_M = 40;
+      INTERCHANGE_VOICE_FAR_MIN_M = 800;
+      INTERCHANGE_VOICE_FAR_MAX_M = 1200;
+      INTERCHANGE_VOICE_NEAR_MIN_M = 80;
+      INTERCHANGE_VOICE_NEAR_MAX_M = 220;
       MANEUVER_COLLAPSE_SEG_M = 30;
       MANEUVER_COLLAPSE_GAP_M = 45;
       MANEUVER_PASSED_M = 8;
@@ -1491,6 +1503,7 @@
       GPS_LOST_RECONVERGE_MS = 6e4;
       GPS_SPEED_MAX_MPS = 55;
       GPS_SPEED_ACC_TRUST_M = 25;
+      GPS_SPEED_STATIONARY_DIST_M = 12;
       GPS_SPEED_MEAS_MIN_DIST_M = 1.5;
       GPS_SPEED_DEVICE_MEAS_RATIO = 2.5;
       SPEED_LIMIT_LOOKAHEAD_M = 300;
@@ -2254,6 +2267,158 @@
     }
   });
 
+  // js/interchange.js
+  function isInterchangeStep(step) {
+    const t = step?.type;
+    return t === "off ramp" || t === "on ramp" || t === "fork";
+  }
+  function isRampStep(step) {
+    const t = step?.type;
+    return t === "off ramp" || t === "on ramp";
+  }
+  function interchangeSide(step, maneuver) {
+    const mod = (step?.modifier || "").toLowerCase();
+    if (mod.includes("left")) return "left";
+    if (mod.includes("right")) return "right";
+    if (step?.bearing_before != null && step?.bearing_after != null) {
+      let d = step.bearing_after - step.bearing_before;
+      while (d > 180) d -= 360;
+      while (d < -180) d += 360;
+      if (Math.abs(d) >= 6) return d < 0 ? "left" : "right";
+    }
+    if (maneuver?.angle != null && Number.isFinite(maneuver.angle)) {
+      if (Math.abs(maneuver.angle) >= 6) return maneuver.angle < 0 ? "left" : "right";
+    }
+    return null;
+  }
+  function interchangeHudLabel(step, maneuver) {
+    const side = interchangeSide(step, maneuver);
+    if (step?.type === "on ramp") {
+      if (side === "left") return "\u0412\u042A\u0415\u0417\u0414 \u2190";
+      if (side === "right") return "\u0412\u042A\u0415\u0417\u0414 \u2192";
+      return "\u0412\u042A\u0415\u0417\u0414";
+    }
+    if (side === "left") return "\u0421\u042A\u0415\u0417\u0414 \u2190";
+    if (side === "right") return "\u0421\u042A\u0415\u0417\u0414 \u2192";
+    if (step?.type === "fork") return "\u0420\u0410\u0417\u0412\u0418\u041B\u041A\u0410";
+    return "\u0421\u042A\u0415\u0417\u0414";
+  }
+  function interchangeVoiceText(step, maneuver) {
+    const side = interchangeSide(step, maneuver);
+    if (step?.type === "on ramp") {
+      if (side === "left") return "\u0412\u044A\u0435\u0437\u0434 \u043D\u0430\u043B\u0435\u0432\u043E";
+      if (side === "right") return "\u0412\u044A\u0435\u0437\u0434 \u043D\u0430\u043F\u0440\u0430\u0432\u043E";
+      return "\u0412\u044A\u0435\u0437\u0434 \u043D\u0430 \u0442\u0440\u0430\u0441\u0441\u0443";
+    }
+    if (step?.type === "fork") {
+      if (side === "left") return "\u0414\u0435\u0440\u0436\u0438\u0442\u0435\u0441\u044C \u043B\u0435\u0432\u0435\u0435";
+      if (side === "right") return "\u0414\u0435\u0440\u0436\u0438\u0442\u0435\u0441\u044C \u043F\u0440\u0430\u0432\u0435\u0435";
+      return "\u0420\u0430\u0437\u0432\u0438\u043B\u043A\u0430";
+    }
+    if (side === "left") return "\u0421\u044A\u0435\u0437\u0434 \u043D\u0430\u043B\u0435\u0432\u043E";
+    if (side === "right") return "\u0421\u044A\u0435\u0437\u0434 \u043D\u0430\u043F\u0440\u0430\u0432\u043E";
+    return "\u0421\u044A\u0435\u0437\u0434";
+  }
+  function extractExitLaneHint(step) {
+    if (!step?.intersections?.length) return null;
+    for (const ix of step.intersections) {
+      const lanes = ix.lanes;
+      if (!lanes?.length) continue;
+      const valid = lanes.filter((l) => l.valid);
+      if (!valid.length) continue;
+      const inds = valid.flatMap((l) => l.indications || []).map(String);
+      const left = inds.some((i2) => i2.includes("left") || i2 === "slight left");
+      const right = inds.some((i2) => i2.includes("right") || i2 === "slight right");
+      if (left && !right) return { side: "left", text: "\u041B\u0435\u0432\u044B\u0435 \u043F\u043E\u043B\u043E\u0441\u044B" };
+      if (right && !left) return { side: "right", text: "\u041F\u0440\u0430\u0432\u044B\u0435 \u043F\u043E\u043B\u043E\u0441\u044B" };
+      if (left && right) return { side: null, text: "\u041F\u043E\u043B\u043E\u0441\u0430 \u043F\u043E \u0441\u0442\u0440\u0435\u043B\u043A\u0435" };
+    }
+    return null;
+  }
+  function findSegAtS(geom, s2) {
+    let lo = 0, hi = geom.n - 2;
+    while (lo < hi) {
+      const mid = lo + hi + 1 >> 1;
+      if (geom.s[mid] <= s2) lo = mid;
+      else hi = mid - 1;
+    }
+    return lo;
+  }
+  function interpolateGeomAtS(geom, s2) {
+    const total = geom.s[geom.n - 1];
+    if (s2 <= 0) return { lat: geom.lat[0], lon: geom.lon[0] };
+    if (s2 >= total) return { lat: geom.lat[geom.n - 1], lon: geom.lon[geom.n - 1] };
+    const i2 = findSegAtS(geom, s2);
+    const s0 = geom.s[i2];
+    const s1 = geom.s[i2 + 1];
+    const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
+    return {
+      lat: geom.lat[i2] + (geom.lat[i2 + 1] - geom.lat[i2]) * t,
+      lon: geom.lon[i2] + (geom.lon[i2 + 1] - geom.lon[i2]) * t
+    };
+  }
+  function avgTangentDegLocal(geom, s2, windowM) {
+    const total = geom.s[geom.n - 1];
+    const a = interpolateGeomAtS(geom, Math.max(0, s2));
+    const b = interpolateGeomAtS(geom, Math.min(total, s2 + windowM));
+    return bearing(a, b);
+  }
+  function detectPathDiverge(geom, curS) {
+    if (!geom?.n || !geom.s || curS == null || !Number.isFinite(curS)) return null;
+    const total = geom.s[geom.n - 1];
+    if (!(total > curS + INTERCHANGE_DIVERGE_MIN_M)) return null;
+    const origin = interpolateGeomAtS(geom, curS);
+    const tanDeg = avgTangentDegLocal(geom, curS, 40);
+    if (tanDeg == null || isNaN(tanDeg)) return null;
+    const tanRad = tanDeg * Math.PI / 180;
+    const fx = Math.sin(tanRad);
+    const fy = Math.cos(tanRad);
+    const nx = -fy;
+    const ny = fx;
+    const cosLat = Math.cos(origin.lat * Math.PI / 180);
+    let first = null;
+    let endLat = 0;
+    const maxS = Math.min(total, curS + INTERCHANGE_DIVERGE_MAX_M);
+    for (let s2 = curS + INTERCHANGE_DIVERGE_MIN_M; s2 <= maxS; s2 += INTERCHANGE_DIVERGE_STEP_M) {
+      const p = interpolateGeomAtS(geom, s2);
+      const dN = (p.lat - origin.lat) * 111320;
+      const dE = (p.lon - origin.lon) * 111320 * cosLat;
+      const along = dE * fx + dN * fy;
+      const lat = dE * nx + dN * ny;
+      endLat = lat;
+      if (!first && Math.abs(lat) >= INTERCHANGE_DIVERGE_LATERAL_M && along > INTERCHANGE_DIVERGE_MIN_M * 0.4) {
+        first = {
+          side: lat > 0 ? "left" : "right",
+          distM: Math.round(s2 - curS),
+          atS: s2,
+          lateralM: lat
+        };
+      }
+    }
+    if (!first) return null;
+    if (Math.abs(endLat) < INTERCHANGE_DIVERGE_LATERAL_M * 0.55) return null;
+    if (endLat > 0 !== (first.side === "left")) return null;
+    return first;
+  }
+  function syntheticDivergeStep(div) {
+    const mod = div.side === "left" ? "slight left" : "slight right";
+    return {
+      type: "off ramp",
+      modifier: mod,
+      name: "",
+      distance: div.distM,
+      _synthetic: "path_diverge",
+      bearing_before: 0,
+      bearing_after: div.side === "left" ? -25 : 25
+    };
+  }
+  var init_interchange = __esm({
+    "js/interchange.js"() {
+      init_geo();
+      init_nav_constants();
+    }
+  });
+
   // js/maneuver-filter.js
   function resetManeuverFilterLog() {
     _filterLogged.clear();
@@ -2284,9 +2449,10 @@
     if (!step || step.type === "depart" || step.type === "arrive") return false;
     if (INFO_TYPES.has(step.type) || step.type === "merge") return false;
     if (step.type === "roundabout" || step.type === "rotary" || step.type === "exit roundabout") return true;
-    if (step.type === "on ramp" || step.type === "off ramp") return hasTurnModifier(step) || !!step.exit;
+    if (step.type === "on ramp" || step.type === "off ramp") return true;
     if (!NAV_TYPES.has(step.type)) return false;
-    if (step.type === "fork" || step.type === "end of road") return hasTurnModifier(step);
+    if (step.type === "fork") return hasTurnModifier(step) || !!step.exit;
+    if (step.type === "end of road") return hasTurnModifier(step);
     return step.type === "turn" && hasTurnModifier(step);
   }
   function stepTurnAngleDeg(step, maneuver) {
@@ -2303,6 +2469,12 @@
     if (!m?.step || !isNavManeuverType(m.step)) return false;
     const mod = m.step.modifier || "";
     const ang = stepTurnAngleDeg(m.step, m);
+    if (isRampStep(m.step)) return true;
+    if (m.step.type === "fork") {
+      if (mod.includes("left") || mod.includes("right")) return true;
+      if (ang != null && ang >= 8) return true;
+      return false;
+    }
     if (mod === "straight") return false;
     if (ang == null) {
       return mod === "uturn" || m.step.type === "roundabout" || m.step.type === "rotary";
@@ -2315,6 +2487,7 @@
     if ((mod === "straight" || !mod) && ang < bend) return false;
     if (mod === "uturn" || mod.includes("sharp")) return ang >= 8;
     if (ang < MANEUVER_MIN_ANGLE_DEG) return false;
+    if ((mod === "left" || mod === "right") && ang < MANEUVER_TURN_MIN_ANGLE_DEG) return false;
     if (ang < bend && (mod.includes("slight") || mod === "straight")) return false;
     return true;
   }
@@ -2344,7 +2517,7 @@
       const ang = stepTurnAngleDeg(m.step, m) || 0;
       const bend = bendThresholdForStep(m.step);
       const next = sorted[i2 + 1];
-      if (segM < MANEUVER_COLLAPSE_SEG_M && ang < bend) {
+      if (!isInterchangeStep(m.step) && segM < MANEUVER_COLLAPSE_SEG_M && ang < bend) {
         if (next && isNavManeuverType(next.step) && next.s - m.s < MANEUVER_COLLAPSE_GAP_M) {
           logFiltered(m.step, m.s, "collapse_micro");
           continue;
@@ -2354,7 +2527,7 @@
         const prev = kept[kept.length - 1];
         const gap = m.s - prev.s;
         const prevAng = stepTurnAngleDeg(prev.step, prev) || 0;
-        if (gap < MANEUVER_COLLAPSE_GAP_M && prevAng < bend && ang < bend) {
+        if (!isInterchangeStep(m.step) && !isInterchangeStep(prev.step) && gap < MANEUVER_COLLAPSE_GAP_M && prevAng < bend && ang < bend) {
           logFiltered(prev.step, prev.s, "collapse_pair");
           kept[kept.length - 1] = pickStrongerManeuver(prev, m);
           continue;
@@ -2372,6 +2545,7 @@
   var init_maneuver_filter = __esm({
     "js/maneuver-filter.js"() {
       init_nav_constants();
+      init_interchange();
       init_telemetry();
       MANEUVER_BEND_ANGLE = MANEUVER_BEND_DEFAULT_DEG;
       HIGHWAY_BEND = {
@@ -2610,7 +2784,7 @@
   }
   function applySafeSpeedAtS(geom, s2, vSafe) {
     if (!isFinite(vSafe) || vSafe >= 80) return;
-    const i2 = findSegAtS(geom, s2);
+    const i2 = findSegAtS2(geom, s2);
     if (!isFinite(geom.safeSpeed[i2]) || geom.safeSpeed[i2] > vSafe) {
       geom.safeSpeed[i2] = vSafe;
     }
@@ -2631,7 +2805,7 @@
     spans = spans.concat(buildManeuverCurveSpans(geom, route));
     geom._curveSpans = mergeSpans(spans);
     for (const sp of geom._curveSpans) {
-      const v = vSafeFromR(sp.minR, params, geom.grade?.[findSegAtS(geom, sp.sApex)]);
+      const v = vSafeFromR(sp.minR, params, geom.grade?.[findSegAtS2(geom, sp.sApex)]);
       applySafeSpeedAtS(geom, sp.sApex, v);
     }
     geom.curveReady = true;
@@ -2752,15 +2926,15 @@
   function vSafeForSpan(geom, span) {
     if (!geom?.safeSpeed || !span) return Infinity;
     let vMin = Infinity;
-    const i0 = findSegAtS(geom, span.sEntry);
-    const i1 = findSegAtS(geom, Math.min(geom.s[geom.n - 1], span.sExit));
+    const i0 = findSegAtS2(geom, span.sEntry);
+    const i1 = findSegAtS2(geom, Math.min(geom.s[geom.n - 1], span.sExit));
     for (let j = i0; j <= i1 && j < geom.n; j++) {
       const v = geom.safeSpeed[j];
       if (isFinite(v) && v < vMin) vMin = v;
     }
     if (isFinite(vMin) && vMin < 80) return vMin;
     const params = getCurveParams();
-    return vSafeFromR(span.minR, params, geom.grade?.[findSegAtS(geom, span.sApex)]);
+    return vSafeFromR(span.minR, params, geom.grade?.[findSegAtS2(geom, span.sApex)]);
   }
   function ribbonCurveColor(sMid, geom, speedMps) {
     if (!S.curveWarn || !geom?.curveReady || speedMps < 3.5) return null;
@@ -3102,7 +3276,7 @@
     if (s1 - s0 < 50) return "";
     const samples = [];
     for (let s2 = s0; s2 <= s1; s2 += 40) {
-      const i2 = findSegAtS(geom, s2);
+      const i2 = findSegAtS2(geom, s2);
       const ds = geom.s[i2 + 1] - geom.s[i2];
       const t = ds > 0 ? (s2 - geom.s[i2]) / ds : 0;
       const elev = geom.elev[i2] + t * (geom.elev[i2 + 1] - geom.elev[i2]);
@@ -3133,7 +3307,7 @@
       const a = samples[i2 - 1];
       const b = p;
       const sMid = s0 + (a.s + b.s) * 0.5;
-      const gi = findSegAtS(geom, sMid);
+      const gi = findSegAtS2(geom, sMid);
       const col = gradeColor(geom.grade[gi] || 0);
       const x1 = toX(a.s);
       const y1 = toY((a.elev - base) * exag);
@@ -4193,6 +4367,7 @@
   function maneuverText(step) {
     if (!isTurnStep(step) && !isRoundaboutStep(step)) return "";
     if (isRoundaboutStep(step)) return roundaboutManeuverText(step, null);
+    if (isInterchangeStep(step)) return interchangeVoiceText(step);
     const m = step.modifier || "";
     if (m === "uturn") return "\u0420\u0430\u0437\u0432\u043E\u0440\u043E\u0442";
     if (m.includes("left")) return "\u041F\u043E\u0432\u0435\u0440\u043D\u0438\u0442\u0435 \u043D\u0430\u043B\u0435\u0432\u043E";
@@ -4211,6 +4386,7 @@
       init_platform();
       init_tts_ru();
       init_maneuver_filter();
+      init_interchange();
       init_roundabout();
       init_telemetry();
       _queue = [];
@@ -4414,7 +4590,7 @@
   function urbanCacheKey(lat, lon) {
     return Math.round(lat * 100) / 100 + "," + Math.round(lon * 100) / 100;
   }
-  async function overpassFetch(query, timeoutMs = 45e3) {
+  async function overpassFetch(query, timeoutMs = OVERPASS_MIRROR_TIMEOUT_MS) {
     const body = "data=" + encodeURIComponent(query);
     let lastErr = null;
     for (const url of OVERPASS_MIRRORS) {
@@ -4430,14 +4606,37 @@
         if (timer) clearTimeout(timer);
         if (!res.ok) {
           lastErr = new Error("Overpass " + res.status + " @ " + url);
+          if (res.status === 504 || res.status === 429 || res.status >= 500) continue;
           continue;
         }
         return await res.json();
       } catch (e) {
         lastErr = e;
+        const name = e?.name || "";
+        const msg = String(e?.message || e);
+        if (name === "AbortError" || /aborted|Failed to fetch|NetworkError/i.test(msg)) {
+          break;
+        }
       }
     }
     throw lastErr || new Error("Overpass unreachable");
+  }
+  function sampleRoutePoints(coords, stepM = SAMPLE_STEP_M) {
+    if (!coords?.length) return [];
+    const pts = [{ lat: coords[0][0], lon: coords[0][1] }];
+    let acc = 0;
+    for (let i2 = 1; i2 < coords.length; i2++) {
+      const a = { lat: coords[i2 - 1][0], lon: coords[i2 - 1][1] };
+      const b = { lat: coords[i2][0], lon: coords[i2][1] };
+      acc += haversine(a, b);
+      if (acc >= stepM) {
+        pts.push(b);
+        acc = 0;
+      }
+    }
+    const last = { lat: coords[coords.length - 1][0], lon: coords[coords.length - 1][1] };
+    if (haversine(pts[pts.length - 1], last) > 40) pts.push(last);
+    return pts;
   }
   async function checkUrbanZone(lat, lon) {
     const key = urbanCacheKey(lat, lon);
@@ -4459,22 +4658,6 @@ out 1;`;
     _urbanCache.set(key, urban);
     return urban;
   }
-  function sampleRoutePoints(coords, stepM = SAMPLE_STEP_M) {
-    const pts = [{ lat: coords[0][0], lon: coords[0][1] }];
-    let acc = 0;
-    for (let i2 = 1; i2 < coords.length; i2++) {
-      const a = { lat: coords[i2 - 1][0], lon: coords[i2 - 1][1] };
-      const b = { lat: coords[i2][0], lon: coords[i2][1] };
-      acc += haversine(a, b);
-      if (acc >= stepM) {
-        pts.push(b);
-        acc = 0;
-      }
-    }
-    const last = { lat: coords[coords.length - 1][0], lon: coords[coords.length - 1][1] };
-    if (haversine(pts[pts.length - 1], last) > 40) pts.push(last);
-    return pts;
-  }
   function parseOverpassWays(elements) {
     return (elements || []).filter((e) => e.type === "way" && e.tags?.highway && Array.isArray(e.geometry) && e.geometry.length >= 2).map((e) => ({
       id: e.id,
@@ -4492,12 +4675,12 @@ out 1;`;
       const parts = batch.map(
         (p) => `way["highway"](around:${CORRIDOR_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
       ).join("\n");
-      const q = `[out:json][timeout:45];
+      const q = `[out:json][timeout:20];
 (
 ${parts}
 );
 out tags geom;`;
-      const j = await overpassFetch(q, 55e3);
+      const j = await overpassFetch(q, OVERPASS_MIRROR_TIMEOUT_MS);
       for (const w of parseOverpassWays(j.elements)) {
         if (!byId.has(w.id)) byId.set(w.id, w);
       }
@@ -4506,14 +4689,20 @@ out tags geom;`;
   }
   function scheduleHighwayRetry(route) {
     if (_highwayRetryTimer) clearTimeout(_highwayRetryTimer);
+    const delays = [12e3, 3e4, 9e4];
+    const delay = delays[Math.min(_highwayRetryStep, delays.length - 1)];
+    _highwayRetryStep = Math.min(_highwayRetryStep + 1, delays.length - 1);
     _highwayRetryTimer = setTimeout(() => {
       _highwayRetryTimer = null;
       if (S.route !== route) return;
       const matched = route.highwayTypes?.filter(Boolean).length || 0;
       const need = Math.max(1, (route.coords?.length || 1) - 1);
-      if (matched / need >= 0.4) return;
+      if (matched / need >= 0.4) {
+        _highwayRetryStep = 0;
+        return;
+      }
       loadRouteHighwayTypes(route).catch((e) => console.warn("highway retry:", e));
-    }, 12e3);
+    }, delay);
   }
   function resolveImplicitLimit(highwayType, isUrban) {
     if (!highwayType) return null;
@@ -4627,6 +4816,7 @@ out tags geom;`;
       mode: "corridor"
     });
     if (matched / n < 0.4) scheduleHighwayRetry(route);
+    else _highwayRetryStep = 0;
     refineUrbanSegments(route, highwayTypes, urbanSegments, token).catch(() => {
     });
   }
@@ -4911,7 +5101,7 @@ out tags geom;`;
     if (!isSpeedLimitGraceActive() || S.currentLimit == null) return null;
     return "\u0421\u0431\u0440\u043E\u0441\u044C\u0442\u0435 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0434\u043E " + S.currentLimit;
   }
-  var OVERPASS_MIRRORS, WAY_MATCH_MAX_M, CORRIDOR_AROUND_M, SAMPLE_STEP_M, SAMPLE_BATCH, COV_FLUSH_TICKS, _highwayLoadToken, _highwayRetryTimer, _graceUntil, _lastLimitKey, _lookaheadWarnedKey, _urbanCache, _cov, _covTicks, DAY_MAP, MAXSPEED_ZONE_KMH;
+  var OVERPASS_MIRRORS, WAY_MATCH_MAX_M, CORRIDOR_AROUND_M, SAMPLE_STEP_M, SAMPLE_BATCH, OVERPASS_MIRROR_TIMEOUT_MS, COV_FLUSH_TICKS, _highwayLoadToken, _highwayRetryTimer, _highwayRetryStep, _graceUntil, _lastLimitKey, _lookaheadWarnedKey, _urbanCache, _cov, _covTicks, DAY_MAP, MAXSPEED_ZONE_KMH;
   var init_speed_limit = __esm({
     "js/speed-limit.js"() {
       init_state();
@@ -4926,12 +5116,14 @@ out tags geom;`;
         "https://overpass.kumi.systems/api/interpreter"
       ];
       WAY_MATCH_MAX_M = 40;
-      CORRIDOR_AROUND_M = 45;
-      SAMPLE_STEP_M = 350;
-      SAMPLE_BATCH = 36;
+      CORRIDOR_AROUND_M = 35;
+      SAMPLE_STEP_M = 400;
+      SAMPLE_BATCH = 12;
+      OVERPASS_MIRROR_TIMEOUT_MS = 22e3;
       COV_FLUSH_TICKS = 120;
       _highwayLoadToken = 0;
       _highwayRetryTimer = null;
+      _highwayRetryStep = 0;
       _graceUntil = 0;
       _lastLimitKey = "";
       _lookaheadWarnedKey = "";
@@ -4974,7 +5166,8 @@ out tags geom;`;
     for (const m of sorted) {
       if (curS > m.s + MANEUVER_PASSED_M) continue;
       const ahead = m.s - curS;
-      if (ahead > 500) continue;
+      const maxAhead = isInterchangeStep(m.step) ? INTERCHANGE_DIVERGE_MAX_M : 500;
+      if (ahead > maxAhead) continue;
       out.push({ maneuver: m, distAhead: Math.max(0, ahead) });
       if (out.length >= maxN) break;
     }
@@ -5295,7 +5488,7 @@ out tags geom;`;
         telemetry_default.log("nav", { sub: "cameras_reload_failed" });
       }
       S.rerouteBackoffStep = 0;
-      S.rerouteBackoffUntil = 0;
+      S.rerouteBackoffUntil = Date.now() + REROUTE_SUCCESS_COOLDOWN_MS;
       return true;
     } catch (e) {
       console.warn("\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:", e);
@@ -5328,66 +5521,92 @@ out tags geom;`;
     }
     S.camLoadStatus = "loading";
     updateCamStatusUI();
-    let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
-    S.route.coords.forEach((c) => {
-      if (c[0] < minLat) minLat = c[0];
-      if (c[0] > maxLat) maxLat = c[0];
-      if (c[1] < minLon) minLon = c[1];
-      if (c[1] > maxLon) maxLon = c[1];
-    });
-    const buf = 0.02;
-    minLat -= buf;
-    maxLat += buf;
-    minLon -= buf;
-    maxLon += buf;
-    const q = `[out:json][timeout:20];
-    (node["highway"="speed_camera"](${minLat},${minLon},${maxLat},${maxLon});
-     node["enforcement"="maxspeed"](${minLat},${minLon},${maxLat},${maxLon}););
-    out body;`;
+    const t0 = Date.now();
+    const coords = S.route.coords;
+    if (!coords?.length) {
+      S.cameras = [];
+      S.camLoadStatus = "err";
+      updateCamStatusUI();
+      return;
+    }
+    const samples = sampleRoutePoints(coords, 600);
+    const CAM_AROUND_M = 80;
+    const byKey = /* @__PURE__ */ new Map();
+    const CARD = {
+      N: 0,
+      NNE: 22.5,
+      NE: 45,
+      ENE: 67.5,
+      E: 90,
+      ESE: 112.5,
+      SE: 135,
+      SSE: 157.5,
+      S: 180,
+      SSW: 202.5,
+      SW: 225,
+      WSW: 247.5,
+      W: 270,
+      WNW: 292.5,
+      NW: 315,
+      NNW: 337.5
+    };
     try {
-      const r = await fetch(
-        "https://overpass-api.de/api/interpreter",
-        { method: "POST", body: "data=" + encodeURIComponent(q) }
-      );
-      if (!r.ok) throw new Error("Overpass " + r.status);
-      const j = await r.json();
-      S.cameras = (j.elements || []).map((e) => {
-        const t = e.tags || {};
-        let dir = null;
-        if (t.direction != null) {
-          const raw = String(t.direction).trim();
-          const num = parseFloat(raw);
-          if (!isNaN(num)) dir = (num % 360 + 360) % 360;
-          else {
-            const CARD = {
-              N: 0,
-              NNE: 22.5,
-              NE: 45,
-              ENE: 67.5,
-              E: 90,
-              ESE: 112.5,
-              SE: 135,
-              SSE: 157.5,
-              S: 180,
-              SSW: 202.5,
-              SW: 225,
-              WSW: 247.5,
-              W: 270,
-              WNW: 292.5,
-              NW: 315,
-              NNW: 337.5
-            };
-            const up = raw.toUpperCase();
-            if (CARD[up] != null) dir = CARD[up];
+      const BATCH = 16;
+      for (let i2 = 0; i2 < samples.length; i2 += BATCH) {
+        const batch = samples.slice(i2, i2 + BATCH);
+        const parts = batch.map(
+          (p) => `node["highway"="speed_camera"](around:${CAM_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});
+node["enforcement"="maxspeed"](around:${CAM_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
+        ).join("\n");
+        const q = `[out:json][timeout:18];
+(
+${parts}
+);
+out body;`;
+        const j = await overpassFetch(q, 22e3);
+        for (const e of j.elements || []) {
+          if (e.type !== "node" || e.lat == null) continue;
+          const key = e.id != null ? String(e.id) : e.lat.toFixed(5) + "," + e.lon.toFixed(5);
+          if (byKey.has(key)) continue;
+          const t = e.tags || {};
+          let dir = null;
+          if (t.direction != null) {
+            const raw = String(t.direction).trim();
+            const num = parseFloat(raw);
+            if (!isNaN(num)) dir = (num % 360 + 360) % 360;
+            else {
+              const up = raw.toUpperCase();
+              if (CARD[up] != null) dir = CARD[up];
+            }
           }
+          const speed = t.maxspeed ? parseInt(t.maxspeed, 10) : null;
+          byKey.set(key, {
+            lat: e.lat,
+            lon: e.lon,
+            speed: Number.isFinite(speed) ? speed : null,
+            dir
+          });
         }
-        return { lat: e.lat, lon: e.lon, speed: t.maxspeed ? parseInt(t.maxspeed, 10) : null, dir };
-      });
+      }
+      S.cameras = [...byKey.values()];
       S.camLoadStatus = "ok";
+      const withSpeed = S.cameras.filter((c) => c.speed != null).length;
+      telemetry_default.log("nav", {
+        sub: "cameras_loaded",
+        count: S.cameras.length,
+        with_speed: withSpeed,
+        ms: Date.now() - t0,
+        mode: "corridor"
+      });
     } catch (e) {
       console.warn("\u041A\u0430\u043C\u0435\u0440\u044B \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C:", e);
       S.cameras = [];
       S.camLoadStatus = "err";
+      telemetry_default.log("nav", {
+        sub: "cameras_reload_failed",
+        message: String(e?.message || e).slice(0, 120),
+        ms: Date.now() - t0
+      });
     }
     updateCamStatusUI();
   }
@@ -5493,8 +5712,13 @@ out tags geom;`;
     if (!st || st.type === "depart") return false;
     if (st.type === "arrive") return true;
     if (st.type === "roundabout" || st.type === "rotary" || st.type === "exit roundabout") return true;
-    if (st.type === "on ramp" || st.type === "off ramp" || st.type === "fork" || st.type === "end of road") return true;
+    if (st.type === "on ramp" || st.type === "off ramp" || st.type === "fork") return true;
+    if (st.type === "end of road") return true;
     const mod = st.modifier || "";
+    if (mod === "left" || mod === "right") {
+      const ang = stepTurnAngleDeg(st, m);
+      if (ang != null && ang < MANEUVER_TURN_MIN_ANGLE_DEG) return false;
+    }
     return !!(mod && mod !== "straight");
   }
   function findNextManeuver() {
@@ -5504,29 +5728,59 @@ out tags geom;`;
     const curS = snap ? snap.s : null;
     const curIdx = snap ? sparseRouteSegIdx({ lat: snap.lat, lon: snap.lon }) : findNearestOnRoute()?.idx ?? 0;
     if (geom && curS != null) {
+      let pack = function(m, soft) {
+        const along = Math.max(0, m.s - curS);
+        return {
+          step: m.step,
+          dist: along > 0 ? along : haversine(S.gps, m.step),
+          soft: !!soft
+        };
+      };
       const sorted = [...geom.maneuvers || []].filter((m) => m.step && m.step.type !== "depart").sort((a, b) => a.s - b.s);
       for (const m of sorted) {
         if (m.step.type === "arrive") continue;
         if (!isSignificantManeuver(m, geom)) continue;
         if (curS > m.s + MANEUVER_PASSED_M) continue;
         const along = Math.max(0, m.s - curS);
-        return { step: m.step, dist: along > 0 ? along : haversine(S.gps, m.step) };
+        if (m.step.type === "end of road" && along > MANEUVER_SOFT_MAX_AHEAD_M) continue;
+        if (along > INTERCHANGE_DIVERGE_MAX_M) continue;
+        return pack(m, false);
+      }
+      const hasIx = sorted.some(
+        (m) => isInterchangeStep(m.step) && isSignificantManeuver(m, geom) && curS <= m.s + MANEUVER_PASSED_M && m.s - curS <= INTERCHANGE_DIVERGE_MAX_M
+      );
+      if (!hasIx) {
+        const div = detectPathDiverge(geom, curS);
+        if (div) {
+          return {
+            step: syntheticDivergeStep(div),
+            dist: div.distM,
+            pathDiverge: true
+          };
+        }
       }
       for (const m of sorted) {
         if (!softNavManeuver(m)) continue;
         if (curS > m.s + MANEUVER_PASSED_M) continue;
         const along = Math.max(0, m.s - curS);
-        return {
-          step: m.step,
-          dist: along > 0 ? along : haversine(S.gps, m.step),
-          soft: true
-        };
+        if (m.step.type !== "arrive" && along > MANEUVER_SOFT_MAX_AHEAD_M) continue;
+        return pack(m, true);
+      }
+      for (const m of sorted) {
+        if (m.step.type === "arrive") continue;
+        if (!isSignificantManeuver(m, geom)) continue;
+        if (curS > m.s + MANEUVER_PASSED_M) continue;
+        const along = Math.max(0, m.s - curS);
+        if (m.step.type === "end of road") continue;
+        if (along <= INTERCHANGE_DIVERGE_MAX_M) continue;
+        return pack(m, false);
       }
       for (const st of S.route.steps) {
         if (st.type === "depart") continue;
-        if (stepCoordIndex(st) >= curIdx) {
-          return { step: st, dist: haversine(S.gps, st), soft: true };
-        }
+        if (stepCoordIndex(st) < curIdx) continue;
+        const dist = haversine(S.gps, st);
+        if (st.type !== "arrive" && dist > MANEUVER_SOFT_MAX_AHEAD_M) continue;
+        return { step: st, dist, soft: true };
       }
       return null;
     }
@@ -5608,6 +5862,7 @@ out tags geom;`;
       init_voice();
       init_telemetry();
       init_maneuver_filter();
+      init_interchange();
       init_nav_constants();
       init_router();
       init_maneuver_filter();
@@ -6031,7 +6286,7 @@ out tags geom;`;
       const p = interpolateAtS(geom, opts.seedS);
       _snap = {
         s: opts.seedS,
-        segIdx: findSegAtS(geom, opts.seedS),
+        segIdx: findSegAtS2(geom, opts.seedS),
         lat: p.lat,
         lon: p.lon,
         lateral: opts.lateral ?? 0,
@@ -6050,7 +6305,7 @@ out tags geom;`;
     const p = interpolateAtS(geom, s2);
     const gps = S.gps;
     const lateral = gps ? haversine(gps, p) : 0;
-    const segIdx = findSegAtS(geom, s2);
+    const segIdx = findSegAtS2(geom, s2);
     const tangent = avgTangentDeg(geom, s2, 20);
     if (_snap) {
       _snap = { ..._snap, s: s2, segIdx, lat: p.lat, lon: p.lon, lateral, tangent };
@@ -6241,7 +6496,7 @@ out tags geom;`;
       roundabouts: []
     };
   }
-  function findSegAtS(geom, s2) {
+  function findSegAtS2(geom, s2) {
     let lo = 0;
     let hi = geom.n - 2;
     while (lo < hi) {
@@ -6255,7 +6510,7 @@ out tags geom;`;
     if (s2 <= 0) return { lat: geom.lat[0], lon: geom.lon[0] };
     const total = geom.s[geom.n - 1];
     if (s2 >= total) return { lat: geom.lat[geom.n - 1], lon: geom.lon[geom.n - 1] };
-    const i2 = findSegAtS(geom, s2);
+    const i2 = findSegAtS2(geom, s2);
     const s0 = geom.s[i2];
     const s1 = geom.s[i2 + 1];
     const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
@@ -6331,7 +6586,7 @@ out tags geom;`;
   }
   function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx) {
     let best = null;
-    const i0 = findSegAtS(geom, sMin);
+    const i0 = findSegAtS2(geom, sMin);
     const spd = ctx?.spd ?? 0;
     const acc = ctx?.acc ?? 8;
     const headingAgeMs = ctx?.headingAgeMs ?? 0;
@@ -6489,7 +6744,7 @@ out tags geom;`;
       const forwardOk = !prev || nearS >= prev.s - maxBack;
       const jumpOk = !prev || Math.abs(nearS - prev.s) <= maxJump;
       if (nearLat + 8 < best.lateral && forwardOk && jumpOk) {
-        const segIdx = findSegAtS(geom, nearS);
+        const segIdx = findSegAtS2(geom, nearS);
         const tangent = avgTangentDeg(geom, nearS, 20);
         const dot = headingDot(tangent, gpsHeadingDeg);
         best = {
@@ -6527,7 +6782,7 @@ out tags geom;`;
       s: ns,
       lat: p.lat,
       lon: p.lon,
-      segIdx: findSegAtS(geom, ns)
+      segIdx: findSegAtS2(geom, ns)
     };
   }
   function getRouteSnapForNav(gpsHeadingDeg) {
@@ -6571,7 +6826,7 @@ out tags geom;`;
       s: _disp.s,
       lat: p.lat,
       lon: p.lon,
-      segIdx: findSegAtS(geom, _disp.s),
+      segIdx: findSegAtS2(geom, _disp.s),
       lateral: rawSnap.lateral,
       confidence: rawSnap.confidence
     };
@@ -6580,7 +6835,7 @@ out tags geom;`;
     const end = Math.min(geom.s[geom.n - 1], s2 + windowM);
     let vx = 0;
     let vz = 0;
-    const i0 = findSegAtS(geom, s2);
+    const i0 = findSegAtS2(geom, s2);
     for (let i2 = i0; i2 < geom.n - 1 && geom.s[i2] < end; i2++) {
       const r = Math.PI / 180;
       const midLat = (geom.lat[i2] + geom.lat[i2 + 1]) / 2;
@@ -6591,7 +6846,7 @@ out tags geom;`;
       vz += dLat / len;
     }
     if (vx === 0 && vz === 0) {
-      const i2 = findSegAtS(geom, s2);
+      const i2 = findSegAtS2(geom, s2);
       return segmentBearing(geom, Math.min(i2, geom.n - 2));
     }
     return (Math.atan2(vx, vz) * 180 / Math.PI + 360) % 360;
@@ -6651,7 +6906,7 @@ out tags geom;`;
   }
   function interpolateElevAtS(geom, s2) {
     if (!geom.elevReady || !geom.elev.length) return 0;
-    const i2 = findSegAtS(geom, s2);
+    const i2 = findSegAtS2(geom, s2);
     const s0 = geom.s[i2];
     const s1 = geom.s[i2 + 1];
     const t = s1 > s0 ? (s2 - s0) / (s1 - s0) : 0;
@@ -6824,8 +7079,8 @@ out tags geom;`;
     const out = [];
     const p0 = interpolateAtS(geom, a);
     out.push([p0.lat, p0.lon]);
-    const i0 = findSegAtS(geom, a);
-    const i1 = findSegAtS(geom, b);
+    const i0 = findSegAtS2(geom, a);
+    const i1 = findSegAtS2(geom, b);
     for (let i2 = i0 + 1; i2 <= i1 && i2 < geom.n; i2++) {
       if (geom.s[i2] > a + 0.01 && geom.s[i2] < b - 0.01) {
         out.push([geom.lat[i2], geom.lon[i2]]);
@@ -18038,6 +18293,9 @@ out tags geom;`;
       const lateralHardSustain = lat != null && lat >= OFF_ROUTE_LATERAL_HARD_M && _ctx.peakLateral >= OFF_ROUTE_LATERAL_HARD_M;
       if (lateralHardSustain && _ctx.confirmMs >= msNeed * 2) return "lateral_time";
       if (lateralHardSustain && _ctx.confirmMs >= msNeed * 2.5) return "lateral_hold";
+      if (S.snapQuality === SnapQuality.LOST && lat != null && lat >= OFF_ROUTE_ENTER_M && _ctx.confirmMs >= msNeed * OFF_ROUTE_LOST_HOLD_CONFIRM_MULT) {
+        return "lost_lateral_hold";
+      }
     }
     if (distOk && hdgOk) return "dist_heading";
     if (distOk && timeOk && hdgOk) return "conjunct";
@@ -18084,7 +18342,6 @@ out tags geom;`;
       _ctx.rerouteBusy = false;
       if (ok) {
         transition(OffRouteState.REROUTING, OffRouteState.ON_ROUTE, metaFromFeed(feed));
-        resetBackoff();
         resetSuspectCtx();
         showRerouteOk();
       } else {
@@ -18157,7 +18414,8 @@ out tags geom;`;
     const inDeadZone = feed.lateral >= OFF_ROUTE_EXIT_M && feed.lateral <= OFF_ROUTE_ENTER_M;
     if (S.offRouteState === OffRouteState.ON_ROUTE) {
       if (feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
-      if (feed.lateral > enterM) {
+      const lostOff = S.snapQuality === SnapQuality.LOST && feed.lateral > OFF_ROUTE_ENTER_M;
+      if (feed.lateral > enterM || lostOff) {
         resetSuspectCtx();
         transition(OffRouteState.ON_ROUTE, OffRouteState.SUSPECT, metaFromFeed(feed));
       }
@@ -18864,7 +19122,13 @@ out tags geom;`;
       if (rb) return rb;
     }
     let turn = maneuverTurnAngle(step);
-    if (Math.abs(turn) < MANEUVER_BEND_ANGLE) {
+    if (isInterchangeStep(step) && Math.abs(turn) < 28) {
+      const side = interchangeSide(step);
+      if (side === "left") turn = -38;
+      else if (side === "right") turn = 38;
+      else if (step.modifier?.includes("left")) turn = -38;
+      else if (step.modifier?.includes("right")) turn = 38;
+    } else if (Math.abs(turn) < MANEUVER_BEND_ANGLE) {
       if (step.modifier === "uturn") turn = 175;
       else if (Math.abs(turn) < 4 && step.modifier) {
         if (step.modifier.includes("left")) turn = -8;
@@ -18932,6 +19196,7 @@ out tags geom;`;
       init_gps();
       init_route();
       init_roundabout();
+      init_interchange();
       init_fuel();
       init_route();
       init_route_geometry();
@@ -24592,6 +24857,15 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       const mini = rbCtx?.isMini ? " \xB7 \u043C\u0438\u043D\u0438-\u043A\u0440\u0443\u0433" : "";
       return (roundaboutManeuverText(displayStep, rbCtx) || formatStreetLabel(nm?.step?.name || displayStep?.name)) + mini;
     }
+    if (nm && isInterchangeStep(nm.step)) {
+      const ix = interchangeHudLabel(nm.step);
+      const lane = extractExitLaneHint(nm.step);
+      const name = nm.step.name?.trim() ? formatStreetLabel(nm.step.name) : "";
+      if (lane?.text && name) return ix + " \xB7 " + lane.text + " \xB7 " + name;
+      if (lane?.text) return ix + " \xB7 " + lane.text;
+      if (name) return ix + " \xB7 " + name;
+      return ix;
+    }
     if (nm && isTurnStep(nm.step) && nm.step.name?.trim()) {
       return formatStreetLabel(nm.step.name);
     }
@@ -24606,13 +24880,32 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     if (topEl) topEl.textContent = top ?? "\u2014";
     if (curEl) curEl.textContent = bottom ?? "\u2014";
   }
-  function maneuverVoiceThresholds(kmh) {
+  function maneuverVoiceThresholds(kmh, step) {
     const mps = Math.max(kmh / 3.6, 4);
+    if (isInterchangeStep(step)) {
+      return {
+        mps,
+        farM: Math.max(INTERCHANGE_VOICE_FAR_MIN_M, Math.min(INTERCHANGE_VOICE_FAR_MAX_M, mps * 14)),
+        nearM: Math.max(INTERCHANGE_VOICE_NEAR_MIN_M, Math.min(INTERCHANGE_VOICE_NEAR_MAX_M, mps * 4))
+      };
+    }
     return {
       mps,
       farM: Math.max(220, Math.min(850, mps * 9)),
       nearM: Math.max(35, Math.min(110, mps * 2.5))
     };
+  }
+  function paintExitBanner(nm) {
+    const el = $2("rb-exit-label");
+    if (!el) return;
+    if (nm && isInterchangeStep(nm.step) && nm.dist != null && nm.dist <= 900) {
+      el.textContent = interchangeHudLabel(nm.step);
+      el.classList.remove("hidden");
+      el.setAttribute("aria-hidden", "false");
+    } else {
+      el.classList.add("hidden");
+      el.setAttribute("aria-hidden", "true");
+    }
   }
   function formatManeuverLead(distM, mps) {
     if (mps >= 6 && distM >= 120) {
@@ -24636,8 +24929,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     S.cameras.forEach((c, i2) => {
       const d = haversine(S.gps, c);
       if (d > radius) return;
-      if (!c.speed) return;
-      if (kmh <= c.speed + tol) return;
+      if (c.speed != null && kmh <= c.speed + tol) return;
       if (S.backOnly && !isCameraBehind(c, heading)) return;
       if (heading != null && angleDiff(bearing(S.gps, c), heading) > 90) return;
       if (!closest || d < closest.dist) closest = { cam: c, dist: d, id: i2 };
@@ -24645,13 +24937,14 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     const alertEl = $2("camAlert");
     if (closest) {
       $2("cam-dist").textContent = Math.round(closest.dist) + " M";
-      $2("cam-sub").textContent = closest.cam.speed ? "LIMIT " + closest.cam.speed + " KM/H" : closest.cam.dir != null ? "BRG " + String(Math.round(closest.cam.dir)).padStart(3, "0") : "DIR UNKNOWN";
+      $2("cam-sub").textContent = closest.cam.speed ? "LIMIT " + closest.cam.speed + " KM/H" : closest.cam.dir != null ? "BRG " + String(Math.round(closest.cam.dir)).padStart(3, "0") : "CAMERA";
       alertEl.classList.add("on");
       if (!S.camWarned.has(closest.id) && now - S.lastVoiceTs > 3e3) {
         S.camWarned.add(closest.id);
         S.lastVoiceTs = now;
         const dm = closest.dist < 200 ? "\u043C\u0435\u043D\u0435\u0435 200 \u043C\u0435\u0442\u0440\u043E\u0432" : closest.dist < 400 ? "\u0447\u0435\u0440\u0435\u0437 300 \u043C\u0435\u0442\u0440\u043E\u0432" : closest.dist < 700 ? "\u0447\u0435\u0440\u0435\u0437 500 \u043C\u0435\u0442\u0440\u043E\u0432" : "\u0447\u0435\u0440\u0435\u0437 " + Math.round(closest.dist / 100) * 100 + " \u043C\u0435\u0442\u0440\u043E\u0432";
-        speak("\u041A\u0430\u043C\u0435\u0440\u0430 \u0432 \u0441\u043F\u0438\u043D\u0443 " + dm + (closest.cam.speed ? ", \u043B\u0438\u043C\u0438\u0442 " + closest.cam.speed : ""));
+        const behind = S.backOnly || isCameraBehind(closest.cam, heading);
+        speak((behind ? "\u041A\u0430\u043C\u0435\u0440\u0430 \u0432 \u0441\u043F\u0438\u043D\u0443 " : "\u041A\u0430\u043C\u0435\u0440\u0430 ") + dm + (closest.cam.speed ? ", \u043B\u0438\u043C\u0438\u0442 " + closest.cam.speed : ""));
       }
     } else {
       alertEl.classList.remove("on");
@@ -24820,13 +25113,25 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       if (!nm) nm = findNextManeuver();
       if (nm) {
         cacheLastManeuver(nm);
-        logManeuverContext(nm, snap, true, nm.soft ? "soft_fallback" : null);
+        const filterReason = nm.pathDiverge ? "path_diverge" : nm.soft ? "soft_fallback" : null;
+        logManeuverContext(nm, snap, true, filterReason);
+        if (nm.pathDiverge) {
+          telemetry_default.log("nav", {
+            sub: "path_diverge",
+            dist: Math.round(nm.dist),
+            side: nm.step?.modifier?.includes("left") ? "left" : "right",
+            s0: snap?.s != null ? Math.round(snap.s) : null
+          });
+        }
         const rbCtx = snap ? getRoundaboutContext(snap, S.route) : null;
         if (rbCtx) logRoundaboutTelemetry(rbCtx);
         const displayStep = rbCtx?.isOnRoundabout && rbCtx.enterStep ? rbCtx.enterStep : isRoundaboutStep(nm.step) && rbCtx?.enterStep ? rbCtx.enterStep : nm.step;
         $2("arrow-box").innerHTML = buildArrowSVG(displayStep, { snap, ctx: rbCtx });
-        const rbEl = $2("rb-exit-label");
-        if (rbEl) rbEl.classList.add("hidden");
+        if (isRoundaboutStep(displayStep) || isRoundaboutStep(nm.step)) {
+          $2("rb-exit-label")?.classList.add("hidden");
+        } else {
+          paintExitBanner(nm);
+        }
         setHudStreetLabels(
           hudTurnStreetLabel(nm, rbCtx, displayStep),
           hudCurrentStreetLabel(snap)
@@ -24874,18 +25179,35 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
           } catch (e) {
             console.warn("roundabout voice:", e);
           }
-        } else if (isTurnStep(nm.step)) {
+        } else if (isTurnStep(nm.step) || isInterchangeStep(nm.step)) {
           try {
             const txt = maneuverText(nm.step);
-            const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
-            if (nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt) {
-              S.camWarned.add(kFar);
-              telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "far" });
+            const { mps, farM, nearM } = maneuverVoiceThresholds(kmh, nm.step);
+            const annId = nm.pathDiverge ? "pd_" + Math.round(nm.dist / 50) : stIdx;
+            const kFarIx = "st_" + annId + "_far";
+            const kNearIx = "st_" + annId + "_near";
+            if (nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFarIx) && txt) {
+              S.camWarned.add(kFarIx);
+              telemetry_default.log("nav", {
+                sub: "maneuver_announced",
+                id: annId,
+                dist: Math.round(nm.dist),
+                phase: "far",
+                interchange: isInterchangeStep(nm.step) || void 0,
+                path_diverge: nm.pathDiverge || void 0
+              });
               speak(formatManeuverLead(nm.dist, mps) + " " + txt);
             }
-            if (nm.dist <= nearM && !S.camWarned.has(kNear) && txt) {
-              S.camWarned.add(kNear);
-              telemetry_default.log("nav", { sub: "maneuver_announced", id: stIdx, dist: Math.round(nm.dist), phase: "near" });
+            if (nm.dist <= nearM && !S.camWarned.has(kNearIx) && txt) {
+              S.camWarned.add(kNearIx);
+              telemetry_default.log("nav", {
+                sub: "maneuver_announced",
+                id: annId,
+                dist: Math.round(nm.dist),
+                phase: "near",
+                interchange: isInterchangeStep(nm.step) || void 0,
+                path_diverge: nm.pathDiverge || void 0
+              });
               speak(txt);
             }
           } catch (e) {
@@ -24896,6 +25218,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
         clearCachedManeuver();
         setHudStreetLabels("\u041F\u0420\u042F\u041C\u041E", hudCurrentStreetLabel(snap));
         $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
+        paintExitBanner(null);
         if (remaining < 1e3) {
           $2("v-mdist").textContent = Math.max(0, Math.round(remaining / 10) * 10);
           $2("v-mdist-u").textContent = "\u043C";
@@ -25255,6 +25578,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       init_gps();
       init_route();
       init_voice();
+      init_interchange();
       init_render();
       init_vintage_vfd();
       init_hud_settings_sheet();
@@ -26372,12 +26696,16 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       }
     }
     const driftFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
-    const driftM = acc <= GPS_SPEED_ACC_TRUST_M ? driftFloor : Math.max(driftFloor, acc * 0.55);
+    const driftM = Math.min(
+      acc <= GPS_SPEED_ACC_TRUST_M ? driftFloor : Math.max(driftFloor, acc * 0.55),
+      GPS_SPEED_STATIONARY_DIST_M
+    );
     const base = { device, meas, dist, driftM, dt };
     if (prev && dist < driftM && (device == null || device < 0.5)) {
       return { ...base, mps: 0, src: "drift" };
     }
-    if (device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M) {
+    const deviceAccGate = GPS_SPEED_ACC_TRUST_M * 1.6;
+    if (device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= deviceAccGate) {
       if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
         return { ...base, mps: device, src: "device" };
       }

@@ -25,12 +25,15 @@ const OVERPASS_MIRRORS = [
   'https://overpass.kumi.systems/api/interpreter'
 ];
 const WAY_MATCH_MAX_M = 40;
-const CORRIDOR_AROUND_M = 45;
-const SAMPLE_STEP_M = 350;
-const SAMPLE_BATCH = 36;
+/** Уже коридор: field 16–17.07 — batch 36 + 55s×3 зеркала → abort и known_pct=0 */
+const CORRIDOR_AROUND_M = 35;
+const SAMPLE_STEP_M = 400;
+const SAMPLE_BATCH = 12;
+const OVERPASS_MIRROR_TIMEOUT_MS = 22000;
 const COV_FLUSH_TICKS = 120;
 let _highwayLoadToken = 0;
 let _highwayRetryTimer = null;
+let _highwayRetryStep = 0;
 
 let _graceUntil = 0;
 let _lastLimitKey = '';
@@ -216,12 +219,11 @@ function urbanCacheKey(lat, lon){
 }
 
 /**
- * Проверка «внутри населённого пункта»: place= в радиусе + boundary admin_level=8.
- * @param {number} lat
- * @param {number} lon
- * @returns {Promise<boolean>}
+ * Overpass с зеркалами. На abort/504 не крутим все зеркала по 55 с (field: 165 с/batch).
+ * @param {string} query
+ * @param {number} [timeoutMs]
  */
-async function overpassFetch(query, timeoutMs = 45000){
+export async function overpassFetch(query, timeoutMs = OVERPASS_MIRROR_TIMEOUT_MS){
   const body = 'data=' + encodeURIComponent(query);
   let lastErr = null;
   for(const url of OVERPASS_MIRRORS){
@@ -237,14 +239,41 @@ async function overpassFetch(query, timeoutMs = 45000){
       if(timer) clearTimeout(timer);
       if(!res.ok){
         lastErr = new Error('Overpass ' + res.status + ' @ ' + url);
+        // 504/429 — зеркало перегружено; следующий; 5xx иначе тоже
+        if(res.status === 504 || res.status === 429 || res.status >= 500) continue;
         continue;
       }
       return await res.json();
     }catch(e){
       lastErr = e;
+      const name = e?.name || '';
+      const msg = String(e?.message || e);
+      // abort / network: не жечь оставшиеся зеркала полным таймаутом подряд
+      if(name === 'AbortError' || /aborted|Failed to fetch|NetworkError/i.test(msg)){
+        break;
+      }
     }
   }
   throw lastErr || new Error('Overpass unreachable');
+}
+
+/** Точки вдоль маршрута для коридорных Overpass-запросов (камеры / ways). */
+export function sampleRoutePoints(coords, stepM = SAMPLE_STEP_M){
+  if(!coords?.length) return [];
+  const pts = [{ lat: coords[0][0], lon: coords[0][1] }];
+  let acc = 0;
+  for(let i = 1; i < coords.length; i++){
+    const a = { lat: coords[i - 1][0], lon: coords[i - 1][1] };
+    const b = { lat: coords[i][0], lon: coords[i][1] };
+    acc += haversine(a, b);
+    if(acc >= stepM){
+      pts.push(b);
+      acc = 0;
+    }
+  }
+  const last = { lat: coords[coords.length - 1][0], lon: coords[coords.length - 1][1] };
+  if(haversine(pts[pts.length - 1], last) > 40) pts.push(last);
+  return pts;
 }
 
 export async function checkUrbanZone(lat, lon){
@@ -270,23 +299,7 @@ out 1;`;
   return urban;
 }
 
-/** Точки вдоль polyline с шагом ~SAMPLE_STEP_M (коридор Overpass). */
-function sampleRoutePoints(coords, stepM = SAMPLE_STEP_M){
-  const pts = [{ lat: coords[0][0], lon: coords[0][1] }];
-  let acc = 0;
-  for(let i = 1; i < coords.length; i++){
-    const a = { lat: coords[i - 1][0], lon: coords[i - 1][1] };
-    const b = { lat: coords[i][0], lon: coords[i][1] };
-    acc += haversine(a, b);
-    if(acc >= stepM){
-      pts.push(b);
-      acc = 0;
-    }
-  }
-  const last = { lat: coords[coords.length - 1][0], lon: coords[coords.length - 1][1] };
-  if(haversine(pts[pts.length - 1], last) > 40) pts.push(last);
-  return pts;
-}
+/** Точки вдоль polyline с шагом ~SAMPLE_STEP_M (коридор Overpass). — см. export sampleRoutePoints выше */
 
 function parseOverpassWays(elements){
   return (elements || [])
@@ -309,8 +322,8 @@ async function fetchWaysAlongRoute(coords){
     const parts = batch.map(p =>
       `way["highway"](around:${CORRIDOR_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
     ).join('\n');
-    const q = `[out:json][timeout:45];\n(\n${parts}\n);\nout tags geom;`;
-    const j = await overpassFetch(q, 55000);
+    const q = `[out:json][timeout:20];\n(\n${parts}\n);\nout tags geom;`;
+    const j = await overpassFetch(q, OVERPASS_MIRROR_TIMEOUT_MS);
     for(const w of parseOverpassWays(j.elements)){
       if(!byId.has(w.id)) byId.set(w.id, w);
     }
@@ -320,14 +333,20 @@ async function fetchWaysAlongRoute(coords){
 
 function scheduleHighwayRetry(route){
   if(_highwayRetryTimer) clearTimeout(_highwayRetryTimer);
+  const delays = [12000, 30000, 90000];
+  const delay = delays[Math.min(_highwayRetryStep, delays.length - 1)];
+  _highwayRetryStep = Math.min(_highwayRetryStep + 1, delays.length - 1);
   _highwayRetryTimer = setTimeout(() => {
     _highwayRetryTimer = null;
     if(S.route !== route) return;
     const matched = route.highwayTypes?.filter(Boolean).length || 0;
     const need = Math.max(1, (route.coords?.length || 1) - 1);
-    if(matched / need >= 0.4) return;
+    if(matched / need >= 0.4){
+      _highwayRetryStep = 0;
+      return;
+    }
     loadRouteHighwayTypes(route).catch(e => console.warn('highway retry:', e));
-  }, 12000);
+  }, delay);
 }
 
 /**
@@ -474,6 +493,7 @@ export async function loadRouteHighwayTypes(route){
   });
 
   if(matched / n < 0.4) scheduleHighwayRetry(route);
+  else _highwayRetryStep = 0;
 
   // Urban refine в фоне — не блокирует появление лимитов
   refineUrbanSegments(route, highwayTypes, urbanSegments, token).catch(() => {});
