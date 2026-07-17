@@ -681,9 +681,21 @@ export function isSpeedLimitGraceActive(){
   return Date.now() < _graceUntil;
 }
 
+function setSpeedLimitDigitsClass(numEl, value){
+  if(!numEl) return;
+  numEl.classList.remove('sls-digits-1', 'sls-digits-2', 'sls-digits-3');
+  const n = String(value ?? '').replace(/\D/g, '').length;
+  numEl.classList.add(n >= 3 ? 'sls-digits-3' : n === 1 ? 'sls-digits-1' : 'sls-digits-2');
+}
+
 export function renderSpeedLimitSign(info, preview){
   const el = $('speed-limit-sign');
   if(!el) return;
+
+  const numEl = $('sls-num');
+  const tildeEl = $('sls-tilde');
+  const noneEl = $('sls-none');
+  const previewEl = $('sls-preview');
 
   if(S.speedLimitDynamic === false){
     const lim = S.userDefaultLimit;
@@ -692,7 +704,10 @@ export function renderSpeedLimitSign(info, preview){
       el.setAttribute('aria-hidden', 'false');
       numEl?.classList.remove('hidden');
       noneEl?.classList.add('hidden');
-      if(numEl) numEl.textContent = String(lim);
+      if(numEl){
+        numEl.textContent = String(lim);
+        setSpeedLimitDigitsClass(numEl, lim);
+      }
       el.classList.add('sls-default');
       if(tildeEl) tildeEl.classList.add('hidden');
     } else {
@@ -701,11 +716,6 @@ export function renderSpeedLimitSign(info, preview){
     }
     return;
   }
-
-  const numEl = $('sls-num');
-  const tildeEl = $('sls-tilde');
-  const noneEl = $('sls-none');
-  const previewEl = $('sls-preview');
 
   el.classList.remove('sls-osm', 'sls-implicit', 'sls-default', 'sls-none', 'sls-hidden', 'sls-preview-down');
 
@@ -729,7 +739,10 @@ export function renderSpeedLimitSign(info, preview){
     el.setAttribute('aria-hidden', 'false');
     numEl?.classList.remove('hidden');
     noneEl?.classList.add('hidden');
-    if(numEl) numEl.textContent = String(info.limit);
+    if(numEl){
+      numEl.textContent = String(info.limit);
+      setSpeedLimitDigitsClass(numEl, info.limit);
+    }
     el.classList.add(
       info.source === 'osm' ? 'sls-osm' :
       info.source === 'implicit' ? 'sls-implicit' : 'sls-default'

@@ -4965,9 +4965,19 @@ function getEffectiveSpeedLimit() {
 function isSpeedLimitGraceActive() {
   return Date.now() < _graceUntil;
 }
+function setSpeedLimitDigitsClass(numEl, value) {
+  if (!numEl) return;
+  numEl.classList.remove("sls-digits-1", "sls-digits-2", "sls-digits-3");
+  const n = String(value ?? "").replace(/\D/g, "").length;
+  numEl.classList.add(n >= 3 ? "sls-digits-3" : n === 1 ? "sls-digits-1" : "sls-digits-2");
+}
 function renderSpeedLimitSign(info, preview) {
   const el = $2("speed-limit-sign");
   if (!el) return;
+  const numEl = $2("sls-num");
+  const tildeEl = $2("sls-tilde");
+  const noneEl = $2("sls-none");
+  const previewEl = $2("sls-preview");
   if (S.speedLimitDynamic === false) {
     const lim = S.userDefaultLimit;
     if (lim > 0) {
@@ -4975,7 +4985,10 @@ function renderSpeedLimitSign(info, preview) {
       el.setAttribute("aria-hidden", "false");
       numEl?.classList.remove("hidden");
       noneEl?.classList.add("hidden");
-      if (numEl) numEl.textContent = String(lim);
+      if (numEl) {
+        numEl.textContent = String(lim);
+        setSpeedLimitDigitsClass(numEl, lim);
+      }
       el.classList.add("sls-default");
       if (tildeEl) tildeEl.classList.add("hidden");
     } else {
@@ -4984,10 +4997,6 @@ function renderSpeedLimitSign(info, preview) {
     }
     return;
   }
-  const numEl = $2("sls-num");
-  const tildeEl = $2("sls-tilde");
-  const noneEl = $2("sls-none");
-  const previewEl = $2("sls-preview");
   el.classList.remove("sls-osm", "sls-implicit", "sls-default", "sls-none", "sls-hidden", "sls-preview-down");
   const fallbackMode = S.speedLimitFallback ?? "user-default";
   if (info.source === "none") {
@@ -5008,7 +5017,10 @@ function renderSpeedLimitSign(info, preview) {
     el.setAttribute("aria-hidden", "false");
     numEl?.classList.remove("hidden");
     noneEl?.classList.add("hidden");
-    if (numEl) numEl.textContent = String(info.limit);
+    if (numEl) {
+      numEl.textContent = String(info.limit);
+      setSpeedLimitDigitsClass(numEl, info.limit);
+    }
     el.classList.add(
       info.source === "osm" ? "sls-osm" : info.source === "implicit" ? "sls-implicit" : "sls-default"
     );
@@ -18692,11 +18704,22 @@ function clampLabelX(cx, halfW, vbX, vbW) {
 function clampLabelY(cy, fontSize, vbY, vbH) {
   return Math.min(vbY + vbH - 4, Math.max(vbY + fontSize + 4, cy));
 }
+function chevronApproxBBox(m) {
+  const r = m.arm * 1.35;
+  const tipX = m.P.x + m.ex * m.arm;
+  const tipY = m.P.y + m.ey * m.arm;
+  return {
+    left: Math.min(m.P.x, tipX) - r,
+    right: Math.max(m.P.x, tipX) + r,
+    top: Math.min(m.P.y, tipY) - r * 0.45,
+    bottom: Math.max(m.P.y, tipY) + r * 0.55
+  };
+}
 function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
   if (S.pathChevronLabels === false) return;
-  const placed = [];
+  const placed = markers.map(chevronApproxBBox);
   const minSep = vb * 0.07;
-  const pad = vb * 0.014;
+  const pad = vb * 0.018;
   for (let i2 = 0; i2 < markers.length; i2++) {
     const m = markers[i2];
     m.degX = null;
@@ -18708,18 +18731,16 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
     const wantDeg = i2 === 0 && !!m.deg;
     const wantDist = i2 === 0 ? true : sep >= minSep;
     if (wantDeg) {
-      const sides = [m.labelSide, -m.labelSide];
-      for (const side of sides) {
-        const off = m.arm + m.degFont * 0.35;
-        let dx = m.P.x + m.nx * off * side;
-        const halfW = m.degFont * Math.max(m.deg.length, 1) * 0.34;
-        dx = clampLabelX(dx, halfW, vbX, vbW);
-        let dy = clampLabelY(
-          m.P.y + m.ny * off * side * 0.35 + m.degFont * 0.34,
-          m.degFont,
-          vbY,
-          vbH
-        );
+      const isLeft = m.turnSide < 0;
+      const halfW = m.degFont * Math.max(m.deg.length, 1) * 0.34;
+      const marginX = Math.max(halfW + vb * 0.03, 8);
+      const dy = clampLabelY(vbY + m.degFont * 0.92 + vb * 0.02, m.degFont, vbY, vbH);
+      const candidates = [
+        isLeft ? vbX + marginX : vbX + vbW - marginX,
+        isLeft ? vbX + vbW - marginX : vbX + marginX
+      ];
+      for (const rawX of candidates) {
+        const dx = clampLabelX(rawX, halfW, vbX, vbW);
         const box = textBBox(dx, dy, m.degFont, m.deg);
         if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
           m.degX = dx;
@@ -18731,17 +18752,18 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
     }
     if (!wantDist) continue;
     const distText = m.dist + " \u043C";
+    const cornerSide = m.turnSide < 0 ? -1 : 1;
     const slots = [
       () => ({
-        x: m.P.x + m.nx * m.arm * (1.5 + i2 * 0.25) * m.labelSide,
-        y: m.P.y + m.ny * m.arm * 0.35 * m.labelSide + m.distFont * 0.15
+        x: m.P.x + m.nx * m.arm * (1.85 + i2 * 0.25) * cornerSide,
+        y: m.P.y + m.ny * m.arm * 0.2 * cornerSide + m.distFont * 0.15
       }),
-      () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.1 + i2 * 0.35) }),
+      () => ({ x: m.P.x, y: m.tipY + m.distFont * (1.25 + i2 * 0.35) }),
       () => ({
-        x: m.P.x - m.nx * m.arm * (1.5 + i2 * 0.25) * m.labelSide,
-        y: m.P.y - m.ny * m.arm * 0.35 * m.labelSide
+        x: m.P.x - m.nx * m.arm * (1.85 + i2 * 0.25) * cornerSide,
+        y: m.P.y - m.ny * m.arm * 0.2 * cornerSide
       }),
-      () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.6 + i2 * 0.4) })
+      () => ({ x: m.P.x, y: m.P.y - m.distFont * (0.85 + i2 * 0.4) })
     ];
     for (const slot of slots) {
       let { x: x2, y } = slot();
@@ -18816,6 +18838,7 @@ function renderTurnsStr(svg, snap, headingRad, geom, curS) {
       degFont,
       distFont,
       tipY,
+      turnSide: ang < 0 ? -1 : ang > 0 ? 1 : 0,
       labelSide: ang < 0 ? 1 : -1
     });
   }
