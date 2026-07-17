@@ -67,12 +67,34 @@ export const OFF_ROUTE_HEADING_MIN_SPD = 5;
 export const OFF_ROUTE_RETURN_HOLD_MS = 2000;
 /** Боковой уход «жёсткий» — reroute без heading (стоянка / пробка вечером) */
 export const OFF_ROUTE_LATERAL_HARD_M = 80;
+/**
+ * LOST + lateral ≥ ENTER без HARD 80: field 07-00 (lat≈60, acc≈4, 2+ мин без REROUTING).
+ * Множитель к confirmMs (как lateral_time ×2).
+ */
+export const OFF_ROUTE_LOST_HOLD_CONFIRM_MULT = 2;
+/** Пауза после успешного reroute — анти-thrash (field 07-21: 6× за 4 мин) */
+export const REROUTE_SUCCESS_COOLDOWN_MS = 30000;
 export const REROUTE_SEED_MAX_LATERAL_M = 80;
 export const REROUTE_SEED_MAX_ANGLE_DEG = 90;
 
 /** --- Maneuver filter (направление 6) — базовые; highway в maneuver-filter --- */
 export const MANEUVER_BEND_DEFAULT_DEG = 20;
 export const MANEUVER_MIN_ANGLE_DEG = 12;
+/** Plain left/right (не slight): field 07-21/07-25 phantom left при ang≈14° */
+export const MANEUVER_TURN_MIN_ANGLE_DEG = 25;
+/** Soft / end of road: не показывать за горизонтом (field 20-23 / 18-06) */
+export const MANEUVER_SOFT_MAX_AHEAD_M = 500;
+/** Path-diverge (развязка): окно вдоль маршрута, м */
+export const INTERCHANGE_DIVERGE_MIN_M = 80;
+export const INTERCHANGE_DIVERGE_MAX_M = 800;
+/** Боковой уход polyline от касательной → keep L/R */
+export const INTERCHANGE_DIVERGE_LATERAL_M = 28;
+export const INTERCHANGE_DIVERGE_STEP_M = 40;
+/** Голос съезда раньше обычного поворота */
+export const INTERCHANGE_VOICE_FAR_MIN_M = 800;
+export const INTERCHANGE_VOICE_FAR_MAX_M = 1200;
+export const INTERCHANGE_VOICE_NEAR_MIN_M = 80;
+export const INTERCHANGE_VOICE_NEAR_MAX_M = 220;
 export const MANEUVER_COLLAPSE_SEG_M = 30;
 export const MANEUVER_COLLAPSE_GAP_M = 45;
 export const MANEUVER_PASSED_M = 8;

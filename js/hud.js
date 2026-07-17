@@ -7,6 +7,9 @@ import {
   findNextManeuver, getRemainingDistance, seedSnapFromGps, getCurrentRouteStepAtS
 } from './route.js';
 import { speak, maneuverText, isTurnStep, isCameraBehind } from './voice.js';
+import {
+  isInterchangeStep, interchangeHudLabel, extractExitLaneHint
+} from './interchange.js';
 import { buildArrowSVG, buildTurnArrowSVG } from './render.js';
 import { syncVintageVfdDomClasses, resetVintageVfd } from './vintage-vfd.js';
 import { closeHudSettingsSheet } from './hud-settings-sheet.js';
@@ -34,7 +37,11 @@ import { tickAutoMode } from './theme-manager.js';
 import { applyFinishInfoVisibility } from './hud-opts.js';
 import { clearHudChromeReveal, applyHudChrome } from './hud-chrome.js';
 import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide, OffRouteState } from './offroute.js';
-import { OFF_ROUTE_ENTER_M } from './nav-constants.js';
+import {
+  OFF_ROUTE_ENTER_M,
+  INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M,
+  INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M
+} from './nav-constants.js';
 import telemetry from './telemetry.js';
 import { logFunnel } from './telemetry-funnel.js';
 import { tickNavMap, resetViewMode } from './view-mode.js';
@@ -92,6 +99,15 @@ function hudTurnStreetLabel(nm, rbCtx, displayStep){
     return (roundaboutManeuverText(displayStep, rbCtx) ||
       formatStreetLabel(nm?.step?.name || displayStep?.name)) + mini;
   }
+  if(nm && isInterchangeStep(nm.step)){
+    const ix = interchangeHudLabel(nm.step);
+    const lane = extractExitLaneHint(nm.step);
+    const name = nm.step.name?.trim() ? formatStreetLabel(nm.step.name) : '';
+    if(lane?.text && name) return ix + ' · ' + lane.text + ' · ' + name;
+    if(lane?.text) return ix + ' · ' + lane.text;
+    if(name) return ix + ' · ' + name;
+    return ix;
+  }
   if(nm && isTurnStep(nm.step) && nm.step.name?.trim()){
     return formatStreetLabel(nm.step.name);
   }
@@ -108,13 +124,33 @@ function setHudStreetLabels(top, bottom){
   if(curEl) curEl.textContent = bottom ?? '—';
 }
 
-function maneuverVoiceThresholds(kmh){
+function maneuverVoiceThresholds(kmh, step){
   const mps = Math.max(kmh / 3.6, 4);
+  if(isInterchangeStep(step)){
+    return {
+      mps,
+      farM: Math.max(INTERCHANGE_VOICE_FAR_MIN_M, Math.min(INTERCHANGE_VOICE_FAR_MAX_M, mps * 14)),
+      nearM: Math.max(INTERCHANGE_VOICE_NEAR_MIN_M, Math.min(INTERCHANGE_VOICE_NEAR_MAX_M, mps * 4))
+    };
+  }
   return {
     mps,
     farM: Math.max(220, Math.min(850, mps * 9)),
     nearM: Math.max(35, Math.min(110, mps * 2.5))
   };
+}
+
+function paintExitBanner(nm){
+  const el = $('rb-exit-label');
+  if(!el) return;
+  if(nm && isInterchangeStep(nm.step) && nm.dist != null && nm.dist <= 900){
+    el.textContent = interchangeHudLabel(nm.step);
+    el.classList.remove('hidden');
+    el.setAttribute('aria-hidden', 'false');
+  } else {
+    el.classList.add('hidden');
+    el.setAttribute('aria-hidden', 'true');
+  }
 }
 
 function formatManeuverLead(distM, mps){
@@ -140,8 +176,8 @@ export function checkCamerasILS(){
   S.cameras.forEach((c, i) => {
     const d = haversine(S.gps, c);
     if(d > radius) return;
-    if(!c.speed) return;
-    if(kmh <= c.speed + tol) return;
+    // Без maxspeed в OSM — всё равно предупреждаем о камере (field: камер «нет»)
+    if(c.speed != null && kmh <= c.speed + tol) return;
     if(S.backOnly && !isCameraBehind(c, heading)) return;
     if(heading != null && angleDiff(bearing(S.gps, c), heading) > 90) return;
     if(!closest || d < closest.dist) closest = { cam: c, dist: d, id: i };
@@ -151,7 +187,7 @@ export function checkCamerasILS(){
     $('cam-dist').textContent = Math.round(closest.dist) + ' M';
     $('cam-sub').textContent = closest.cam.speed
       ? 'LIMIT ' + closest.cam.speed + ' KM/H'
-      : (closest.cam.dir != null ? 'BRG ' + String(Math.round(closest.cam.dir)).padStart(3, '0') : 'DIR UNKNOWN');
+      : (closest.cam.dir != null ? 'BRG ' + String(Math.round(closest.cam.dir)).padStart(3, '0') : 'CAMERA');
     alertEl.classList.add('on');
     if(!S.camWarned.has(closest.id) && (now - S.lastVoiceTs > 3000)){
       S.camWarned.add(closest.id);
@@ -160,7 +196,9 @@ export function checkCamerasILS(){
                  closest.dist < 400 ? 'через 300 метров' :
                  closest.dist < 700 ? 'через 500 метров' :
                  'через ' + Math.round(closest.dist / 100) * 100 + ' метров';
-      speak('Камера в спину ' + dm + (closest.cam.speed ? ', лимит ' + closest.cam.speed : ''));
+      const behind = S.backOnly || isCameraBehind(closest.cam, heading);
+      speak((behind ? 'Камера в спину ' : 'Камера ') + dm +
+        (closest.cam.speed ? ', лимит ' + closest.cam.speed : ''));
     }
   } else {
     alertEl.classList.remove('on');
@@ -355,14 +393,26 @@ export function onTick(){
     if(!nm) nm = findNextManeuver();
     if(nm){
       cacheLastManeuver(nm);
-      logManeuverContext(nm, snap, true, nm.soft ? 'soft_fallback' : null);
+      const filterReason = nm.pathDiverge ? 'path_diverge' : (nm.soft ? 'soft_fallback' : null);
+      logManeuverContext(nm, snap, true, filterReason);
+      if(nm.pathDiverge){
+        telemetry.log('nav', {
+          sub: 'path_diverge',
+          dist: Math.round(nm.dist),
+          side: nm.step?.modifier?.includes('left') ? 'left' : 'right',
+          s0: snap?.s != null ? Math.round(snap.s) : null
+        });
+      }
       const rbCtx = snap ? getRoundaboutContext(snap, S.route) : null;
       if(rbCtx) logRoundaboutTelemetry(rbCtx);
       const displayStep = (rbCtx?.isOnRoundabout && rbCtx.enterStep) ? rbCtx.enterStep :
         (isRoundaboutStep(nm.step) && rbCtx?.enterStep ? rbCtx.enterStep : nm.step);
       $('arrow-box').innerHTML = buildArrowSVG(displayStep, { snap, ctx: rbCtx });
-      const rbEl = $('rb-exit-label');
-      if(rbEl) rbEl.classList.add('hidden');
+      if(isRoundaboutStep(displayStep) || isRoundaboutStep(nm.step)){
+        $('rb-exit-label')?.classList.add('hidden');
+      } else {
+        paintExitBanner(nm);
+      }
       setHudStreetLabels(
         hudTurnStreetLabel(nm, rbCtx, displayStep),
         hudCurrentStreetLabel(snap)
@@ -411,18 +461,29 @@ export function onTick(){
         }catch(e){
           console.warn('roundabout voice:', e);
         }
-      } else if(isTurnStep(nm.step)){
+      } else if(isTurnStep(nm.step) || isInterchangeStep(nm.step)){
         try{
           const txt = maneuverText(nm.step);
-          const { mps, farM, nearM } = maneuverVoiceThresholds(kmh);
-          if(nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFar) && txt){
-            S.camWarned.add(kFar);
-            telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'far' });
+          const { mps, farM, nearM } = maneuverVoiceThresholds(kmh, nm.step);
+          const annId = nm.pathDiverge ? ('pd_' + Math.round(nm.dist / 50)) : stIdx;
+          const kFarIx = 'st_' + annId + '_far';
+          const kNearIx = 'st_' + annId + '_near';
+          if(nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFarIx) && txt){
+            S.camWarned.add(kFarIx);
+            telemetry.log('nav', {
+              sub: 'maneuver_announced', id: annId, dist: Math.round(nm.dist), phase: 'far',
+              interchange: isInterchangeStep(nm.step) || undefined,
+              path_diverge: nm.pathDiverge || undefined
+            });
             speak(formatManeuverLead(nm.dist, mps) + ' ' + txt);
           }
-          if(nm.dist <= nearM && !S.camWarned.has(kNear) && txt){
-            S.camWarned.add(kNear);
-            telemetry.log('nav', { sub: 'maneuver_announced', id: stIdx, dist: Math.round(nm.dist), phase: 'near' });
+          if(nm.dist <= nearM && !S.camWarned.has(kNearIx) && txt){
+            S.camWarned.add(kNearIx);
+            telemetry.log('nav', {
+              sub: 'maneuver_announced', id: annId, dist: Math.round(nm.dist), phase: 'near',
+              interchange: isInterchangeStep(nm.step) || undefined,
+              path_diverge: nm.pathDiverge || undefined
+            });
             speak(txt);
           }
         }catch(e){
@@ -433,6 +494,7 @@ export function onTick(){
       clearCachedManeuver();
       setHudStreetLabels('ПРЯМО', hudCurrentStreetLabel(snap));
       $('arrow-box').innerHTML = buildTurnArrowSVG(0);
+      paintExitBanner(null);
       if(remaining < 1000){
         $('v-mdist').textContent = Math.max(0, Math.round(remaining / 10) * 10);
         $('v-mdist-u').textContent = 'м';

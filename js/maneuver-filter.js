@@ -5,10 +5,14 @@
 
 import {
   MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG as MANEUVER_MIN_ANGLE,
+  MANEUVER_TURN_MIN_ANGLE_DEG,
   MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M,
   MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M
 } from './nav-constants.js';
+import { isInterchangeStep, isRampStep } from './interchange.js';
 import telemetry from './telemetry.js';
+
+export { isInterchangeStep, isRampStep };
 
 export const MANEUVER_BEND_ANGLE = MANEUVER_BEND_DEFAULT_DEG;
 export { MANEUVER_MIN_ANGLE, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M };
@@ -61,9 +65,11 @@ export function isNavManeuverType(step){
   if(!step || step.type === 'depart' || step.type === 'arrive') return false;
   if(INFO_TYPES.has(step.type) || step.type === 'merge') return false;
   if(step.type === 'roundabout' || step.type === 'rotary' || step.type === 'exit roundabout') return true;
-  if(step.type === 'on ramp' || step.type === 'off ramp') return hasTurnModifier(step) || !!step.exit;
+  // Съезды/въезды — всегда (даже slight / без modifier): иначе HUD «прямо» на развязке
+  if(step.type === 'on ramp' || step.type === 'off ramp') return true;
   if(!NAV_TYPES.has(step.type)) return false;
-  if(step.type === 'fork' || step.type === 'end of road') return hasTurnModifier(step);
+  if(step.type === 'fork') return hasTurnModifier(step) || !!step.exit;
+  if(step.type === 'end of road') return hasTurnModifier(step);
   return step.type === 'turn' && hasTurnModifier(step);
 }
 
@@ -86,6 +92,16 @@ export function isSignificantManeuver(m, _geom){
   const mod = m.step.modifier || '';
   const ang = stepTurnAngleDeg(m.step, m);
 
+  // Рампы: вне углового фильтра (slight 10–20° — типичный съезд МКАД)
+  if(isRampStep(m.step)) return true;
+
+  if(m.step.type === 'fork'){
+    if(mod.includes('left') || mod.includes('right')) return true;
+    if(ang != null && ang >= 8) return true;
+    // fork + straight / крошечный угол = «держите полосу»
+    return false;
+  }
+
   if(mod === 'straight') return false;
   if(ang == null){
     return mod === 'uturn' || m.step.type === 'roundabout' || m.step.type === 'rotary';
@@ -103,6 +119,8 @@ export function isSignificantManeuver(m, _geom){
 
   if(mod === 'uturn' || mod.includes('sharp')) return ang >= 8;
   if(ang < MANEUVER_MIN_ANGLE) return false;
+  // Plain left/right (не slight): field phantom left при ang≈14°
+  if((mod === 'left' || mod === 'right') && ang < MANEUVER_TURN_MIN_ANGLE_DEG) return false;
   if(ang < bend && (mod.includes('slight') || mod === 'straight')) return false;
 
   return true;
@@ -141,7 +159,8 @@ export function refineManeuvers(maneuvers){
     const bend = bendThresholdForStep(m.step);
     const next = sorted[i + 1];
 
-    if(segM < MANEUVER_COLLAPSE_SEG_M && ang < bend){
+    // Не схлопывать съезды/рампы — иначе «прямо» на развязке
+    if(!isInterchangeStep(m.step) && segM < MANEUVER_COLLAPSE_SEG_M && ang < bend){
       if(next && isNavManeuverType(next.step) && (next.s - m.s) < MANEUVER_COLLAPSE_GAP_M){
         logFiltered(m.step, m.s, 'collapse_micro');
         continue;
@@ -152,7 +171,8 @@ export function refineManeuvers(maneuvers){
       const prev = kept[kept.length - 1];
       const gap = m.s - prev.s;
       const prevAng = stepTurnAngleDeg(prev.step, prev) || 0;
-      if(gap < MANEUVER_COLLAPSE_GAP_M && prevAng < bend && ang < bend){
+      if(!isInterchangeStep(m.step) && !isInterchangeStep(prev.step) &&
+         gap < MANEUVER_COLLAPSE_GAP_M && prevAng < bend && ang < bend){
         logFiltered(prev.step, prev.s, 'collapse_pair');
         kept[kept.length - 1] = pickStrongerManeuver(prev, m);
         continue;

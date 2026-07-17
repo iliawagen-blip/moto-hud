@@ -6,6 +6,7 @@ import { maneuverTurnAngle, getVisibleTurnManeuvers, MANEUVER_BEND_ANGLE } from 
 import {
   buildRoundaboutSVG, isRoundaboutStep, shouldUseRoundaboutSchema, getRoundaboutContext
 } from './roundabout.js';
+import { isInterchangeStep, interchangeSide } from './interchange.js';
 import { fuelStationsForRoad, fuelColor } from './fuel.js';
 import { ensureRouteGeometry } from './route.js';
 import {
@@ -777,7 +778,14 @@ export function buildArrowSVG(step, opts = {}){
   }
 
   let turn = maneuverTurnAngle(step);
-  if(Math.abs(turn) < MANEUVER_BEND_ANGLE){
+  // Съезд с малым bearing: не рисовать «прямо» — форсим угол по стороне
+  if(isInterchangeStep(step) && Math.abs(turn) < 28){
+    const side = interchangeSide(step);
+    if(side === 'left') turn = -38;
+    else if(side === 'right') turn = 38;
+    else if(step.modifier?.includes('left')) turn = -38;
+    else if(step.modifier?.includes('right')) turn = 38;
+  } else if(Math.abs(turn) < MANEUVER_BEND_ANGLE){
     if(step.modifier === 'uturn') turn = 175;
     else if(Math.abs(turn) < 4 && step.modifier){
       if(step.modifier.includes('left')) turn = -8;

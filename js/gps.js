@@ -14,7 +14,8 @@ import {
   FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN,
   GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS,
   GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M,
-  GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO
+  GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO,
+  GPS_SPEED_STATIONARY_DIST_M
 } from './nav-constants.js';
 import { isSpeedOverLimit } from './speed-limit.js';
 import { tickRoundaboutHudRefresh } from './roundabout.js';
@@ -82,16 +83,22 @@ function resolveGpsSpeed(next, prev){
   }
 
   const driftFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
-  const driftM = acc <= GPS_SPEED_ACC_TRUST_M
-    ? driftFloor
-    : Math.max(driftFloor, acc * 0.55);
+  // Cap: иначе при acc≈60 driftM≈33 м и любой шаг 1 Гц → spd=0 (field 16-12)
+  const driftM = Math.min(
+    acc <= GPS_SPEED_ACC_TRUST_M
+      ? driftFloor
+      : Math.max(driftFloor, acc * 0.55),
+    GPS_SPEED_STATIONARY_DIST_M
+  );
   const base = { device, meas, dist, driftM, dt };
 
   if(prev && dist < driftM && (device == null || device < 0.5)){
     return { ...base, mps: 0, src: 'drift' };
   }
 
-  if(device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= GPS_SPEED_ACC_TRUST_M){
+  // Cold start: чуть шире гейт для device (25→40), с проверкой vs meas
+  const deviceAccGate = GPS_SPEED_ACC_TRUST_M * 1.6;
+  if(device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= deviceAccGate){
     if(!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5){
       return { ...base, mps: device, src: 'device' };
     }
