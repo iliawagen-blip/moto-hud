@@ -1,103 +1,121 @@
-# Handoff: Nightly — MOSCOW INTERCHANGES (развязки)
+# Handoff: Nightly — RUSSIA TOUR (польза по регионам)
 
 > **Режим:** без вопросов пользователю до закрытия gates или явного stop  
 > **Проект:** `C:\Users\Илья\Documents\jul26\moto-hud`  
-> **Handoff:** 2026-07-17  
-> **Фокус:** съезды / path-diverge / голос «Съезд» на МКАД и московских развязках  
-> **Лог:** `regression/results/2026-07-17/session-log.md` (создать/дописать)
+> **Handoff:** 2026-07-17 (вечер) → продолжать в следующие сессии  
+> **Фокус:** кататься по корпусу России, ловить регрессии (false_reroute / snap / interchange), приносить пользу Dev  
+> **Лог:** `regression/results/YYYY-MM-DD/session-log.md`  
+> **HEAD ожидаемый:** `39d8cbe`+ (interchange + field fixes на main)
 
 ---
 
 ## TL;DR
 
-1. `npm run build` + `node scripts/interchange-test.mjs`
-2. **P0:** sim по московским фикстурам (`mkad_ring` + `moscow_center` + `moscow_outer`, **27 шт.**) — режимы `on_route` (+ `deviation` если успеешь)
-3. **P0:** нет массового `false_reroute`; смотреть телеметрию `path_diverge` / `maneuver_announced` с `interchange:true`
-4. **P1:** если есть полевые JSONL после выезда — проверить, что на съезде не «ПРЯМО»
+Москва/развязки **закрыты** (2026-07-17: 25/26 on_route, false_reroute=0).  
+Дальше — **тур по России** ногами `nw → m4 → volga → siberia → south`, потом полный sim если успеешь.
+
+1. `npm run build` + `npm run interchange:test` (smoke, не ломать)
+2. **P0:** по одной ноге `on_route` через `npm run regression:sim:russia -- --leg <id> …`
+3. **P0:** на каждой ноге — pass ≥ 90%, `false_reroute` ≤ 1; fails → session-log + HANDOFF-TO-DEV
+4. **P1:** полный корпус `npm run regression:sim -- --date … --force --mode on_route` (≥ 330/348 если 3 режима / или ≥ 90% on_route)
 5. GH burn — **defer**
 
 ---
 
-## Что задеплоено в коде (не откатывать без причины)
+## Архив: Москва DONE
 
-| Модуль | Суть |
-|--------|------|
-| `js/interchange.js` | ramp/fork семантика, path-diverge, синтетический съезд |
-| `js/maneuver-filter.js` | off/on ramp всегда значимы; не collapse |
-| `js/route.js` `findNextManeuver` | окно 800 м → diverge → soft → далёкие |
-| `js/voice.js` / `hud.js` / `render.js` | «Съезд направо», баннер СЪЕЗД, стрелка ±38° |
-| Ранний голос | far 800–1200 м на interchange |
+| Gate | Результат |
+|------|-----------|
+| interchange-test | OK |
+| moscow on_route | **25/26 (96%)**, false_reroute **0** |
+| fail | `019f1539` p95_lateral (P2) |
+
+Не перегонять Москву без причины. Точечно: `npm run regression:sim:moscow -- --mode on_route` только если трогали nav/offroute.
 
 ---
 
-## Московский корпус (27 fixtures)
+## Ноги тура (excl. moscow)
 
-Регионы: `mkad_ring` (8), `moscow_center` (13), `moscow_outer` (6).
+| Leg | Регионы | ~fx | Что полезного ловим |
+|-----|---------|-----|---------------------|
+| `nw` | `spb_center`, `spb_suburbs`, `m11_neva` | 18 | город + скоростная, съезды М-11 |
+| `m4` | `m4_don_*` | 18 | длинные шоссе, lateral drift |
+| `volga` | `kazan`, `yekaterinburg` | 18 | другие города / snap |
+| `siberia` | `novosibirsk` | 5 | быстрый smoke дальнего региона |
+| `south` | `krasnodar`, `sochi_adler`, `caucasus_serpentines` | 31 | серпантин, много маневров |
 
-```bash
-# Список id:
-node -e "const fs=require('fs');const d='regression/fixtures/auto';for(const f of fs.readdirSync(d)){const j=JSON.parse(fs.readFileSync(d+'/'+f,'utf8'));if(['mkad_ring','moscow_center','moscow_outer'].includes(j.region)) console.log(j.fixture_id.slice(0,8), j.region, j.category)}"
-```
+Список: `npm run regression:sim:russia -- --list`
 
-Приоритет категорий: **roundabouts** → **many_waypoints** (развязки/съезды) → city.
+### Порядок сессии
+
+1. `nw` → 2. `m4` → 3. `volga` → 4. `siberia` → 5. `south`  
+Необязательно всё за одну ночь: **закрыл ногу → записали → следующая**.  
+`--leg all` — подряд (долго); предпочтительно по одной.
 
 ### Команды
 
 ```bash
 cd C:\Users\Илья\Documents\jul26\moto-hud
 npm run build
-node scripts/interchange-test.mjs
+npm run interchange:test
 
-# Московский корпус 27× (on_route; или без --mode = 3 режима):
-npm run regression:sim:moscow -- --date 2026-07-17 --force --mode on_route
+# Нога (пример — СЗ):
+npm run regression:sim:russia -- --leg nw --date 2026-07-17 --force --mode on_route
 
-# Точечно:
-node regression/scripts/run-sim.mjs --date 2026-07-17 --force --mode on_route --id 019f1539
-node regression/scripts/run-sim.mjs --date 2026-07-17 --force --mode on_route --id 37920e54
+# Следующие:
+npm run regression:sim:russia -- --leg m4 --date 2026-07-17 --force --mode on_route
+npm run regression:sim:russia -- --leg volga --date 2026-07-17 --force --mode on_route
+npm run regression:sim:russia -- --leg siberia --date 2026-07-17 --force --mode on_route
+npm run regression:sim:russia -- --leg south --date 2026-07-17 --force --mode on_route
 
-# После прогона:
+# После ноги / в конце сессии:
 npm run regression:rebuild-sim-summary -- --date 2026-07-17
 npm run regression:report -- --date 2026-07-17
 npm run regression:state
 ```
 
-В session-log — pass/fail по moscow/mkad.
+Дата: сегодняшняя сессия или новая `YYYY-MM-DD` — главное **одна дата на session-log**.
 
 ---
 
-## Критерии успеха
+## Критерии успеха (на ногу)
 
 | Gate | Цель |
 |------|------|
-| `interchange-test.mjs` | OK |
-| Sim moscow subset on_route | **≥ 90%** pass; false_reroute **≤ 1** |
-| Full sim (если гоняли) | **≥ 330/348** (не хуже 2026-07-15) |
-| Телеметрия (если смотрели sim debug) | на развязках есть `maneuver_announced` / `path_diverge`, не вечный `maneuver_none` + «ПРЯМО» |
+| `interchange:test` | OK (в начале сессии) |
+| Leg on_route pass | **≥ 90%** |
+| `false_reroute` | **≤ 1** на ногу |
+| Польза Dev | каждый fail с причиной в session-log; если новый класс бага → блок в `HANDOFF-TO-DEV.md` |
+
+Полный sim (P1): не хуже baseline **343/348** (2026-07-15) / false_reroute on_route ≤ 1.
 
 ---
 
-## Что смотреть в fail
+## Что смотреть в fail (польза)
 
-1. **false_reroute** на mkad — не из-за path-diverge (diverge не трогает offroute)
-2. **good_snap / p95** — не блокер развязок (известный P2)
-3. Если «прямо» всё ещё в UI на fixture с очевидным съездом — снять `geom.maneuvers` types (off ramp vs continue) и `detectPathDiverge` на mid-route s0
+1. **false_reroute** — регресс offroute? сравнить с Moscow gate; не ослаблять пороги
+2. **good_snap / p95_lateral** — известный P2, не блокер тура; копить id
+3. **Серпантин / south** — флап маневров, «ПРЯМО» на съезде → interchange / path_diverge
+4. **М-4 / М-11** — thrash reroute на прямой; backoff / HOLD
+
+Код продукта **не трогать**, пока нет явного P0 (массовый false_reroute или crash). Тогда минимальный fix + smoke ноги + HANDOFF-TO-DEV.
 
 ---
 
 ## Запрещено
 
-- Ослаблять `false_reroute_max`
-- Откатывать ramp-always-significant без полевого контрпримера
+- Ослаблять `false_reroute_max` / sim gates «чтобы проехало»
 - GH burn
-- Трогать finish-info / темы
+- Откатывать interchange / `__REGRESSION_SIM__` lateral gate без полевого контрпримера
+- Трогать темы / finish-info / UI ради метрик
 
 ---
 
-## Stop / DONE
+## Stop / DONE (сессия)
 
-1. interchange-test OK  
-2. Sim по Москве (хотя бы smoke 6–8 id + roundabouts) задокументирован  
-3. session-log + при полном прогоне report/state  
-4. Краткий апдейт `HANDOFF-TO-DEV.md` (статус развязок)
+1. Хотя бы **одна новая нога** прогнана и задокументирована  
+2. session-log: таблица leg → pass/fail / false_reroute  
+3. `HANDOFF-TO-DEV.md` — краткий статус тура (+ блокеры если есть)  
+4. report/state если гоняли много fx  
 
-**ready to push** — только если gates зелёные и user просил push (как обычно).
+**ready to push** — только если правили код и gates зелёные (как обычно).

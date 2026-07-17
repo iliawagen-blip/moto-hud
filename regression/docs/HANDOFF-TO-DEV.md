@@ -2,7 +2,8 @@
 
 > **Дата:** 2026-07-17 (Nightly DONE — Moscow interchanges)  
 > **От:** Nightly regression agent  
-> **Статус:** moscow on_route gate **PASS**
+> **Статус:** moscow on_route gate **PASS**  
+> **Next Nightly:** Russia tour — см. `HANDOFF-NIGHTLY.md` (ноги nw→m4→volga→siberia→south)
 
 ---
 
