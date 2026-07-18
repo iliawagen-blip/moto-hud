@@ -15,7 +15,8 @@ import {
   GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS,
   GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M,
   GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO,
-  GPS_SPEED_STATIONARY_DIST_M
+  GPS_SPEED_STATIONARY_DIST_M,
+  GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2
 } from './nav-constants.js';
 import { isSpeedOverLimit } from './speed-limit.js';
 import { tickRoundaboutHudRefresh } from './roundabout.js';
@@ -96,22 +97,42 @@ function resolveGpsSpeed(next, prev){
     return { ...base, mps: 0, src: 'drift' };
   }
 
-  // Cold start: чуть шире гейт для device (25→40), с проверкой vs meas
+  if(meas > GPS_SPEED_MAX_MPS) meas = 0;
   const deviceAccGate = GPS_SPEED_ACC_TRUST_M * 1.6;
+  let rawMps = null;
+  let src = 'zero';
+
+  // Device при нормальном acc (field: cold start gate 25→40)
   if(device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= deviceAccGate){
     if(!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5){
-      return { ...base, mps: device, src: 'device' };
+      rawMps = device;
+      src = 'device';
     }
   }
-
-  if(meas > GPS_SPEED_MAX_MPS) meas = 0;
-  // Не доверять meas при плохом acc — иначе «пыление» скорости после cold-start / тоннеля
-  // (field 17-35: acc 80–370 м + dist>acc → скачки 0↔65 км/ч).
-  if(meas > 0 && acc <= GPS_SPEED_ACC_TRUST_M * 2 && dist <= Math.max(80, acc * 1.2)){
-    const mps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
-    return { ...base, meas, mps, src: 'meas' };
+  // Meas: жёстче по acc (было ×2 → пыление 0↔43 m/s, field 16-51)
+  if(rawMps == null && meas > 0 && acc <= GPS_SPEED_ACC_TRUST_M * 1.6 &&
+     dist <= Math.max(60, acc * 0.9)){
+    rawMps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+    src = 'meas';
   }
-  return { ...base, mps: 0, src: 'zero' };
+  // Короткий провал фиксов — не ронять спидометр в 0
+  if(rawMps == null && S.measSpeed != null && S.measSpeed > 3 && dt > 0 && dt < 2.5 &&
+     acc <= GPS_SPEED_ACC_TRUST_M * 3){
+    rawMps = S.measSpeed * 0.82;
+    src = 'coast';
+  }
+  if(rawMps == null) return { ...base, mps: 0, src: 'zero' };
+
+  let mps = rawMps;
+  if(S.measSpeed != null && dt > 0){
+    const maxUp = GPS_SPEED_SLEW_UP_MPS2 * Math.max(dt, 0.35);
+    const maxDn = GPS_SPEED_SLEW_DOWN_MPS2 * Math.max(dt, 0.35);
+    if(mps > S.measSpeed + maxUp) mps = S.measSpeed + maxUp;
+    if(mps < S.measSpeed - maxDn) mps = Math.max(0, S.measSpeed - maxDn);
+  } else if((S.measSpeed == null || S.measSpeed < 2) && mps > 10 && acc > 18){
+    mps = Math.min(mps, 6);
+  }
+  return { ...base, meas, mps, src };
 }
 
 let _onTick = () => {};

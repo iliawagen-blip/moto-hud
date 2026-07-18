@@ -26,7 +26,8 @@ import {
 import {
   MANEUVER_PASSED_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG,
   STREET_LABEL_MANEUVER_M, MANEUVER_SOFT_MAX_AHEAD_M, REROUTE_SUCCESS_COOLDOWN_MS,
-  MANEUVER_TURN_MIN_ANGLE_DEG, INTERCHANGE_DIVERGE_MAX_M
+  MANEUVER_TURN_MIN_ANGLE_DEG, INTERCHANGE_DIVERGE_MAX_M,
+  INTERCHANGE_VOICE_FAR_MAX_M
 } from './nav-constants.js';
 import { buildRouteRequestUrl, parseRouteResponse } from './router.js';
 import { HIGHWAY_CLASSES } from './maneuver-filter.js';
@@ -655,14 +656,17 @@ export function findNextManeuver(){
       };
     }
 
-    // 1) значимые в окне развязки (≤800 м) — съезды раньше «далёкого» поворота
+    // 1) значимые в окне развязки — съезды до FAR_MAX, остальное ≤800 м
     for(const m of sorted){
       if(m.step.type === 'arrive') continue;
       if(!isSignificantManeuver(m, geom)) continue;
       if(curS > m.s + MANEUVER_PASSED_M) continue;
       const along = Math.max(0, m.s - curS);
       if(m.step.type === 'end of road' && along > MANEUVER_SOFT_MAX_AHEAD_M) continue;
-      if(along > INTERCHANGE_DIVERGE_MAX_M) continue;
+      const aheadMax = isInterchangeStep(m.step)
+        ? INTERCHANGE_VOICE_FAR_MAX_M
+        : INTERCHANGE_DIVERGE_MAX_M;
+      if(along > aheadMax) continue;
       return pack(m, false);
     }
 
@@ -693,9 +697,10 @@ export function findNextManeuver(){
       return pack(m, true);
     }
 
-    // 3) далёкие значимые (>800 м)
+    // 3) далёкие значимые (>800 м) — не рампы/fork (иначе «СЪЕЗД» на 10+ км, Варшавка)
     for(const m of sorted){
       if(m.step.type === 'arrive') continue;
+      if(isInterchangeStep(m.step)) continue;
       if(!isSignificantManeuver(m, geom)) continue;
       if(curS > m.s + MANEUVER_PASSED_M) continue;
       const along = Math.max(0, m.s - curS);

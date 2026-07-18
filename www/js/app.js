@@ -1417,7 +1417,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, OFF_ROUTE_LOST_HOLD_CONFIRM_MULT, REROUTE_SUCCESS_COOLDOWN_MS, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_TURN_MIN_ANGLE_DEG, MANEUVER_SOFT_MAX_AHEAD_M, INTERCHANGE_DIVERGE_MIN_M, INTERCHANGE_DIVERGE_MAX_M, INTERCHANGE_DIVERGE_LATERAL_M, INTERCHANGE_DIVERGE_STEP_M, INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, OFF_ROUTE_LOST_HOLD_CONFIRM_MULT, REROUTE_SUCCESS_COOLDOWN_MS, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_TURN_MIN_ANGLE_DEG, MANEUVER_SOFT_MAX_AHEAD_M, INTERCHANGE_DIVERGE_MIN_M, INTERCHANGE_DIVERGE_MAX_M, INTERCHANGE_DIVERGE_LATERAL_M, INTERCHANGE_DIVERGE_STEP_M, INTERCHANGE_DIVERGE_MIN_TURN_DEG, INTERCHANGE_RAMP_MIN_ANGLE_DEG, INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1480,8 +1480,10 @@ var init_nav_constants = __esm({
     MANEUVER_SOFT_MAX_AHEAD_M = 500;
     INTERCHANGE_DIVERGE_MIN_M = 80;
     INTERCHANGE_DIVERGE_MAX_M = 800;
-    INTERCHANGE_DIVERGE_LATERAL_M = 28;
+    INTERCHANGE_DIVERGE_LATERAL_M = 40;
     INTERCHANGE_DIVERGE_STEP_M = 40;
+    INTERCHANGE_DIVERGE_MIN_TURN_DEG = 14;
+    INTERCHANGE_RAMP_MIN_ANGLE_DEG = 18;
     INTERCHANGE_VOICE_FAR_MIN_M = 800;
     INTERCHANGE_VOICE_FAR_MAX_M = 1200;
     INTERCHANGE_VOICE_NEAR_MIN_M = 80;
@@ -1505,6 +1507,8 @@ var init_nav_constants = __esm({
     GPS_SPEED_STATIONARY_DIST_M = 12;
     GPS_SPEED_MEAS_MIN_DIST_M = 1.5;
     GPS_SPEED_DEVICE_MEAS_RATIO = 2.5;
+    GPS_SPEED_SLEW_UP_MPS2 = 5;
+    GPS_SPEED_SLEW_DOWN_MPS2 = 8;
     SPEED_LIMIT_LOOKAHEAD_M = 300;
     SPEED_LIMIT_GRACE_MS = 3e3;
     SPEED_LIMIT_OVERSPEED_KMH = 3;
@@ -2397,6 +2401,9 @@ function detectPathDiverge(geom, curS) {
   if (!first) return null;
   if (Math.abs(endLat) < INTERCHANGE_DIVERGE_LATERAL_M * 0.55) return null;
   if (endLat > 0 !== (first.side === "left")) return null;
+  const exitTan = avgTangentDegLocal(geom, first.atS, 50);
+  if (exitTan == null || isNaN(exitTan)) return null;
+  if (angleDiff(tanDeg, exitTan) < INTERCHANGE_DIVERGE_MIN_TURN_DEG) return null;
   return first;
 }
 function syntheticDivergeStep(div) {
@@ -2468,9 +2475,20 @@ function isSignificantManeuver(m, _geom) {
   if (!m?.step || !isNavManeuverType(m.step)) return false;
   const mod = m.step.modifier || "";
   const ang = stepTurnAngleDeg(m.step, m);
-  if (isRampStep(m.step)) return true;
+  if (isRampStep(m.step)) {
+    if (mod === "straight") return false;
+    if (mod.includes("slight") && ang != null && ang < INTERCHANGE_RAMP_MIN_ANGLE_DEG) {
+      return false;
+    }
+    return true;
+  }
   if (m.step.type === "fork") {
-    if (mod.includes("left") || mod.includes("right")) return true;
+    if (mod === "straight") return false;
+    if (mod.includes("slight") && ang != null && ang < MANEUVER_FORK_DROP_ANGLE_DEG) return false;
+    if (mod.includes("left") || mod.includes("right")) {
+      if (ang != null && ang < 8) return false;
+      return true;
+    }
     if (ang != null && ang >= 8) return true;
     return false;
   }
@@ -5754,7 +5772,8 @@ function findNextManeuver() {
       if (curS > m.s + MANEUVER_PASSED_M) continue;
       const along = Math.max(0, m.s - curS);
       if (m.step.type === "end of road" && along > MANEUVER_SOFT_MAX_AHEAD_M) continue;
-      if (along > INTERCHANGE_DIVERGE_MAX_M) continue;
+      const aheadMax = isInterchangeStep(m.step) ? INTERCHANGE_VOICE_FAR_MAX_M : INTERCHANGE_DIVERGE_MAX_M;
+      if (along > aheadMax) continue;
       return pack(m, false);
     }
     const hasIx = sorted.some(
@@ -5779,6 +5798,7 @@ function findNextManeuver() {
     }
     for (const m of sorted) {
       if (m.step.type === "arrive") continue;
+      if (isInterchangeStep(m.step)) continue;
       if (!isSignificantManeuver(m, geom)) continue;
       if (curS > m.s + MANEUVER_PASSED_M) continue;
       const along = Math.max(0, m.s - curS);
@@ -25205,9 +25225,20 @@ function onTick() {
         try {
           const txt = maneuverText(nm.step);
           const { mps, farM, nearM } = maneuverVoiceThresholds(kmh, nm.step);
-          const annId = nm.pathDiverge ? "pd_" + Math.round(nm.dist / 50) : stIdx;
-          const kFarIx = "st_" + annId + "_far";
-          const kNearIx = "st_" + annId + "_near";
+          let kFarIx;
+          let kNearIx;
+          let annId;
+          if (nm.pathDiverge) {
+            annId = "pd";
+            kFarIx = "pd_far";
+            kNearIx = "pd_near";
+          } else {
+            S.camWarned.delete("pd_far");
+            S.camWarned.delete("pd_near");
+            annId = stIdx;
+            kFarIx = "st_" + stIdx + "_far";
+            kNearIx = "st_" + stIdx + "_near";
+          }
           if (nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFarIx) && txt) {
             S.camWarned.add(kFarIx);
             telemetry_default.log("nav", {
@@ -26726,18 +26757,35 @@ function resolveGpsSpeed(next, prev) {
   if (prev && dist < driftM && (device == null || device < 0.5)) {
     return { ...base, mps: 0, src: "drift" };
   }
+  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
   const deviceAccGate = GPS_SPEED_ACC_TRUST_M * 1.6;
+  let rawMps = null;
+  let src = "zero";
   if (device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= deviceAccGate) {
     if (!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5) {
-      return { ...base, mps: device, src: "device" };
+      rawMps = device;
+      src = "device";
     }
   }
-  if (meas > GPS_SPEED_MAX_MPS) meas = 0;
-  if (meas > 0 && acc <= GPS_SPEED_ACC_TRUST_M * 2 && dist <= Math.max(80, acc * 1.2)) {
-    const mps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
-    return { ...base, meas, mps, src: "meas" };
+  if (rawMps == null && meas > 0 && acc <= GPS_SPEED_ACC_TRUST_M * 1.6 && dist <= Math.max(60, acc * 0.9)) {
+    rawMps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+    src = "meas";
   }
-  return { ...base, mps: 0, src: "zero" };
+  if (rawMps == null && S.measSpeed != null && S.measSpeed > 3 && dt > 0 && dt < 2.5 && acc <= GPS_SPEED_ACC_TRUST_M * 3) {
+    rawMps = S.measSpeed * 0.82;
+    src = "coast";
+  }
+  if (rawMps == null) return { ...base, mps: 0, src: "zero" };
+  let mps = rawMps;
+  if (S.measSpeed != null && dt > 0) {
+    const maxUp = GPS_SPEED_SLEW_UP_MPS2 * Math.max(dt, 0.35);
+    const maxDn = GPS_SPEED_SLEW_DOWN_MPS2 * Math.max(dt, 0.35);
+    if (mps > S.measSpeed + maxUp) mps = S.measSpeed + maxUp;
+    if (mps < S.measSpeed - maxDn) mps = Math.max(0, S.measSpeed - maxDn);
+  } else if ((S.measSpeed == null || S.measSpeed < 2) && mps > 10 && acc > 18) {
+    mps = Math.min(mps, 6);
+  }
+  return { ...base, meas, mps, src };
 }
 function initGps(callbacks) {
   _onTick = callbacks.onTick || _onTick;

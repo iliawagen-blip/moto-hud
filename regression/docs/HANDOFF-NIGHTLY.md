@@ -1,24 +1,35 @@
-# Handoff: Nightly — RUSSIA TOUR (польза по регионам)
+# Handoff: Nightly — после Russia tour
 
 > **Режим:** без вопросов пользователю до закрытия gates или явного stop  
 > **Проект:** `C:\Users\Илья\Documents\jul26\moto-hud`  
-> **Handoff:** 2026-07-17 (вечер) → продолжать в следующие сессии  
-> **Фокус:** кататься по корпусу России, ловить регрессии (false_reroute / snap / interchange), приносить пользу Dev  
-> **Лог:** `regression/results/YYYY-MM-DD/session-log.md`  
-> **HEAD ожидаемый:** `39d8cbe`+ (interchange + field fixes на main)
+> **Handoff:** 2026-07-17 (вечер) — **Russia tour DONE**  
+> **Фокус:** P1 полный sim / полевые fails; GH burn — defer  
+> **Лог тура:** `regression/results/2026-07-17/session-russia.md`  
+> **Старт тура:** `d549bbb` / build `mrowqssw`
 
 ---
 
 ## TL;DR
 
-Москва/развязки **закрыты** (2026-07-17: 25/26 on_route, false_reroute=0).  
-Дальше — **тур по России** ногами `nw → m4 → volga → siberia → south`, потом полный sim если успеешь.
+Москва + ноги **nw → m4 → volga → siberia → south** прогнаны 2026-07-17.  
+Корпус on_route: **111/116 (96%)**, false_reroute **0**.  
+Единственный gate miss: **volga 89%** (2× `good_snap_ratio`, не P0).
 
-1. `npm run build` + `npm run interchange:test` (smoke, не ломать)
-2. **P0:** по одной ноге `on_route` через `npm run regression:sim:russia -- --leg <id> …`
-3. **P0:** на каждой ноге — pass ≥ 90%, `false_reroute` ≤ 1; fails → session-log + HANDOFF-TO-DEV
-4. **P1:** полный корпус `npm run regression:sim -- --date … --force --mode on_route` (≥ 330/348 если 3 режима / или ≥ 90% on_route)
-5. GH burn — **defer**
+1. `npm run build` + `npm run interchange:test` (smoke)
+2. ~~P0 Russia legs~~ **DONE** — см. таблицу ниже / `HANDOFF-TO-DEV.md`
+3. **P1:** полный корпус `npm run regression:sim -- --date … --force` (≥ 330/348 / false_reroute on_route ≤ 1)
+4. GH burn — **defer**
+
+### Итог тура 2026-07-17
+
+| Leg | Result | Gate |
+|-----|--------|------|
+| moscow | 25/26 (96%), fr=0 | PASS |
+| nw | 17/18 (94%), fr=0 | PASS |
+| m4 | 18/18 (100%), fr=0 | PASS |
+| volga | 16/18 (89%), fr=0 | FAIL (P2 snap) |
+| siberia | 5/5 (100%), fr=0 | PASS |
+| south | 30/31 (97%), fr=0 | PASS |
 
 ---
 

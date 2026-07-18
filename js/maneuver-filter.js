@@ -7,7 +7,8 @@ import {
   MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG as MANEUVER_MIN_ANGLE,
   MANEUVER_TURN_MIN_ANGLE_DEG,
   MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M,
-  MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M
+  MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M,
+  INTERCHANGE_RAMP_MIN_ANGLE_DEG
 } from './nav-constants.js';
 import { isInterchangeStep, isRampStep } from './interchange.js';
 import telemetry from './telemetry.js';
@@ -92,13 +93,24 @@ export function isSignificantManeuver(m, _geom){
   const mod = m.step.modifier || '';
   const ang = stepTurnAngleDeg(m.step, m);
 
-  // Рампы: вне углового фильтра (slight 10–20° — типичный съезд МКАД)
-  if(isRampStep(m.step)) return true;
+  // Рампы: slight + малый угол = полоса/«прямо» (Варшавка 10°), не «Съезд»
+  if(isRampStep(m.step)){
+    if(mod === 'straight') return false;
+    if(mod.includes('slight') && ang != null && ang < INTERCHANGE_RAMP_MIN_ANGLE_DEG){
+      return false;
+    }
+    return true;
+  }
 
   if(m.step.type === 'fork'){
-    if(mod.includes('left') || mod.includes('right')) return true;
+    if(mod === 'straight') return false;
+    // slight fork 6° на трассе — не «держитесь» (field 16-51)
+    if(mod.includes('slight') && ang != null && ang < MANEUVER_FORK_DROP_ANGLE_DEG) return false;
+    if(mod.includes('left') || mod.includes('right')){
+      if(ang != null && ang < 8) return false;
+      return true;
+    }
     if(ang != null && ang >= 8) return true;
-    // fork + straight / крошечный угол = «держите полосу»
     return false;
   }
 

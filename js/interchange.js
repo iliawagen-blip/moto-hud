@@ -3,12 +3,13 @@
  * Без импорта route-geometry (цикл: filter ↔ geometry).
  * @module interchange
  */
-import { bearing } from './geo.js';
+import { angleDiff, bearing } from './geo.js';
 import {
   INTERCHANGE_DIVERGE_MIN_M,
   INTERCHANGE_DIVERGE_MAX_M,
   INTERCHANGE_DIVERGE_LATERAL_M,
-  INTERCHANGE_DIVERGE_STEP_M
+  INTERCHANGE_DIVERGE_STEP_M,
+  INTERCHANGE_DIVERGE_MIN_TURN_DEG
 } from './nav-constants.js';
 
 /** OSRM-типы, которые на развязке важнее угла поворота */
@@ -174,6 +175,10 @@ export function detectPathDiverge(geom, curS){
   if(!first) return null;
   if(Math.abs(endLat) < INTERCHANGE_DIVERGE_LATERAL_M * 0.55) return null;
   if((endLat > 0) !== (first.side === 'left')) return null;
+  // Пологая дуга магистрали (Варшавка): боковой уход есть, азимут почти не меняется
+  const exitTan = avgTangentDegLocal(geom, first.atS, 50);
+  if(exitTan == null || isNaN(exitTan)) return null;
+  if(angleDiff(tanDeg, exitTan) < INTERCHANGE_DIVERGE_MIN_TURN_DEG) return null;
   return first;
 }
 
