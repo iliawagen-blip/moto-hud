@@ -465,9 +465,21 @@ export function onTick(){
         try{
           const txt = maneuverText(nm.step);
           const { mps, farM, nearM } = maneuverVoiceThresholds(kmh, nm.step);
-          const annId = nm.pathDiverge ? ('pd_' + Math.round(nm.dist / 50)) : stIdx;
-          const kFarIx = 'st_' + annId + '_far';
-          const kNearIx = 'st_' + annId + '_near';
+          // path_diverge: НЕ ключ от dist/50 — иначе «Через N секунд съезд» на каждом тике (field 16-51)
+          let kFarIx;
+          let kNearIx;
+          let annId;
+          if(nm.pathDiverge){
+            annId = 'pd';
+            kFarIx = 'pd_far';
+            kNearIx = 'pd_near';
+          } else {
+            S.camWarned.delete('pd_far');
+            S.camWarned.delete('pd_near');
+            annId = stIdx;
+            kFarIx = 'st_' + stIdx + '_far';
+            kNearIx = 'st_' + stIdx + '_near';
+          }
           if(nm.dist <= farM && nm.dist > nearM + 15 && !S.camWarned.has(kFarIx) && txt){
             S.camWarned.add(kFarIx);
             telemetry.log('nav', {
