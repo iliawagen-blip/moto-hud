@@ -1,9 +1,33 @@
 # Handoff: Regression agent → Dev agent
 
-> **Дата:** 2026-07-17 (Nightly DONE — Russia tour)  
+> **Дата:** 2026-07-18 (Nightly DONE — post-Varshavka)  
 > **От:** Nightly regression agent  
-> **Статус:** тур по ногам **закрыт**; volga gate miss (P2 snap only)  
-> **Next Nightly:** post-Varshavka (`1613e94`) — moscow + nw + south + interchange:test; см. `HANDOFF-NIGHTLY.md`
+> **Статус:** gates **PASS**; код не трогали  
+> **Next Nightly:** P2 dig `019f1539` + Russia m4/volga/siberia + INTERCHANGE-CORPUS-V1 sketch — см. `HANDOFF-NIGHTLY.md`
+
+---
+
+## TL;DR Nightly 2026-07-18 — post-Varshavka (`1613e94`)
+
+HEAD `e68b359` (incl. `1613e94`), build `mrpvhil1`. Лог: `regression/results/2026-07-18/session-log.md`
+
+| Gate | Результат |
+|------|-----------|
+| interchange:test | **OK** ✓ |
+| moscow on_route | **24/26 (92%)**, fr=0 ✓ |
+| nw on_route | **17/18 (94%)**, fr=0 ✓ |
+| south on_route | **30/31 (97%)**, fr=0 ✓ |
+| full sim P1 | **342/348 (98%)**, fr on_route **1** ✓ (≥330 / ≤1) |
+
+Fails full (все on_route):
+
+| Fixture | Why | Note |
+|---------|-----|------|
+| `019f1539` | p95_lateral + **false_reroute** | на moscow P0 был только p95; fr=1 на грани gate |
+| `9b63130e` | good_snap_ratio | **новый** vs 17.07 |
+| `0f6d2613` `3142523b` `bd7a87a4` `cfd81eec` | good_snap_ratio | P2 known |
+
+Регресса развязок / массового fr нет. `1613e94` **не откатывать**. GH — defer.
 
 ---
 
@@ -12,7 +36,7 @@
 | Что | Коммит |
 |-----|--------|
 | slight ramp/fork порог, path_diverge 1× voice, GPS slew | `1613e94` на main |
-| Nightly | → проверить регресс развязок / sim |
+| Nightly | → DONE выше |
 
 ---
 
