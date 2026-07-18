@@ -1,13 +1,45 @@
 # Handoff: Regression agent → Dev agent
 
-> **Дата:** 2026-07-17 (Nightly DONE — Moscow interchanges)  
+> **Дата:** 2026-07-17 (Nightly DONE — Russia tour)  
 > **От:** Nightly regression agent  
-> **Статус:** moscow on_route gate **PASS**  
-> **Next Nightly:** Russia tour — см. `HANDOFF-NIGHTLY.md` (ноги nw→m4→volga→siberia→south)
+> **Статус:** тур по ногам **закрыт**; volga gate miss (P2 snap only)  
+> **Next Nightly:** P1 полный sim / поле — см. `HANDOFF-NIGHTLY.md`
 
 ---
 
-## TL;DR Nightly 2026-07-17 — развязки
+## TL;DR Nightly 2026-07-17 — Russia tour
+
+Старт тура: HEAD `d549bbb`, build `mrowqssw`. Код продукта **не трогали**. GH — defer.
+
+| Leg | Pass | Gate (≥90%, fr≤1) |
+|-----|------|-------------------|
+| moscow (архив утро) | 25/26 (96%), fr=0 | PASS |
+| nw | 17/18 (94%), fr=0 | PASS |
+| m4 | 18/18 (100%), fr=0 | PASS |
+| volga | 16/18 (**89%**), fr=0 | **FAIL** — только `good_snap_ratio`×2 |
+| siberia | 5/5 (100%), fr=0 | PASS |
+| south | 30/31 (97%), fr=0 | PASS |
+
+Корпус on_route за день (rebuild): **111/116 (96%)**, **false_reroute 0**.
+
+Fails (все известный P2 с 2026-07-15):
+
+| Fixture | Why | Leg |
+|---------|-----|-----|
+| `019f1539` | p95_lateral | moscow |
+| `3142523b` | good_snap_ratio | nw |
+| `bd7a87a4`, `cfd81eec` | good_snap_ratio | volga |
+| `0f6d2613` | good_snap_ratio | south |
+
+Лог: `regression/results/2026-07-17/session-russia.md`  
+Report: `regression/reports/2026-07-17/`  
+Команды: `npm run regression:sim:russia -- --leg <id> --date 2026-07-17 --force --mode on_route`
+
+**Volga:** gate pass% сорван на 1pp; false_reroute OK → **не P0**, пороги/offroute не ослаблять.
+
+---
+
+## TL;DR Nightly 2026-07-17 — развязки (архив утро)
 
 | Gate | Цель | Результат |
 |------|------|-----------|
