@@ -3,7 +3,16 @@
 > **Дата:** 2026-07-17 (Nightly DONE — Russia tour)  
 > **От:** Nightly regression agent  
 > **Статус:** тур по ногам **закрыт**; volga gate miss (P2 snap only)  
-> **Next Nightly:** P1 полный sim / поле — см. `HANDOFF-NIGHTLY.md`
+> **Next Nightly:** post-Varshavka (`1613e94`) — moscow + nw + south + interchange:test; см. `HANDOFF-NIGHTLY.md`
+
+---
+
+## TL;DR Dev 2026-07-18 — field Варшавка (архив)
+
+| Что | Коммит |
+|-----|--------|
+| slight ramp/fork порог, path_diverge 1× voice, GPS slew | `1613e94` на main |
+| Nightly | → проверить регресс развязок / sim |
 
 ---
 
