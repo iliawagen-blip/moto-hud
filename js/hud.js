@@ -357,7 +357,8 @@ export function onTick(){
       spdMps,
       spdKmh: kmh,
       heading: S.smoothedHeading,
-      tangent: snap?.tangent ?? null
+      tangent: snap?.tangent ?? null,
+      gpsTeleport: S.gps?.spdSrc === 'teleport'
     });
   }
 

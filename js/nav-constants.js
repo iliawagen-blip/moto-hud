@@ -87,11 +87,13 @@ export const MANEUVER_SOFT_MAX_AHEAD_M = 500;
 /** Path-diverge (развязка): окно вдоль маршрута, м */
 export const INTERCHANGE_DIVERGE_MIN_M = 80;
 export const INTERCHANGE_DIVERGE_MAX_M = 800;
-/** Боковой уход polyline от касательной → keep L/R (field Варшавка: 28м ловил дугу «прямо») */
-export const INTERCHANGE_DIVERGE_LATERAL_M = 40;
+/** Боковой уход polyline от касательной → keep L/R (field 18-13: 40м всё ещё шумел) */
+export const INTERCHANGE_DIVERGE_LATERAL_M = 55;
 export const INTERCHANGE_DIVERGE_STEP_M = 40;
 /** Мин. смена азимута polyline на diverge — иначе пологая дуга = ложный съезд */
-export const INTERCHANGE_DIVERGE_MIN_TURN_DEG = 14;
+export const INTERCHANGE_DIVERGE_MIN_TURN_DEG = 20;
+/** Не показывать path_diverge в HUD дальше этого (анти-спам на дугах) */
+export const INTERCHANGE_DIVERGE_HUD_MAX_M = 450;
 /**
  * slight off/on ramp ниже порога = смена полосы / «прямо» (field 16-51 Варшавка ang≈10°),
  * не голос «Съезд». Реальные съезды МКАД обычно ≥18° или без slight.
@@ -145,6 +147,13 @@ export const GPS_SPEED_DEVICE_MEAS_RATIO = 2.5;
 /** Макс. рост/спад скорости (м/с²) — field 16-51: 0↔43 m/s после тоннеля */
 export const GPS_SPEED_SLEW_UP_MPS2 = 5;
 export const GPS_SPEED_SLEW_DOWN_MPS2 = 8;
+/**
+ * Teleport / gap: шаг больше этого — не meas (field 18-13: 3 км за тик → lat 3197).
+ * Ниже — шаг/dt можно брать как скорость даже при плохом acc.
+ */
+export const GPS_SPEED_TELEPORT_M = 400;
+/** Пологий coast при дырках GPS (field 18-13: 6 с gap, едем, spd принудительно 0) */
+export const GPS_SPEED_COAST_MAX_DT_S = 8;
 
 /** --- Динамический лимит скорости (OSM maxspeed) --- */
 /** Дистанция lookahead при поиске смены лимита, м */

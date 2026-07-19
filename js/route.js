@@ -27,7 +27,7 @@ import {
   MANEUVER_PASSED_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG,
   STREET_LABEL_MANEUVER_M, MANEUVER_SOFT_MAX_AHEAD_M, REROUTE_SUCCESS_COOLDOWN_MS,
   MANEUVER_TURN_MIN_ANGLE_DEG, INTERCHANGE_DIVERGE_MAX_M,
-  INTERCHANGE_VOICE_FAR_MAX_M
+  INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_DIVERGE_HUD_MAX_M
 } from './nav-constants.js';
 import { buildRouteRequestUrl, parseRouteResponse } from './router.js';
 import { HIGHWAY_CLASSES } from './maneuver-filter.js';
@@ -622,7 +622,8 @@ function softNavManeuver(m){
   if(!st || st.type === 'depart') return false;
   if(st.type === 'arrive') return true;
   if(st.type === 'roundabout' || st.type === 'rotary' || st.type === 'exit roundabout') return true;
-  if(st.type === 'on ramp' || st.type === 'off ramp' || st.type === 'fork') return true;
+  // Рампы/fork — только через isSignificant (step 1), не soft-обход фильтра slight
+  if(st.type === 'on ramp' || st.type === 'off ramp' || st.type === 'fork') return false;
   // end of road — только в soft-окне (иначе залипает на 10–30 мин, field 20-23/18-06)
   if(st.type === 'end of road') return true;
   const mod = st.modifier || '';
@@ -679,7 +680,8 @@ export function findNextManeuver(){
     );
     if(!hasIx){
       const div = detectPathDiverge(geom, curS);
-      if(div){
+      // Дальше HUD_MAX — не спамить «съезд» на дугах (field 18-13 ×297)
+      if(div && div.distM <= INTERCHANGE_DIVERGE_HUD_MAX_M){
         return {
           step: syntheticDivergeStep(div),
           dist: div.distM,
@@ -688,12 +690,12 @@ export function findNextManeuver(){
       }
     }
 
-    // 2) soft в 500 м
+    // 2) soft в 500 м (arrive тоже — иначе «финиш» на 12 км, field 18-13)
     for(const m of sorted){
       if(!softNavManeuver(m)) continue;
       if(curS > m.s + MANEUVER_PASSED_M) continue;
       const along = Math.max(0, m.s - curS);
-      if(m.step.type !== 'arrive' && along > MANEUVER_SOFT_MAX_AHEAD_M) continue;
+      if(along > MANEUVER_SOFT_MAX_AHEAD_M) continue;
       return pack(m, true);
     }
 

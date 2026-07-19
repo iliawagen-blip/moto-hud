@@ -69,7 +69,8 @@ const pts = [];
 for(let i = 0; i <= 30; i++){
   const along = i * 40;
   let east = 0;
-  if(along > 120) east = Math.min(90, (along - 120) * 0.45);
+  // Явный съезд: lateral≥55 м и поворот азимута ≥20°
+  if(along > 100) east = Math.min(120, (along - 100) * 0.55);
   pts.push({
     lat: origin.lat + along / 111320,
     lon: origin.lon + east / (111320 * Math.cos(origin.lat * Math.PI / 180))
