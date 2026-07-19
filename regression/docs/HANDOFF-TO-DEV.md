@@ -1,13 +1,44 @@
 # Handoff: Regression agent → Dev agent
 
-> **Дата:** 2026-07-18 (Nightly DONE — post-Varshavka)  
+> **Дата:** 2026-07-18 (Nightly DONE — P2 dig + Russia rest + corpus sketch)  
 > **От:** Nightly regression agent  
-> **Статус:** gates **PASS**; код не трогали  
-> **Next Nightly:** P2 dig `019f1539` + Russia m4/volga/siberia + INTERCHANGE-CORPUS-V1 sketch — см. `HANDOFF-NIGHTLY.md`
+> **Статус:** dig/legs/docs **закрыты**; код не трогали  
+> **Next:** tags на interchange corpus / поле
 
 ---
 
-## TL;DR Nightly 2026-07-18 — post-Varshavka (`1613e94`)
+## TL;DR Nightly 2026-07-18 evening — P2 dig + Russia rest
+
+Лог: `regression/results/2026-07-18/session-p2.md`  
+Corpus: `regression/docs/INTERCHANGE-CORPUS-V1.md`  
+HEAD: `d7b3a88` / build `mrqnvlih`
+
+### `019f1539` false_reroute
+
+| | |
+|--|--|
+| Вывод | **флак**, не регресс `1613e94` |
+| dig ×3 | fr=**0** (1× full pass p95=53; 2× fail только p95≈108) |
+| full P1 | единственный fr=1 |
+| vs 15/17 | стабильно p95 only |
+| Действие | не ослаблять gate; код не трогать |
+
+### Russia rest (после Varshavka)
+
+| Leg | Result | Gate |
+|-----|--------|------|
+| m4 | 18/18 (100%), fr=0 | PASS |
+| volga | 16/18 (**89%**), fr=0; snap `bd7a87a4` `cfd81eec` | FAIL% (P2, как 17.07) |
+| siberia | 5/5 (100%), fr=0 | PASS |
+
+### Interchange corpus v1
+
+Sketch готов: 8 классов, ~12 слотов, GAP на off-ramp≥18° / fork keep / on-ramp.  
+Cache: **72** off-ramp slight &lt;18° vs **9** ≥18° — приоритет анти-Варшавка, не 350 узлов.
+
+---
+
+## TL;DR Nightly 2026-07-18 — post-Varshavka (`1613e94`) (архив утро/день)
 
 HEAD `e68b359` (incl. `1613e94`), build `mrpvhil1`. Лог: `regression/results/2026-07-18/session-log.md`
 
@@ -23,7 +54,7 @@ Fails full (все on_route):
 
 | Fixture | Why | Note |
 |---------|-----|------|
-| `019f1539` | p95_lateral + **false_reroute** | на moscow P0 был только p95; fr=1 на грани gate |
+| `019f1539` | p95_lateral + **false_reroute** | fr позже = флак (см. evening dig) |
 | `9b63130e` | good_snap_ratio | **новый** vs 17.07 |
 | `0f6d2613` `3142523b` `bd7a87a4` `cfd81eec` | good_snap_ratio | P2 known |
 

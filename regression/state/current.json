@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-17T12:58:50.532Z",
+  "updated_at": "2026-07-18T18:08:40.979Z",
   "fixtures": {
     "total": 116,
     "valid": 116,
@@ -7,10 +7,10 @@
     "full_coverage_pct": 85
   },
   "sim": {
-    "last_nightly_date": "2026-07-17",
-    "last_pass": 127,
-    "last_total": 132,
-    "last_pass_rate_pct": 96,
+    "last_nightly_date": "2026-07-18",
+    "last_pass": 342,
+    "last_total": 348,
+    "last_pass_rate_pct": 98,
     "sim_gate_pass": false,
     "fixtures_tested": 116
   },
@@ -44,12 +44,13 @@
     "019f1539: sim fail on_route",
     "0f6d2613: sim fail on_route",
     "3142523b: sim fail on_route",
+    "9b63130e: sim fail on_route",
     "bd7a87a4: sim fail on_route",
     "cfd81eec: sim fail on_route",
     "eb1e26e7: ors_bad_route: 4130km vs OSRM 47km"
   ],
   "git": {
-    "hash": "d549bbb495007b12a8e760f49f9331e19afba598",
-    "date": "2026-07-17 13:37:51 +0300"
+    "hash": "d7b3a88a8fd66b0a8643134b218660a0984f3234",
+    "date": "2026-07-18 20:46:55 +0300"
   }
 }

@@ -170,8 +170,13 @@ function canTriggerReroute(feed, now){
   // Регрессионный sim: disableReroute → OFFLINE instead of REROUTING; lateral_*/dist_time
   // при SIM_TIME_SCALE×10 раздувают false_reroute (SUSPECT↔ON). Поле — без флага.
   const isRegSim = !!globalThis.__REGRESSION_SIM__?.active;
+  // Мусорный GPS (field 18-13: acc↑ + телепорты, ложный spd=0) — не триггерить reroute
+  const gpsJunk = (feed.acc != null && feed.acc > OFF_ROUTE_GPS_ACC_GATE_M * 1.5) ||
+    !!feed.gpsTeleport;
+  if(gpsJunk) return null;
+
   if(!isRegSim){
-    // Вечерний field-баг: spd≈0 → heading/dist не копятся. peak+текущий ≥ HARD, 2× confirm.
+    // Вечерний field: реальный spd≈0 → heading/dist не копятся. peak+текущий ≥ HARD.
     const lateralHardSustain = lat != null
       && lat >= OFF_ROUTE_LATERAL_HARD_M
       && _ctx.peakLateral >= OFF_ROUTE_LATERAL_HARD_M;
@@ -319,8 +324,8 @@ export function tickOffRouteMachine(feed){
   const inDeadZone = feed.lateral >= OFF_ROUTE_EXIT_M && feed.lateral <= OFF_ROUTE_ENTER_M;
 
   if(S.offRouteState === OffRouteState.ON_ROUTE){
-    // плохой GPS — не входим в SUSPECT (шум)
-    if(feed.acc > OFF_ROUTE_GPS_ACC_GATE_M) return;
+    // плохой GPS / телепорт — не входим в SUSPECT (шум; field 18-13)
+    if(feed.acc > OFF_ROUTE_GPS_ACC_GATE_M || feed.gpsTeleport) return;
     const lostOff = S.snapQuality === SnapQuality.LOST && feed.lateral > OFF_ROUTE_ENTER_M;
     if(feed.lateral > enterM || lostOff){
       resetSuspectCtx();
@@ -330,7 +335,13 @@ export function tickOffRouteMachine(feed){
   }
 
   if(S.offRouteState === OffRouteState.SUSPECT){
-    // уже в SUSPECT — продолжаем подтверждение даже при acc чуть хуже гейта
+    // Мусорный GPS в SUSPECT: не копим confirm / peak (иначе lateral_time на телепортах)
+    if(feed.gpsTeleport || feed.acc > OFF_ROUTE_GPS_ACC_GATE_M * 2){
+      if(feed.lateral < OFF_ROUTE_ENTER_M){
+        tryReturnOnRoute(feed);
+      }
+      return;
+    }
     if(feed.acc > OFF_ROUTE_GPS_ACC_GATE_M * 2.5 && feed.lateral < OFF_ROUTE_ENTER_M) return;
     tickSuspectConfirm(feed, inDeadZone);
   }

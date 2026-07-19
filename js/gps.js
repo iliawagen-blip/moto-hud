@@ -16,7 +16,8 @@ import {
   GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M,
   GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO,
   GPS_SPEED_STATIONARY_DIST_M,
-  GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2
+  GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2,
+  GPS_SPEED_TELEPORT_M, GPS_SPEED_COAST_MAX_DT_S
 } from './nav-constants.js';
 import { isSpeedOverLimit } from './speed-limit.js';
 import { tickRoundaboutHudRefresh } from './roundabout.js';
@@ -76,10 +77,11 @@ function resolveGpsSpeed(next, prev){
   let dt = 0;
   if(prev){
     dt = (next.ts - prev.ts) / 1000;
-    if(dt > 0.15 && dt < 12){
+    if(dt > 0.15 && dt < 14){
       dist = haversine(prev, next);
       const measFloor = acc <= GPS_SPEED_ACC_TRUST_M ? 0.6 : GPS_SPEED_MEAS_MIN_DIST_M;
-      if(dist >= measFloor && dist < 500) meas = dist / dt;
+      // Teleport (км за тик) — не скорость; иначе field 18-13 lat 3197
+      if(dist >= measFloor && dist < GPS_SPEED_TELEPORT_M) meas = dist / dt;
     }
   }
 
@@ -92,8 +94,9 @@ function resolveGpsSpeed(next, prev){
     GPS_SPEED_STATIONARY_DIST_M
   );
   const base = { device, meas, dist, driftM, dt };
+  const teleport = dist >= GPS_SPEED_TELEPORT_M;
 
-  if(prev && dist < driftM && (device == null || device < 0.5)){
+  if(prev && !teleport && dist < driftM && (device == null || device < 0.5)){
     return { ...base, mps: 0, src: 'drift' };
   }
 
@@ -103,25 +106,35 @@ function resolveGpsSpeed(next, prev){
   let src = 'zero';
 
   // Device при нормальном acc (field: cold start gate 25→40)
-  if(device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS && acc <= deviceAccGate){
+  if(!teleport && device != null && device >= 0.5 && device <= GPS_SPEED_MAX_MPS &&
+     acc <= deviceAccGate){
     if(!prev || meas <= 0 || device <= meas * GPS_SPEED_DEVICE_MEAS_RATIO + 1.5){
       rawMps = device;
       src = 'device';
     }
   }
-  // Meas: жёстче по acc (было ×2 → пыление 0↔43 m/s, field 16-51)
-  if(rawMps == null && meas > 0 && acc <= GPS_SPEED_ACC_TRUST_M * 1.6 &&
-     dist <= Math.max(60, acc * 0.9)){
-    rawMps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
-    src = 'meas';
+  // Meas: лимит шага = max(60, v_max×dt) — при gap 6с шаг 80–250 м это езда, не шум
+  // (field 18-13: step_m≈20 при spd=0 из‑за hard cap 60 + acc>40)
+  const measDistCap = Math.max(60, GPS_SPEED_MAX_MPS * Math.max(dt, 0.5));
+  if(rawMps == null && !teleport && meas > 0 && dist <= measDistCap){
+    const accOk = acc <= GPS_SPEED_ACC_TRUST_M * 2.4 ||
+      (meas >= 3 && meas <= 40 && dist >= GPS_SPEED_MEAS_MIN_DIST_M * 2);
+    if(accOk){
+      rawMps = S.measSpeed == null ? meas : S.measSpeed * 0.55 + meas * 0.45;
+      src = 'meas';
+    }
   }
-  // Короткий провал фиксов — не ронять спидометр в 0
-  if(rawMps == null && S.measSpeed != null && S.measSpeed > 3 && dt > 0 && dt < 2.5 &&
-     acc <= GPS_SPEED_ACC_TRUST_M * 3){
-    rawMps = S.measSpeed * 0.82;
-    src = 'coast';
+  // Coast / hold при дырках — не ронять в 0 пока есть движение по координатам
+  if(rawMps == null && !teleport && S.measSpeed != null && S.measSpeed > 2 &&
+     dt > 0 && dt <= GPS_SPEED_COAST_MAX_DT_S){
+    if(dist >= Math.max(driftM * 1.2, 8) || S.measSpeed > 3){
+      rawMps = dist >= 8 && dt > 0.3
+        ? Math.min(GPS_SPEED_MAX_MPS, Math.max(S.measSpeed * 0.75, (dist / dt) * 0.85))
+        : S.measSpeed * 0.85;
+      src = 'coast';
+    }
   }
-  if(rawMps == null) return { ...base, mps: 0, src: 'zero' };
+  if(rawMps == null) return { ...base, mps: 0, src: teleport ? 'teleport' : 'zero' };
 
   let mps = rawMps;
   if(S.measSpeed != null && dt > 0){
@@ -250,6 +263,7 @@ export function applyGpsFix(next){
   const speedRes = resolveGpsSpeed(next, S.lastPos);
   S.measSpeed = speedRes.mps;
   next.speed = speedRes.mps;
+  next.spdSrc = speedRes.src;
   updateHeadingHealth(next.heading, next.speed ?? S.measSpeed);
   const fused = fuseHeading(next.heading, next.speed ?? S.measSpeed);
   if(fused != null && !isNaN(fused)) next.heading = fused;
