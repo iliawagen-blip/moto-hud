@@ -20,14 +20,15 @@ import {
   MANEUVER_BEND_ANGLE
 } from './maneuver-filter.js';
 import {
-  detectPathDiverge, syntheticDivergeStep
+  detectPathDiverge, findOsrmExitHint, divergeSidesCompatible, interchangeSide
 } from './interchange.js';
 
 import {
   MANEUVER_PASSED_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG,
   STREET_LABEL_MANEUVER_M, MANEUVER_SOFT_MAX_AHEAD_M, REROUTE_SUCCESS_COOLDOWN_MS,
   MANEUVER_TURN_MIN_ANGLE_DEG, INTERCHANGE_DIVERGE_MAX_M,
-  INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_DIVERGE_HUD_MAX_M
+  INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_DIVERGE_HUD_MAX_M,
+  INTERCHANGE_DIVERGE_HINT_AHEAD_M
 } from './nav-constants.js';
 import { buildRouteRequestUrl, parseRouteResponse } from './router.js';
 import { HIGHWAY_CLASSES } from './maneuver-filter.js';
@@ -192,6 +193,57 @@ export function saveLastRun(){
 export function loadLastRun(){
   try{ const r = localStorage.getItem(RUN_KEY); return r ? JSON.parse(r) : null; }
   catch(e){ return null; }
+}
+
+/** Кэш камер по отпечатку маршрута (Overpass часто abort — держим последний удачный) */
+const CAM_CACHE_KEY = 'moto-hud-cam-cache-v1';
+const CAM_CACHE_MAX = 24;
+const CAM_CACHE_TTL_MS = 14 * 24 * 3600 * 1000;
+
+function routeCamCacheKey(coords){
+  if(!coords?.length) return null;
+  const n = coords.length;
+  const pick = [coords[0], coords[Math.floor(n / 2)], coords[n - 1]];
+  return pick.map(c => Number(c[0]).toFixed(3) + ',' + Number(c[1]).toFixed(3)).join('|') + '|n' + n;
+}
+
+function readCamCacheStore(){
+  try{
+    const raw = localStorage.getItem(CAM_CACHE_KEY);
+    if(!raw) return { entries: {} };
+    const j = JSON.parse(raw);
+    return j && typeof j.entries === 'object' ? j : { entries: {} };
+  }catch(e){
+    return { entries: {} };
+  }
+}
+
+function writeCamCacheStore(store){
+  try{
+    localStorage.setItem(CAM_CACHE_KEY, JSON.stringify(store));
+  }catch(e){ /* quota */ }
+}
+
+function saveCamerasToRouteCache(coords, cameras){
+  const key = routeCamCacheKey(coords);
+  if(!key || !cameras?.length) return;
+  const store = readCamCacheStore();
+  store.entries[key] = { ts: Date.now(), cameras };
+  const keys = Object.keys(store.entries);
+  if(keys.length > CAM_CACHE_MAX){
+    keys.sort((a, b) => (store.entries[a].ts || 0) - (store.entries[b].ts || 0));
+    for(let i = 0; i < keys.length - CAM_CACHE_MAX; i++) delete store.entries[keys[i]];
+  }
+  writeCamCacheStore(store);
+}
+
+function loadCamerasFromRouteCache(coords){
+  const key = routeCamCacheKey(coords);
+  if(!key) return null;
+  const ent = readCamCacheStore().entries[key];
+  if(!ent?.cameras?.length) return null;
+  if(ent.ts && Date.now() - ent.ts > CAM_CACHE_TTL_MS) return null;
+  return ent.cameras;
 }
 
 export async function searchAddress(query){
@@ -451,8 +503,6 @@ export async function loadCameras(){
     updateCamStatusUI();
     return;
   }
-  S.camLoadStatus = 'loading';
-  updateCamStatusUI();
   const t0 = Date.now();
   const coords = S.route.coords;
   if(!coords?.length){
@@ -460,6 +510,16 @@ export async function loadCameras(){
     S.camLoadStatus = 'err';
     updateCamStatusUI();
     return;
+  }
+  // Сразу показать кэш маршрута, пока Overpass тянется (обратный рейс / утренний abort)
+  const warm = loadCamerasFromRouteCache(coords);
+  if(warm?.length && !S.cameras.length){
+    S.cameras = warm;
+    S.camLoadStatus = 'stale';
+    updateCamStatusUI();
+  } else {
+    S.camLoadStatus = 'loading';
+    updateCamStatusUI();
   }
   // Коридор вдоль маршрута (не bbox) — иначе Overpass таймаутит на длинных трассах
   const samples = sampleRoutePoints(coords, 600);
@@ -503,6 +563,10 @@ export async function loadCameras(){
     }
     S.cameras = [...byKey.values()];
     S.camLoadStatus = 'ok';
+    if(S.cameras.length){
+      saveCamerasToRouteCache(coords, S.cameras);
+      saveLastRun();
+    }
     const withSpeed = S.cameras.filter(c => c.speed != null).length;
     telemetry.log('nav', {
       sub: 'cameras_loaded',
@@ -513,13 +577,36 @@ export async function loadCameras(){
     });
   }catch(e){
     console.warn('Камеры не загрузились:', e);
-    S.cameras = [];
-    S.camLoadStatus = 'err';
-    telemetry.log('nav', {
-      sub: 'cameras_reload_failed',
-      message: String(e?.message || e).slice(0, 120),
-      ms: Date.now() - t0
-    });
+    // Не обнулять: взять кэш маршрута / уже загруженные в сессии (field 06-58 Overpass abort)
+    const cached = loadCamerasFromRouteCache(coords);
+    if(cached?.length){
+      S.cameras = cached;
+      S.camLoadStatus = 'stale';
+      telemetry.log('nav', {
+        sub: 'cameras_loaded',
+        count: S.cameras.length,
+        with_speed: S.cameras.filter(c => c.speed != null).length,
+        ms: Date.now() - t0,
+        mode: 'cache',
+        from_cache: true
+      });
+    } else if(S.cameras?.length){
+      S.camLoadStatus = 'stale';
+      telemetry.log('nav', {
+        sub: 'cameras_reload_failed',
+        message: String(e?.message || e).slice(0, 120),
+        ms: Date.now() - t0,
+        kept: S.cameras.length
+      });
+    } else {
+      S.cameras = [];
+      S.camLoadStatus = 'err';
+      telemetry.log('nav', {
+        sub: 'cameras_reload_failed',
+        message: String(e?.message || e).slice(0, 120),
+        ms: Date.now() - t0
+      });
+    }
   }
   updateCamStatusUI();
 }
@@ -671,7 +758,7 @@ export function findNextManeuver(){
       return pack(m, false);
     }
 
-    // 1b) дорожка уходит с касательной, а OSRM сказал «прямо»
+    // 1b) гибрид: геометрия + слабый OSRM (не invent на дуге, field 06-58 / 18-13)
     const hasIx = sorted.some(m =>
       isInterchangeStep(m.step) &&
       isSignificantManeuver(m, geom) &&
@@ -680,13 +767,23 @@ export function findNextManeuver(){
     );
     if(!hasIx){
       const div = detectPathDiverge(geom, curS);
-      // Дальше HUD_MAX — не спамить «съезд» на дугах (field 18-13 ×297)
       if(div && div.distM <= INTERCHANGE_DIVERGE_HUD_MAX_M){
-        return {
-          step: syntheticDivergeStep(div),
-          dist: div.distM,
-          pathDiverge: true
-        };
+        const hint = findOsrmExitHint(sorted, curS, {
+          nearS: div.atS,
+          maxAheadM: INTERCHANGE_DIVERGE_HINT_AHEAD_M
+        });
+        if(hint && divergeSidesCompatible(div.side, hint.side)){
+          // Реальный OSRM step (голос/тип); сторона с геометрии если OSRM молчит
+          const step = { ...hint.step };
+          if(!interchangeSide(hint.step) && div.side) step._divergeSide = div.side;
+          return {
+            step,
+            dist: Math.min(div.distM, hint.along > 0 ? hint.along : div.distM),
+            pathDiverge: true,
+            osrmHint: hint.kind
+          };
+        }
+        // Без OSRM-хинта — не показываем синтетический съезд (ложные дуги)
       }
     }
 

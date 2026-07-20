@@ -95,6 +95,13 @@ export const INTERCHANGE_DIVERGE_MIN_TURN_DEG = 20;
 /** Не показывать path_diverge в HUD дальше этого (анти-спам на дугах) */
 export const INTERCHANGE_DIVERGE_HUD_MAX_M = 450;
 /**
+ * Гибрид: геометрия alone не создаёт «Съезд» — нужен слабый OSRM-сигнал
+ * в окне ahead (field 06-58: ложные path_diverge на дугах).
+ */
+export const INTERCHANGE_DIVERGE_HINT_AHEAD_M = 500;
+/** |s_hint − atS_diverge| для стыковки стороны/дистанции */
+export const INTERCHANGE_DIVERGE_HINT_BAND_M = 240;
+/**
  * slight off/on ramp ниже порога = смена полосы / «прямо» (field 16-51 Варшавка ang≈10°),
  * не голос «Съезд». Реальные съезды МКАД обычно ≥18° или без slight.
  */

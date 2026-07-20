@@ -6,7 +6,8 @@ import {
   isSignificantManeuver, isNavManeuverType, refineManeuvers
 } from '../js/maneuver-filter.js';
 import {
-  detectPathDiverge, syntheticDivergeStep, interchangeVoiceText, isInterchangeStep
+  detectPathDiverge, syntheticDivergeStep, interchangeVoiceText, isInterchangeStep,
+  findOsrmExitHint, divergeSidesCompatible
 } from '../js/interchange.js';
 
 function assert(cond, msg){
@@ -50,7 +51,6 @@ const refined = refineManeuvers([
 ]);
 assert(refined.some(m => m.step.type === 'off ramp'), 'ramp kept in refine');
 
-// B: path diverge — polyline turns right (явный съезд)
 function makeGeom(points){
   const n = points.length;
   const lat = points.map(p => p.lat);
@@ -69,7 +69,6 @@ const pts = [];
 for(let i = 0; i <= 30; i++){
   const along = i * 40;
   let east = 0;
-  // Явный съезд: lateral≥55 м и поворот азимута ≥20°
   if(along > 100) east = Math.min(120, (along - 100) * 0.55);
   pts.push({
     lat: origin.lat + along / 111320,
@@ -84,20 +83,50 @@ assert(div.distM >= 80 && div.distM <= 800, 'dist in window');
 const syn = syntheticDivergeStep(div);
 assert(isInterchangeStep(syn) && syn._synthetic === 'path_diverge', 'synthetic step');
 
-// B: пологая дуга без смены азимута — не diverge
+// B: пологая дуга — не diverge
 const arc = [];
 for(let i = 0; i <= 40; i++){
   const along = i * 30;
-  const east = along * along * 0.00008; // очень полого
+  const east = along * along * 0.00008;
   arc.push({
     lat: origin.lat + along / 111320,
     lon: origin.lon + east / (111320 * Math.cos(origin.lat * Math.PI / 180))
   });
 }
-const soft = detectPathDiverge(makeGeom(arc), 0);
-assert(!soft, 'gentle arc must not path-diverge');
+assert(!detectPathDiverge(makeGeom(arc), 0), 'gentle arc must not path-diverge');
+
+// C: гибрид — без OSRM hint нет «съезда» (только геометрия недостаточно)
+assert(divergeSidesCompatible('right', 'right'), 'sides ok');
+assert(!divergeSidesCompatible('right', 'left'), 'sides conflict');
+assert(divergeSidesCompatible('right', null), 'osrm silent ok');
+
+const noHint = findOsrmExitHint([], 0, { nearS: div.atS });
+assert(!noHint, 'empty maneuvers → no hint');
+
+const hintOk = findOsrmExitHint([
+  { step: { type: 'off ramp', modifier: 'slight right', bearing_before: 0, bearing_after: 10 }, s: div.atS }
+], 0, { nearS: div.atS });
+assert(hintOk && hintOk.kind === 'ramp_fork' && hintOk.side === 'right', 'slight ramp is hint');
+
+const hintLane = findOsrmExitHint([
+  {
+    step: {
+      type: 'continue',
+      modifier: 'straight',
+      intersections: [{ lanes: [{ valid: true, indications: ['slight right'] }] }]
+    },
+    s: div.atS
+  }
+], 0, { nearS: div.atS });
+assert(hintLane && hintLane.kind === 'lanes' && hintLane.side === 'right', 'lanes hint');
+
+const farOnly = findOsrmExitHint([
+  { step: { type: 'off ramp', modifier: 'slight right' }, s: div.atS + 800 }
+], 0, { nearS: div.atS, nearBandM: 240 });
+assert(!farOnly, 'hint outside band ignored');
 
 console.log('interchange-test OK', {
   voice: interchangeVoiceText(rampOk.step),
-  diverge: { side: div.side, distM: div.distM }
+  diverge: { side: div.side, distM: div.distM },
+  hybrid: hintOk.kind
 });
