@@ -1,0 +1,46 @@
+# Еженедельный рефреш OSRM-корпуса regression (fixtures → cache/motohud)
+name: Regression OSRM corpus refresh
+
+on:
+  schedule:
+    # Четверг 02:30 UTC
+    - cron: '30 2 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: regression-osrm
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Fetch Motohud/OSRM routes (--force)
+        run: npm run regression:fetch:motohud -- --force
+
+      - name: Commit cache + fixture aggregates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # cache обычно в gitignore — коммитим только обновлённые fixtures
+          git add regression/fixtures || true
+          if git diff --staged --quiet; then
+            echo "No fixture metadata changes (cache may be gitignored)"
+          else
+            git commit -m "data(regression): weekly OSRM corpus refresh"
+            git push
+          fi

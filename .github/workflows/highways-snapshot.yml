@@ -1,43 +1,28 @@
-# Еженедельный снапшот highway/maxspeed OSM (Москва) → data/highways-moscow.json(.gz)
-name: Highways snapshot (Moscow)
+# Deprecated: use osm-snapshots.yml
+name: Highways snapshot (Moscow) [legacy]
 
 on:
-  schedule:
-    # Вторник 04:40 UTC (после cameras в пн)
-    - cron: '40 4 * * 2'
   workflow_dispatch:
 
 permissions:
   contents: write
 
-concurrency:
-  group: highways-snapshot
-  cancel-in-progress: true
-
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Fetch Overpass → data/highways-moscow.json(.gz)
-        run: node scripts/fetch-highways-snapshot.mjs
-
-      - name: Commit if changed
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: node scripts/fetch-osm-snapshots.mjs --region moscow --layers highways --pause 12000
+      - run: node scripts/fetch-osm-snapshots.mjs --legacy-moscow
+      - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/highways-moscow.json data/highways-moscow.json.gz
-          if git diff --staged --quiet; then
-            echo "No highways snapshot changes"
-          else
+          git add data/regions/moscow data/highways-moscow.json data/highways-moscow.json.gz
+          if git diff --staged --quiet; then echo "no changes"; else
             git commit -m "data(highways): refresh Moscow OSM snapshot"
             git push
           fi

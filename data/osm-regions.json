@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "regions": [
+    {
+      "id": "moscow",
+      "label": "Москва (МКАД+)",
+      "bbox": { "south": 55.55, "west": 37.35, "north": 55.95, "east": 37.85 },
+      "layers": ["cameras", "fuel", "urban", "signals", "highways"]
+    },
+    {
+      "id": "mkad_plus",
+      "label": "МКАД+ ближнее МО",
+      "bbox": { "south": 55.45, "west": 37.15, "north": 56.05, "east": 38.05 },
+      "layers": ["cameras", "fuel", "urban", "signals"]
+    },
+    {
+      "id": "moscow_oblast",
+      "label": "Московская область",
+      "bbox": { "south": 54.85, "west": 35.90, "north": 56.95, "east": 40.25 },
+      "layers": ["cameras", "urban", "signals"]
+    },
+    {
+      "id": "spb",
+      "label": "Санкт-Петербург + КАД",
+      "bbox": { "south": 59.70, "west": 29.60, "north": 60.20, "east": 30.85 },
+      "layers": ["cameras", "fuel", "urban", "signals", "highways"]
+    },
+    {
+      "id": "russia_motorways",
+      "label": "Магистрали РФ (motorway+trunk, европ. часть)",
+      "bbox": { "south": 41.2, "west": 19.6, "north": 70.0, "east": 66.0 },
+      "layers": ["motorways"],
+      "tile": { "rows": 4, "cols": 5 },
+      "note": "Только motorway/trunk(+link); для лимитов вне городов"
+    }
+  ]
+}

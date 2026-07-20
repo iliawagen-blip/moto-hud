@@ -1,0 +1,65 @@
+# Еженедельные OSM-снапшоты по регионам
+name: OSM snapshots
+
+on:
+  schedule:
+    - cron: '15 3 * * 3'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which batch'
+        required: true
+        default: 'small'
+        type: choice
+        options:
+          - small
+          - moscow-highways
+          - spb-highways
+          - russia-motorways
+
+permissions:
+  contents: write
+
+concurrency:
+  group: osm-snapshots
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Small layers (cameras/fuel/urban/signals)
+        if: github.event_name == 'schedule' || inputs.job == 'small'
+        run: node scripts/fetch-osm-snapshots.mjs --all-small --pause 10000
+
+      - name: Moscow highways
+        if: github.event_name == 'schedule' || inputs.job == 'moscow-highways'
+        run: |
+          node scripts/fetch-osm-snapshots.mjs --region moscow --layers highways --pause 12000
+          node scripts/fetch-osm-snapshots.mjs --legacy-moscow
+
+      - name: SPb highways
+        if: inputs.job == 'spb-highways'
+        run: node scripts/fetch-osm-snapshots.mjs --region spb --layers highways --pause 12000
+
+      - name: Russia motorways
+        if: github.event_name == 'schedule' || inputs.job == 'russia-motorways'
+        run: node scripts/fetch-osm-snapshots.mjs --region russia_motorways --layers motorways --pause 15000
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/regions data/cameras-moscow.json data/highways-moscow.json data/highways-moscow.json.gz data/osm-regions.json || true
+          if git diff --staged --quiet; then
+            echo "No snapshot changes"
+          else
+            git commit -m "data(osm): refresh regional snapshots"
+            git push
+          fi

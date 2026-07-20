@@ -1,10 +1,16 @@
 /**
- * Снапшот камер OSM (Москва) + фильтр коридором маршрута.
- * Файл: data/cameras-moscow.json (GitHub Actions cron).
+ * Снапшот камер OSM по регионам + фильтр коридором маршрута.
+ * data/regions/{id}/cameras.json (+ legacy data/cameras-moscow.json).
  */
 import { haversine } from './geo.js';
+import {
+  loadMergedLayer,
+  loadRegionLayer,
+  pointInBbox,
+  routeIntersectsBbox
+} from './osm-regions.js';
 
-/** Bbox Москвы ≈ внутри МКАД + запас (совпадает со скриптом fetch) */
+/** Bbox Москвы ≈ внутри МКАД + запас (legacy / fallback) */
 export const MOSCOW_CAM_BBOX = {
   south: 55.55,
   west: 37.35,
@@ -12,7 +18,11 @@ export const MOSCOW_CAM_BBOX = {
   east: 37.85
 };
 
-/** Точки вдоль маршрута (без импорта speed-limit — там leaflet/DOM) */
+export const CAMERAS_SNAPSHOT_PATH = 'data/cameras-moscow.json';
+
+export { pointInBbox, routeIntersectsBbox };
+
+/** Точки вдоль маршрута */
 function sampleRoutePoints(coords, stepM = 600){
   if(!coords?.length) return [];
   const pts = [{ lat: coords[0][0], lon: coords[0][1] }];
@@ -31,19 +41,11 @@ function sampleRoutePoints(coords, stepM = 600){
   return pts;
 }
 
-export const CAMERAS_SNAPSHOT_PATH = 'data/cameras-moscow.json';
-
 const CARD = {
   N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
   S: 180, SSW: 202.5, SW: 225, WSW: 247.5, W: 270, WNW: 292.5, NW: 315, NNW: 337.5
 };
 
-/** @type {{ bbox: object, cameras: Array, updated?: string, count?: number }|null} */
-let _snapCache = null;
-/** @type {Promise<object|null>|null} */
-let _snapPromise = null;
-
-/** Разбор direction / maxspeed из OSM tags → наш объект камеры */
 export function cameraFromOsmTags(lat, lon, tags = {}, id = null){
   let dir = null;
   if(tags.direction != null){
@@ -65,31 +67,11 @@ export function cameraFromOsmTags(lat, lon, tags = {}, id = null){
   };
 }
 
-/** Overpass node → камера */
 export function cameraFromOverpassNode(e){
   if(!e || e.type !== 'node' || e.lat == null || e.lon == null) return null;
   return cameraFromOsmTags(e.lat, e.lon, e.tags || {}, e.id);
 }
 
-export function pointInBbox(lat, lon, bbox){
-  if(!bbox) return false;
-  return lat >= bbox.south && lat <= bbox.north && lon >= bbox.west && lon <= bbox.east;
-}
-
-/** Маршрут пересекает зону снапшота */
-export function routeIntersectsBbox(coords, bbox){
-  if(!coords?.length || !bbox) return false;
-  for(const c of coords){
-    if(pointInBbox(c[0], c[1], bbox)) return true;
-  }
-  return false;
-}
-
-/**
- * Камеры в коридоре aroundM от точек маршрута (шаг sampleStepM).
- * @param {Array<{lat:number,lon:number}>} cameras
- * @param {Array<[number,number]>} coords
- */
 export function filterCamerasNearRoute(cameras, coords, aroundM = 80, sampleStepM = 600){
   if(!cameras?.length || !coords?.length) return [];
   const samples = sampleRoutePoints(coords, sampleStepM);
@@ -121,37 +103,62 @@ export function filterCamerasNearRoute(cameras, coords, aroundM = 80, sampleStep
   return out;
 }
 
-/** Загрузка снапшота (один раз за сессию; cache-bust по updated в файле не нужен — SW network-first) */
-export async function loadCamerasSnapshot(url = CAMERAS_SNAPSHOT_PATH){
-  if(_snapCache) return _snapCache;
-  if(_snapPromise) return _snapPromise;
-  _snapPromise = (async () => {
-    try{
-      const r = await fetch(url, { cache: 'no-cache' });
-      if(!r.ok) throw new Error('snapshot HTTP ' + r.status);
-      const j = await r.json();
-      if(!Array.isArray(j.cameras)) throw new Error('snapshot: no cameras[]');
-      _snapCache = {
-        bbox: j.bbox || MOSCOW_CAM_BBOX,
-        cameras: j.cameras,
-        updated: j.updated || null,
-        count: j.count ?? j.cameras.length,
-        source: j.source || 'osm'
-      };
-      return _snapCache;
-    }catch(e){
-      console.warn('cameras snapshot:', e);
-      _snapCache = null;
-      return null;
-    }finally{
-      _snapPromise = null;
-    }
-  })();
-  return _snapPromise;
+async function loadLegacyMoscowCameras(){
+  try{
+    const r = await fetch(CAMERAS_SNAPSHOT_PATH, { cache: 'no-cache' });
+    if(!r.ok) return null;
+    const j = await r.json();
+    if(!Array.isArray(j.cameras)) return null;
+    return {
+      bbox: j.bbox || MOSCOW_CAM_BBOX,
+      cameras: j.cameras,
+      updated: j.updated || null,
+      count: j.count ?? j.cameras.length,
+      source: j.source || 'osm',
+      regions: ['moscow-legacy']
+    };
+  }catch(e){
+    return null;
+  }
 }
 
-/** Сброс кэша (тесты / после обновления файла) */
-export function clearCamerasSnapshotCache(){
-  _snapCache = null;
-  _snapPromise = null;
+/**
+ * Камеры из всех регионов, пересекающих маршрут.
+ * @param {Array<[number,number]>} coords
+ */
+export async function loadCamerasSnapshotForRoute(coords){
+  if(!coords?.length) return null;
+  const merged = await loadMergedLayer(coords, 'cameras', 'cameras', 'id');
+  if(merged.items.length){
+    return {
+      bbox: merged.bboxes[0] || MOSCOW_CAM_BBOX,
+      bboxes: merged.bboxes,
+      cameras: merged.items,
+      updated: merged.updated,
+      count: merged.items.length,
+      source: 'osm-regions',
+      regions: merged.regions
+    };
+  }
+  const legacy = await loadLegacyMoscowCameras();
+  if(legacy && routeIntersectsBbox(coords, legacy.bbox)) return legacy;
+  const mos = await loadRegionLayer('moscow', 'cameras');
+  if(mos?.cameras?.length && routeIntersectsBbox(coords, mos.bbox || MOSCOW_CAM_BBOX)){
+    return {
+      bbox: mos.bbox || MOSCOW_CAM_BBOX,
+      cameras: mos.cameras,
+      updated: mos.updated,
+      count: mos.count ?? mos.cameras.length,
+      source: 'osm',
+      regions: ['moscow']
+    };
+  }
+  return null;
 }
+
+/** Совместимость со старым API (без coords — только legacy Moscow) */
+export async function loadCamerasSnapshot(){
+  return loadLegacyMoscowCameras();
+}
+
+export function clearCamerasSnapshotCache(){}

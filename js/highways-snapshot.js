@@ -1,17 +1,22 @@
 /**
- * Снапшот OSM highway/maxspeed (Москва) для лимитов без live Overpass.
- * data/highways-moscow.json(.gz) — GitHub Actions cron.
+ * Снапшот OSM highway/maxspeed + motorways по регионам.
+ * data/regions/{id}/highways.json.gz, motorways.json.gz (+ legacy moscow).
  */
 import { gunzipSync } from 'fflate';
-import { MOSCOW_CAM_BBOX, routeIntersectsBbox } from './cameras-snapshot.js';
+import { MOSCOW_CAM_BBOX } from './cameras-snapshot.js';
+import {
+  loadMergedLayer,
+  loadRegionLayer,
+  routeIntersectsBbox
+} from './osm-regions.js';
 
 export const HIGHWAYS_SNAPSHOT_PATH = 'data/highways-moscow.json';
 export const HIGHWAYS_SNAPSHOT_GZ_PATH = 'data/highways-moscow.json.gz';
 
 /** @type {{ bbox: object, ways: Array, updated?: string, count?: number }|null} */
 let _cache = null;
-/** @type {Promise<object|null>|null} */
-let _promise = null;
+/** @type {string|null} */
+let _cacheKey = null;
 
 /** Нормализация way из снапшота → формат matchWayAtPoint */
 export function normalizeSnapshotWay(w){
@@ -62,11 +67,6 @@ function bboxOverlap(a, b){
     a.maxLon < b.minLon || a.minLon > b.maxLon);
 }
 
-/**
- * Ways снапшота, пересекающие bbox маршрута (не весь город в матчер).
- * @param {Array} ways нормализованные
- * @param {Array<[number,number]>} coords
- */
 export function filterWaysNearRoute(ways, coords){
   if(!ways?.length || !coords?.length) return [];
   const rb = routeRoughBbox(coords);
@@ -78,61 +78,130 @@ export function filterWaysNearRoute(ways, coords){
   return out;
 }
 
-async function fetchJson(url){
-  const r = await fetch(url, { cache: 'no-cache' });
-  if(!r.ok) throw new Error('highways snapshot HTTP ' + r.status);
-  return r.json();
-}
-
 async function fetchGzipJson(url){
   const r = await fetch(url, { cache: 'no-cache' });
-  if(!r.ok) throw new Error('highways snapshot.gz HTTP ' + r.status);
+  if(!r.ok) throw new Error(url + ' HTTP ' + r.status);
   const buf = new Uint8Array(await r.arrayBuffer());
-  const text = new TextDecoder().decode(gunzipSync(buf));
-  return JSON.parse(text);
+  return JSON.parse(new TextDecoder().decode(gunzipSync(buf)));
 }
 
-export async function loadHighwaysSnapshot(){
-  if(_cache) return _cache;
-  if(_promise) return _promise;
-  _promise = (async () => {
-    try{
-      let j = null;
-      try{
-        j = await fetchGzipJson(HIGHWAYS_SNAPSHOT_GZ_PATH);
-      }catch(_e){
-        j = await fetchJson(HIGHWAYS_SNAPSHOT_PATH);
-      }
-      if(!Array.isArray(j.ways)) throw new Error('snapshot: no ways[]');
-      const ways = [];
-      for(const raw of j.ways){
-        const w = normalizeSnapshotWay(raw);
-        if(w) ways.push(w);
-      }
-      _cache = {
-        bbox: j.bbox || MOSCOW_CAM_BBOX,
-        ways,
-        updated: j.updated || null,
-        count: j.count ?? ways.length,
-        source: j.source || 'osm'
-      };
-      return _cache;
-    }catch(e){
-      console.warn('highways snapshot:', e);
-      _cache = null;
-      return null;
-    }finally{
-      _promise = null;
+async function loadLegacyMoscowHighways(){
+  try{
+    let j;
+    try{ j = await fetchGzipJson(HIGHWAYS_SNAPSHOT_GZ_PATH); }
+    catch(_e){
+      const r = await fetch(HIGHWAYS_SNAPSHOT_PATH, { cache: 'no-cache' });
+      if(!r.ok) return null;
+      j = await r.json();
     }
-  })();
-  return _promise;
+    if(!Array.isArray(j.ways)) return null;
+    return {
+      bbox: j.bbox || MOSCOW_CAM_BBOX,
+      ways: j.ways.map(normalizeSnapshotWay).filter(Boolean),
+      updated: j.updated || null,
+      count: j.count ?? j.ways.length,
+      source: j.source || 'osm',
+      regions: ['moscow-legacy']
+    };
+  }catch(e){
+    return null;
+  }
+}
+
+function packWays(rawWays){
+  const ways = [];
+  for(const raw of rawWays || []){
+    const w = normalizeSnapshotWay(raw);
+    if(w) ways.push(w);
+  }
+  return ways;
+}
+
+/**
+ * Arterial highways + country motorways для маршрута.
+ * @param {Array<[number,number]>} coords
+ */
+export async function loadHighwaysSnapshotForRoute(coords){
+  if(!coords?.length) return null;
+  const key = coords.length + ':' + coords[0][0].toFixed(2) + ',' + coords[0][1].toFixed(2) +
+    ':' + coords[coords.length - 1][0].toFixed(2) + ',' + coords[coords.length - 1][1].toFixed(2);
+  if(_cache && _cacheKey === key) return _cache;
+
+  const byId = new Map();
+  const regions = [];
+  let updated = null;
+  const bboxes = [];
+
+  const hw = await loadMergedLayer(coords, 'highways', 'ways', 'id');
+  for(const raw of hw.items){
+    const w = normalizeSnapshotWay(raw);
+    if(w && !byId.has(String(w.id))) byId.set(String(w.id), w);
+  }
+  regions.push(...hw.regions);
+  bboxes.push(...hw.bboxes);
+  if(hw.updated) updated = hw.updated;
+
+  const mw = await loadMergedLayer(coords, 'motorways', 'ways', 'id');
+  for(const raw of mw.items){
+    const w = normalizeSnapshotWay(raw);
+    if(w && !byId.has(String(w.id))) byId.set(String(w.id), w);
+  }
+  for(const id of mw.regions){
+    if(!regions.includes(id)) regions.push(id);
+  }
+  bboxes.push(...mw.bboxes);
+  if(mw.updated && (!updated || mw.updated > updated)) updated = mw.updated;
+
+  if(!byId.size){
+    const legacy = await loadLegacyMoscowHighways();
+    if(legacy?.ways?.length && routeIntersectsBbox(coords, legacy.bbox)){
+      _cache = legacy;
+      _cacheKey = key;
+      return _cache;
+    }
+    const mos = await loadRegionLayer('moscow', 'highways');
+    if(mos?.ways?.length && routeIntersectsBbox(coords, mos.bbox || MOSCOW_CAM_BBOX)){
+      _cache = {
+        bbox: mos.bbox || MOSCOW_CAM_BBOX,
+        ways: packWays(mos.ways),
+        updated: mos.updated,
+        count: mos.count,
+        source: 'osm',
+        regions: ['moscow']
+      };
+      _cacheKey = key;
+      return _cache;
+    }
+    return null;
+  }
+
+  _cache = {
+    bbox: bboxes[0] || MOSCOW_CAM_BBOX,
+    bboxes,
+    ways: [...byId.values()],
+    updated,
+    count: byId.size,
+    source: 'osm-regions',
+    regions
+  };
+  _cacheKey = key;
+  return _cache;
+}
+
+/** Legacy: весь Moscow dump (без привязки к маршруту) */
+export async function loadHighwaysSnapshot(){
+  return loadLegacyMoscowHighways();
 }
 
 export function routeInHighwaysSnapshot(coords, snap){
-  return !!(snap?.bbox && routeIntersectsBbox(coords, snap.bbox));
+  if(!snap) return false;
+  if(snap.bboxes?.length){
+    return snap.bboxes.some(b => routeIntersectsBbox(coords, b));
+  }
+  return !!(snap.bbox && routeIntersectsBbox(coords, snap.bbox));
 }
 
 export function clearHighwaysSnapshotCache(){
   _cache = null;
-  _promise = null;
+  _cacheKey = null;
 }
