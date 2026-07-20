@@ -15,6 +15,11 @@ import {
   SPEED_LIMIT_VOICE_MAX_M,
   SPEED_LIMIT_URBAN_PLACE_RADIUS_M
 } from './nav-constants.js';
+import {
+  filterWaysNearRoute,
+  loadHighwaysSnapshot,
+  routeInHighwaysSnapshot
+} from './highways-snapshot.js';
 
 /** @typedef {'osm'|'implicit'|'default'|'none'} SpeedLimitSource */
 /** @typedef {{ speed?: number, unit?: string, unknown?: boolean, none?: boolean }} MaxspeedEntry */
@@ -432,6 +437,30 @@ function matchWayAtPoint(point, ways){
  * (поле: known_pct=0, кроме одного удачного `06-34`).
  * @param {object} route
  */
+function applyHighwayWaysToRoute(route, ways, highwayTypes, wayTags, urbanSegments){
+  const n = highwayTypes.length;
+  for(let i = 0; i < n; i++){
+    const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
+    const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
+    const way = matchWayAtPoint({ lat, lon }, ways);
+    if(way){
+      highwayTypes[i] = way.highway;
+      wayTags[i] = {
+        maxspeed: way.maxspeed,
+        maxspeedConditional: way.maxspeedConditional
+      };
+      const hw = String(way.highway).toLowerCase();
+      if(hw === 'residential' || hw === 'living_street' || hw === 'service'){
+        urbanSegments[i] = true;
+      }
+    }
+  }
+  route.highwayTypes = highwayTypes;
+  route.wayTags = wayTags;
+  route.urbanSegments = urbanSegments;
+  return highwayTypes.filter(Boolean).length;
+}
+
 export async function loadRouteHighwayTypes(route){
   if(!route?.coords || route.coords.length < 2) return;
   const token = ++_highwayLoadToken;
@@ -441,14 +470,46 @@ export async function loadRouteHighwayTypes(route){
   const wayTags = new Array(n).fill(null);
   const urbanSegments = new Array(n).fill(false);
 
+  // 1) Снапшот Москвы (arterial + maxspeed) — без Overpass
+  try{
+    const snap = await loadHighwaysSnapshot();
+    if(snap?.ways?.length && routeInHighwaysSnapshot(route.coords, snap)){
+      const ways = filterWaysNearRoute(snap.ways, route.coords);
+      if(token !== _highwayLoadToken || S.route !== route) return;
+      const matched = applyHighwayWaysToRoute(route, ways, highwayTypes, wayTags, urbanSegments);
+      telemetry.log('nav', {
+        sub: 'highway_types_loaded',
+        segments: n,
+        matched,
+        ways: ways.length,
+        ms: Date.now() - t0,
+        mode: 'snapshot',
+        snap_count: snap.count,
+        snap_updated: snap.updated || undefined
+      });
+      // Снапшот без полного residential — при слабом match дотягиваем Overpass
+      if(matched / n >= 0.35){
+        _highwayRetryStep = 0;
+        refineUrbanSegments(route, highwayTypes, urbanSegments, token).catch(() => {});
+        return;
+      }
+      // иначе падаем в corridor ниже (малые дворы вне снапшота)
+    }
+  }catch(e){
+    console.warn('highways snapshot path:', e);
+  }
+
   let ways = [];
   try{
     ways = await fetchWaysAlongRoute(route.coords);
   }catch(e){
     console.warn('loadRouteHighwayTypes:', e);
-    route.highwayTypes = highwayTypes;
-    route.wayTags = wayTags;
-    route.urbanSegments = urbanSegments;
+    // если снапшот уже частично заполнил — не затираем
+    if(!route.highwayTypes?.some(Boolean)){
+      route.highwayTypes = highwayTypes;
+      route.wayTags = wayTags;
+      route.urbanSegments = urbanSegments;
+    }
     telemetry.log('nav', {
       sub: 'highway_types_failed',
       segments: n,
@@ -461,28 +522,7 @@ export async function loadRouteHighwayTypes(route){
 
   if(token !== _highwayLoadToken || S.route !== route) return;
 
-  for(let i = 0; i < n; i++){
-    const lat = (route.coords[i][0] + route.coords[i + 1][0]) / 2;
-    const lon = (route.coords[i][1] + route.coords[i + 1][1]) / 2;
-    const way = matchWayAtPoint({ lat, lon }, ways);
-    if(way){
-      highwayTypes[i] = way.highway;
-      wayTags[i] = {
-        maxspeed: way.maxspeed,
-        maxspeedConditional: way.maxspeedConditional
-      };
-      // residential / living — явно «город» без второго Overpass-запроса
-      const hw = String(way.highway).toLowerCase();
-      if(hw === 'residential' || hw === 'living_street' || hw === 'service'){
-        urbanSegments[i] = true;
-      }
-    }
-  }
-
-  route.highwayTypes = highwayTypes;
-  route.wayTags = wayTags;
-  route.urbanSegments = urbanSegments;
-  const matched = highwayTypes.filter(Boolean).length;
+  const matched = applyHighwayWaysToRoute(route, ways, highwayTypes, wayTags, urbanSegments);
   telemetry.log('nav', {
     sub: 'highway_types_loaded',
     segments: n,
@@ -495,7 +535,6 @@ export async function loadRouteHighwayTypes(route){
   if(matched / n < 0.4) scheduleHighwayRetry(route);
   else _highwayRetryStep = 0;
 
-  // Urban refine в фоне — не блокирует появление лимитов
   refineUrbanSegments(route, highwayTypes, urbanSegments, token).catch(() => {});
 }
 
