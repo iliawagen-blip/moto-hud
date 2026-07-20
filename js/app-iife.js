@@ -5208,6 +5208,150 @@ out tags geom;`;
     }
   });
 
+  // js/cameras-snapshot.js
+  function sampleRoutePoints2(coords, stepM = 600) {
+    if (!coords?.length) return [];
+    const pts = [{ lat: coords[0][0], lon: coords[0][1] }];
+    let acc = 0;
+    for (let i2 = 1; i2 < coords.length; i2++) {
+      const a = { lat: coords[i2 - 1][0], lon: coords[i2 - 1][1] };
+      const b = { lat: coords[i2][0], lon: coords[i2][1] };
+      acc += haversine(a, b);
+      if (acc >= stepM) {
+        pts.push(b);
+        acc = 0;
+      }
+    }
+    const last = { lat: coords[coords.length - 1][0], lon: coords[coords.length - 1][1] };
+    if (haversine(pts[pts.length - 1], last) > 40) pts.push(last);
+    return pts;
+  }
+  function cameraFromOsmTags(lat, lon, tags = {}, id = null) {
+    let dir = null;
+    if (tags.direction != null) {
+      const raw = String(tags.direction).trim();
+      const num = parseFloat(raw);
+      if (!Number.isNaN(num)) dir = (num % 360 + 360) % 360;
+      else {
+        const up = raw.toUpperCase();
+        if (CARD[up] != null) dir = CARD[up];
+      }
+    }
+    const speed = tags.maxspeed ? parseInt(tags.maxspeed, 10) : null;
+    return {
+      id: id != null ? String(id) : void 0,
+      lat,
+      lon,
+      speed: Number.isFinite(speed) ? speed : null,
+      dir
+    };
+  }
+  function cameraFromOverpassNode(e) {
+    if (!e || e.type !== "node" || e.lat == null || e.lon == null) return null;
+    return cameraFromOsmTags(e.lat, e.lon, e.tags || {}, e.id);
+  }
+  function pointInBbox(lat, lon, bbox) {
+    if (!bbox) return false;
+    return lat >= bbox.south && lat <= bbox.north && lon >= bbox.west && lon <= bbox.east;
+  }
+  function routeIntersectsBbox(coords, bbox) {
+    if (!coords?.length || !bbox) return false;
+    for (const c of coords) {
+      if (pointInBbox(c[0], c[1], bbox)) return true;
+    }
+    return false;
+  }
+  function filterCamerasNearRoute(cameras, coords, aroundM = 80, sampleStepM = 600) {
+    if (!cameras?.length || !coords?.length) return [];
+    const samples = sampleRoutePoints2(coords, sampleStepM);
+    if (!samples.length) return [];
+    const out = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const cam of cameras) {
+      if (cam?.lat == null || cam?.lon == null) continue;
+      const key = cam.id || cam.lat.toFixed(5) + "," + cam.lon.toFixed(5);
+      if (seen.has(key)) continue;
+      const p = { lat: cam.lat, lon: cam.lon };
+      let near = false;
+      for (const s2 of samples) {
+        if (haversine(p, s2) <= aroundM) {
+          near = true;
+          break;
+        }
+      }
+      if (near) {
+        seen.add(key);
+        out.push({
+          lat: cam.lat,
+          lon: cam.lon,
+          speed: cam.speed ?? null,
+          dir: cam.dir ?? null
+        });
+      }
+    }
+    return out;
+  }
+  async function loadCamerasSnapshot(url = CAMERAS_SNAPSHOT_PATH) {
+    if (_snapCache) return _snapCache;
+    if (_snapPromise) return _snapPromise;
+    _snapPromise = (async () => {
+      try {
+        const r = await fetch(url, { cache: "no-cache" });
+        if (!r.ok) throw new Error("snapshot HTTP " + r.status);
+        const j = await r.json();
+        if (!Array.isArray(j.cameras)) throw new Error("snapshot: no cameras[]");
+        _snapCache = {
+          bbox: j.bbox || MOSCOW_CAM_BBOX,
+          cameras: j.cameras,
+          updated: j.updated || null,
+          count: j.count ?? j.cameras.length,
+          source: j.source || "osm"
+        };
+        return _snapCache;
+      } catch (e) {
+        console.warn("cameras snapshot:", e);
+        _snapCache = null;
+        return null;
+      } finally {
+        _snapPromise = null;
+      }
+    })();
+    return _snapPromise;
+  }
+  var MOSCOW_CAM_BBOX, CAMERAS_SNAPSHOT_PATH, CARD, _snapCache, _snapPromise;
+  var init_cameras_snapshot = __esm({
+    "js/cameras-snapshot.js"() {
+      init_geo();
+      MOSCOW_CAM_BBOX = {
+        south: 55.55,
+        west: 37.35,
+        north: 55.95,
+        east: 37.85
+      };
+      CAMERAS_SNAPSHOT_PATH = "data/cameras-moscow.json";
+      CARD = {
+        N: 0,
+        NNE: 22.5,
+        NE: 45,
+        ENE: 67.5,
+        E: 90,
+        ESE: 112.5,
+        SE: 135,
+        SSE: 157.5,
+        S: 180,
+        SSW: 202.5,
+        SW: 225,
+        WSW: 247.5,
+        W: 270,
+        WNW: 292.5,
+        NW: 315,
+        NNW: 337.5
+      };
+      _snapCache = null;
+      _snapPromise = null;
+    }
+  });
+
   // js/route.js
   function auditRouteDrivability(route) {
     const types = route?.highwayTypes;
@@ -5613,6 +5757,32 @@ out tags geom;`;
       S.rerouting = false;
     }
   }
+  async function fetchCamerasFromOverpassCorridor(coords, aroundM = 80) {
+    const samples = sampleRoutePoints(coords, 600);
+    const byKey = /* @__PURE__ */ new Map();
+    const BATCH = 16;
+    for (let i2 = 0; i2 < samples.length; i2 += BATCH) {
+      const batch = samples.slice(i2, i2 + BATCH);
+      const parts = batch.map(
+        (p) => `node["highway"="speed_camera"](around:${aroundM},${p.lat.toFixed(5)},${p.lon.toFixed(5)});
+node["enforcement"="maxspeed"](around:${aroundM},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
+      ).join("\n");
+      const q = `[out:json][timeout:18];
+(
+${parts}
+);
+out body;`;
+      const j = await overpassFetch(q, 22e3);
+      for (const e of j.elements || []) {
+        const cam = cameraFromOverpassNode(e);
+        if (!cam) continue;
+        const key = cam.id || cam.lat.toFixed(5) + "," + cam.lon.toFixed(5);
+        if (byKey.has(key)) continue;
+        byKey.set(key, { lat: cam.lat, lon: cam.lon, speed: cam.speed, dir: cam.dir });
+      }
+    }
+    return [...byKey.values()];
+  }
   async function loadCameras() {
     if (!S.cams || !S.route) {
       S.cameras = [];
@@ -5642,76 +5812,42 @@ out tags geom;`;
       S.camLoadStatus = "loading";
       updateCamStatusUI();
     }
-    const samples = sampleRoutePoints(coords, 600);
     const CAM_AROUND_M = 80;
-    const byKey = /* @__PURE__ */ new Map();
-    const CARD = {
-      N: 0,
-      NNE: 22.5,
-      NE: 45,
-      ENE: 67.5,
-      E: 90,
-      ESE: 112.5,
-      SE: 135,
-      SSE: 157.5,
-      S: 180,
-      SSW: 202.5,
-      SW: 225,
-      WSW: 247.5,
-      W: 270,
-      WNW: 292.5,
-      NW: 315,
-      NNW: 337.5
-    };
     try {
-      const BATCH = 16;
-      for (let i2 = 0; i2 < samples.length; i2 += BATCH) {
-        const batch = samples.slice(i2, i2 + BATCH);
-        const parts = batch.map(
-          (p) => `node["highway"="speed_camera"](around:${CAM_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});
-node["enforcement"="maxspeed"](around:${CAM_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
-        ).join("\n");
-        const q = `[out:json][timeout:18];
-(
-${parts}
-);
-out body;`;
-        const j = await overpassFetch(q, 22e3);
-        for (const e of j.elements || []) {
-          if (e.type !== "node" || e.lat == null) continue;
-          const key = e.id != null ? String(e.id) : e.lat.toFixed(5) + "," + e.lon.toFixed(5);
-          if (byKey.has(key)) continue;
-          const t = e.tags || {};
-          let dir = null;
-          if (t.direction != null) {
-            const raw = String(t.direction).trim();
-            const num = parseFloat(raw);
-            if (!isNaN(num)) dir = (num % 360 + 360) % 360;
-            else {
-              const up = raw.toUpperCase();
-              if (CARD[up] != null) dir = CARD[up];
-            }
-          }
-          const speed = t.maxspeed ? parseInt(t.maxspeed, 10) : null;
-          byKey.set(key, {
-            lat: e.lat,
-            lon: e.lon,
-            speed: Number.isFinite(speed) ? speed : null,
-            dir
-          });
+      const snap = await loadCamerasSnapshot();
+      if (snap?.cameras?.length && routeIntersectsBbox(coords, snap.bbox)) {
+        S.cameras = filterCamerasNearRoute(snap.cameras, coords, CAM_AROUND_M);
+        S.camLoadStatus = "ok";
+        if (S.cameras.length) {
+          saveCamerasToRouteCache(coords, S.cameras);
+          saveLastRun();
         }
+        telemetry_default.log("nav", {
+          sub: "cameras_loaded",
+          count: S.cameras.length,
+          with_speed: S.cameras.filter((c) => c.speed != null).length,
+          ms: Date.now() - t0,
+          mode: "snapshot",
+          snap_count: snap.count,
+          snap_updated: snap.updated || void 0
+        });
+        updateCamStatusUI();
+        return;
       }
-      S.cameras = [...byKey.values()];
+    } catch (e) {
+      console.warn("cameras snapshot path:", e);
+    }
+    try {
+      S.cameras = await fetchCamerasFromOverpassCorridor(coords, CAM_AROUND_M);
       S.camLoadStatus = "ok";
       if (S.cameras.length) {
         saveCamerasToRouteCache(coords, S.cameras);
         saveLastRun();
       }
-      const withSpeed = S.cameras.filter((c) => c.speed != null).length;
       telemetry_default.log("nav", {
         sub: "cameras_loaded",
         count: S.cameras.length,
-        with_speed: withSpeed,
+        with_speed: S.cameras.filter((c) => c.speed != null).length,
         ms: Date.now() - t0,
         mode: "corridor"
       });
@@ -6019,6 +6155,7 @@ out body;`;
       init_route_quality();
       init_speed_limit();
       init_snap_quality();
+      init_cameras_snapshot();
       NON_MOTOR_HIGHWAYS = /* @__PURE__ */ new Set([
         "footway",
         "pedestrian",
