@@ -3807,707 +3807,6 @@
     }
   });
 
-  // js/fuel.js
-  function fuelRouteKey() {
-    const r = S.route;
-    if (!r) return "";
-    return (r.distance || 0) + ":" + (r.coords?.length || 0) + ":" + (r.geometry?.n || 0);
-  }
-  function invalidateFuelRouteS() {
-    _fuelRouteKey = null;
-    S.fuelStations.forEach((st) => {
-      delete st.routeS;
-      delete st.offRoute;
-    });
-  }
-  function fuelColor(status) {
-    return FUEL_COLORS[status] || FUEL_COLORS.unknown;
-  }
-  function fuelStatusText(status) {
-    if (status === "unknown" || status == null) return "\u043D\u0430\u043B\u0438\u0447\u0438\u0435 ?";
-    return { yes: "\u0435\u0441\u0442\u044C", queue: "\u043E\u0447\u0435\u0440\u0435\u0434\u044C", low: "\u043C\u0430\u043B\u043E", no: "\u043D\u0435\u0442 \u0442\u043E\u043F\u043B\u0438\u0432\u0430" }[status] || "\u043D\u0430\u043B\u0438\u0447\u0438\u0435 ?";
-  }
-  function fuelStatusHint() {
-    if (S.fuelStatus !== "ready") return "";
-    if (S.fuelSource === "gdebenz" || S.fuelSource === "gdebenz+crowd") return "";
-    if (S.fuelStations.some((st) => st.statusSource === "crowd" && st.status !== "unknown")) return "";
-    const proxy = getFuelProxyBase();
-    if (proxy) return " \xB7 \u0441\u0442\u0430\u0442\u0443\u0441 \u0410\u0417\u0421 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D (\u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 URL \u043F\u0440\u043E\u043A\u0441\u0438)";
-    return " \xB7 \u0441\u0442\u0430\u0442\u0443\u0441 \u0410\u0417\u0421 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \xB7 \u043E\u0442\u043C\u0435\u0442\u044C\u0442\u0435 \u0432 HUD";
-  }
-  function routeBBox(bufDeg) {
-    const buf = bufDeg || 0.05;
-    if (S.route && S.route.coords.length) {
-      let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
-      S.route.coords.forEach((c) => {
-        if (c[0] < minLat) minLat = c[0];
-        if (c[0] > maxLat) maxLat = c[0];
-        if (c[1] < minLon) minLon = c[1];
-        if (c[1] > maxLon) maxLon = c[1];
-      });
-      return [minLat - buf, minLon - buf, maxLat + buf, maxLon + buf];
-    }
-    const p = curPos() || S.gps;
-    if (!p) return null;
-    return [p.lat - buf, p.lon - buf, p.lat + buf, p.lon + buf];
-  }
-  async function loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon) {
-    const q = `[out:json][timeout:25];
-    (node["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon});
-     way["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon}););
-    out center 300;`;
-    const r = await fetch(
-      "https://overpass-api.de/api/interpreter",
-      { method: "POST", body: "data=" + encodeURIComponent(q) }
-    );
-    if (!r.ok) throw new Error("Overpass " + r.status);
-    const j = await r.json();
-    return (j.elements || []).map((e) => {
-      const t = e.tags || {};
-      const lat = e.lat != null ? e.lat : e.center && e.center.lat;
-      const lon = e.lon != null ? e.lon : e.center && e.center.lon;
-      if (lat == null || lon == null) return null;
-      return {
-        osmId: String(e.id),
-        lat,
-        lon,
-        brand: t.brand || t.name || t.operator || "\u0410\u0417\u0421",
-        name: t.name || t.brand || "\u0410\u0417\u0421",
-        status: "unknown",
-        tags: t
-      };
-    }).filter(Boolean);
-  }
-  async function fetchFuelStationsForBBox(minLat, minLon, maxLat, maxLon) {
-    return loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon);
-  }
-  async function loadFromOverpass() {
-    const bb = routeBBox();
-    if (!bb) return [];
-    const [minLat, minLon, maxLat, maxLon] = bb;
-    return loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon);
-  }
-  function gdebenzCacheKey(lat, lon) {
-    return Math.round(lat * 200) + ":" + Math.round(lon * 200);
-  }
-  function readGdebenzCache(lat, lon) {
-    const key = gdebenzCacheKey(lat, lon);
-    if (_gdebenzCache.key === key && Date.now() - _gdebenzCache.ts < GDEBENZ_CACHE_MS) {
-      return _gdebenzCache.data;
-    }
-    try {
-      const raw = sessionStorage.getItem("moto-hud-gdebenz-" + key);
-      if (!raw) return null;
-      const o = JSON.parse(raw);
-      if (o && Date.now() - o.ts < GDEBENZ_CACHE_MS) return o.data;
-    } catch (e) {
-    }
-    return null;
-  }
-  function writeGdebenzCache(lat, lon, data) {
-    const key = gdebenzCacheKey(lat, lon);
-    _gdebenzCache = { key, ts: Date.now(), data };
-    try {
-      sessionStorage.setItem("moto-hud-gdebenz-" + key, JSON.stringify({ ts: Date.now(), data }));
-    } catch (e) {
-    }
-  }
-  async function fetchGdebenzNearby(lat, lon, radiusKm) {
-    const cached = readGdebenzCache(lat, lon);
-    if (cached) return cached;
-    const apiUrl = "https://gdebenz.ru/api/nearby?lat=" + lat + "&lon=" + lon + "&radius_km=" + radiusKm;
-    let data = null;
-    try {
-      if (isNative()) {
-        const { CapacitorHttp: CapacitorHttp2 } = await Promise.resolve().then(() => (init_dist(), dist_exports));
-        const resp = await CapacitorHttp2.get({
-          url: "https://gdebenz.ru/api/nearby",
-          params: { lat: String(lat), lon: String(lon), radius_km: String(radiusKm) }
-        });
-        data = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
-      } else if (window.__SIM__) {
-        const r = await fetch(apiUrl);
-        if (r.ok) data = await r.json();
-      } else {
-        const tries = [];
-        const proxyBase = getFuelProxyBase();
-        if (proxyBase) {
-          tries.push(() => fetch(fuelProxyNearbyUrl(proxyBase, lat, lon, radiusKm)));
-        }
-        tries.push(
-          () => fetch(apiUrl),
-          () => fetch("https://corsproxy.io/?" + encodeURIComponent(apiUrl)),
-          () => fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(apiUrl))
-        );
-        for (const run of tries) {
-          try {
-            const r = await run();
-            if (!r.ok) continue;
-            const text = await r.text();
-            data = JSON.parse(text);
-            if (data?.stations) break;
-          } catch (e) {
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("\u0421\u0435\u0440\u0432\u0438\u0441 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u0410\u0417\u0421 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e);
-    }
-    if (data?.stations) writeGdebenzCache(lat, lon, data);
-    return data;
-  }
-  function applyGdebenzData(stations, data) {
-    if (!data?.stations?.length) return 0;
-    const byId = /* @__PURE__ */ new Map();
-    data.stations.forEach((s2) => {
-      if (s2.osm_id != null) byId.set(String(s2.osm_id), s2);
-    });
-    let matched = 0;
-    stations.forEach((st) => {
-      let g = byId.get(st.osmId);
-      if (!g) {
-        let best = null, bestD = 100;
-        for (const s2 of data.stations) {
-          if (s2.lat == null || s2.lon == null) continue;
-          const d = haversine(st, s2);
-          if (d < bestD) {
-            bestD = d;
-            best = s2;
-          }
-        }
-        if (best) g = best;
-      }
-      if (g?.status) {
-        st.status = g.status;
-        st.statusSource = "gdebenz";
-        if (g.brand) st.brand = g.brand;
-        st.confirmations = g.confirmations;
-        st.lastAt = g.last_at;
-        matched++;
-      }
-    });
-    return matched;
-  }
-  async function enrichFromGdebenz(stations) {
-    const p = curPos() || S.gps;
-    if (!p) return;
-    const data = await fetchGdebenzNearby(p.lat, p.lon, 40);
-    if (!data) return;
-    const n = applyGdebenzData(stations, data);
-    if (n > 0) S.fuelSource = S.fuelSource === "crowd" ? "gdebenz+crowd" : "gdebenz";
-  }
-  async function ensureFuelStations(force) {
-    if (S.fuelStatus === "loading") return;
-    if (!force && S.fuelStatus === "ready" && S.fuelStations.length) return;
-    S.fuelStatus = "loading";
-    S.fuelSource = "osm";
-    try {
-      const stations = await loadFromOverpass();
-      await enrichFromGdebenz(stations);
-      const crowdN = applyCrowdReports(stations);
-      if (crowdN > 0 && S.fuelSource === "osm") S.fuelSource = "crowd";
-      else if (crowdN > 0 && S.fuelSource === "gdebenz") S.fuelSource = "gdebenz+crowd";
-      S.fuelStations = stations;
-      S.fuelStatus = "ready";
-    } catch (e) {
-      console.warn("\u0410\u0417\u0421 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C:", e);
-      S.fuelStatus = "error";
-      S.fuelStations = [];
-    }
-  }
-  function recomputeFuelGeometry() {
-    const pos = curPos() || S.gps;
-    if (!pos) return;
-    const key = fuelRouteKey();
-    if (key !== _fuelRouteKey) {
-      _fuelRouteKey = key;
-      S.fuelStations.forEach((st) => {
-        delete st.routeS;
-        delete st.offRoute;
-      });
-    }
-    const geom = S.route?.geometry?.n > 1 ? S.route.geometry : null;
-    const near = S.route ? findNearestOnRoute() : null;
-    const curS = near?.s;
-    S.fuelStations.forEach((st) => {
-      st.distGps = haversine(pos, st);
-      if (geom) {
-        if (st.routeS == null) {
-          const proj = projectPointToRoute(geom, st);
-          if (proj) {
-            st.routeS = proj.s;
-            st.offRoute = proj.lateral;
-          } else {
-            st.offRoute = Infinity;
-          }
-        }
-        st.aheadOnRoute = false;
-        st.distAhead = Infinity;
-        if (st.routeS != null && curS != null && st.offRoute <= FUEL_CORRIDOR && st.routeS >= curS - 20) {
-          st.aheadOnRoute = true;
-          st.distAhead = Math.max(0, st.routeS - curS);
-        }
-      } else {
-        st.offRoute = Infinity;
-        st.aheadOnRoute = false;
-        st.distAhead = Infinity;
-      }
-    });
-  }
-  function resetFuelRouteBinding() {
-    invalidateFuelRouteS();
-  }
-  function bestAlongRoute() {
-    recomputeFuelGeometry();
-    const cands = S.fuelStations.filter((s2) => s2.aheadOnRoute && s2.distAhead > 50);
-    cands.sort((a, b) => a.distAhead - b.distAhead);
-    return cands[0] || null;
-  }
-  function nearestOverall(exclude) {
-    recomputeFuelGeometry();
-    const cands = S.fuelStations.filter((s2) => s2.distGps > 50 && (!exclude || s2.osmId !== exclude.osmId));
-    cands.sort((a, b) => a.distGps - b.distGps);
-    return cands[0] || null;
-  }
-  async function searchNearestFuelStations(limit) {
-    await ensureFuelStations(true);
-    recomputeFuelGeometry();
-    return S.fuelStations.filter((s2) => s2.distGps != null && isFinite(s2.distGps)).sort((a, b) => a.distGps - b.distGps).slice(0, Math.max(1, limit || 5));
-  }
-  function formatFuelDist(m) {
-    if (m == null || !isFinite(m)) return "\u2014";
-    if (m < 1e3) return Math.round(m) + " \u043C";
-    return (m / 1e3).toFixed(1).replace(".", ",") + " \u043A\u043C";
-  }
-  async function prefetchFuelForMap() {
-    try {
-      await ensureFuelStations(true);
-      recomputeFuelGeometry();
-    } catch (e) {
-      console.warn("\u0410\u0417\u0421 \u043D\u0430 \u043A\u0430\u0440\u0442\u0435:", e);
-    }
-  }
-  function fuelStationsForMap(limit) {
-    if (!S.fuelStations.length) return [];
-    recomputeFuelGeometry();
-    return S.fuelStations.filter((s2) => s2.routeS != null && (s2.offRoute ?? Infinity) <= FUEL_CORRIDOR + 150).sort((a, b) => a.routeS - b.routeS).slice(0, limit || 48);
-  }
-  function fuelStationsForRoad(maxDist) {
-    if (S.fuelMode === 0 || !S.fuelStations.length) return [];
-    recomputeFuelGeometry();
-    return S.fuelStations.filter((s2) => s2.aheadOnRoute && s2.distAhead <= (maxDist || 3e3)).sort((a, b) => a.distAhead - b.distAhead).slice(0, 4);
-  }
-  var _fuelRouteKey, GDEBENZ_CACHE_MS, _gdebenzCache;
-  var init_fuel = __esm({
-    "js/fuel.js"() {
-      init_state();
-      init_geo();
-      init_gps();
-      init_route();
-      init_route_geometry();
-      init_platform();
-      init_fuel_config();
-      init_fuel_crowd();
-      _fuelRouteKey = null;
-      GDEBENZ_CACHE_MS = 5 * 60 * 1e3;
-      _gdebenzCache = { key: "", ts: 0, data: null };
-    }
-  });
-
-  // node_modules/@capacitor-community/text-to-speech/dist/esm/definitions.js
-  var QueueStrategy;
-  var init_definitions3 = __esm({
-    "node_modules/@capacitor-community/text-to-speech/dist/esm/definitions.js"() {
-      (function(QueueStrategy2) {
-        QueueStrategy2[QueueStrategy2["Flush"] = 0] = "Flush";
-        QueueStrategy2[QueueStrategy2["Add"] = 1] = "Add";
-      })(QueueStrategy || (QueueStrategy = {}));
-    }
-  });
-
-  // node_modules/@capacitor-community/text-to-speech/dist/esm/web.js
-  var web_exports3 = {};
-  __export(web_exports3, {
-    TextToSpeechWeb: () => TextToSpeechWeb
-  });
-  var TextToSpeechWeb;
-  var init_web3 = __esm({
-    "node_modules/@capacitor-community/text-to-speech/dist/esm/web.js"() {
-      init_dist();
-      TextToSpeechWeb = class extends WebPlugin {
-        constructor() {
-          super();
-          this.speechSynthesis = null;
-          if ("speechSynthesis" in window) {
-            this.speechSynthesis = window.speechSynthesis;
-            window.addEventListener("beforeunload", () => {
-              this.stop();
-            });
-          }
-        }
-        async speak(options) {
-          if (!this.speechSynthesis) {
-            this.throwUnsupportedError();
-          }
-          await this.stop();
-          const speechSynthesis2 = this.speechSynthesis;
-          const utterance = this.createSpeechSynthesisUtterance(options);
-          return new Promise((resolve, reject) => {
-            utterance.onend = () => {
-              resolve();
-            };
-            utterance.onerror = (event) => {
-              reject(event);
-            };
-            speechSynthesis2.speak(utterance);
-          });
-        }
-        async stop() {
-          if (!this.speechSynthesis) {
-            this.throwUnsupportedError();
-          }
-          this.speechSynthesis.cancel();
-        }
-        async getSupportedLanguages() {
-          const voices = this.getSpeechSynthesisVoices();
-          const languages = voices.map((voice) => voice.lang);
-          const filteredLanguages = languages.filter((v, i2, a) => a.indexOf(v) == i2);
-          return { languages: filteredLanguages };
-        }
-        async getSupportedVoices() {
-          const voices = this.getSpeechSynthesisVoices();
-          return { voices };
-        }
-        async isLanguageSupported(options) {
-          const result = await this.getSupportedLanguages();
-          const isLanguageSupported = result.languages.includes(options.lang);
-          return { supported: isLanguageSupported };
-        }
-        async openInstall() {
-          this.throwUnimplementedError();
-        }
-        createSpeechSynthesisUtterance(options) {
-          const voices = this.getSpeechSynthesisVoices();
-          const utterance = new SpeechSynthesisUtterance();
-          const { text, lang, rate, pitch, volume, voice } = options;
-          if (voice) {
-            utterance.voice = voices[voice];
-          }
-          if (volume) {
-            utterance.volume = volume >= 0 && volume <= 1 ? volume : 1;
-          }
-          if (rate) {
-            utterance.rate = rate >= 0.1 && rate <= 10 ? rate : 1;
-          }
-          if (pitch) {
-            utterance.pitch = pitch >= 0 && pitch <= 2 ? pitch : 2;
-          }
-          if (lang) {
-            utterance.lang = lang;
-          }
-          utterance.text = text;
-          return utterance;
-        }
-        getSpeechSynthesisVoices() {
-          if (!this.speechSynthesis) {
-            this.throwUnsupportedError();
-          }
-          if (!this.supportedVoices || this.supportedVoices.length < 1) {
-            this.supportedVoices = this.speechSynthesis.getVoices();
-          }
-          return this.supportedVoices;
-        }
-        throwUnsupportedError() {
-          throw this.unavailable("SpeechSynthesis API not available in this browser.");
-        }
-        throwUnimplementedError() {
-          throw this.unimplemented("Not implemented on web.");
-        }
-      };
-    }
-  });
-
-  // node_modules/@capacitor-community/text-to-speech/dist/esm/index.js
-  var esm_exports = {};
-  __export(esm_exports, {
-    QueueStrategy: () => QueueStrategy,
-    TextToSpeech: () => TextToSpeech
-  });
-  var TextToSpeech;
-  var init_esm3 = __esm({
-    "node_modules/@capacitor-community/text-to-speech/dist/esm/index.js"() {
-      init_dist();
-      init_definitions3();
-      TextToSpeech = registerPlugin("TextToSpeech", {
-        web: () => Promise.resolve().then(() => (init_web3(), web_exports3)).then((m) => new m.TextToSpeechWeb())
-      });
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis;
-      }
-    }
-  });
-
-  // js/tts-ru.js
-  function scoreRuVoice(v) {
-    const name = String(v.name || v.voiceURI || v.identifier || "").toLowerCase();
-    const lang = String(v.lang || v.language || "").toLowerCase();
-    if (!lang.startsWith("ru")) return -1;
-    let score = 0;
-    const offline = v.localService === true || v.network === false || v.networkConnectionRequired === false;
-    if (offline) score += 28;
-    if (name.includes("google")) score += 55;
-    if (/ruc|ru-ru-x|x-ruc/.test(name)) score += 35;
-    if (name.includes("yandex")) score += 48;
-    if (name.includes("microsoft")) score += 38;
-    if (name.includes("pavel") || name.includes("dmitry")) score += 22;
-    if (name.includes("irina") || name.includes("milena")) score += 14;
-    if (v.default) score += 6;
-    if (name.includes("e-speak") || name.includes("espeak") || name.includes("festival")) score -= 45;
-    return score;
-  }
-  async function refreshRuVoice() {
-    _voiceReady = true;
-    if (isNative()) {
-      try {
-        const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
-        const res = await TextToSpeech2.getSupportedVoices();
-        const list2 = res.voices || [];
-        let best2 = -1;
-        let bestScore2 = -1;
-        list2.forEach((v, i2) => {
-          const sc = scoreRuVoice(v);
-          if (sc > bestScore2) {
-            bestScore2 = sc;
-            best2 = i2;
-          }
-        });
-        _nativeVoiceIdx = best2;
-      } catch (e) {
-        _nativeVoiceIdx = -1;
-      }
-      return;
-    }
-    if (!("speechSynthesis" in window)) {
-      _webVoice = null;
-      return;
-    }
-    const list = speechSynthesis.getVoices();
-    let best = null;
-    let bestScore = -1;
-    for (const v of list) {
-      const sc = scoreRuVoice(v);
-      if (sc > bestScore) {
-        bestScore = sc;
-        best = v;
-      }
-    }
-    _webVoice = best;
-  }
-  function initRuVoice() {
-    refreshRuVoice();
-    if ("speechSynthesis" in window) {
-      speechSynthesis.addEventListener("voiceschanged", () => {
-        refreshRuVoice();
-      }, { once: false });
-    }
-  }
-  function getNativeRuVoiceIdx() {
-    return _nativeVoiceIdx;
-  }
-  function getWebRuVoice() {
-    return _webVoice;
-  }
-  var _nativeVoiceIdx, _webVoice, _voiceReady;
-  var init_tts_ru = __esm({
-    "js/tts-ru.js"() {
-      init_platform();
-      _nativeVoiceIdx = -1;
-      _webVoice = null;
-      _voiceReady = false;
-    }
-  });
-
-  // js/voice.js
-  async function speakNative(text, phraseId) {
-    await refreshRuVoice();
-    const voiceIdx = getNativeRuVoiceIdx();
-    const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
-    telemetry_default.log("audio", { sub: "started", id: phraseId });
-    const opts = {
-      text,
-      lang: "ru-RU",
-      rate: TTS_RATE,
-      pitch: TTS_PITCH,
-      volume: 1,
-      category: "playback"
-    };
-    if (voiceIdx >= 0) opts.voice = voiceIdx;
-    await TextToSpeech2.speak(opts);
-  }
-  function speakWeb(text, phraseId) {
-    return new Promise((resolve, reject) => {
-      if (!("speechSynthesis" in window)) {
-        resolve();
-        return;
-      }
-      try {
-        speechSynthesis.cancel();
-        const u2 = new SpeechSynthesisUtterance(text);
-        u2.lang = "ru-RU";
-        u2.rate = TTS_RATE;
-        u2.pitch = TTS_PITCH;
-        let voice = getWebRuVoice();
-        if (!voice) {
-          const list = speechSynthesis.getVoices().filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
-          voice = list[0] || null;
-        }
-        if (voice) u2.voice = voice;
-        u2.onstart = () => telemetry_default.log("audio", { sub: "started", id: phraseId });
-        u2.onend = () => resolve();
-        u2.onerror = () => reject(new Error("TTS"));
-        speechSynthesis.speak(u2);
-      } catch (e) {
-        reject(e);
-      }
-    });
-  }
-  async function drainVoiceQueue() {
-    if (_busy || !_queue.length) return;
-    _busy = true;
-    const item = _queue.shift();
-    const text = item.text;
-    const phraseId = item.id;
-    try {
-      if (isNative()) await speakNative(text, phraseId);
-      else await speakWeb(text, phraseId);
-    } catch (e) {
-      console.warn("\u041E\u0437\u0432\u0443\u0447\u043A\u0430:", e);
-      try {
-        await speakWeb(text, phraseId);
-      } catch (e2) {
-      }
-    } finally {
-      _busy = false;
-      if (_queue.length) drainVoiceQueue();
-    }
-  }
-  function speak(text) {
-    if (!S.voice || !text) return;
-    const t = String(text);
-    const now = Date.now();
-    if (t === _lastText && now - _lastSpeakTs < DEDUPE_MS) return;
-    _lastText = t;
-    _lastSpeakTs = now;
-    const phraseId = ++_phraseId;
-    telemetry_default.log("audio", { sub: "queued", id: phraseId });
-    _queue.push({ text: t, id: phraseId });
-    while (_queue.length > MAX_QUEUE) _queue.shift();
-    drainVoiceQueue();
-  }
-  function clearVoiceQueue() {
-    _queue.length = 0;
-    if ("speechSynthesis" in window) {
-      try {
-        speechSynthesis.cancel();
-      } catch (e) {
-      }
-    }
-  }
-  function isTurnStep(step) {
-    return isNavManeuverType(step);
-  }
-  function maneuverText(step) {
-    if (!isTurnStep(step) && !isRoundaboutStep(step)) return "";
-    if (isRoundaboutStep(step)) return roundaboutManeuverText(step, null);
-    if (isInterchangeStep(step)) return interchangeVoiceText(step);
-    const m = step.modifier || "";
-    if (m === "uturn") return "\u0420\u0430\u0437\u0432\u043E\u0440\u043E\u0442";
-    if (m.includes("left")) return "\u041F\u043E\u0432\u0435\u0440\u043D\u0438\u0442\u0435 \u043D\u0430\u043B\u0435\u0432\u043E";
-    if (m.includes("right")) return "\u041F\u043E\u0432\u0435\u0440\u043D\u0438\u0442\u0435 \u043D\u0430\u043F\u0440\u0430\u0432\u043E";
-    return "";
-  }
-  function isCameraBehind(cam, heading) {
-    if (cam.dir == null || heading == null) return S.noDirPolicy === "warn";
-    return angleDiff(cam.dir, heading) <= S.tolerance;
-  }
-  var _queue, _busy, _phraseId, MAX_QUEUE, _lastText, _lastSpeakTs, DEDUPE_MS, TTS_RATE, TTS_PITCH;
-  var init_voice = __esm({
-    "js/voice.js"() {
-      init_state();
-      init_geo();
-      init_platform();
-      init_tts_ru();
-      init_maneuver_filter();
-      init_interchange();
-      init_roundabout();
-      init_telemetry();
-      _queue = [];
-      _busy = false;
-      _phraseId = 0;
-      MAX_QUEUE = 4;
-      _lastText = "";
-      _lastSpeakTs = 0;
-      DEDUPE_MS = 6500;
-      TTS_RATE = 0.98;
-      TTS_PITCH = 1;
-    }
-  });
-
-  // js/router.js
-  function getRouterBackend() {
-    return S.routerBackend || RouterBackend.OSRM;
-  }
-  function buildRouteRequestUrl(from, to, opts = {}) {
-    const backend = getRouterBackend();
-    if (backend === RouterBackend.VALHALLA) {
-      throw new Error("Valhalla: \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043F\u0430\u0439\u043A \u0424\u0430\u0437\u0430 4)");
-    }
-    const pts = opts.waypoints?.length ? opts.waypoints : [from, to];
-    const coordStr = pts.map((p) => `${p.lon},${p.lat}`).join(";");
-    let url = OSRM_BASE + coordStr + "?overview=full&geometries=geojson&steps=true&annotations=speed";
-    if (opts.alternatives) url += "&alternatives=2";
-    if (opts.rerouteBearing != null && opts.rerouteRadius != null && pts.length === 2) {
-      url += "&bearings=" + opts.rerouteBearing + ",45;&radiuses=" + opts.rerouteRadius + ";";
-    }
-    return url;
-  }
-  function parseRouteResponse(json) {
-    if (!json?.routes?.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    return json.routes;
-  }
-  var RouterBackend, OSRM_BASE;
-  var init_router = __esm({
-    "js/router.js"() {
-      init_state();
-      RouterBackend = { OSRM: "osrm", VALHALLA: "valhalla" };
-      OSRM_BASE = "https://router.project-osrm.org/route/v1/driving/";
-    }
-  });
-
-  // js/route-quality.js
-  function assessRouteQuality(route) {
-    const geom = route?.geometry;
-    if (!geom || geom.n < 2) return RouteQuality.OK;
-    const totalM = geom.s[geom.n - 1] || 0;
-    if (totalM < 500) return RouteQuality.OK;
-    let segSum = 0;
-    for (let i2 = 1; i2 < geom.n; i2++) segSum += geom.s[i2] - geom.s[i2 - 1];
-    const avgSeg = segSum / Math.max(1, geom.n - 1);
-    const maneuvers = geom.maneuvers?.length || 0;
-    const perKm = totalM > 0 ? maneuvers / totalM * 1e3 : 0;
-    if (avgSeg < ROUTE_LOW_AVG_SEG_M || perKm > ROUTE_LOW_MANEUVER_PER_KM) {
-      return RouteQuality.LOW;
-    }
-    return RouteQuality.OK;
-  }
-  var RouteQuality;
-  var init_route_quality = __esm({
-    "js/route-quality.js"() {
-      init_nav_constants();
-      RouteQuality = { OK: "OK", LOW: "LOW" };
-    }
-  });
-
   // node_modules/fflate/esm/browser.js
   function deflateSync(data, opts) {
     return dopt(data, opts || {}, 0, 0);
@@ -5393,6 +4692,857 @@
     }
   });
 
+  // js/osm-regions.js
+  function pointInBbox(lat, lon, bbox) {
+    if (!bbox) return false;
+    return lat >= bbox.south && lat <= bbox.north && lon >= bbox.west && lon <= bbox.east;
+  }
+  function routeIntersectsBbox(coords, bbox) {
+    if (!coords?.length || !bbox) return false;
+    for (const c of coords) {
+      if (pointInBbox(c[0], c[1], bbox)) return true;
+    }
+    return false;
+  }
+  async function loadOsmRegionsCatalog() {
+    if (_catalog) return _catalog;
+    if (_catalogPromise) return _catalogPromise;
+    _catalogPromise = (async () => {
+      try {
+        const r = await fetch(OSM_REGIONS_PATH, { cache: "no-cache" });
+        if (!r.ok) throw new Error("regions HTTP " + r.status);
+        _catalog = await r.json();
+        return _catalog;
+      } catch (e) {
+        console.warn("osm-regions catalog:", e);
+        _catalog = { regions: [] };
+        return _catalog;
+      } finally {
+        _catalogPromise = null;
+      }
+    })();
+    return _catalogPromise;
+  }
+  async function regionsForRoute(coords) {
+    const cat = await loadOsmRegionsCatalog();
+    const hit = [];
+    for (const reg of cat.regions || []) {
+      if (!reg.bbox || !routeIntersectsBbox(coords, reg.bbox)) continue;
+      const area = (reg.bbox.north - reg.bbox.south) * (reg.bbox.east - reg.bbox.west);
+      hit.push({ ...reg, _area: area });
+    }
+    hit.sort((a, b) => a._area - b._area);
+    return hit;
+  }
+  function regionPath(regionId, layer, { gzip = false } = {}) {
+    const base = `data/regions/${regionId}/${layer}.json`;
+    return gzip ? base + ".gz" : base;
+  }
+  async function fetchJson(url) {
+    const r = await fetch(url, { cache: "no-cache" });
+    if (!r.ok) throw new Error(url + " HTTP " + r.status);
+    return r.json();
+  }
+  async function fetchGzipJson(url) {
+    const r = await fetch(url, { cache: "no-cache" });
+    if (!r.ok) throw new Error(url + " HTTP " + r.status);
+    const buf = new Uint8Array(await r.arrayBuffer());
+    return JSON.parse(new TextDecoder().decode(gunzipSync(buf)));
+  }
+  async function loadRegionLayer(regionId, layer) {
+    const key = regionId + "/" + layer;
+    if (_layerCache.has(key)) return _layerCache.get(key);
+    if (_layerPromises.has(key)) return _layerPromises.get(key);
+    const p = (async () => {
+      try {
+        const wantGz = layer === "highways" || layer === "motorways";
+        let j;
+        if (wantGz) {
+          try {
+            j = await fetchGzipJson(regionPath(regionId, layer, { gzip: true }));
+          } catch (_e) {
+            j = await fetchJson(regionPath(regionId, layer));
+          }
+        } else {
+          j = await fetchJson(regionPath(regionId, layer));
+        }
+        _layerCache.set(key, j);
+        return j;
+      } catch (e) {
+        console.warn("region layer", key, e);
+        _layerCache.set(key, null);
+        return null;
+      } finally {
+        _layerPromises.delete(key);
+      }
+    })();
+    _layerPromises.set(key, p);
+    return p;
+  }
+  async function loadMergedLayer(coords, layer, arrayKey, idKey) {
+    const regs = await regionsForRoute(coords);
+    const byId = /* @__PURE__ */ new Map();
+    const bboxes = [];
+    let updated = null;
+    for (const reg of regs) {
+      if (!(reg.layers || []).includes(layer) && layer !== "motorways") continue;
+      if (layer === "motorways" && reg.id !== "russia_motorways" && !(reg.layers || []).includes("motorways")) continue;
+      if (layer !== "motorways" && !(reg.layers || []).includes(layer)) continue;
+      const j = await loadRegionLayer(reg.id, layer);
+      if (!j?.[arrayKey]?.length) continue;
+      bboxes.push(j.bbox || reg.bbox);
+      if (j.updated && (!updated || j.updated > updated)) updated = j.updated;
+      for (const item of j[arrayKey]) {
+        const id = idKey ? item[idKey] : item.id || `${item.lat},${item.lon}`;
+        if (id != null && byId.has(String(id))) continue;
+        byId.set(String(id ?? byId.size), item);
+      }
+    }
+    return {
+      items: [...byId.values()],
+      bboxes,
+      updated,
+      regions: regs.map((r) => r.id)
+    };
+  }
+  var OSM_REGIONS_PATH, _catalog, _catalogPromise, _layerCache, _layerPromises;
+  var init_osm_regions = __esm({
+    "js/osm-regions.js"() {
+      init_browser();
+      OSM_REGIONS_PATH = "data/osm-regions.json";
+      _catalog = null;
+      _catalogPromise = null;
+      _layerCache = /* @__PURE__ */ new Map();
+      _layerPromises = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // js/fuel.js
+  function fuelRouteKey() {
+    const r = S.route;
+    if (!r) return "";
+    return (r.distance || 0) + ":" + (r.coords?.length || 0) + ":" + (r.geometry?.n || 0);
+  }
+  function invalidateFuelRouteS() {
+    _fuelRouteKey = null;
+    S.fuelStations.forEach((st) => {
+      delete st.routeS;
+      delete st.offRoute;
+    });
+  }
+  function fuelColor(status) {
+    return FUEL_COLORS[status] || FUEL_COLORS.unknown;
+  }
+  function fuelStatusText(status) {
+    if (status === "unknown" || status == null) return "\u043D\u0430\u043B\u0438\u0447\u0438\u0435 ?";
+    return { yes: "\u0435\u0441\u0442\u044C", queue: "\u043E\u0447\u0435\u0440\u0435\u0434\u044C", low: "\u043C\u0430\u043B\u043E", no: "\u043D\u0435\u0442 \u0442\u043E\u043F\u043B\u0438\u0432\u0430" }[status] || "\u043D\u0430\u043B\u0438\u0447\u0438\u0435 ?";
+  }
+  function fuelStatusHint() {
+    if (S.fuelStatus !== "ready") return "";
+    if (S.fuelSource === "gdebenz" || S.fuelSource === "gdebenz+crowd") return "";
+    if (S.fuelStations.some((st) => st.statusSource === "crowd" && st.status !== "unknown")) return "";
+    const proxy = getFuelProxyBase();
+    if (proxy) return " \xB7 \u0441\u0442\u0430\u0442\u0443\u0441 \u0410\u0417\u0421 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D (\u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 URL \u043F\u0440\u043E\u043A\u0441\u0438)";
+    return " \xB7 \u0441\u0442\u0430\u0442\u0443\u0441 \u0410\u0417\u0421 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \xB7 \u043E\u0442\u043C\u0435\u0442\u044C\u0442\u0435 \u0432 HUD";
+  }
+  function routeBBox(bufDeg) {
+    const buf = bufDeg || 0.05;
+    if (S.route && S.route.coords.length) {
+      let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+      S.route.coords.forEach((c) => {
+        if (c[0] < minLat) minLat = c[0];
+        if (c[0] > maxLat) maxLat = c[0];
+        if (c[1] < minLon) minLon = c[1];
+        if (c[1] > maxLon) maxLon = c[1];
+      });
+      return [minLat - buf, minLon - buf, maxLat + buf, maxLon + buf];
+    }
+    const p = curPos() || S.gps;
+    if (!p) return null;
+    return [p.lat - buf, p.lon - buf, p.lat + buf, p.lon + buf];
+  }
+  async function loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon) {
+    const q = `[out:json][timeout:25];
+    (node["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon});
+     way["amenity"="fuel"](${minLat},${minLon},${maxLat},${maxLon}););
+    out center 300;`;
+    const r = await fetch(
+      "https://overpass-api.de/api/interpreter",
+      { method: "POST", body: "data=" + encodeURIComponent(q) }
+    );
+    if (!r.ok) throw new Error("Overpass " + r.status);
+    const j = await r.json();
+    return (j.elements || []).map((e) => {
+      const t = e.tags || {};
+      const lat = e.lat != null ? e.lat : e.center && e.center.lat;
+      const lon = e.lon != null ? e.lon : e.center && e.center.lon;
+      if (lat == null || lon == null) return null;
+      return {
+        osmId: String(e.id),
+        lat,
+        lon,
+        brand: t.brand || t.name || t.operator || "\u0410\u0417\u0421",
+        name: t.name || t.brand || "\u0410\u0417\u0421",
+        status: "unknown",
+        tags: t
+      };
+    }).filter(Boolean);
+  }
+  async function fetchFuelStationsForBBox(minLat, minLon, maxLat, maxLon) {
+    return loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon);
+  }
+  async function loadFromSnapshot() {
+    const bb = routeBBox(0.02);
+    if (!bb) return null;
+    const [minLat, minLon, maxLat, maxLon] = bb;
+    const coords = [[minLat, minLon], [maxLat, maxLon]];
+    if (S.route?.coords?.length) coords.push(...S.route.coords);
+    const merged = await loadMergedLayer(coords, "fuel", "stations", "osmId");
+    if (!merged.items.length) return null;
+    return merged.items.filter((st) => st.lat >= minLat && st.lat <= maxLat && st.lon >= minLon && st.lon <= maxLon).map((st) => ({
+      osmId: String(st.osmId),
+      lat: st.lat,
+      lon: st.lon,
+      brand: st.brand || "\u0410\u0417\u0421",
+      name: st.name || st.brand || "\u0410\u0417\u0421",
+      status: "unknown",
+      tags: {}
+    }));
+  }
+  async function loadFromOverpass() {
+    const bb = routeBBox();
+    if (!bb) return [];
+    const [minLat, minLon, maxLat, maxLon] = bb;
+    return loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon);
+  }
+  function gdebenzCacheKey(lat, lon) {
+    return Math.round(lat * 200) + ":" + Math.round(lon * 200);
+  }
+  function readGdebenzCache(lat, lon) {
+    const key = gdebenzCacheKey(lat, lon);
+    if (_gdebenzCache.key === key && Date.now() - _gdebenzCache.ts < GDEBENZ_CACHE_MS) {
+      return _gdebenzCache.data;
+    }
+    try {
+      const raw = sessionStorage.getItem("moto-hud-gdebenz-" + key);
+      if (!raw) return null;
+      const o = JSON.parse(raw);
+      if (o && Date.now() - o.ts < GDEBENZ_CACHE_MS) return o.data;
+    } catch (e) {
+    }
+    return null;
+  }
+  function writeGdebenzCache(lat, lon, data) {
+    const key = gdebenzCacheKey(lat, lon);
+    _gdebenzCache = { key, ts: Date.now(), data };
+    try {
+      sessionStorage.setItem("moto-hud-gdebenz-" + key, JSON.stringify({ ts: Date.now(), data }));
+    } catch (e) {
+    }
+  }
+  async function fetchGdebenzNearby(lat, lon, radiusKm) {
+    const cached = readGdebenzCache(lat, lon);
+    if (cached) return cached;
+    const apiUrl = "https://gdebenz.ru/api/nearby?lat=" + lat + "&lon=" + lon + "&radius_km=" + radiusKm;
+    let data = null;
+    try {
+      if (isNative()) {
+        const { CapacitorHttp: CapacitorHttp2 } = await Promise.resolve().then(() => (init_dist(), dist_exports));
+        const resp = await CapacitorHttp2.get({
+          url: "https://gdebenz.ru/api/nearby",
+          params: { lat: String(lat), lon: String(lon), radius_km: String(radiusKm) }
+        });
+        data = typeof resp.data === "string" ? JSON.parse(resp.data) : resp.data;
+      } else if (window.__SIM__) {
+        const r = await fetch(apiUrl);
+        if (r.ok) data = await r.json();
+      } else {
+        const tries = [];
+        const proxyBase = getFuelProxyBase();
+        if (proxyBase) {
+          tries.push(() => fetch(fuelProxyNearbyUrl(proxyBase, lat, lon, radiusKm)));
+        }
+        tries.push(
+          () => fetch(apiUrl),
+          () => fetch("https://corsproxy.io/?" + encodeURIComponent(apiUrl)),
+          () => fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(apiUrl))
+        );
+        for (const run of tries) {
+          try {
+            const r = await run();
+            if (!r.ok) continue;
+            const text = await r.text();
+            data = JSON.parse(text);
+            if (data?.stations) break;
+          } catch (e) {
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("\u0421\u0435\u0440\u0432\u0438\u0441 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u0410\u0417\u0421 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e);
+    }
+    if (data?.stations) writeGdebenzCache(lat, lon, data);
+    return data;
+  }
+  function applyGdebenzData(stations, data) {
+    if (!data?.stations?.length) return 0;
+    const byId = /* @__PURE__ */ new Map();
+    data.stations.forEach((s2) => {
+      if (s2.osm_id != null) byId.set(String(s2.osm_id), s2);
+    });
+    let matched = 0;
+    stations.forEach((st) => {
+      let g = byId.get(st.osmId);
+      if (!g) {
+        let best = null, bestD = 100;
+        for (const s2 of data.stations) {
+          if (s2.lat == null || s2.lon == null) continue;
+          const d = haversine(st, s2);
+          if (d < bestD) {
+            bestD = d;
+            best = s2;
+          }
+        }
+        if (best) g = best;
+      }
+      if (g?.status) {
+        st.status = g.status;
+        st.statusSource = "gdebenz";
+        if (g.brand) st.brand = g.brand;
+        st.confirmations = g.confirmations;
+        st.lastAt = g.last_at;
+        matched++;
+      }
+    });
+    return matched;
+  }
+  async function enrichFromGdebenz(stations) {
+    const p = curPos() || S.gps;
+    if (!p) return;
+    const data = await fetchGdebenzNearby(p.lat, p.lon, 40);
+    if (!data) return;
+    const n = applyGdebenzData(stations, data);
+    if (n > 0) S.fuelSource = S.fuelSource === "crowd" ? "gdebenz+crowd" : "gdebenz";
+  }
+  async function ensureFuelStations(force) {
+    if (S.fuelStatus === "loading") return;
+    if (!force && S.fuelStatus === "ready" && S.fuelStations.length) return;
+    S.fuelStatus = "loading";
+    S.fuelSource = "osm";
+    try {
+      let stations = await loadFromSnapshot();
+      if (stations?.length) {
+        S.fuelSource = "osm-snapshot";
+      } else {
+        stations = await loadFromOverpass();
+      }
+      await enrichFromGdebenz(stations);
+      const crowdN = applyCrowdReports(stations);
+      if (crowdN > 0 && (S.fuelSource === "osm" || S.fuelSource === "osm-snapshot")) {
+        S.fuelSource = S.fuelSource === "osm-snapshot" ? "snapshot+crowd" : "crowd";
+      } else if (crowdN > 0 && S.fuelSource === "gdebenz") S.fuelSource = "gdebenz+crowd";
+      S.fuelStations = stations;
+      S.fuelStatus = "ready";
+    } catch (e) {
+      console.warn("\u0410\u0417\u0421 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C:", e);
+      S.fuelStatus = "error";
+      S.fuelStations = [];
+    }
+  }
+  function recomputeFuelGeometry() {
+    const pos = curPos() || S.gps;
+    if (!pos) return;
+    const key = fuelRouteKey();
+    if (key !== _fuelRouteKey) {
+      _fuelRouteKey = key;
+      S.fuelStations.forEach((st) => {
+        delete st.routeS;
+        delete st.offRoute;
+      });
+    }
+    const geom = S.route?.geometry?.n > 1 ? S.route.geometry : null;
+    const near = S.route ? findNearestOnRoute() : null;
+    const curS = near?.s;
+    S.fuelStations.forEach((st) => {
+      st.distGps = haversine(pos, st);
+      if (geom) {
+        if (st.routeS == null) {
+          const proj = projectPointToRoute(geom, st);
+          if (proj) {
+            st.routeS = proj.s;
+            st.offRoute = proj.lateral;
+          } else {
+            st.offRoute = Infinity;
+          }
+        }
+        st.aheadOnRoute = false;
+        st.distAhead = Infinity;
+        if (st.routeS != null && curS != null && st.offRoute <= FUEL_CORRIDOR && st.routeS >= curS - 20) {
+          st.aheadOnRoute = true;
+          st.distAhead = Math.max(0, st.routeS - curS);
+        }
+      } else {
+        st.offRoute = Infinity;
+        st.aheadOnRoute = false;
+        st.distAhead = Infinity;
+      }
+    });
+  }
+  function resetFuelRouteBinding() {
+    invalidateFuelRouteS();
+  }
+  function bestAlongRoute() {
+    recomputeFuelGeometry();
+    const cands = S.fuelStations.filter((s2) => s2.aheadOnRoute && s2.distAhead > 50);
+    cands.sort((a, b) => a.distAhead - b.distAhead);
+    return cands[0] || null;
+  }
+  function nearestOverall(exclude) {
+    recomputeFuelGeometry();
+    const cands = S.fuelStations.filter((s2) => s2.distGps > 50 && (!exclude || s2.osmId !== exclude.osmId));
+    cands.sort((a, b) => a.distGps - b.distGps);
+    return cands[0] || null;
+  }
+  async function searchNearestFuelStations(limit) {
+    await ensureFuelStations(true);
+    recomputeFuelGeometry();
+    return S.fuelStations.filter((s2) => s2.distGps != null && isFinite(s2.distGps)).sort((a, b) => a.distGps - b.distGps).slice(0, Math.max(1, limit || 5));
+  }
+  function formatFuelDist(m) {
+    if (m == null || !isFinite(m)) return "\u2014";
+    if (m < 1e3) return Math.round(m) + " \u043C";
+    return (m / 1e3).toFixed(1).replace(".", ",") + " \u043A\u043C";
+  }
+  async function prefetchFuelForMap() {
+    try {
+      await ensureFuelStations(true);
+      recomputeFuelGeometry();
+    } catch (e) {
+      console.warn("\u0410\u0417\u0421 \u043D\u0430 \u043A\u0430\u0440\u0442\u0435:", e);
+    }
+  }
+  function fuelStationsForMap(limit) {
+    if (!S.fuelStations.length) return [];
+    recomputeFuelGeometry();
+    return S.fuelStations.filter((s2) => s2.routeS != null && (s2.offRoute ?? Infinity) <= FUEL_CORRIDOR + 150).sort((a, b) => a.routeS - b.routeS).slice(0, limit || 48);
+  }
+  function fuelStationsForRoad(maxDist) {
+    if (S.fuelMode === 0 || !S.fuelStations.length) return [];
+    recomputeFuelGeometry();
+    return S.fuelStations.filter((s2) => s2.aheadOnRoute && s2.distAhead <= (maxDist || 3e3)).sort((a, b) => a.distAhead - b.distAhead).slice(0, 4);
+  }
+  var _fuelRouteKey, GDEBENZ_CACHE_MS, _gdebenzCache;
+  var init_fuel = __esm({
+    "js/fuel.js"() {
+      init_state();
+      init_geo();
+      init_gps();
+      init_route();
+      init_route_geometry();
+      init_platform();
+      init_fuel_config();
+      init_fuel_crowd();
+      init_osm_regions();
+      _fuelRouteKey = null;
+      GDEBENZ_CACHE_MS = 5 * 60 * 1e3;
+      _gdebenzCache = { key: "", ts: 0, data: null };
+    }
+  });
+
+  // node_modules/@capacitor-community/text-to-speech/dist/esm/definitions.js
+  var QueueStrategy;
+  var init_definitions3 = __esm({
+    "node_modules/@capacitor-community/text-to-speech/dist/esm/definitions.js"() {
+      (function(QueueStrategy2) {
+        QueueStrategy2[QueueStrategy2["Flush"] = 0] = "Flush";
+        QueueStrategy2[QueueStrategy2["Add"] = 1] = "Add";
+      })(QueueStrategy || (QueueStrategy = {}));
+    }
+  });
+
+  // node_modules/@capacitor-community/text-to-speech/dist/esm/web.js
+  var web_exports3 = {};
+  __export(web_exports3, {
+    TextToSpeechWeb: () => TextToSpeechWeb
+  });
+  var TextToSpeechWeb;
+  var init_web3 = __esm({
+    "node_modules/@capacitor-community/text-to-speech/dist/esm/web.js"() {
+      init_dist();
+      TextToSpeechWeb = class extends WebPlugin {
+        constructor() {
+          super();
+          this.speechSynthesis = null;
+          if ("speechSynthesis" in window) {
+            this.speechSynthesis = window.speechSynthesis;
+            window.addEventListener("beforeunload", () => {
+              this.stop();
+            });
+          }
+        }
+        async speak(options) {
+          if (!this.speechSynthesis) {
+            this.throwUnsupportedError();
+          }
+          await this.stop();
+          const speechSynthesis2 = this.speechSynthesis;
+          const utterance = this.createSpeechSynthesisUtterance(options);
+          return new Promise((resolve, reject) => {
+            utterance.onend = () => {
+              resolve();
+            };
+            utterance.onerror = (event) => {
+              reject(event);
+            };
+            speechSynthesis2.speak(utterance);
+          });
+        }
+        async stop() {
+          if (!this.speechSynthesis) {
+            this.throwUnsupportedError();
+          }
+          this.speechSynthesis.cancel();
+        }
+        async getSupportedLanguages() {
+          const voices = this.getSpeechSynthesisVoices();
+          const languages = voices.map((voice) => voice.lang);
+          const filteredLanguages = languages.filter((v, i2, a) => a.indexOf(v) == i2);
+          return { languages: filteredLanguages };
+        }
+        async getSupportedVoices() {
+          const voices = this.getSpeechSynthesisVoices();
+          return { voices };
+        }
+        async isLanguageSupported(options) {
+          const result = await this.getSupportedLanguages();
+          const isLanguageSupported = result.languages.includes(options.lang);
+          return { supported: isLanguageSupported };
+        }
+        async openInstall() {
+          this.throwUnimplementedError();
+        }
+        createSpeechSynthesisUtterance(options) {
+          const voices = this.getSpeechSynthesisVoices();
+          const utterance = new SpeechSynthesisUtterance();
+          const { text, lang, rate, pitch, volume, voice } = options;
+          if (voice) {
+            utterance.voice = voices[voice];
+          }
+          if (volume) {
+            utterance.volume = volume >= 0 && volume <= 1 ? volume : 1;
+          }
+          if (rate) {
+            utterance.rate = rate >= 0.1 && rate <= 10 ? rate : 1;
+          }
+          if (pitch) {
+            utterance.pitch = pitch >= 0 && pitch <= 2 ? pitch : 2;
+          }
+          if (lang) {
+            utterance.lang = lang;
+          }
+          utterance.text = text;
+          return utterance;
+        }
+        getSpeechSynthesisVoices() {
+          if (!this.speechSynthesis) {
+            this.throwUnsupportedError();
+          }
+          if (!this.supportedVoices || this.supportedVoices.length < 1) {
+            this.supportedVoices = this.speechSynthesis.getVoices();
+          }
+          return this.supportedVoices;
+        }
+        throwUnsupportedError() {
+          throw this.unavailable("SpeechSynthesis API not available in this browser.");
+        }
+        throwUnimplementedError() {
+          throw this.unimplemented("Not implemented on web.");
+        }
+      };
+    }
+  });
+
+  // node_modules/@capacitor-community/text-to-speech/dist/esm/index.js
+  var esm_exports = {};
+  __export(esm_exports, {
+    QueueStrategy: () => QueueStrategy,
+    TextToSpeech: () => TextToSpeech
+  });
+  var TextToSpeech;
+  var init_esm3 = __esm({
+    "node_modules/@capacitor-community/text-to-speech/dist/esm/index.js"() {
+      init_dist();
+      init_definitions3();
+      TextToSpeech = registerPlugin("TextToSpeech", {
+        web: () => Promise.resolve().then(() => (init_web3(), web_exports3)).then((m) => new m.TextToSpeechWeb())
+      });
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis;
+      }
+    }
+  });
+
+  // js/tts-ru.js
+  function scoreRuVoice(v) {
+    const name = String(v.name || v.voiceURI || v.identifier || "").toLowerCase();
+    const lang = String(v.lang || v.language || "").toLowerCase();
+    if (!lang.startsWith("ru")) return -1;
+    let score = 0;
+    const offline = v.localService === true || v.network === false || v.networkConnectionRequired === false;
+    if (offline) score += 28;
+    if (name.includes("google")) score += 55;
+    if (/ruc|ru-ru-x|x-ruc/.test(name)) score += 35;
+    if (name.includes("yandex")) score += 48;
+    if (name.includes("microsoft")) score += 38;
+    if (name.includes("pavel") || name.includes("dmitry")) score += 22;
+    if (name.includes("irina") || name.includes("milena")) score += 14;
+    if (v.default) score += 6;
+    if (name.includes("e-speak") || name.includes("espeak") || name.includes("festival")) score -= 45;
+    return score;
+  }
+  async function refreshRuVoice() {
+    _voiceReady = true;
+    if (isNative()) {
+      try {
+        const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
+        const res = await TextToSpeech2.getSupportedVoices();
+        const list2 = res.voices || [];
+        let best2 = -1;
+        let bestScore2 = -1;
+        list2.forEach((v, i2) => {
+          const sc = scoreRuVoice(v);
+          if (sc > bestScore2) {
+            bestScore2 = sc;
+            best2 = i2;
+          }
+        });
+        _nativeVoiceIdx = best2;
+      } catch (e) {
+        _nativeVoiceIdx = -1;
+      }
+      return;
+    }
+    if (!("speechSynthesis" in window)) {
+      _webVoice = null;
+      return;
+    }
+    const list = speechSynthesis.getVoices();
+    let best = null;
+    let bestScore = -1;
+    for (const v of list) {
+      const sc = scoreRuVoice(v);
+      if (sc > bestScore) {
+        bestScore = sc;
+        best = v;
+      }
+    }
+    _webVoice = best;
+  }
+  function initRuVoice() {
+    refreshRuVoice();
+    if ("speechSynthesis" in window) {
+      speechSynthesis.addEventListener("voiceschanged", () => {
+        refreshRuVoice();
+      }, { once: false });
+    }
+  }
+  function getNativeRuVoiceIdx() {
+    return _nativeVoiceIdx;
+  }
+  function getWebRuVoice() {
+    return _webVoice;
+  }
+  var _nativeVoiceIdx, _webVoice, _voiceReady;
+  var init_tts_ru = __esm({
+    "js/tts-ru.js"() {
+      init_platform();
+      _nativeVoiceIdx = -1;
+      _webVoice = null;
+      _voiceReady = false;
+    }
+  });
+
+  // js/voice.js
+  async function speakNative(text, phraseId) {
+    await refreshRuVoice();
+    const voiceIdx = getNativeRuVoiceIdx();
+    const { TextToSpeech: TextToSpeech2 } = await Promise.resolve().then(() => (init_esm3(), esm_exports));
+    telemetry_default.log("audio", { sub: "started", id: phraseId });
+    const opts = {
+      text,
+      lang: "ru-RU",
+      rate: TTS_RATE,
+      pitch: TTS_PITCH,
+      volume: 1,
+      category: "playback"
+    };
+    if (voiceIdx >= 0) opts.voice = voiceIdx;
+    await TextToSpeech2.speak(opts);
+  }
+  function speakWeb(text, phraseId) {
+    return new Promise((resolve, reject) => {
+      if (!("speechSynthesis" in window)) {
+        resolve();
+        return;
+      }
+      try {
+        speechSynthesis.cancel();
+        const u2 = new SpeechSynthesisUtterance(text);
+        u2.lang = "ru-RU";
+        u2.rate = TTS_RATE;
+        u2.pitch = TTS_PITCH;
+        let voice = getWebRuVoice();
+        if (!voice) {
+          const list = speechSynthesis.getVoices().filter((v) => (v.lang || "").toLowerCase().startsWith("ru"));
+          voice = list[0] || null;
+        }
+        if (voice) u2.voice = voice;
+        u2.onstart = () => telemetry_default.log("audio", { sub: "started", id: phraseId });
+        u2.onend = () => resolve();
+        u2.onerror = () => reject(new Error("TTS"));
+        speechSynthesis.speak(u2);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+  async function drainVoiceQueue() {
+    if (_busy || !_queue.length) return;
+    _busy = true;
+    const item = _queue.shift();
+    const text = item.text;
+    const phraseId = item.id;
+    try {
+      if (isNative()) await speakNative(text, phraseId);
+      else await speakWeb(text, phraseId);
+    } catch (e) {
+      console.warn("\u041E\u0437\u0432\u0443\u0447\u043A\u0430:", e);
+      try {
+        await speakWeb(text, phraseId);
+      } catch (e2) {
+      }
+    } finally {
+      _busy = false;
+      if (_queue.length) drainVoiceQueue();
+    }
+  }
+  function speak(text) {
+    if (!S.voice || !text) return;
+    const t = String(text);
+    const now = Date.now();
+    if (t === _lastText && now - _lastSpeakTs < DEDUPE_MS) return;
+    _lastText = t;
+    _lastSpeakTs = now;
+    const phraseId = ++_phraseId;
+    telemetry_default.log("audio", { sub: "queued", id: phraseId });
+    _queue.push({ text: t, id: phraseId });
+    while (_queue.length > MAX_QUEUE) _queue.shift();
+    drainVoiceQueue();
+  }
+  function clearVoiceQueue() {
+    _queue.length = 0;
+    if ("speechSynthesis" in window) {
+      try {
+        speechSynthesis.cancel();
+      } catch (e) {
+      }
+    }
+  }
+  function isTurnStep(step) {
+    return isNavManeuverType(step);
+  }
+  function maneuverText(step) {
+    if (!isTurnStep(step) && !isRoundaboutStep(step)) return "";
+    if (isRoundaboutStep(step)) return roundaboutManeuverText(step, null);
+    if (isInterchangeStep(step)) return interchangeVoiceText(step);
+    const m = step.modifier || "";
+    if (m === "uturn") return "\u0420\u0430\u0437\u0432\u043E\u0440\u043E\u0442";
+    if (m.includes("left")) return "\u041F\u043E\u0432\u0435\u0440\u043D\u0438\u0442\u0435 \u043D\u0430\u043B\u0435\u0432\u043E";
+    if (m.includes("right")) return "\u041F\u043E\u0432\u0435\u0440\u043D\u0438\u0442\u0435 \u043D\u0430\u043F\u0440\u0430\u0432\u043E";
+    return "";
+  }
+  function isCameraBehind(cam, heading) {
+    if (cam.dir == null || heading == null) return S.noDirPolicy === "warn";
+    return angleDiff(cam.dir, heading) <= S.tolerance;
+  }
+  var _queue, _busy, _phraseId, MAX_QUEUE, _lastText, _lastSpeakTs, DEDUPE_MS, TTS_RATE, TTS_PITCH;
+  var init_voice = __esm({
+    "js/voice.js"() {
+      init_state();
+      init_geo();
+      init_platform();
+      init_tts_ru();
+      init_maneuver_filter();
+      init_interchange();
+      init_roundabout();
+      init_telemetry();
+      _queue = [];
+      _busy = false;
+      _phraseId = 0;
+      MAX_QUEUE = 4;
+      _lastText = "";
+      _lastSpeakTs = 0;
+      DEDUPE_MS = 6500;
+      TTS_RATE = 0.98;
+      TTS_PITCH = 1;
+    }
+  });
+
+  // js/router.js
+  function getRouterBackend() {
+    return S.routerBackend || RouterBackend.OSRM;
+  }
+  function buildRouteRequestUrl(from, to, opts = {}) {
+    const backend = getRouterBackend();
+    if (backend === RouterBackend.VALHALLA) {
+      throw new Error("Valhalla: \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043F\u0430\u0439\u043A \u0424\u0430\u0437\u0430 4)");
+    }
+    const pts = opts.waypoints?.length ? opts.waypoints : [from, to];
+    const coordStr = pts.map((p) => `${p.lon},${p.lat}`).join(";");
+    let url = OSRM_BASE + coordStr + "?overview=full&geometries=geojson&steps=true&annotations=speed";
+    if (opts.alternatives) url += "&alternatives=2";
+    if (opts.rerouteBearing != null && opts.rerouteRadius != null && pts.length === 2) {
+      url += "&bearings=" + opts.rerouteBearing + ",45;&radiuses=" + opts.rerouteRadius + ";";
+    }
+    return url;
+  }
+  function parseRouteResponse(json) {
+    if (!json?.routes?.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    return json.routes;
+  }
+  var RouterBackend, OSRM_BASE;
+  var init_router = __esm({
+    "js/router.js"() {
+      init_state();
+      RouterBackend = { OSRM: "osrm", VALHALLA: "valhalla" };
+      OSRM_BASE = "https://router.project-osrm.org/route/v1/driving/";
+    }
+  });
+
+  // js/route-quality.js
+  function assessRouteQuality(route) {
+    const geom = route?.geometry;
+    if (!geom || geom.n < 2) return RouteQuality.OK;
+    const totalM = geom.s[geom.n - 1] || 0;
+    if (totalM < 500) return RouteQuality.OK;
+    let segSum = 0;
+    for (let i2 = 1; i2 < geom.n; i2++) segSum += geom.s[i2] - geom.s[i2 - 1];
+    const avgSeg = segSum / Math.max(1, geom.n - 1);
+    const maneuvers = geom.maneuvers?.length || 0;
+    const perKm = totalM > 0 ? maneuvers / totalM * 1e3 : 0;
+    if (avgSeg < ROUTE_LOW_AVG_SEG_M || perKm > ROUTE_LOW_MANEUVER_PER_KM) {
+      return RouteQuality.LOW;
+    }
+    return RouteQuality.OK;
+  }
+  var RouteQuality;
+  var init_route_quality = __esm({
+    "js/route-quality.js"() {
+      init_nav_constants();
+      RouteQuality = { OK: "OK", LOW: "LOW" };
+    }
+  });
+
   // js/cameras-snapshot.js
   function sampleRoutePoints(coords, stepM = 600) {
     if (!coords?.length) return [];
@@ -5435,17 +5585,6 @@
     if (!e || e.type !== "node" || e.lat == null || e.lon == null) return null;
     return cameraFromOsmTags(e.lat, e.lon, e.tags || {}, e.id);
   }
-  function pointInBbox(lat, lon, bbox) {
-    if (!bbox) return false;
-    return lat >= bbox.south && lat <= bbox.north && lon >= bbox.west && lon <= bbox.east;
-  }
-  function routeIntersectsBbox(coords, bbox) {
-    if (!coords?.length || !bbox) return false;
-    for (const c of coords) {
-      if (pointInBbox(c[0], c[1], bbox)) return true;
-    }
-    return false;
-  }
   function filterCamerasNearRoute(cameras, coords, aroundM = 80, sampleStepM = 600) {
     if (!cameras?.length || !coords?.length) return [];
     const samples = sampleRoutePoints(coords, sampleStepM);
@@ -5476,37 +5615,58 @@
     }
     return out;
   }
-  async function loadCamerasSnapshot(url = CAMERAS_SNAPSHOT_PATH) {
-    if (_snapCache) return _snapCache;
-    if (_snapPromise) return _snapPromise;
-    _snapPromise = (async () => {
-      try {
-        const r = await fetch(url, { cache: "no-cache" });
-        if (!r.ok) throw new Error("snapshot HTTP " + r.status);
-        const j = await r.json();
-        if (!Array.isArray(j.cameras)) throw new Error("snapshot: no cameras[]");
-        _snapCache = {
-          bbox: j.bbox || MOSCOW_CAM_BBOX,
-          cameras: j.cameras,
-          updated: j.updated || null,
-          count: j.count ?? j.cameras.length,
-          source: j.source || "osm"
-        };
-        return _snapCache;
-      } catch (e) {
-        console.warn("cameras snapshot:", e);
-        _snapCache = null;
-        return null;
-      } finally {
-        _snapPromise = null;
-      }
-    })();
-    return _snapPromise;
+  async function loadLegacyMoscowCameras() {
+    try {
+      const r = await fetch(CAMERAS_SNAPSHOT_PATH, { cache: "no-cache" });
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (!Array.isArray(j.cameras)) return null;
+      return {
+        bbox: j.bbox || MOSCOW_CAM_BBOX,
+        cameras: j.cameras,
+        updated: j.updated || null,
+        count: j.count ?? j.cameras.length,
+        source: j.source || "osm",
+        regions: ["moscow-legacy"]
+      };
+    } catch (e) {
+      return null;
+    }
   }
-  var MOSCOW_CAM_BBOX, CAMERAS_SNAPSHOT_PATH, CARD, _snapCache, _snapPromise;
+  async function loadCamerasSnapshotForRoute(coords) {
+    if (!coords?.length) return null;
+    const merged = await loadMergedLayer(coords, "cameras", "cameras", "id");
+    if (merged.items.length) {
+      return {
+        bbox: merged.bboxes[0] || MOSCOW_CAM_BBOX,
+        bboxes: merged.bboxes,
+        cameras: merged.items,
+        updated: merged.updated,
+        count: merged.items.length,
+        source: "osm-regions",
+        regions: merged.regions
+      };
+    }
+    const legacy = await loadLegacyMoscowCameras();
+    if (legacy && routeIntersectsBbox(coords, legacy.bbox)) return legacy;
+    const mos = await loadRegionLayer("moscow", "cameras");
+    if (mos?.cameras?.length && routeIntersectsBbox(coords, mos.bbox || MOSCOW_CAM_BBOX)) {
+      return {
+        bbox: mos.bbox || MOSCOW_CAM_BBOX,
+        cameras: mos.cameras,
+        updated: mos.updated,
+        count: mos.count ?? mos.cameras.length,
+        source: "osm",
+        regions: ["moscow"]
+      };
+    }
+    return null;
+  }
+  var MOSCOW_CAM_BBOX, CAMERAS_SNAPSHOT_PATH, CARD;
   var init_cameras_snapshot = __esm({
     "js/cameras-snapshot.js"() {
       init_geo();
+      init_osm_regions();
       MOSCOW_CAM_BBOX = {
         south: 55.55,
         west: 37.35,
@@ -5532,8 +5692,6 @@
         NW: 315,
         NNW: 337.5
       };
-      _snapCache = null;
-      _snapPromise = null;
     }
   });
 
@@ -5591,65 +5749,120 @@
     }
     return out;
   }
-  async function fetchJson(url) {
+  async function fetchGzipJson2(url) {
     const r = await fetch(url, { cache: "no-cache" });
-    if (!r.ok) throw new Error("highways snapshot HTTP " + r.status);
-    return r.json();
-  }
-  async function fetchGzipJson(url) {
-    const r = await fetch(url, { cache: "no-cache" });
-    if (!r.ok) throw new Error("highways snapshot.gz HTTP " + r.status);
+    if (!r.ok) throw new Error(url + " HTTP " + r.status);
     const buf = new Uint8Array(await r.arrayBuffer());
-    const text = new TextDecoder().decode(gunzipSync(buf));
-    return JSON.parse(text);
+    return JSON.parse(new TextDecoder().decode(gunzipSync(buf)));
   }
-  async function loadHighwaysSnapshot() {
-    if (_cache2) return _cache2;
-    if (_promise) return _promise;
-    _promise = (async () => {
+  async function loadLegacyMoscowHighways() {
+    try {
+      let j;
       try {
-        let j = null;
-        try {
-          j = await fetchGzipJson(HIGHWAYS_SNAPSHOT_GZ_PATH);
-        } catch (_e) {
-          j = await fetchJson(HIGHWAYS_SNAPSHOT_PATH);
-        }
-        if (!Array.isArray(j.ways)) throw new Error("snapshot: no ways[]");
-        const ways = [];
-        for (const raw of j.ways) {
-          const w = normalizeSnapshotWay(raw);
-          if (w) ways.push(w);
-        }
-        _cache2 = {
-          bbox: j.bbox || MOSCOW_CAM_BBOX,
-          ways,
-          updated: j.updated || null,
-          count: j.count ?? ways.length,
-          source: j.source || "osm"
-        };
-        return _cache2;
-      } catch (e) {
-        console.warn("highways snapshot:", e);
-        _cache2 = null;
-        return null;
-      } finally {
-        _promise = null;
+        j = await fetchGzipJson2(HIGHWAYS_SNAPSHOT_GZ_PATH);
+      } catch (_e) {
+        const r = await fetch(HIGHWAYS_SNAPSHOT_PATH, { cache: "no-cache" });
+        if (!r.ok) return null;
+        j = await r.json();
       }
-    })();
-    return _promise;
+      if (!Array.isArray(j.ways)) return null;
+      return {
+        bbox: j.bbox || MOSCOW_CAM_BBOX,
+        ways: j.ways.map(normalizeSnapshotWay).filter(Boolean),
+        updated: j.updated || null,
+        count: j.count ?? j.ways.length,
+        source: j.source || "osm",
+        regions: ["moscow-legacy"]
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+  function packWays(rawWays) {
+    const ways = [];
+    for (const raw of rawWays || []) {
+      const w = normalizeSnapshotWay(raw);
+      if (w) ways.push(w);
+    }
+    return ways;
+  }
+  async function loadHighwaysSnapshotForRoute(coords) {
+    if (!coords?.length) return null;
+    const key = coords.length + ":" + coords[0][0].toFixed(2) + "," + coords[0][1].toFixed(2) + ":" + coords[coords.length - 1][0].toFixed(2) + "," + coords[coords.length - 1][1].toFixed(2);
+    if (_cache2 && _cacheKey === key) return _cache2;
+    const byId = /* @__PURE__ */ new Map();
+    const regions = [];
+    let updated = null;
+    const bboxes = [];
+    const hw = await loadMergedLayer(coords, "highways", "ways", "id");
+    for (const raw of hw.items) {
+      const w = normalizeSnapshotWay(raw);
+      if (w && !byId.has(String(w.id))) byId.set(String(w.id), w);
+    }
+    regions.push(...hw.regions);
+    bboxes.push(...hw.bboxes);
+    if (hw.updated) updated = hw.updated;
+    const mw = await loadMergedLayer(coords, "motorways", "ways", "id");
+    for (const raw of mw.items) {
+      const w = normalizeSnapshotWay(raw);
+      if (w && !byId.has(String(w.id))) byId.set(String(w.id), w);
+    }
+    for (const id of mw.regions) {
+      if (!regions.includes(id)) regions.push(id);
+    }
+    bboxes.push(...mw.bboxes);
+    if (mw.updated && (!updated || mw.updated > updated)) updated = mw.updated;
+    if (!byId.size) {
+      const legacy = await loadLegacyMoscowHighways();
+      if (legacy?.ways?.length && routeIntersectsBbox(coords, legacy.bbox)) {
+        _cache2 = legacy;
+        _cacheKey = key;
+        return _cache2;
+      }
+      const mos = await loadRegionLayer("moscow", "highways");
+      if (mos?.ways?.length && routeIntersectsBbox(coords, mos.bbox || MOSCOW_CAM_BBOX)) {
+        _cache2 = {
+          bbox: mos.bbox || MOSCOW_CAM_BBOX,
+          ways: packWays(mos.ways),
+          updated: mos.updated,
+          count: mos.count,
+          source: "osm",
+          regions: ["moscow"]
+        };
+        _cacheKey = key;
+        return _cache2;
+      }
+      return null;
+    }
+    _cache2 = {
+      bbox: bboxes[0] || MOSCOW_CAM_BBOX,
+      bboxes,
+      ways: [...byId.values()],
+      updated,
+      count: byId.size,
+      source: "osm-regions",
+      regions
+    };
+    _cacheKey = key;
+    return _cache2;
   }
   function routeInHighwaysSnapshot(coords, snap) {
-    return !!(snap?.bbox && routeIntersectsBbox(coords, snap.bbox));
+    if (!snap) return false;
+    if (snap.bboxes?.length) {
+      return snap.bboxes.some((b) => routeIntersectsBbox(coords, b));
+    }
+    return !!(snap.bbox && routeIntersectsBbox(coords, snap.bbox));
   }
-  var HIGHWAYS_SNAPSHOT_PATH, HIGHWAYS_SNAPSHOT_GZ_PATH, _cache2, _promise;
+  var HIGHWAYS_SNAPSHOT_PATH, HIGHWAYS_SNAPSHOT_GZ_PATH, _cache2, _cacheKey;
   var init_highways_snapshot = __esm({
     "js/highways-snapshot.js"() {
       init_browser();
       init_cameras_snapshot();
+      init_osm_regions();
       HIGHWAYS_SNAPSHOT_PATH = "data/highways-moscow.json";
       HIGHWAYS_SNAPSHOT_GZ_PATH = "data/highways-moscow.json.gz";
       _cache2 = null;
-      _promise = null;
+      _cacheKey = null;
     }
   });
 
@@ -5835,10 +6048,50 @@
     if (haversine(pts[pts.length - 1], last) > 40) pts.push(last);
     return pts;
   }
+  async function loadUrbanPlacesNear(lat, lon) {
+    const pad = 0.05;
+    const coords = [
+      [lat - pad, lon - pad],
+      [lat + pad, lon + pad]
+    ];
+    if (_urbanPlaces) return _urbanPlaces;
+    if (_urbanPlacesPromise) return _urbanPlacesPromise;
+    _urbanPlacesPromise = (async () => {
+      try {
+        const merged = await loadMergedLayer(coords, "urban", "places", "id");
+        _urbanPlaces = merged.items || [];
+        return _urbanPlaces;
+      } catch (e) {
+        _urbanPlaces = [];
+        return _urbanPlaces;
+      } finally {
+        _urbanPlacesPromise = null;
+      }
+    })();
+    return _urbanPlacesPromise;
+  }
   async function checkUrbanZone(lat, lon) {
     const key = urbanCacheKey(lat, lon);
     if (_urbanCache.has(key)) return _urbanCache.get(key);
     const r = SPEED_LIMIT_URBAN_PLACE_RADIUS_M;
+    try {
+      const places = await loadUrbanPlacesNear(lat, lon);
+      if (places.length) {
+        const p = { lat, lon };
+        let urban2 = false;
+        for (const pl of places) {
+          const kind = String(pl.place || "").toLowerCase();
+          const rad = kind === "city" ? 18e3 : kind === "town" ? 6e3 : kind === "village" ? 2e3 : r;
+          if (haversine(p, pl) <= rad) {
+            urban2 = true;
+            break;
+          }
+        }
+        _urbanCache.set(key, urban2);
+        return urban2;
+      }
+    } catch (_e) {
+    }
     const q = `[out:json][timeout:18];
 (
   node["place"~"^(city|town|village|hamlet)$"](around:${r},${lat},${lon});
@@ -5990,7 +6243,7 @@ out tags geom;`;
     const wayTags = new Array(n).fill(null);
     const urbanSegments = new Array(n).fill(false);
     try {
-      const snap = await loadHighwaysSnapshot();
+      const snap = await loadHighwaysSnapshotForRoute(route.coords);
       if (snap?.ways?.length && routeInHighwaysSnapshot(route.coords, snap)) {
         const ways2 = filterWaysNearRoute(snap.ways, route.coords);
         if (token !== _highwayLoadToken || S.route !== route) return;
@@ -6003,7 +6256,8 @@ out tags geom;`;
           ms: Date.now() - t0,
           mode: "snapshot",
           snap_count: snap.count,
-          snap_updated: snap.updated || void 0
+          snap_updated: snap.updated || void 0,
+          regions: snap.regions
         });
         if (matched2 / n >= 0.35) {
           _highwayRetryStep = 0;
@@ -6342,7 +6596,7 @@ out tags geom;`;
     if (!isSpeedLimitGraceActive() || S.currentLimit == null) return null;
     return "\u0421\u0431\u0440\u043E\u0441\u044C\u0442\u0435 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0434\u043E " + S.currentLimit;
   }
-  var OVERPASS_MIRRORS, WAY_MATCH_MAX_M, CORRIDOR_AROUND_M, SAMPLE_STEP_M, SAMPLE_BATCH, OVERPASS_MIRROR_TIMEOUT_MS, COV_FLUSH_TICKS, _highwayLoadToken, _highwayRetryTimer, _highwayRetryStep, _graceUntil, _lastLimitKey, _lookaheadWarnedKey, _urbanCache, _cov, _covTicks, DAY_MAP, MAXSPEED_ZONE_KMH;
+  var OVERPASS_MIRRORS, WAY_MATCH_MAX_M, CORRIDOR_AROUND_M, SAMPLE_STEP_M, SAMPLE_BATCH, OVERPASS_MIRROR_TIMEOUT_MS, COV_FLUSH_TICKS, _highwayLoadToken, _highwayRetryTimer, _highwayRetryStep, _graceUntil, _lastLimitKey, _lookaheadWarnedKey, _urbanCache, _cov, _covTicks, DAY_MAP, MAXSPEED_ZONE_KMH, _urbanPlaces, _urbanPlacesPromise;
   var init_speed_limit = __esm({
     "js/speed-limit.js"() {
       init_state();
@@ -6352,6 +6606,7 @@ out tags geom;`;
       init_voice();
       init_nav_constants();
       init_highways_snapshot();
+      init_osm_regions();
       OVERPASS_MIRRORS = [
         "https://overpass-api.de/api/interpreter",
         "https://lz4.overpass-api.de/api/interpreter",
@@ -6383,6 +6638,8 @@ out tags geom;`;
         "de:rural": 100,
         "de:motorway": 130
       };
+      _urbanPlaces = null;
+      _urbanPlacesPromise = null;
     }
   });
 
@@ -6443,9 +6700,40 @@ out tags geom;`;
       return null;
     }
   }
+  async function attachOsmSignals(route) {
+    const geom = route?.geometry;
+    const coords = route?.coords;
+    if (!geom?.n || !coords?.length) return;
+    try {
+      const merged = await loadMergedLayer(coords, "signals", "signals", "id");
+      if (!merged.items.length) return;
+      const along = [];
+      for (const sig of merged.items) {
+        const hit = projectPointToRoute(geom, { lat: sig.lat, lon: sig.lon });
+        if (!hit || hit.lateral > 45) continue;
+        along.push({ s: hit.s, lat: sig.lat, lon: sig.lon, id: sig.id });
+      }
+      along.sort((a, b) => a.s - b.s);
+      geom.osmSignals = along;
+      if (geom.crossings?.length) {
+        for (const c of geom.crossings) {
+          c.hasSignal = along.some((s2) => Math.abs(s2.s - c.s) < 35);
+        }
+      }
+      telemetry_default.log("nav", {
+        sub: "osm_signals_attached",
+        count: along.length,
+        regions: merged.regions
+      });
+    } catch (e) {
+      console.warn("osm signals:", e);
+    }
+  }
   function attachRouteGeometry(route) {
     delete route._stepSList;
     ensureRouteGeometry(route);
+    attachOsmSignals(route).catch(() => {
+    });
     S.routeQuality = assessRouteQuality(route);
     resetRouteSnap();
     resetCrossingTelemetry();
@@ -6848,8 +7136,8 @@ out body;`;
     }
     const CAM_AROUND_M = 80;
     try {
-      const snap = await loadCamerasSnapshot();
-      if (snap?.cameras?.length && routeIntersectsBbox(coords, snap.bbox)) {
+      const snap = await loadCamerasSnapshotForRoute(coords);
+      if (snap?.cameras?.length) {
         S.cameras = filterCamerasNearRoute(snap.cameras, coords, CAM_AROUND_M);
         S.camLoadStatus = "ok";
         if (S.cameras.length) {
@@ -6863,7 +7151,8 @@ out body;`;
           ms: Date.now() - t0,
           mode: "snapshot",
           snap_count: snap.count,
-          snap_updated: snap.updated || void 0
+          snap_updated: snap.updated || void 0,
+          regions: snap.regions
         });
         updateCamStatusUI();
         return;
@@ -7190,6 +7479,7 @@ out body;`;
       init_speed_limit();
       init_snap_quality();
       init_cameras_snapshot();
+      init_osm_regions();
       NON_MOTOR_HIGHWAYS = /* @__PURE__ */ new Set([
         "footway",
         "pedestrian",

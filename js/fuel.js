@@ -6,6 +6,7 @@ import { projectPointToRoute } from './route-geometry.js';
 import { isNative } from './platform.js';
 import { getFuelProxyBase, fuelProxyNearbyUrl } from './fuel-config.js';
 import { applyCrowdReports, crowdStatusSuffix } from './fuel-crowd.js';
+import { loadMergedLayer } from './osm-regions.js';
 
 let _fuelRouteKey = null;
 
@@ -88,6 +89,28 @@ async function loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon){
 /** АЗС в bbox (для планировщика поездок, без S.route). */
 export async function fetchFuelStationsForBBox(minLat, minLon, maxLat, maxLon){
   return loadFuelStationsInBBox(minLat, minLon, maxLat, maxLon);
+}
+
+/** АЗС из снапшотов регионов (без Overpass), фильтр по bbox маршрута */
+async function loadFromSnapshot(){
+  const bb = routeBBox(0.02);
+  if(!bb) return null;
+  const [minLat, minLon, maxLat, maxLon] = bb;
+  const coords = [[minLat, minLon], [maxLat, maxLon]];
+  if(S.route?.coords?.length) coords.push(...S.route.coords);
+  const merged = await loadMergedLayer(coords, 'fuel', 'stations', 'osmId');
+  if(!merged.items.length) return null;
+  return merged.items
+    .filter(st => st.lat >= minLat && st.lat <= maxLat && st.lon >= minLon && st.lon <= maxLon)
+    .map(st => ({
+      osmId: String(st.osmId),
+      lat: st.lat,
+      lon: st.lon,
+      brand: st.brand || 'АЗС',
+      name: st.name || st.brand || 'АЗС',
+      status: 'unknown',
+      tags: {}
+    }));
 }
 
 /** АЗС из OpenStreetMap (Overpass): координаты + бренд. Наличия здесь нет. */
@@ -222,11 +245,17 @@ export async function ensureFuelStations(force){
   S.fuelStatus = 'loading';
   S.fuelSource = 'osm';
   try{
-    const stations = await loadFromOverpass();
+    let stations = await loadFromSnapshot();
+    if(stations?.length){
+      S.fuelSource = 'osm-snapshot';
+    } else {
+      stations = await loadFromOverpass();
+    }
     await enrichFromGdebenz(stations);
     const crowdN = applyCrowdReports(stations);
-    if(crowdN > 0 && S.fuelSource === 'osm') S.fuelSource = 'crowd';
-    else if(crowdN > 0 && S.fuelSource === 'gdebenz') S.fuelSource = 'gdebenz+crowd';
+    if(crowdN > 0 && (S.fuelSource === 'osm' || S.fuelSource === 'osm-snapshot')){
+      S.fuelSource = S.fuelSource === 'osm-snapshot' ? 'snapshot+crowd' : 'crowd';
+    } else if(crowdN > 0 && S.fuelSource === 'gdebenz') S.fuelSource = 'gdebenz+crowd';
     S.fuelStations = stations;
     S.fuelStatus = 'ready';
   }catch(e){

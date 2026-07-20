@@ -4,7 +4,8 @@ import { curPos } from './gps.js';
 import { updateCamStatusUI } from './cam-status.js';
 import {
   buildRouteGeometry, resetRouteSnap, getRouteSnapForNav, getNavSnap,
-  remainingDistanceS, findSForLatLon, interpolateAtS, avgTangentDeg
+  remainingDistanceS, findSForLatLon, interpolateAtS, avgTangentDeg,
+  projectPointToRoute
 } from './route-geometry.js';
 import { buildCrossingsData, resetCrossingTelemetry } from './crossings.js';
 import { loadRouteElevation } from './elevation.js';
@@ -38,9 +39,9 @@ import { clearCachedManeuver } from './snap-quality.js';
 import {
   cameraFromOverpassNode,
   filterCamerasNearRoute,
-  loadCamerasSnapshot,
-  routeIntersectsBbox
+  loadCamerasSnapshotForRoute
 } from './cameras-snapshot.js';
+import { loadMergedLayer } from './osm-regions.js';
 
 /** Типы OSM highway без проезда для мото/авто (аудит после Overpass). */
 export const NON_MOTOR_HIGHWAYS = new Set([
@@ -118,9 +119,41 @@ export function ensureRouteGeometry(route){
   }
 }
 
+/** OSM traffic_signals вдоль маршрута (координаты; live-фаз нет) */
+async function attachOsmSignals(route){
+  const geom = route?.geometry;
+  const coords = route?.coords;
+  if(!geom?.n || !coords?.length) return;
+  try{
+    const merged = await loadMergedLayer(coords, 'signals', 'signals', 'id');
+    if(!merged.items.length) return;
+    const along = [];
+    for(const sig of merged.items){
+      const hit = projectPointToRoute(geom, { lat: sig.lat, lon: sig.lon });
+      if(!hit || hit.lateral > 45) continue;
+      along.push({ s: hit.s, lat: sig.lat, lon: sig.lon, id: sig.id });
+    }
+    along.sort((a, b) => a.s - b.s);
+    geom.osmSignals = along;
+    if(geom.crossings?.length){
+      for(const c of geom.crossings){
+        c.hasSignal = along.some(s => Math.abs(s.s - c.s) < 35);
+      }
+    }
+    telemetry.log('nav', {
+      sub: 'osm_signals_attached',
+      count: along.length,
+      regions: merged.regions
+    });
+  }catch(e){
+    console.warn('osm signals:', e);
+  }
+}
+
 function attachRouteGeometry(route){
   delete route._stepSList;
   ensureRouteGeometry(route);
+  attachOsmSignals(route).catch(() => {});
   S.routeQuality = assessRouteQuality(route);
   resetRouteSnap();
   resetCrossingTelemetry();
@@ -554,10 +587,10 @@ export async function loadCameras(){
 
   const CAM_AROUND_M = 80;
 
-  // 1) Снапшот с GitHub (Москва) — без Overpass в поездке
+  // 1) Снапшоты регионов (Москва / МО / СПб…) — без Overpass в поездке
   try{
-    const snap = await loadCamerasSnapshot();
-    if(snap?.cameras?.length && routeIntersectsBbox(coords, snap.bbox)){
+    const snap = await loadCamerasSnapshotForRoute(coords);
+    if(snap?.cameras?.length){
       S.cameras = filterCamerasNearRoute(snap.cameras, coords, CAM_AROUND_M);
       S.camLoadStatus = 'ok';
       if(S.cameras.length){
@@ -571,7 +604,8 @@ export async function loadCameras(){
         ms: Date.now() - t0,
         mode: 'snapshot',
         snap_count: snap.count,
-        snap_updated: snap.updated || undefined
+        snap_updated: snap.updated || undefined,
+        regions: snap.regions
       });
       updateCamStatusUI();
       return;

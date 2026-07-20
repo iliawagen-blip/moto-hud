@@ -17,9 +17,10 @@ import {
 } from './nav-constants.js';
 import {
   filterWaysNearRoute,
-  loadHighwaysSnapshot,
+  loadHighwaysSnapshotForRoute,
   routeInHighwaysSnapshot
 } from './highways-snapshot.js';
+import { loadMergedLayer, pointNearAny } from './osm-regions.js';
 
 /** @typedef {'osm'|'implicit'|'default'|'none'} SpeedLimitSource */
 /** @typedef {{ speed?: number, unit?: string, unknown?: boolean, none?: boolean }} MaxspeedEntry */
@@ -281,11 +282,60 @@ export function sampleRoutePoints(coords, stepM = SAMPLE_STEP_M){
   return pts;
 }
 
+/** @type {Array<{lat:number,lon:number}>|null} */
+let _urbanPlaces = null;
+/** @type {Promise<Array>|null} */
+let _urbanPlacesPromise = null;
+
+async function loadUrbanPlacesNear(lat, lon){
+  // грубый bbox вокруг точки → регионы каталога
+  const pad = 0.05;
+  const coords = [
+    [lat - pad, lon - pad],
+    [lat + pad, lon + pad]
+  ];
+  if(_urbanPlaces) return _urbanPlaces;
+  if(_urbanPlacesPromise) return _urbanPlacesPromise;
+  _urbanPlacesPromise = (async () => {
+    try{
+      const merged = await loadMergedLayer(coords, 'urban', 'places', 'id');
+      _urbanPlaces = merged.items || [];
+      return _urbanPlaces;
+    }catch(e){
+      _urbanPlaces = [];
+      return _urbanPlaces;
+    }finally{
+      _urbanPlacesPromise = null;
+    }
+  })();
+  return _urbanPlacesPromise;
+}
+
 export async function checkUrbanZone(lat, lon){
   const key = urbanCacheKey(lat, lon);
   if(_urbanCache.has(key)) return _urbanCache.get(key);
 
   const r = SPEED_LIMIT_URBAN_PLACE_RADIUS_M;
+
+  // 1) снапшот place nodes — радиус зависит от типа (city ≠ 500 м)
+  try{
+    const places = await loadUrbanPlacesNear(lat, lon);
+    if(places.length){
+      const p = { lat, lon };
+      let urban = false;
+      for(const pl of places){
+        const kind = String(pl.place || '').toLowerCase();
+        const rad = kind === 'city' ? 18000
+          : kind === 'town' ? 6000
+          : kind === 'village' ? 2000
+          : r; // hamlet / default
+        if(haversine(p, pl) <= rad){ urban = true; break; }
+      }
+      _urbanCache.set(key, urban);
+      return urban;
+    }
+  }catch(_e){ /* fall through */ }
+
   const q = `[out:json][timeout:18];
 (
   node["place"~"^(city|town|village|hamlet)$"](around:${r},${lat},${lon});
@@ -470,9 +520,9 @@ export async function loadRouteHighwayTypes(route){
   const wayTags = new Array(n).fill(null);
   const urbanSegments = new Array(n).fill(false);
 
-  // 1) Снапшот Москвы (arterial + maxspeed) — без Overpass
+  // 1) Снапшоты регионов (arterial + country motorways) — без Overpass
   try{
-    const snap = await loadHighwaysSnapshot();
+    const snap = await loadHighwaysSnapshotForRoute(route.coords);
     if(snap?.ways?.length && routeInHighwaysSnapshot(route.coords, snap)){
       const ways = filterWaysNearRoute(snap.ways, route.coords);
       if(token !== _highwayLoadToken || S.route !== route) return;
@@ -485,15 +535,14 @@ export async function loadRouteHighwayTypes(route){
         ms: Date.now() - t0,
         mode: 'snapshot',
         snap_count: snap.count,
-        snap_updated: snap.updated || undefined
+        snap_updated: snap.updated || undefined,
+        regions: snap.regions
       });
-      // Снапшот без полного residential — при слабом match дотягиваем Overpass
       if(matched / n >= 0.35){
         _highwayRetryStep = 0;
         refineUrbanSegments(route, highwayTypes, urbanSegments, token).catch(() => {});
         return;
       }
-      // иначе падаем в corridor ниже (малые дворы вне снапшота)
     }
   }catch(e){
     console.warn('highways snapshot path:', e);
