@@ -668,7 +668,7 @@
       Съезды: slight &lt;18° и path-diverge на пологой дуге не голосуют «Съезд» (анти-спам Варшавка).
       GPS: step/dt при gap не обнуляет скорость; телепорт &gt;400 м не кормит offroute.
       Съезд path-diverge только гибрид: геометрия + слабый OSRM (ramp/fork/lanes), не дуга одна.
-      Камеры: при успехе Overpass → localStorage по маршруту; при abort — кэш (CAM*).
+      Камеры: в Москве — снапшот <code>data/cameras-moscow.json</code> (cron Actions); иначе Overpass-коридор; abort → localStorage (CAM*).
       <strong>Тема:</strong> селекты синхронизированы с приложением и localStorage <code>moto-hud-theme</code>.
       <strong>На ПК</strong> справа — карта на всё свободное место; старт GPS — поиск адреса (Nominatim).
       <strong>Адрес:</strong> «НАСТР.» → очистите поле финиша → «🔎 Найти».

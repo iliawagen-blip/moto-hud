@@ -8,7 +8,8 @@ const CACHE = 'moto-hud-shell-mr7mot5k';
 const SHELL = [
   './manifest.json',
   './icon.svg',
-  './fixtures/serpentine-demo.gpx'
+  './fixtures/serpentine-demo.gpx',
+  './data/cameras-moscow.json'
 ];
 
 self.addEventListener('install', event => {

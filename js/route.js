@@ -35,6 +35,12 @@ import { HIGHWAY_CLASSES } from './maneuver-filter.js';
 import { assessRouteQuality, RouteQuality } from './route-quality.js';
 import { parseMaxspeedsFromRoute, parseSegmentSpeedsFromRoute, loadRouteHighwayTypes, overpassFetch, sampleRoutePoints } from './speed-limit.js';
 import { clearCachedManeuver } from './snap-quality.js';
+import {
+  cameraFromOverpassNode,
+  filterCamerasNearRoute,
+  loadCamerasSnapshot,
+  routeIntersectsBbox
+} from './cameras-snapshot.js';
 
 /** Типы OSM highway без проезда для мото/авто (аудит после Overpass). */
 export const NON_MOTOR_HIGHWAYS = new Set([
@@ -491,6 +497,30 @@ export async function recalcRoute(){
   }
 }
 
+/** Overpass-коридор (вне Москвы / нет снапшота) */
+async function fetchCamerasFromOverpassCorridor(coords, aroundM = 80){
+  const samples = sampleRoutePoints(coords, 600);
+  const byKey = new Map();
+  const BATCH = 16;
+  for(let i = 0; i < samples.length; i += BATCH){
+    const batch = samples.slice(i, i + BATCH);
+    const parts = batch.map(p =>
+      `node["highway"="speed_camera"](around:${aroundM},${p.lat.toFixed(5)},${p.lon.toFixed(5)});\n` +
+      `node["enforcement"="maxspeed"](around:${aroundM},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
+    ).join('\n');
+    const q = `[out:json][timeout:18];\n(\n${parts}\n);\nout body;`;
+    const j = await overpassFetch(q, 22000);
+    for(const e of (j.elements || [])){
+      const cam = cameraFromOverpassNode(e);
+      if(!cam) continue;
+      const key = cam.id || (cam.lat.toFixed(5) + ',' + cam.lon.toFixed(5));
+      if(byKey.has(key)) continue;
+      byKey.set(key, { lat: cam.lat, lon: cam.lon, speed: cam.speed, dir: cam.dir });
+    }
+  }
+  return [...byKey.values()];
+}
+
 export async function loadCameras(){
   if(!S.cams || !S.route){
     S.cameras = [];
@@ -511,7 +541,7 @@ export async function loadCameras(){
     updateCamStatusUI();
     return;
   }
-  // Сразу показать кэш маршрута, пока Overpass тянется (обратный рейс / утренний abort)
+  // Сразу показать кэш маршрута, пока тянется снапшот / Overpass
   const warm = loadCamerasFromRouteCache(coords);
   if(warm?.length && !S.cameras.length){
     S.cameras = warm;
@@ -521,63 +551,52 @@ export async function loadCameras(){
     S.camLoadStatus = 'loading';
     updateCamStatusUI();
   }
-  // Коридор вдоль маршрута (не bbox) — иначе Overpass таймаутит на длинных трассах
-  const samples = sampleRoutePoints(coords, 600);
+
   const CAM_AROUND_M = 80;
-  const byKey = new Map();
-  const CARD = { N:0, NNE:22.5, NE:45, ENE:67.5, E:90, ESE:112.5, SE:135, SSE:157.5,
-                 S:180, SSW:202.5, SW:225, WSW:247.5, W:270, WNW:292.5, NW:315, NNW:337.5 };
+
+  // 1) Снапшот с GitHub (Москва) — без Overpass в поездке
   try{
-    const BATCH = 16;
-    for(let i = 0; i < samples.length; i += BATCH){
-      const batch = samples.slice(i, i + BATCH);
-      const parts = batch.map(p =>
-        `node["highway"="speed_camera"](around:${CAM_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});\n` +
-        `node["enforcement"="maxspeed"](around:${CAM_AROUND_M},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
-      ).join('\n');
-      const q = `[out:json][timeout:18];\n(\n${parts}\n);\nout body;`;
-      const j = await overpassFetch(q, 22000);
-      for(const e of (j.elements || [])){
-        if(e.type !== 'node' || e.lat == null) continue;
-        const key = e.id != null ? String(e.id) : (e.lat.toFixed(5) + ',' + e.lon.toFixed(5));
-        if(byKey.has(key)) continue;
-        const t = e.tags || {};
-        let dir = null;
-        if(t.direction != null){
-          const raw = String(t.direction).trim();
-          const num = parseFloat(raw);
-          if(!isNaN(num)) dir = ((num % 360) + 360) % 360;
-          else {
-            const up = raw.toUpperCase();
-            if(CARD[up] != null) dir = CARD[up];
-          }
-        }
-        const speed = t.maxspeed ? parseInt(t.maxspeed, 10) : null;
-        byKey.set(key, {
-          lat: e.lat,
-          lon: e.lon,
-          speed: Number.isFinite(speed) ? speed : null,
-          dir
-        });
+    const snap = await loadCamerasSnapshot();
+    if(snap?.cameras?.length && routeIntersectsBbox(coords, snap.bbox)){
+      S.cameras = filterCamerasNearRoute(snap.cameras, coords, CAM_AROUND_M);
+      S.camLoadStatus = 'ok';
+      if(S.cameras.length){
+        saveCamerasToRouteCache(coords, S.cameras);
+        saveLastRun();
       }
+      telemetry.log('nav', {
+        sub: 'cameras_loaded',
+        count: S.cameras.length,
+        with_speed: S.cameras.filter(c => c.speed != null).length,
+        ms: Date.now() - t0,
+        mode: 'snapshot',
+        snap_count: snap.count,
+        snap_updated: snap.updated || undefined
+      });
+      updateCamStatusUI();
+      return;
     }
-    S.cameras = [...byKey.values()];
+  }catch(e){
+    console.warn('cameras snapshot path:', e);
+  }
+
+  // 2) Overpass-коридор вне зоны снапшота / если файла нет
+  try{
+    S.cameras = await fetchCamerasFromOverpassCorridor(coords, CAM_AROUND_M);
     S.camLoadStatus = 'ok';
     if(S.cameras.length){
       saveCamerasToRouteCache(coords, S.cameras);
       saveLastRun();
     }
-    const withSpeed = S.cameras.filter(c => c.speed != null).length;
     telemetry.log('nav', {
       sub: 'cameras_loaded',
       count: S.cameras.length,
-      with_speed: withSpeed,
+      with_speed: S.cameras.filter(c => c.speed != null).length,
       ms: Date.now() - t0,
       mode: 'corridor'
     });
   }catch(e){
     console.warn('Камеры не загрузились:', e);
-    // Не обнулять: взять кэш маршрута / уже загруженные в сессии (field 06-58 Overpass abort)
     const cached = loadCamerasFromRouteCache(coords);
     if(cached?.length){
       S.cameras = cached;
