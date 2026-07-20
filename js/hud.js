@@ -400,8 +400,12 @@ export function onTick(){
         telemetry.log('nav', {
           sub: 'path_diverge',
           dist: Math.round(nm.dist),
-          side: nm.step?.modifier?.includes('left') ? 'left' : 'right',
-          s0: snap?.s != null ? Math.round(snap.s) : null
+          side: nm.step?._divergeSide ||
+            (nm.step?.modifier?.includes('left') ? 'left' :
+              nm.step?.modifier?.includes('right') ? 'right' : null),
+          s0: snap?.s != null ? Math.round(snap.s) : null,
+          osrm_hint: nm.osrmHint || undefined,
+          hybrid: true
         });
       }
       const rbCtx = snap ? getRoundaboutContext(snap, S.route) : null;

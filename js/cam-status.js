@@ -17,10 +17,12 @@ export function updateCamStatusUI(){
       chip.textContent = '📷 …';
       chip.className = 'chip';
       chip.title = 'Загрузка камер по маршруту…';
-    } else if(st === 'ok'){
-      chip.textContent = '📷 ' + n;
+    } else if(st === 'ok' || st === 'stale'){
+      chip.textContent = '📷 ' + n + (st === 'stale' ? '*' : '');
       chip.className = 'chip ok';
-      chip.title = 'Камер на маршруте: ' + n;
+      chip.title = st === 'stale'
+        ? 'Камеры из кэша (Overpass недоступен): ' + n
+        : 'Камер на маршруте: ' + n;
     } else if(st === 'err'){
       chip.textContent = '📷 ✕';
       chip.className = 'chip err';
@@ -47,10 +49,12 @@ export function updateCamStatusUI(){
   if(st === 'loading'){
     txt.textContent = 'CAM…';
     wrap.title = 'Загрузка камер…';
-  } else if(st === 'ok'){
+  } else if(st === 'ok' || st === 'stale'){
     dot.classList.add('ok');
-    txt.textContent = 'CAM ' + n;
-    wrap.title = 'Камер на маршруте: ' + n;
+    txt.textContent = 'CAM ' + n + (st === 'stale' ? '*' : '');
+    wrap.title = st === 'stale'
+      ? 'Камеры из кэша: ' + n
+      : 'Камер на маршруте: ' + n;
   } else if(st === 'err'){
     dot.classList.add('err');
     txt.textContent = 'CAM ✕';

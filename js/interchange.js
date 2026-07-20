@@ -9,7 +9,10 @@ import {
   INTERCHANGE_DIVERGE_MAX_M,
   INTERCHANGE_DIVERGE_LATERAL_M,
   INTERCHANGE_DIVERGE_STEP_M,
-  INTERCHANGE_DIVERGE_MIN_TURN_DEG
+  INTERCHANGE_DIVERGE_MIN_TURN_DEG,
+  INTERCHANGE_DIVERGE_HINT_AHEAD_M,
+  INTERCHANGE_DIVERGE_HINT_BAND_M,
+  MANEUVER_PASSED_M
 } from './nav-constants.js';
 
 /** OSRM-типы, которые на развязке важнее угла поворота */
@@ -29,6 +32,9 @@ export function isRampStep(step){
  * @param {object} [maneuver]
  */
 export function interchangeSide(step, maneuver){
+  if(step?._divergeSide === 'left' || step?._divergeSide === 'right'){
+    return step._divergeSide;
+  }
   const mod = (step?.modifier || '').toLowerCase();
   if(mod.includes('left')) return 'left';
   if(mod.includes('right')) return 'right';
@@ -95,6 +101,60 @@ export function extractExitLaneHint(step){
     if(left && right) return { side: null, text: 'Полоса по стрелке' };
   }
   return null;
+}
+
+/**
+ * Слабый сигнал OSRM для гибрида path_diverge (не invent из геометрии).
+ * @param {Array<{ step: object, s: number }>} maneuvers
+ * @param {number} curS
+ * @param {{ nearS?: number, maxAheadM?: number }} [opts]
+ * @returns {{ step: object, along: number, side: 'left'|'right'|null, kind: string }|null}
+ */
+export function findOsrmExitHint(maneuvers, curS, opts = {}){
+  if(!maneuvers?.length || curS == null || !Number.isFinite(curS)) return null;
+  const maxAhead = opts.maxAheadM ?? INTERCHANGE_DIVERGE_HINT_AHEAD_M;
+  const nearS = opts.nearS;
+  const band = opts.nearBandM ?? INTERCHANGE_DIVERGE_HINT_BAND_M;
+  let best = null;
+
+  for(const m of maneuvers){
+    const st = m?.step;
+    if(!st || st.type === 'depart' || st.type === 'arrive') continue;
+    if(curS > m.s + MANEUVER_PASSED_M) continue;
+    const along = m.s - curS;
+    if(!(along >= 0) || along > maxAhead) continue;
+    if(nearS != null && Math.abs(m.s - nearS) > band) continue;
+
+    const mod = (st.modifier || '').toLowerCase();
+    let kind = null;
+    let side = interchangeSide(st, m);
+
+    if(st.type === 'off ramp' || st.type === 'on ramp' || st.type === 'fork'){
+      kind = 'ramp_fork';
+    } else if(
+      (st.type === 'continue' || st.type === 'notification') &&
+      mod.includes('slight') && (mod.includes('left') || mod.includes('right'))
+    ){
+      kind = 'continue_slight';
+    } else {
+      const lane = extractExitLaneHint(st);
+      if(lane?.side){
+        kind = 'lanes';
+        if(!side) side = lane.side;
+      }
+    }
+    if(!kind) continue;
+    if(!best || along < best.along){
+      best = { step: st, along, side, kind };
+    }
+  }
+  return best;
+}
+
+/** Геометрия и OSRM не спорят о стороне */
+export function divergeSidesCompatible(geoSide, osrmSide){
+  if(!geoSide || !osrmSide) return true;
+  return geoSide === osrmSide;
 }
 
 function findSegAtS(geom, s){

@@ -19,7 +19,7 @@ export const S = {
   routeAlternatives: [],  // варианты маршрута (OSRM alternatives)
   selectedRouteIdx: 0,
   cameras: [],
-  camLoadStatus: 'idle',  // idle | loading | ok | err | off
+  camLoadStatus: 'idle',  // idle | loading | ok | stale | err | off
   camWarned: new Set(),
   offRouteState: 'ON_ROUTE',
   snapQuality: 'GOOD',

@@ -187,7 +187,7 @@ var init_state = __esm({
       selectedRouteIdx: 0,
       cameras: [],
       camLoadStatus: "idle",
-      // idle | loading | ok | err | off
+      // idle | loading | ok | stale | err | off
       camWarned: /* @__PURE__ */ new Set(),
       offRouteState: "ON_ROUTE",
       snapQuality: "GOOD",
@@ -1417,7 +1417,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, OFF_ROUTE_LOST_HOLD_CONFIRM_MULT, REROUTE_SUCCESS_COOLDOWN_MS, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_TURN_MIN_ANGLE_DEG, MANEUVER_SOFT_MAX_AHEAD_M, INTERCHANGE_DIVERGE_MIN_M, INTERCHANGE_DIVERGE_MAX_M, INTERCHANGE_DIVERGE_LATERAL_M, INTERCHANGE_DIVERGE_STEP_M, INTERCHANGE_DIVERGE_MIN_TURN_DEG, INTERCHANGE_DIVERGE_HUD_MAX_M, INTERCHANGE_RAMP_MIN_ANGLE_DEG, INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2, GPS_SPEED_TELEPORT_M, GPS_SPEED_COAST_MAX_DT_S, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, OFF_ROUTE_LOST_HOLD_CONFIRM_MULT, REROUTE_SUCCESS_COOLDOWN_MS, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_TURN_MIN_ANGLE_DEG, MANEUVER_SOFT_MAX_AHEAD_M, INTERCHANGE_DIVERGE_MIN_M, INTERCHANGE_DIVERGE_MAX_M, INTERCHANGE_DIVERGE_LATERAL_M, INTERCHANGE_DIVERGE_STEP_M, INTERCHANGE_DIVERGE_MIN_TURN_DEG, INTERCHANGE_DIVERGE_HUD_MAX_M, INTERCHANGE_DIVERGE_HINT_AHEAD_M, INTERCHANGE_DIVERGE_HINT_BAND_M, INTERCHANGE_RAMP_MIN_ANGLE_DEG, INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2, GPS_SPEED_TELEPORT_M, GPS_SPEED_COAST_MAX_DT_S, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1484,6 +1484,8 @@ var init_nav_constants = __esm({
     INTERCHANGE_DIVERGE_STEP_M = 40;
     INTERCHANGE_DIVERGE_MIN_TURN_DEG = 20;
     INTERCHANGE_DIVERGE_HUD_MAX_M = 450;
+    INTERCHANGE_DIVERGE_HINT_AHEAD_M = 500;
+    INTERCHANGE_DIVERGE_HINT_BAND_M = 240;
     INTERCHANGE_RAMP_MIN_ANGLE_DEG = 18;
     INTERCHANGE_VOICE_FAR_MIN_M = 800;
     INTERCHANGE_VOICE_FAR_MAX_M = 1200;
@@ -2283,6 +2285,9 @@ function isRampStep(step) {
   return t === "off ramp" || t === "on ramp";
 }
 function interchangeSide(step, maneuver) {
+  if (step?._divergeSide === "left" || step?._divergeSide === "right") {
+    return step._divergeSide;
+  }
   const mod = (step?.modifier || "").toLowerCase();
   if (mod.includes("left")) return "left";
   if (mod.includes("right")) return "right";
@@ -2340,6 +2345,44 @@ function extractExitLaneHint(step) {
     if (left && right) return { side: null, text: "\u041F\u043E\u043B\u043E\u0441\u0430 \u043F\u043E \u0441\u0442\u0440\u0435\u043B\u043A\u0435" };
   }
   return null;
+}
+function findOsrmExitHint(maneuvers, curS, opts = {}) {
+  if (!maneuvers?.length || curS == null || !Number.isFinite(curS)) return null;
+  const maxAhead = opts.maxAheadM ?? INTERCHANGE_DIVERGE_HINT_AHEAD_M;
+  const nearS = opts.nearS;
+  const band = opts.nearBandM ?? INTERCHANGE_DIVERGE_HINT_BAND_M;
+  let best = null;
+  for (const m of maneuvers) {
+    const st = m?.step;
+    if (!st || st.type === "depart" || st.type === "arrive") continue;
+    if (curS > m.s + MANEUVER_PASSED_M) continue;
+    const along = m.s - curS;
+    if (!(along >= 0) || along > maxAhead) continue;
+    if (nearS != null && Math.abs(m.s - nearS) > band) continue;
+    const mod = (st.modifier || "").toLowerCase();
+    let kind = null;
+    let side = interchangeSide(st, m);
+    if (st.type === "off ramp" || st.type === "on ramp" || st.type === "fork") {
+      kind = "ramp_fork";
+    } else if ((st.type === "continue" || st.type === "notification") && mod.includes("slight") && (mod.includes("left") || mod.includes("right"))) {
+      kind = "continue_slight";
+    } else {
+      const lane = extractExitLaneHint(st);
+      if (lane?.side) {
+        kind = "lanes";
+        if (!side) side = lane.side;
+      }
+    }
+    if (!kind) continue;
+    if (!best || along < best.along) {
+      best = { step: st, along, side, kind };
+    }
+  }
+  return best;
+}
+function divergeSidesCompatible(geoSide, osrmSide) {
+  if (!geoSide || !osrmSide) return true;
+  return geoSide === osrmSide;
 }
 function findSegAtS(geom, s2) {
   let lo = 0, hi = geom.n - 2;
@@ -2408,18 +2451,6 @@ function detectPathDiverge(geom, curS) {
   if (exitTan == null || isNaN(exitTan)) return null;
   if (angleDiff(tanDeg, exitTan) < INTERCHANGE_DIVERGE_MIN_TURN_DEG) return null;
   return first;
-}
-function syntheticDivergeStep(div) {
-  const mod = div.side === "left" ? "slight left" : "slight right";
-  return {
-    type: "off ramp",
-    modifier: mod,
-    name: "",
-    distance: div.distM,
-    _synthetic: "path_diverge",
-    bearing_before: 0,
-    bearing_after: div.side === "left" ? -25 : 25
-  };
 }
 var init_interchange = __esm({
   "js/interchange.js"() {
@@ -2741,10 +2772,10 @@ function updateCamStatusUI() {
       chip.textContent = "\u{1F4F7} \u2026";
       chip.className = "chip";
       chip.title = "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043A\u0430\u043C\u0435\u0440 \u043F\u043E \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0443\u2026";
-    } else if (st === "ok") {
-      chip.textContent = "\u{1F4F7} " + n;
+    } else if (st === "ok" || st === "stale") {
+      chip.textContent = "\u{1F4F7} " + n + (st === "stale" ? "*" : "");
       chip.className = "chip ok";
-      chip.title = "\u041A\u0430\u043C\u0435\u0440 \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0435: " + n;
+      chip.title = st === "stale" ? "\u041A\u0430\u043C\u0435\u0440\u044B \u0438\u0437 \u043A\u044D\u0448\u0430 (Overpass \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D): " + n : "\u041A\u0430\u043C\u0435\u0440 \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0435: " + n;
     } else if (st === "err") {
       chip.textContent = "\u{1F4F7} \u2715";
       chip.className = "chip err";
@@ -2768,10 +2799,10 @@ function updateCamStatusUI() {
   if (st === "loading") {
     txt.textContent = "CAM\u2026";
     wrap.title = "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043A\u0430\u043C\u0435\u0440\u2026";
-  } else if (st === "ok") {
+  } else if (st === "ok" || st === "stale") {
     dot.classList.add("ok");
-    txt.textContent = "CAM " + n;
-    wrap.title = "\u041A\u0430\u043C\u0435\u0440 \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0435: " + n;
+    txt.textContent = "CAM " + n + (st === "stale" ? "*" : "");
+    wrap.title = st === "stale" ? "\u041A\u0430\u043C\u0435\u0440\u044B \u0438\u0437 \u043A\u044D\u0448\u0430: " + n : "\u041A\u0430\u043C\u0435\u0440 \u043D\u0430 \u043C\u0430\u0440\u0448\u0440\u0443\u0442\u0435: " + n;
   } else if (st === "err") {
     dot.classList.add("err");
     txt.textContent = "CAM \u2715";
@@ -5312,6 +5343,48 @@ function loadLastRun() {
     return null;
   }
 }
+function routeCamCacheKey(coords) {
+  if (!coords?.length) return null;
+  const n = coords.length;
+  const pick = [coords[0], coords[Math.floor(n / 2)], coords[n - 1]];
+  return pick.map((c) => Number(c[0]).toFixed(3) + "," + Number(c[1]).toFixed(3)).join("|") + "|n" + n;
+}
+function readCamCacheStore() {
+  try {
+    const raw = localStorage.getItem(CAM_CACHE_KEY);
+    if (!raw) return { entries: {} };
+    const j = JSON.parse(raw);
+    return j && typeof j.entries === "object" ? j : { entries: {} };
+  } catch (e) {
+    return { entries: {} };
+  }
+}
+function writeCamCacheStore(store) {
+  try {
+    localStorage.setItem(CAM_CACHE_KEY, JSON.stringify(store));
+  } catch (e) {
+  }
+}
+function saveCamerasToRouteCache(coords, cameras) {
+  const key = routeCamCacheKey(coords);
+  if (!key || !cameras?.length) return;
+  const store = readCamCacheStore();
+  store.entries[key] = { ts: Date.now(), cameras };
+  const keys = Object.keys(store.entries);
+  if (keys.length > CAM_CACHE_MAX) {
+    keys.sort((a, b) => (store.entries[a].ts || 0) - (store.entries[b].ts || 0));
+    for (let i2 = 0; i2 < keys.length - CAM_CACHE_MAX; i2++) delete store.entries[keys[i2]];
+  }
+  writeCamCacheStore(store);
+}
+function loadCamerasFromRouteCache(coords) {
+  const key = routeCamCacheKey(coords);
+  if (!key) return null;
+  const ent = readCamCacheStore().entries[key];
+  if (!ent?.cameras?.length) return null;
+  if (ent.ts && Date.now() - ent.ts > CAM_CACHE_TTL_MS) return null;
+  return ent.cameras;
+}
 async function searchAddress(query) {
   const url = "https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ru&q=" + encodeURIComponent(query) + "&email=moto-hud-dev@users.noreply.github.com";
   const r = await fetch(url, {
@@ -5551,8 +5624,6 @@ async function loadCameras() {
     updateCamStatusUI();
     return;
   }
-  S.camLoadStatus = "loading";
-  updateCamStatusUI();
   const t0 = Date.now();
   const coords = S.route.coords;
   if (!coords?.length) {
@@ -5560,6 +5631,15 @@ async function loadCameras() {
     S.camLoadStatus = "err";
     updateCamStatusUI();
     return;
+  }
+  const warm = loadCamerasFromRouteCache(coords);
+  if (warm?.length && !S.cameras.length) {
+    S.cameras = warm;
+    S.camLoadStatus = "stale";
+    updateCamStatusUI();
+  } else {
+    S.camLoadStatus = "loading";
+    updateCamStatusUI();
   }
   const samples = sampleRoutePoints(coords, 600);
   const CAM_AROUND_M = 80;
@@ -5622,6 +5702,10 @@ out body;`;
     }
     S.cameras = [...byKey.values()];
     S.camLoadStatus = "ok";
+    if (S.cameras.length) {
+      saveCamerasToRouteCache(coords, S.cameras);
+      saveLastRun();
+    }
     const withSpeed = S.cameras.filter((c) => c.speed != null).length;
     telemetry_default.log("nav", {
       sub: "cameras_loaded",
@@ -5632,13 +5716,35 @@ out body;`;
     });
   } catch (e) {
     console.warn("\u041A\u0430\u043C\u0435\u0440\u044B \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C:", e);
-    S.cameras = [];
-    S.camLoadStatus = "err";
-    telemetry_default.log("nav", {
-      sub: "cameras_reload_failed",
-      message: String(e?.message || e).slice(0, 120),
-      ms: Date.now() - t0
-    });
+    const cached = loadCamerasFromRouteCache(coords);
+    if (cached?.length) {
+      S.cameras = cached;
+      S.camLoadStatus = "stale";
+      telemetry_default.log("nav", {
+        sub: "cameras_loaded",
+        count: S.cameras.length,
+        with_speed: S.cameras.filter((c) => c.speed != null).length,
+        ms: Date.now() - t0,
+        mode: "cache",
+        from_cache: true
+      });
+    } else if (S.cameras?.length) {
+      S.camLoadStatus = "stale";
+      telemetry_default.log("nav", {
+        sub: "cameras_reload_failed",
+        message: String(e?.message || e).slice(0, 120),
+        ms: Date.now() - t0,
+        kept: S.cameras.length
+      });
+    } else {
+      S.cameras = [];
+      S.camLoadStatus = "err";
+      telemetry_default.log("nav", {
+        sub: "cameras_reload_failed",
+        message: String(e?.message || e).slice(0, 120),
+        ms: Date.now() - t0
+      });
+    }
   }
   updateCamStatusUI();
 }
@@ -5785,11 +5891,20 @@ function findNextManeuver() {
     if (!hasIx) {
       const div = detectPathDiverge(geom, curS);
       if (div && div.distM <= INTERCHANGE_DIVERGE_HUD_MAX_M) {
-        return {
-          step: syntheticDivergeStep(div),
-          dist: div.distM,
-          pathDiverge: true
-        };
+        const hint = findOsrmExitHint(sorted, curS, {
+          nearS: div.atS,
+          maxAheadM: INTERCHANGE_DIVERGE_HINT_AHEAD_M
+        });
+        if (hint && divergeSidesCompatible(div.side, hint.side)) {
+          const step = { ...hint.step };
+          if (!interchangeSide(hint.step) && div.side) step._divergeSide = div.side;
+          return {
+            step,
+            dist: Math.min(div.distM, hint.along > 0 ? hint.along : div.distM),
+            pathDiverge: true,
+            osrmHint: hint.kind
+          };
+        }
       }
     }
     for (const m of sorted) {
@@ -5881,7 +5996,7 @@ function maneuverTurnAngle(step) {
   );
   return (bOut - bIn + 540) % 360 - 180;
 }
-var NON_MOTOR_HIGHWAYS, _nearMemoPos, _nearMemoVal, _nearIdx;
+var NON_MOTOR_HIGHWAYS, CAM_CACHE_KEY, CAM_CACHE_MAX, CAM_CACHE_TTL_MS, _nearMemoPos, _nearMemoVal, _nearIdx;
 var init_route = __esm({
   "js/route.js"() {
     init_state();
@@ -5913,6 +6028,9 @@ var init_route = __esm({
       "corridor",
       "elevator"
     ]);
+    CAM_CACHE_KEY = "moto-hud-cam-cache-v1";
+    CAM_CACHE_MAX = 24;
+    CAM_CACHE_TTL_MS = 14 * 24 * 3600 * 1e3;
     _nearMemoPos = null;
     _nearMemoVal = null;
     _nearIdx = 0;
@@ -25173,8 +25291,10 @@ function onTick() {
         telemetry_default.log("nav", {
           sub: "path_diverge",
           dist: Math.round(nm.dist),
-          side: nm.step?.modifier?.includes("left") ? "left" : "right",
-          s0: snap?.s != null ? Math.round(snap.s) : null
+          side: nm.step?._divergeSide || (nm.step?.modifier?.includes("left") ? "left" : nm.step?.modifier?.includes("right") ? "right" : null),
+          s0: snap?.s != null ? Math.round(snap.s) : null,
+          osrm_hint: nm.osrmHint || void 0,
+          hybrid: true
         });
       }
       const rbCtx = snap ? getRoundaboutContext(snap, S.route) : null;
