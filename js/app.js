@@ -4507,6 +4507,1151 @@ var init_route_quality = __esm({
   }
 });
 
+// node_modules/fflate/esm/browser.js
+function deflateSync(data, opts) {
+  return dopt(data, opts || {}, 0, 0);
+}
+function gunzipSync(data, opts) {
+  var st = gzs(data);
+  if (st + 8 > data.length)
+    err(6, "invalid gzip data");
+  return inflt(data.subarray(st, -8), { i: 2 }, opts && opts.out || new u8(gzl(data)), opts && opts.dictionary);
+}
+function strToU8(str, latin1) {
+  if (latin1) {
+    var ar_1 = new u8(str.length);
+    for (var i2 = 0; i2 < str.length; ++i2)
+      ar_1[i2] = str.charCodeAt(i2);
+    return ar_1;
+  }
+  if (te)
+    return te.encode(str);
+  var l = str.length;
+  var ar = new u8(str.length + (str.length >> 1));
+  var ai = 0;
+  var w = function(v) {
+    ar[ai++] = v;
+  };
+  for (var i2 = 0; i2 < l; ++i2) {
+    if (ai + 5 > ar.length) {
+      var n = new u8(ai + 8 + (l - i2 << 1));
+      n.set(ar);
+      ar = n;
+    }
+    var c = str.charCodeAt(i2);
+    if (c < 128 || latin1)
+      w(c);
+    else if (c < 2048)
+      w(192 | c >> 6), w(128 | c & 63);
+    else if (c > 55295 && c < 57344)
+      c = 65536 + (c & 1023 << 10) | str.charCodeAt(++i2) & 1023, w(240 | c >> 18), w(128 | c >> 12 & 63), w(128 | c >> 6 & 63), w(128 | c & 63);
+    else
+      w(224 | c >> 12), w(128 | c >> 6 & 63), w(128 | c & 63);
+  }
+  return slc(ar, 0, ai);
+}
+function zipSync(data, opts) {
+  if (!opts)
+    opts = {};
+  var r = {};
+  var files = [];
+  fltn(data, "", r, opts);
+  var o = 0;
+  var tot = 0;
+  for (var fn in r) {
+    var _a2 = r[fn], file = _a2[0], p = _a2[1];
+    var compression = p.level == 0 ? 0 : 8;
+    var f2 = strToU8(fn), s2 = f2.length;
+    var com = p.comment, m = com && strToU8(com), ms = m && m.length;
+    var exl = exfl(p.extra);
+    if (s2 > 65535)
+      err(11);
+    var d = compression ? deflateSync(file, p) : file, l = d.length;
+    var c = crc();
+    c.p(file);
+    files.push(mrg(p, {
+      size: file.length,
+      crc: c.d(),
+      c: d,
+      f: f2,
+      m,
+      u: s2 != fn.length || m && com.length != ms,
+      o,
+      compression
+    }));
+    o += 30 + s2 + exl + l;
+    tot += 76 + 2 * (s2 + exl) + (ms || 0) + l;
+  }
+  var out = new u8(tot + 22), oe = o, cdl = tot - o;
+  for (var i2 = 0; i2 < files.length; ++i2) {
+    var f2 = files[i2];
+    wzh(out, f2.o, f2, f2.f, f2.u, f2.c.length);
+    var badd = 30 + f2.f.length + exfl(f2.extra);
+    out.set(f2.c, f2.o + badd);
+    wzh(out, o, f2, f2.f, f2.u, f2.c.length, f2.o, f2.m), o += 16 + badd + (f2.m ? f2.m.length : 0);
+  }
+  wzf(out, o, files.length, cdl, oe);
+  return out;
+}
+var u8, u16, i32, fleb, fdeb, clim, freb, _a, fl, revfl, _b, fd, revfd, rev, x, i, hMap, flt, i, i, i, i, fdt, i, flm, flrm, fdm, fdrm, max, bits, bits16, shft, slc, ec, err, inflt, wbits, wbits16, hTree, ln, lc, clen, wfblk, wblk, deo, et, dflt, crct, crc, dopt, mrg, wbytes, gzs, gzl, fltn, te, td, tds, exfl, wzh, wzf;
+var init_browser = __esm({
+  "node_modules/fflate/esm/browser.js"() {
+    u8 = Uint8Array;
+    u16 = Uint16Array;
+    i32 = Int32Array;
+    fleb = new u8([
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      2,
+      2,
+      2,
+      2,
+      3,
+      3,
+      3,
+      3,
+      4,
+      4,
+      4,
+      4,
+      5,
+      5,
+      5,
+      5,
+      0,
+      /* unused */
+      0,
+      0,
+      /* impossible */
+      0
+    ]);
+    fdeb = new u8([
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      2,
+      2,
+      3,
+      3,
+      4,
+      4,
+      5,
+      5,
+      6,
+      6,
+      7,
+      7,
+      8,
+      8,
+      9,
+      9,
+      10,
+      10,
+      11,
+      11,
+      12,
+      12,
+      13,
+      13,
+      /* unused */
+      0,
+      0
+    ]);
+    clim = new u8([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
+    freb = function(eb, start2) {
+      var b = new u16(31);
+      for (var i2 = 0; i2 < 31; ++i2) {
+        b[i2] = start2 += 1 << eb[i2 - 1];
+      }
+      var r = new i32(b[30]);
+      for (var i2 = 1; i2 < 30; ++i2) {
+        for (var j = b[i2]; j < b[i2 + 1]; ++j) {
+          r[j] = j - b[i2] << 5 | i2;
+        }
+      }
+      return { b, r };
+    };
+    _a = freb(fleb, 2);
+    fl = _a.b;
+    revfl = _a.r;
+    fl[28] = 258, revfl[258] = 28;
+    _b = freb(fdeb, 0);
+    fd = _b.b;
+    revfd = _b.r;
+    rev = new u16(32768);
+    for (i = 0; i < 32768; ++i) {
+      x = (i & 43690) >> 1 | (i & 21845) << 1;
+      x = (x & 52428) >> 2 | (x & 13107) << 2;
+      x = (x & 61680) >> 4 | (x & 3855) << 4;
+      rev[i] = ((x & 65280) >> 8 | (x & 255) << 8) >> 1;
+    }
+    hMap = (function(cd, mb, r) {
+      var s2 = cd.length;
+      var i2 = 0;
+      var l = new u16(mb);
+      for (; i2 < s2; ++i2) {
+        if (cd[i2])
+          ++l[cd[i2] - 1];
+      }
+      var le = new u16(mb);
+      for (i2 = 1; i2 < mb; ++i2) {
+        le[i2] = le[i2 - 1] + l[i2 - 1] << 1;
+      }
+      var co;
+      if (r) {
+        co = new u16(1 << mb);
+        var rvb = 15 - mb;
+        for (i2 = 0; i2 < s2; ++i2) {
+          if (cd[i2]) {
+            var sv = i2 << 4 | cd[i2];
+            var r_1 = mb - cd[i2];
+            var v = le[cd[i2] - 1]++ << r_1;
+            for (var m = v | (1 << r_1) - 1; v <= m; ++v) {
+              co[rev[v] >> rvb] = sv;
+            }
+          }
+        }
+      } else {
+        co = new u16(s2);
+        for (i2 = 0; i2 < s2; ++i2) {
+          if (cd[i2]) {
+            co[i2] = rev[le[cd[i2] - 1]++] >> 15 - cd[i2];
+          }
+        }
+      }
+      return co;
+    });
+    flt = new u8(288);
+    for (i = 0; i < 144; ++i)
+      flt[i] = 8;
+    for (i = 144; i < 256; ++i)
+      flt[i] = 9;
+    for (i = 256; i < 280; ++i)
+      flt[i] = 7;
+    for (i = 280; i < 288; ++i)
+      flt[i] = 8;
+    fdt = new u8(32);
+    for (i = 0; i < 32; ++i)
+      fdt[i] = 5;
+    flm = /* @__PURE__ */ hMap(flt, 9, 0);
+    flrm = /* @__PURE__ */ hMap(flt, 9, 1);
+    fdm = /* @__PURE__ */ hMap(fdt, 5, 0);
+    fdrm = /* @__PURE__ */ hMap(fdt, 5, 1);
+    max = function(a) {
+      var m = a[0];
+      for (var i2 = 1; i2 < a.length; ++i2) {
+        if (a[i2] > m)
+          m = a[i2];
+      }
+      return m;
+    };
+    bits = function(d, p, m) {
+      var o = p / 8 | 0;
+      return (d[o] | d[o + 1] << 8) >> (p & 7) & m;
+    };
+    bits16 = function(d, p) {
+      var o = p / 8 | 0;
+      return (d[o] | d[o + 1] << 8 | d[o + 2] << 16) >> (p & 7);
+    };
+    shft = function(p) {
+      return (p + 7) / 8 | 0;
+    };
+    slc = function(v, s2, e) {
+      if (s2 == null || s2 < 0)
+        s2 = 0;
+      if (e == null || e > v.length)
+        e = v.length;
+      return new u8(v.subarray(s2, e));
+    };
+    ec = [
+      "unexpected EOF",
+      "invalid block type",
+      "invalid length/literal",
+      "invalid distance",
+      "stream finished",
+      "no stream handler",
+      ,
+      // determined by compression function
+      "no callback",
+      "invalid UTF-8 data",
+      "extra field too long",
+      "date not in range 1980-2099",
+      "filename too long",
+      "stream finishing",
+      "invalid zip data"
+      // determined by unknown compression method
+    ];
+    err = function(ind, msg, nt) {
+      var e = new Error(msg || ec[ind]);
+      e.code = ind;
+      if (Error.captureStackTrace)
+        Error.captureStackTrace(e, err);
+      if (!nt)
+        throw e;
+      return e;
+    };
+    inflt = function(dat, st, buf, dict) {
+      var sl = dat.length, dl = dict ? dict.length : 0;
+      if (!sl || st.f && !st.l)
+        return buf || new u8(0);
+      var noBuf = !buf;
+      var resize = noBuf || st.i != 2;
+      var noSt = st.i;
+      if (noBuf)
+        buf = new u8(sl * 3);
+      var cbuf = function(l2) {
+        var bl = buf.length;
+        if (l2 > bl) {
+          var nbuf = new u8(Math.max(bl * 2, l2));
+          nbuf.set(buf);
+          buf = nbuf;
+        }
+      };
+      var final = st.f || 0, pos = st.p || 0, bt = st.b || 0, lm = st.l, dm = st.d, lbt = st.m, dbt = st.n;
+      var tbts = sl * 8;
+      do {
+        if (!lm) {
+          final = bits(dat, pos, 1);
+          var type = bits(dat, pos + 1, 3);
+          pos += 3;
+          if (!type) {
+            var s2 = shft(pos) + 4, l = dat[s2 - 4] | dat[s2 - 3] << 8, t = s2 + l;
+            if (t > sl) {
+              if (noSt)
+                err(0);
+              break;
+            }
+            if (resize)
+              cbuf(bt + l);
+            buf.set(dat.subarray(s2, t), bt);
+            st.b = bt += l, st.p = pos = t * 8, st.f = final;
+            continue;
+          } else if (type == 1)
+            lm = flrm, dm = fdrm, lbt = 9, dbt = 5;
+          else if (type == 2) {
+            var hLit = bits(dat, pos, 31) + 257, hcLen = bits(dat, pos + 10, 15) + 4;
+            var tl = hLit + bits(dat, pos + 5, 31) + 1;
+            pos += 14;
+            var ldt = new u8(tl);
+            var clt = new u8(19);
+            for (var i2 = 0; i2 < hcLen; ++i2) {
+              clt[clim[i2]] = bits(dat, pos + i2 * 3, 7);
+            }
+            pos += hcLen * 3;
+            var clb = max(clt), clbmsk = (1 << clb) - 1;
+            var clm = hMap(clt, clb, 1);
+            for (var i2 = 0; i2 < tl; ) {
+              var r = clm[bits(dat, pos, clbmsk)];
+              pos += r & 15;
+              var s2 = r >> 4;
+              if (s2 < 16) {
+                ldt[i2++] = s2;
+              } else {
+                var c = 0, n = 0;
+                if (s2 == 16)
+                  n = 3 + bits(dat, pos, 3), pos += 2, c = ldt[i2 - 1];
+                else if (s2 == 17)
+                  n = 3 + bits(dat, pos, 7), pos += 3;
+                else if (s2 == 18)
+                  n = 11 + bits(dat, pos, 127), pos += 7;
+                while (n--)
+                  ldt[i2++] = c;
+              }
+            }
+            var lt = ldt.subarray(0, hLit), dt = ldt.subarray(hLit);
+            lbt = max(lt);
+            dbt = max(dt);
+            lm = hMap(lt, lbt, 1);
+            dm = hMap(dt, dbt, 1);
+          } else
+            err(1);
+          if (pos > tbts) {
+            if (noSt)
+              err(0);
+            break;
+          }
+        }
+        if (resize)
+          cbuf(bt + 131072);
+        var lms = (1 << lbt) - 1, dms = (1 << dbt) - 1;
+        var lpos = pos;
+        for (; ; lpos = pos) {
+          var c = lm[bits16(dat, pos) & lms], sym = c >> 4;
+          pos += c & 15;
+          if (pos > tbts) {
+            if (noSt)
+              err(0);
+            break;
+          }
+          if (!c)
+            err(2);
+          if (sym < 256)
+            buf[bt++] = sym;
+          else if (sym == 256) {
+            lpos = pos, lm = null;
+            break;
+          } else {
+            var add = sym - 254;
+            if (sym > 264) {
+              var i2 = sym - 257, b = fleb[i2];
+              add = bits(dat, pos, (1 << b) - 1) + fl[i2];
+              pos += b;
+            }
+            var d = dm[bits16(dat, pos) & dms], dsym = d >> 4;
+            if (!d)
+              err(3);
+            pos += d & 15;
+            var dt = fd[dsym];
+            if (dsym > 3) {
+              var b = fdeb[dsym];
+              dt += bits16(dat, pos) & (1 << b) - 1, pos += b;
+            }
+            if (pos > tbts) {
+              if (noSt)
+                err(0);
+              break;
+            }
+            if (resize)
+              cbuf(bt + 131072);
+            var end = bt + add;
+            if (bt < dt) {
+              var shift = dl - dt, dend = Math.min(dt, end);
+              if (shift + bt < 0)
+                err(3);
+              for (; bt < dend; ++bt)
+                buf[bt] = dict[shift + bt];
+            }
+            for (; bt < end; ++bt)
+              buf[bt] = buf[bt - dt];
+          }
+        }
+        st.l = lm, st.p = lpos, st.b = bt, st.f = final;
+        if (lm)
+          final = 1, st.m = lbt, st.d = dm, st.n = dbt;
+      } while (!final);
+      return bt != buf.length && noBuf ? slc(buf, 0, bt) : buf.subarray(0, bt);
+    };
+    wbits = function(d, p, v) {
+      v <<= p & 7;
+      var o = p / 8 | 0;
+      d[o] |= v;
+      d[o + 1] |= v >> 8;
+    };
+    wbits16 = function(d, p, v) {
+      v <<= p & 7;
+      var o = p / 8 | 0;
+      d[o] |= v;
+      d[o + 1] |= v >> 8;
+      d[o + 2] |= v >> 16;
+    };
+    hTree = function(d, mb) {
+      var t = [];
+      for (var i2 = 0; i2 < d.length; ++i2) {
+        if (d[i2])
+          t.push({ s: i2, f: d[i2] });
+      }
+      var s2 = t.length;
+      var t2 = t.slice();
+      if (!s2)
+        return { t: et, l: 0 };
+      if (s2 == 1) {
+        var v = new u8(t[0].s + 1);
+        v[t[0].s] = 1;
+        return { t: v, l: 1 };
+      }
+      t.sort(function(a, b) {
+        return a.f - b.f;
+      });
+      t.push({ s: -1, f: 25001 });
+      var l = t[0], r = t[1], i0 = 0, i1 = 1, i22 = 2;
+      t[0] = { s: -1, f: l.f + r.f, l, r };
+      while (i1 != s2 - 1) {
+        l = t[t[i0].f < t[i22].f ? i0++ : i22++];
+        r = t[i0 != i1 && t[i0].f < t[i22].f ? i0++ : i22++];
+        t[i1++] = { s: -1, f: l.f + r.f, l, r };
+      }
+      var maxSym = t2[0].s;
+      for (var i2 = 1; i2 < s2; ++i2) {
+        if (t2[i2].s > maxSym)
+          maxSym = t2[i2].s;
+      }
+      var tr = new u16(maxSym + 1);
+      var mbt = ln(t[i1 - 1], tr, 0);
+      if (mbt > mb) {
+        var i2 = 0, dt = 0;
+        var lft = mbt - mb, cst = 1 << lft;
+        t2.sort(function(a, b) {
+          return tr[b.s] - tr[a.s] || a.f - b.f;
+        });
+        for (; i2 < s2; ++i2) {
+          var i2_1 = t2[i2].s;
+          if (tr[i2_1] > mb) {
+            dt += cst - (1 << mbt - tr[i2_1]);
+            tr[i2_1] = mb;
+          } else
+            break;
+        }
+        dt >>= lft;
+        while (dt > 0) {
+          var i2_2 = t2[i2].s;
+          if (tr[i2_2] < mb)
+            dt -= 1 << mb - tr[i2_2]++ - 1;
+          else
+            ++i2;
+        }
+        for (; i2 >= 0 && dt; --i2) {
+          var i2_3 = t2[i2].s;
+          if (tr[i2_3] == mb) {
+            --tr[i2_3];
+            ++dt;
+          }
+        }
+        mbt = mb;
+      }
+      return { t: new u8(tr), l: mbt };
+    };
+    ln = function(n, l, d) {
+      return n.s == -1 ? Math.max(ln(n.l, l, d + 1), ln(n.r, l, d + 1)) : l[n.s] = d;
+    };
+    lc = function(c) {
+      var s2 = c.length;
+      while (s2 && !c[--s2])
+        ;
+      var cl = new u16(++s2);
+      var cli = 0, cln = c[0], cls = 1;
+      var w = function(v) {
+        cl[cli++] = v;
+      };
+      for (var i2 = 1; i2 <= s2; ++i2) {
+        if (c[i2] == cln && i2 != s2)
+          ++cls;
+        else {
+          if (!cln && cls > 2) {
+            for (; cls > 138; cls -= 138)
+              w(32754);
+            if (cls > 2) {
+              w(cls > 10 ? cls - 11 << 5 | 28690 : cls - 3 << 5 | 12305);
+              cls = 0;
+            }
+          } else if (cls > 3) {
+            w(cln), --cls;
+            for (; cls > 6; cls -= 6)
+              w(8304);
+            if (cls > 2)
+              w(cls - 3 << 5 | 8208), cls = 0;
+          }
+          while (cls--)
+            w(cln);
+          cls = 1;
+          cln = c[i2];
+        }
+      }
+      return { c: cl.subarray(0, cli), n: s2 };
+    };
+    clen = function(cf, cl) {
+      var l = 0;
+      for (var i2 = 0; i2 < cl.length; ++i2)
+        l += cf[i2] * cl[i2];
+      return l;
+    };
+    wfblk = function(out, pos, dat) {
+      var s2 = dat.length;
+      var o = shft(pos + 2);
+      out[o] = s2 & 255;
+      out[o + 1] = s2 >> 8;
+      out[o + 2] = out[o] ^ 255;
+      out[o + 3] = out[o + 1] ^ 255;
+      for (var i2 = 0; i2 < s2; ++i2)
+        out[o + i2 + 4] = dat[i2];
+      return (o + 4 + s2) * 8;
+    };
+    wblk = function(dat, out, final, syms, lf, df, eb, li, bs, bl, p) {
+      wbits(out, p++, final);
+      ++lf[256];
+      var _a2 = hTree(lf, 15), dlt = _a2.t, mlb = _a2.l;
+      var _b2 = hTree(df, 15), ddt = _b2.t, mdb = _b2.l;
+      var _c = lc(dlt), lclt = _c.c, nlc = _c.n;
+      var _d = lc(ddt), lcdt = _d.c, ndc = _d.n;
+      var lcfreq = new u16(19);
+      for (var i2 = 0; i2 < lclt.length; ++i2)
+        ++lcfreq[lclt[i2] & 31];
+      for (var i2 = 0; i2 < lcdt.length; ++i2)
+        ++lcfreq[lcdt[i2] & 31];
+      var _e = hTree(lcfreq, 7), lct = _e.t, mlcb = _e.l;
+      var nlcc = 19;
+      for (; nlcc > 4 && !lct[clim[nlcc - 1]]; --nlcc)
+        ;
+      var flen = bl + 5 << 3;
+      var ftlen = clen(lf, flt) + clen(df, fdt) + eb;
+      var dtlen = clen(lf, dlt) + clen(df, ddt) + eb + 14 + 3 * nlcc + clen(lcfreq, lct) + 2 * lcfreq[16] + 3 * lcfreq[17] + 7 * lcfreq[18];
+      if (bs >= 0 && flen <= ftlen && flen <= dtlen)
+        return wfblk(out, p, dat.subarray(bs, bs + bl));
+      var lm, ll, dm, dl;
+      wbits(out, p, 1 + (dtlen < ftlen)), p += 2;
+      if (dtlen < ftlen) {
+        lm = hMap(dlt, mlb, 0), ll = dlt, dm = hMap(ddt, mdb, 0), dl = ddt;
+        var llm = hMap(lct, mlcb, 0);
+        wbits(out, p, nlc - 257);
+        wbits(out, p + 5, ndc - 1);
+        wbits(out, p + 10, nlcc - 4);
+        p += 14;
+        for (var i2 = 0; i2 < nlcc; ++i2)
+          wbits(out, p + 3 * i2, lct[clim[i2]]);
+        p += 3 * nlcc;
+        var lcts = [lclt, lcdt];
+        for (var it = 0; it < 2; ++it) {
+          var clct = lcts[it];
+          for (var i2 = 0; i2 < clct.length; ++i2) {
+            var len = clct[i2] & 31;
+            wbits(out, p, llm[len]), p += lct[len];
+            if (len > 15)
+              wbits(out, p, clct[i2] >> 5 & 127), p += clct[i2] >> 12;
+          }
+        }
+      } else {
+        lm = flm, ll = flt, dm = fdm, dl = fdt;
+      }
+      for (var i2 = 0; i2 < li; ++i2) {
+        var sym = syms[i2];
+        if (sym > 255) {
+          var len = sym >> 18 & 31;
+          wbits16(out, p, lm[len + 257]), p += ll[len + 257];
+          if (len > 7)
+            wbits(out, p, sym >> 23 & 31), p += fleb[len];
+          var dst = sym & 31;
+          wbits16(out, p, dm[dst]), p += dl[dst];
+          if (dst > 3)
+            wbits16(out, p, sym >> 5 & 8191), p += fdeb[dst];
+        } else {
+          wbits16(out, p, lm[sym]), p += ll[sym];
+        }
+      }
+      wbits16(out, p, lm[256]);
+      return p + ll[256];
+    };
+    deo = /* @__PURE__ */ new i32([65540, 131080, 131088, 131104, 262176, 1048704, 1048832, 2114560, 2117632]);
+    et = /* @__PURE__ */ new u8(0);
+    dflt = function(dat, lvl, plvl, pre, post, st) {
+      var s2 = st.z || dat.length;
+      var o = new u8(pre + s2 + 5 * (1 + Math.ceil(s2 / 7e3)) + post);
+      var w = o.subarray(pre, o.length - post);
+      var lst = st.l;
+      var pos = (st.r || 0) & 7;
+      if (lvl) {
+        if (pos)
+          w[0] = st.r >> 3;
+        var opt = deo[lvl - 1];
+        var n = opt >> 13, c = opt & 8191;
+        var msk_1 = (1 << plvl) - 1;
+        var prev = st.p || new u16(32768), head = st.h || new u16(msk_1 + 1);
+        var bs1_1 = Math.ceil(plvl / 3), bs2_1 = 2 * bs1_1;
+        var hsh = function(i3) {
+          return (dat[i3] ^ dat[i3 + 1] << bs1_1 ^ dat[i3 + 2] << bs2_1) & msk_1;
+        };
+        var syms = new i32(25e3);
+        var lf = new u16(288), df = new u16(32);
+        var lc_1 = 0, eb = 0, i2 = st.i || 0, li = 0, wi = st.w || 0, bs = 0;
+        for (; i2 + 2 < s2; ++i2) {
+          var hv = hsh(i2);
+          var imod = i2 & 32767, pimod = head[hv];
+          prev[imod] = pimod;
+          head[hv] = imod;
+          if (wi <= i2) {
+            var rem = s2 - i2;
+            if ((lc_1 > 7e3 || li > 24576) && (rem > 423 || !lst)) {
+              pos = wblk(dat, w, 0, syms, lf, df, eb, li, bs, i2 - bs, pos);
+              li = lc_1 = eb = 0, bs = i2;
+              for (var j = 0; j < 286; ++j)
+                lf[j] = 0;
+              for (var j = 0; j < 30; ++j)
+                df[j] = 0;
+            }
+            var l = 2, d = 0, ch_1 = c, dif = imod - pimod & 32767;
+            if (rem > 2 && hv == hsh(i2 - dif)) {
+              var maxn = Math.min(n, rem) - 1;
+              var maxd = Math.min(32767, i2);
+              var ml = Math.min(258, rem);
+              while (dif <= maxd && --ch_1 && imod != pimod) {
+                if (dat[i2 + l] == dat[i2 + l - dif]) {
+                  var nl = 0;
+                  for (; nl < ml && dat[i2 + nl] == dat[i2 + nl - dif]; ++nl)
+                    ;
+                  if (nl > l) {
+                    l = nl, d = dif;
+                    if (nl > maxn)
+                      break;
+                    var mmd = Math.min(dif, nl - 2);
+                    var md = 0;
+                    for (var j = 0; j < mmd; ++j) {
+                      var ti = i2 - dif + j & 32767;
+                      var pti = prev[ti];
+                      var cd = ti - pti & 32767;
+                      if (cd > md)
+                        md = cd, pimod = ti;
+                    }
+                  }
+                }
+                imod = pimod, pimod = prev[imod];
+                dif += imod - pimod & 32767;
+              }
+            }
+            if (d) {
+              syms[li++] = 268435456 | revfl[l] << 18 | revfd[d];
+              var lin = revfl[l] & 31, din = revfd[d] & 31;
+              eb += fleb[lin] + fdeb[din];
+              ++lf[257 + lin];
+              ++df[din];
+              wi = i2 + l;
+              ++lc_1;
+            } else {
+              syms[li++] = dat[i2];
+              ++lf[dat[i2]];
+            }
+          }
+        }
+        for (i2 = Math.max(i2, wi); i2 < s2; ++i2) {
+          syms[li++] = dat[i2];
+          ++lf[dat[i2]];
+        }
+        pos = wblk(dat, w, lst, syms, lf, df, eb, li, bs, i2 - bs, pos);
+        if (!lst) {
+          st.r = pos & 7 | w[pos / 8 | 0] << 3;
+          pos -= 7;
+          st.h = head, st.p = prev, st.i = i2, st.w = wi;
+        }
+      } else {
+        for (var i2 = st.w || 0; i2 < s2 + lst; i2 += 65535) {
+          var e = i2 + 65535;
+          if (e >= s2) {
+            w[pos / 8 | 0] = lst;
+            e = s2;
+          }
+          pos = wfblk(w, pos + 1, dat.subarray(i2, e));
+        }
+        st.i = s2;
+      }
+      return slc(o, 0, pre + shft(pos) + post);
+    };
+    crct = /* @__PURE__ */ (function() {
+      var t = new Int32Array(256);
+      for (var i2 = 0; i2 < 256; ++i2) {
+        var c = i2, k = 9;
+        while (--k)
+          c = (c & 1 && -306674912) ^ c >>> 1;
+        t[i2] = c;
+      }
+      return t;
+    })();
+    crc = function() {
+      var c = -1;
+      return {
+        p: function(d) {
+          var cr = c;
+          for (var i2 = 0; i2 < d.length; ++i2)
+            cr = crct[cr & 255 ^ d[i2]] ^ cr >>> 8;
+          c = cr;
+        },
+        d: function() {
+          return ~c;
+        }
+      };
+    };
+    dopt = function(dat, opt, pre, post, st) {
+      if (!st) {
+        st = { l: 1 };
+        if (opt.dictionary) {
+          var dict = opt.dictionary.subarray(-32768);
+          var newDat = new u8(dict.length + dat.length);
+          newDat.set(dict);
+          newDat.set(dat, dict.length);
+          dat = newDat;
+          st.w = dict.length;
+        }
+      }
+      return dflt(dat, opt.level == null ? 6 : opt.level, opt.mem == null ? st.l ? Math.ceil(Math.max(8, Math.min(13, Math.log(dat.length))) * 1.5) : 20 : 12 + opt.mem, pre, post, st);
+    };
+    mrg = function(a, b) {
+      var o = {};
+      for (var k in a)
+        o[k] = a[k];
+      for (var k in b)
+        o[k] = b[k];
+      return o;
+    };
+    wbytes = function(d, b, v) {
+      for (; v; ++b)
+        d[b] = v, v >>>= 8;
+    };
+    gzs = function(d) {
+      if (d[0] != 31 || d[1] != 139 || d[2] != 8)
+        err(6, "invalid gzip data");
+      var flg = d[3];
+      var st = 10;
+      if (flg & 4)
+        st += (d[10] | d[11] << 8) + 2;
+      for (var zs = (flg >> 3 & 1) + (flg >> 4 & 1); zs > 0; zs -= !d[st++])
+        ;
+      return st + (flg & 2);
+    };
+    gzl = function(d) {
+      var l = d.length;
+      return (d[l - 4] | d[l - 3] << 8 | d[l - 2] << 16 | d[l - 1] << 24) >>> 0;
+    };
+    fltn = function(d, p, t, o) {
+      for (var k in d) {
+        var val = d[k], n = p + k, op = o;
+        if (Array.isArray(val))
+          op = mrg(o, val[1]), val = val[0];
+        if (ArrayBuffer.isView(val))
+          t[n] = [val, op];
+        else {
+          t[n += "/"] = [new u8(0), op];
+          fltn(val, n, t, o);
+        }
+      }
+    };
+    te = typeof TextEncoder != "undefined" && /* @__PURE__ */ new TextEncoder();
+    td = typeof TextDecoder != "undefined" && /* @__PURE__ */ new TextDecoder();
+    tds = 0;
+    try {
+      td.decode(et, { stream: true });
+      tds = 1;
+    } catch (e) {
+    }
+    exfl = function(ex) {
+      var le = 0;
+      if (ex) {
+        for (var k in ex) {
+          var l = ex[k].length;
+          if (l > 65535)
+            err(9);
+          le += l + 4;
+        }
+      }
+      return le;
+    };
+    wzh = function(d, b, f2, fn, u2, c, ce, co) {
+      var fl2 = fn.length, ex = f2.extra, col = co && co.length;
+      var exl = exfl(ex);
+      wbytes(d, b, ce != null ? 33639248 : 67324752), b += 4;
+      if (ce != null)
+        d[b++] = 20, d[b++] = f2.os;
+      d[b] = 20, b += 2;
+      d[b++] = f2.flag << 1 | (c < 0 && 8), d[b++] = u2 && 8;
+      d[b++] = f2.compression & 255, d[b++] = f2.compression >> 8;
+      var dt = new Date(f2.mtime == null ? Date.now() : f2.mtime), y = dt.getFullYear() - 1980;
+      if (y < 0 || y > 119)
+        err(10);
+      wbytes(d, b, y << 25 | dt.getMonth() + 1 << 21 | dt.getDate() << 16 | dt.getHours() << 11 | dt.getMinutes() << 5 | dt.getSeconds() >> 1), b += 4;
+      if (c != -1) {
+        wbytes(d, b, f2.crc);
+        wbytes(d, b + 4, c < 0 ? -c - 2 : c);
+        wbytes(d, b + 8, f2.size);
+      }
+      wbytes(d, b + 12, fl2);
+      wbytes(d, b + 14, exl), b += 16;
+      if (ce != null) {
+        wbytes(d, b, col);
+        wbytes(d, b + 6, f2.attrs);
+        wbytes(d, b + 10, ce), b += 14;
+      }
+      d.set(fn, b);
+      b += fl2;
+      if (exl) {
+        for (var k in ex) {
+          var exf = ex[k], l = exf.length;
+          wbytes(d, b, +k);
+          wbytes(d, b + 2, l);
+          d.set(exf, b + 4), b += 4 + l;
+        }
+      }
+      if (col)
+        d.set(co, b), b += col;
+      return b;
+    };
+    wzf = function(o, b, c, d, e) {
+      wbytes(o, b, 101010256);
+      wbytes(o, b + 8, c);
+      wbytes(o, b + 10, c);
+      wbytes(o, b + 12, d);
+      wbytes(o, b + 16, e);
+    };
+  }
+});
+
+// js/cameras-snapshot.js
+function sampleRoutePoints(coords, stepM = 600) {
+  if (!coords?.length) return [];
+  const pts = [{ lat: coords[0][0], lon: coords[0][1] }];
+  let acc = 0;
+  for (let i2 = 1; i2 < coords.length; i2++) {
+    const a = { lat: coords[i2 - 1][0], lon: coords[i2 - 1][1] };
+    const b = { lat: coords[i2][0], lon: coords[i2][1] };
+    acc += haversine(a, b);
+    if (acc >= stepM) {
+      pts.push(b);
+      acc = 0;
+    }
+  }
+  const last = { lat: coords[coords.length - 1][0], lon: coords[coords.length - 1][1] };
+  if (haversine(pts[pts.length - 1], last) > 40) pts.push(last);
+  return pts;
+}
+function cameraFromOsmTags(lat, lon, tags = {}, id = null) {
+  let dir = null;
+  if (tags.direction != null) {
+    const raw = String(tags.direction).trim();
+    const num = parseFloat(raw);
+    if (!Number.isNaN(num)) dir = (num % 360 + 360) % 360;
+    else {
+      const up = raw.toUpperCase();
+      if (CARD[up] != null) dir = CARD[up];
+    }
+  }
+  const speed = tags.maxspeed ? parseInt(tags.maxspeed, 10) : null;
+  return {
+    id: id != null ? String(id) : void 0,
+    lat,
+    lon,
+    speed: Number.isFinite(speed) ? speed : null,
+    dir
+  };
+}
+function cameraFromOverpassNode(e) {
+  if (!e || e.type !== "node" || e.lat == null || e.lon == null) return null;
+  return cameraFromOsmTags(e.lat, e.lon, e.tags || {}, e.id);
+}
+function pointInBbox(lat, lon, bbox) {
+  if (!bbox) return false;
+  return lat >= bbox.south && lat <= bbox.north && lon >= bbox.west && lon <= bbox.east;
+}
+function routeIntersectsBbox(coords, bbox) {
+  if (!coords?.length || !bbox) return false;
+  for (const c of coords) {
+    if (pointInBbox(c[0], c[1], bbox)) return true;
+  }
+  return false;
+}
+function filterCamerasNearRoute(cameras, coords, aroundM = 80, sampleStepM = 600) {
+  if (!cameras?.length || !coords?.length) return [];
+  const samples = sampleRoutePoints(coords, sampleStepM);
+  if (!samples.length) return [];
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const cam of cameras) {
+    if (cam?.lat == null || cam?.lon == null) continue;
+    const key = cam.id || cam.lat.toFixed(5) + "," + cam.lon.toFixed(5);
+    if (seen.has(key)) continue;
+    const p = { lat: cam.lat, lon: cam.lon };
+    let near = false;
+    for (const s2 of samples) {
+      if (haversine(p, s2) <= aroundM) {
+        near = true;
+        break;
+      }
+    }
+    if (near) {
+      seen.add(key);
+      out.push({
+        lat: cam.lat,
+        lon: cam.lon,
+        speed: cam.speed ?? null,
+        dir: cam.dir ?? null
+      });
+    }
+  }
+  return out;
+}
+async function loadCamerasSnapshot(url = CAMERAS_SNAPSHOT_PATH) {
+  if (_snapCache) return _snapCache;
+  if (_snapPromise) return _snapPromise;
+  _snapPromise = (async () => {
+    try {
+      const r = await fetch(url, { cache: "no-cache" });
+      if (!r.ok) throw new Error("snapshot HTTP " + r.status);
+      const j = await r.json();
+      if (!Array.isArray(j.cameras)) throw new Error("snapshot: no cameras[]");
+      _snapCache = {
+        bbox: j.bbox || MOSCOW_CAM_BBOX,
+        cameras: j.cameras,
+        updated: j.updated || null,
+        count: j.count ?? j.cameras.length,
+        source: j.source || "osm"
+      };
+      return _snapCache;
+    } catch (e) {
+      console.warn("cameras snapshot:", e);
+      _snapCache = null;
+      return null;
+    } finally {
+      _snapPromise = null;
+    }
+  })();
+  return _snapPromise;
+}
+var MOSCOW_CAM_BBOX, CAMERAS_SNAPSHOT_PATH, CARD, _snapCache, _snapPromise;
+var init_cameras_snapshot = __esm({
+  "js/cameras-snapshot.js"() {
+    init_geo();
+    MOSCOW_CAM_BBOX = {
+      south: 55.55,
+      west: 37.35,
+      north: 55.95,
+      east: 37.85
+    };
+    CAMERAS_SNAPSHOT_PATH = "data/cameras-moscow.json";
+    CARD = {
+      N: 0,
+      NNE: 22.5,
+      NE: 45,
+      ENE: 67.5,
+      E: 90,
+      ESE: 112.5,
+      SE: 135,
+      SSE: 157.5,
+      S: 180,
+      SSW: 202.5,
+      SW: 225,
+      WSW: 247.5,
+      W: 270,
+      WNW: 292.5,
+      NW: 315,
+      NNW: 337.5
+    };
+    _snapCache = null;
+    _snapPromise = null;
+  }
+});
+
+// js/highways-snapshot.js
+function normalizeSnapshotWay(w) {
+  if (!w?.geom?.length) return null;
+  const geom = w.geom.map((p) => {
+    if (Array.isArray(p)) return { lat: p[0], lon: p[1] };
+    return { lat: p.lat, lon: p.lon };
+  });
+  if (geom.length < 2) return null;
+  return {
+    id: w.id,
+    highway: w.highway,
+    maxspeed: w.maxspeed || null,
+    maxspeedConditional: w.maxspeedConditional || null,
+    geom
+  };
+}
+function wayRoughBbox(geom) {
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  for (const p of geom) {
+    if (p.lat < minLat) minLat = p.lat;
+    if (p.lat > maxLat) maxLat = p.lat;
+    if (p.lon < minLon) minLon = p.lon;
+    if (p.lon > maxLon) maxLon = p.lon;
+  }
+  return { minLat, maxLat, minLon, maxLon };
+}
+function routeRoughBbox(coords, padDeg = 0.01) {
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  for (const c of coords) {
+    if (c[0] < minLat) minLat = c[0];
+    if (c[0] > maxLat) maxLat = c[0];
+    if (c[1] < minLon) minLon = c[1];
+    if (c[1] > maxLon) maxLon = c[1];
+  }
+  return {
+    minLat: minLat - padDeg,
+    maxLat: maxLat + padDeg,
+    minLon: minLon - padDeg,
+    maxLon: maxLon + padDeg
+  };
+}
+function bboxOverlap(a, b) {
+  return !(a.maxLat < b.minLat || a.minLat > b.maxLat || a.maxLon < b.minLon || a.minLon > b.maxLon);
+}
+function filterWaysNearRoute(ways, coords) {
+  if (!ways?.length || !coords?.length) return [];
+  const rb = routeRoughBbox(coords);
+  const out = [];
+  for (const w of ways) {
+    if (!w.geom?.length) continue;
+    if (bboxOverlap(wayRoughBbox(w.geom), rb)) out.push(w);
+  }
+  return out;
+}
+async function fetchJson(url) {
+  const r = await fetch(url, { cache: "no-cache" });
+  if (!r.ok) throw new Error("highways snapshot HTTP " + r.status);
+  return r.json();
+}
+async function fetchGzipJson(url) {
+  const r = await fetch(url, { cache: "no-cache" });
+  if (!r.ok) throw new Error("highways snapshot.gz HTTP " + r.status);
+  const buf = new Uint8Array(await r.arrayBuffer());
+  const text = new TextDecoder().decode(gunzipSync(buf));
+  return JSON.parse(text);
+}
+async function loadHighwaysSnapshot() {
+  if (_cache2) return _cache2;
+  if (_promise) return _promise;
+  _promise = (async () => {
+    try {
+      let j = null;
+      try {
+        j = await fetchGzipJson(HIGHWAYS_SNAPSHOT_GZ_PATH);
+      } catch (_e) {
+        j = await fetchJson(HIGHWAYS_SNAPSHOT_PATH);
+      }
+      if (!Array.isArray(j.ways)) throw new Error("snapshot: no ways[]");
+      const ways = [];
+      for (const raw of j.ways) {
+        const w = normalizeSnapshotWay(raw);
+        if (w) ways.push(w);
+      }
+      _cache2 = {
+        bbox: j.bbox || MOSCOW_CAM_BBOX,
+        ways,
+        updated: j.updated || null,
+        count: j.count ?? ways.length,
+        source: j.source || "osm"
+      };
+      return _cache2;
+    } catch (e) {
+      console.warn("highways snapshot:", e);
+      _cache2 = null;
+      return null;
+    } finally {
+      _promise = null;
+    }
+  })();
+  return _promise;
+}
+function routeInHighwaysSnapshot(coords, snap) {
+  return !!(snap?.bbox && routeIntersectsBbox(coords, snap.bbox));
+}
+var HIGHWAYS_SNAPSHOT_PATH, HIGHWAYS_SNAPSHOT_GZ_PATH, _cache2, _promise;
+var init_highways_snapshot = __esm({
+  "js/highways-snapshot.js"() {
+    init_browser();
+    init_cameras_snapshot();
+    HIGHWAYS_SNAPSHOT_PATH = "data/highways-moscow.json";
+    HIGHWAYS_SNAPSHOT_GZ_PATH = "data/highways-moscow.json.gz";
+    _cache2 = null;
+    _promise = null;
+  }
+});
+
 // js/speed-limit.js
 function resetSpeedLimitState() {
   flushLimitCoverageTelemetry();
@@ -4672,7 +5817,7 @@ async function overpassFetch(query, timeoutMs = OVERPASS_MIRROR_TIMEOUT_MS) {
   }
   throw lastErr || new Error("Overpass unreachable");
 }
-function sampleRoutePoints(coords, stepM = SAMPLE_STEP_M) {
+function sampleRoutePoints2(coords, stepM = SAMPLE_STEP_M) {
   if (!coords?.length) return [];
   const pts = [{ lat: coords[0][0], lon: coords[0][1] }];
   let acc = 0;
@@ -4719,7 +5864,7 @@ function parseOverpassWays(elements) {
   }));
 }
 async function fetchWaysAlongRoute(coords) {
-  const samples = sampleRoutePoints(coords);
+  const samples = sampleRoutePoints2(coords);
   const byId = /* @__PURE__ */ new Map();
   for (let i2 = 0; i2 < samples.length; i2 += SAMPLE_BATCH) {
     const batch = samples.slice(i2, i2 + SAMPLE_BATCH);
@@ -4778,7 +5923,7 @@ function wayBbox(geom) {
   }
   return { minLat, maxLat, minLon, maxLon };
 }
-function bboxOverlap(a, b, pad = 4e-4) {
+function bboxOverlap2(a, b, pad = 4e-4) {
   return !(a.maxLat + pad < b.minLat - pad || a.minLat - pad > b.maxLat + pad || a.maxLon + pad < b.minLon - pad || a.minLon - pad > b.maxLon + pad);
 }
 function distPointToWayPolyline(point, geom) {
@@ -4803,7 +5948,7 @@ function matchWayAtPoint(point, ways) {
     maxLon: point.lon + 5e-4
   };
   for (const w of ways) {
-    if (!bboxOverlap(wayBbox(w.geom), segBox)) continue;
+    if (!bboxOverlap2(wayBbox(w.geom), segBox)) continue;
     const d = distPointToWayPolyline(point, w.geom);
     if (d < bestD) {
       bestD = d;
@@ -4812,32 +5957,8 @@ function matchWayAtPoint(point, ways) {
   }
   return best;
 }
-async function loadRouteHighwayTypes(route) {
-  if (!route?.coords || route.coords.length < 2) return;
-  const token = ++_highwayLoadToken;
-  const t0 = Date.now();
-  const n = route.coords.length - 1;
-  const highwayTypes = new Array(n).fill(null);
-  const wayTags = new Array(n).fill(null);
-  const urbanSegments = new Array(n).fill(false);
-  let ways = [];
-  try {
-    ways = await fetchWaysAlongRoute(route.coords);
-  } catch (e) {
-    console.warn("loadRouteHighwayTypes:", e);
-    route.highwayTypes = highwayTypes;
-    route.wayTags = wayTags;
-    route.urbanSegments = urbanSegments;
-    telemetry_default.log("nav", {
-      sub: "highway_types_failed",
-      segments: n,
-      ms: Date.now() - t0,
-      message: String(e?.message || e).slice(0, 120)
-    });
-    scheduleHighwayRetry(route);
-    return;
-  }
-  if (token !== _highwayLoadToken || S.route !== route) return;
+function applyHighwayWaysToRoute(route, ways, highwayTypes, wayTags, urbanSegments) {
+  const n = highwayTypes.length;
   for (let i2 = 0; i2 < n; i2++) {
     const lat = (route.coords[i2][0] + route.coords[i2 + 1][0]) / 2;
     const lon = (route.coords[i2][1] + route.coords[i2 + 1][1]) / 2;
@@ -4857,7 +5978,63 @@ async function loadRouteHighwayTypes(route) {
   route.highwayTypes = highwayTypes;
   route.wayTags = wayTags;
   route.urbanSegments = urbanSegments;
-  const matched = highwayTypes.filter(Boolean).length;
+  return highwayTypes.filter(Boolean).length;
+}
+async function loadRouteHighwayTypes(route) {
+  if (!route?.coords || route.coords.length < 2) return;
+  const token = ++_highwayLoadToken;
+  const t0 = Date.now();
+  const n = route.coords.length - 1;
+  const highwayTypes = new Array(n).fill(null);
+  const wayTags = new Array(n).fill(null);
+  const urbanSegments = new Array(n).fill(false);
+  try {
+    const snap = await loadHighwaysSnapshot();
+    if (snap?.ways?.length && routeInHighwaysSnapshot(route.coords, snap)) {
+      const ways2 = filterWaysNearRoute(snap.ways, route.coords);
+      if (token !== _highwayLoadToken || S.route !== route) return;
+      const matched2 = applyHighwayWaysToRoute(route, ways2, highwayTypes, wayTags, urbanSegments);
+      telemetry_default.log("nav", {
+        sub: "highway_types_loaded",
+        segments: n,
+        matched: matched2,
+        ways: ways2.length,
+        ms: Date.now() - t0,
+        mode: "snapshot",
+        snap_count: snap.count,
+        snap_updated: snap.updated || void 0
+      });
+      if (matched2 / n >= 0.35) {
+        _highwayRetryStep = 0;
+        refineUrbanSegments(route, highwayTypes, urbanSegments, token).catch(() => {
+        });
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn("highways snapshot path:", e);
+  }
+  let ways = [];
+  try {
+    ways = await fetchWaysAlongRoute(route.coords);
+  } catch (e) {
+    console.warn("loadRouteHighwayTypes:", e);
+    if (!route.highwayTypes?.some(Boolean)) {
+      route.highwayTypes = highwayTypes;
+      route.wayTags = wayTags;
+      route.urbanSegments = urbanSegments;
+    }
+    telemetry_default.log("nav", {
+      sub: "highway_types_failed",
+      segments: n,
+      ms: Date.now() - t0,
+      message: String(e?.message || e).slice(0, 120)
+    });
+    scheduleHighwayRetry(route);
+    return;
+  }
+  if (token !== _highwayLoadToken || S.route !== route) return;
+  const matched = applyHighwayWaysToRoute(route, ways, highwayTypes, wayTags, urbanSegments);
   telemetry_default.log("nav", {
     sub: "highway_types_loaded",
     segments: n,
@@ -5173,6 +6350,7 @@ var init_speed_limit = __esm({
     init_telemetry();
     init_voice();
     init_nav_constants();
+    init_highways_snapshot();
     OVERPASS_MIRRORS = [
       "https://overpass-api.de/api/interpreter",
       "https://lz4.overpass-api.de/api/interpreter",
@@ -5204,150 +6382,6 @@ var init_speed_limit = __esm({
       "de:rural": 100,
       "de:motorway": 130
     };
-  }
-});
-
-// js/cameras-snapshot.js
-function sampleRoutePoints2(coords, stepM = 600) {
-  if (!coords?.length) return [];
-  const pts = [{ lat: coords[0][0], lon: coords[0][1] }];
-  let acc = 0;
-  for (let i2 = 1; i2 < coords.length; i2++) {
-    const a = { lat: coords[i2 - 1][0], lon: coords[i2 - 1][1] };
-    const b = { lat: coords[i2][0], lon: coords[i2][1] };
-    acc += haversine(a, b);
-    if (acc >= stepM) {
-      pts.push(b);
-      acc = 0;
-    }
-  }
-  const last = { lat: coords[coords.length - 1][0], lon: coords[coords.length - 1][1] };
-  if (haversine(pts[pts.length - 1], last) > 40) pts.push(last);
-  return pts;
-}
-function cameraFromOsmTags(lat, lon, tags = {}, id = null) {
-  let dir = null;
-  if (tags.direction != null) {
-    const raw = String(tags.direction).trim();
-    const num = parseFloat(raw);
-    if (!Number.isNaN(num)) dir = (num % 360 + 360) % 360;
-    else {
-      const up = raw.toUpperCase();
-      if (CARD[up] != null) dir = CARD[up];
-    }
-  }
-  const speed = tags.maxspeed ? parseInt(tags.maxspeed, 10) : null;
-  return {
-    id: id != null ? String(id) : void 0,
-    lat,
-    lon,
-    speed: Number.isFinite(speed) ? speed : null,
-    dir
-  };
-}
-function cameraFromOverpassNode(e) {
-  if (!e || e.type !== "node" || e.lat == null || e.lon == null) return null;
-  return cameraFromOsmTags(e.lat, e.lon, e.tags || {}, e.id);
-}
-function pointInBbox(lat, lon, bbox) {
-  if (!bbox) return false;
-  return lat >= bbox.south && lat <= bbox.north && lon >= bbox.west && lon <= bbox.east;
-}
-function routeIntersectsBbox(coords, bbox) {
-  if (!coords?.length || !bbox) return false;
-  for (const c of coords) {
-    if (pointInBbox(c[0], c[1], bbox)) return true;
-  }
-  return false;
-}
-function filterCamerasNearRoute(cameras, coords, aroundM = 80, sampleStepM = 600) {
-  if (!cameras?.length || !coords?.length) return [];
-  const samples = sampleRoutePoints2(coords, sampleStepM);
-  if (!samples.length) return [];
-  const out = [];
-  const seen = /* @__PURE__ */ new Set();
-  for (const cam of cameras) {
-    if (cam?.lat == null || cam?.lon == null) continue;
-    const key = cam.id || cam.lat.toFixed(5) + "," + cam.lon.toFixed(5);
-    if (seen.has(key)) continue;
-    const p = { lat: cam.lat, lon: cam.lon };
-    let near = false;
-    for (const s2 of samples) {
-      if (haversine(p, s2) <= aroundM) {
-        near = true;
-        break;
-      }
-    }
-    if (near) {
-      seen.add(key);
-      out.push({
-        lat: cam.lat,
-        lon: cam.lon,
-        speed: cam.speed ?? null,
-        dir: cam.dir ?? null
-      });
-    }
-  }
-  return out;
-}
-async function loadCamerasSnapshot(url = CAMERAS_SNAPSHOT_PATH) {
-  if (_snapCache) return _snapCache;
-  if (_snapPromise) return _snapPromise;
-  _snapPromise = (async () => {
-    try {
-      const r = await fetch(url, { cache: "no-cache" });
-      if (!r.ok) throw new Error("snapshot HTTP " + r.status);
-      const j = await r.json();
-      if (!Array.isArray(j.cameras)) throw new Error("snapshot: no cameras[]");
-      _snapCache = {
-        bbox: j.bbox || MOSCOW_CAM_BBOX,
-        cameras: j.cameras,
-        updated: j.updated || null,
-        count: j.count ?? j.cameras.length,
-        source: j.source || "osm"
-      };
-      return _snapCache;
-    } catch (e) {
-      console.warn("cameras snapshot:", e);
-      _snapCache = null;
-      return null;
-    } finally {
-      _snapPromise = null;
-    }
-  })();
-  return _snapPromise;
-}
-var MOSCOW_CAM_BBOX, CAMERAS_SNAPSHOT_PATH, CARD, _snapCache, _snapPromise;
-var init_cameras_snapshot = __esm({
-  "js/cameras-snapshot.js"() {
-    init_geo();
-    MOSCOW_CAM_BBOX = {
-      south: 55.55,
-      west: 37.35,
-      north: 55.95,
-      east: 37.85
-    };
-    CAMERAS_SNAPSHOT_PATH = "data/cameras-moscow.json";
-    CARD = {
-      N: 0,
-      NNE: 22.5,
-      NE: 45,
-      ENE: 67.5,
-      E: 90,
-      ESE: 112.5,
-      SE: 135,
-      SSE: 157.5,
-      S: 180,
-      SSW: 202.5,
-      SW: 225,
-      WSW: 247.5,
-      W: 270,
-      WNW: 292.5,
-      NW: 315,
-      NNW: 337.5
-    };
-    _snapCache = null;
-    _snapPromise = null;
   }
 });
 
@@ -5757,7 +6791,7 @@ async function recalcRoute() {
   }
 }
 async function fetchCamerasFromOverpassCorridor(coords, aroundM = 80) {
-  const samples = sampleRoutePoints(coords, 600);
+  const samples = sampleRoutePoints2(coords, 600);
   const byKey = /* @__PURE__ */ new Map();
   const BATCH = 16;
   for (let i2 = 0; i2 < samples.length; i2 += BATCH) {
@@ -7487,8 +8521,8 @@ var require_leaflet_src = __commonJS({
         return wrapperFn;
       }
       function wrapNum(x2, range, includeMax) {
-        var max = range[1], min = range[0], d = max - min;
-        return x2 === max && includeMax ? x2 : ((x2 - min) % d + d) % d + min;
+        var max2 = range[1], min = range[0], d = max2 - min;
+        return x2 === max2 && includeMax ? x2 : ((x2 - min) % d + d) % d + min;
       }
       function falseFn() {
         return false;
@@ -8136,7 +9170,7 @@ var require_leaflet_src = __commonJS({
         // @method contains(point: Point): Boolean
         // Returns `true` if the rectangle contains the given point.
         contains: function(obj) {
-          var min, max;
+          var min, max2;
           if (typeof obj[0] === "number" || obj instanceof Point) {
             obj = toPoint(obj);
           } else {
@@ -8144,18 +9178,18 @@ var require_leaflet_src = __commonJS({
           }
           if (obj instanceof Bounds) {
             min = obj.min;
-            max = obj.max;
+            max2 = obj.max;
           } else {
-            min = max = obj;
+            min = max2 = obj;
           }
-          return min.x >= this.min.x && max.x <= this.max.x && min.y >= this.min.y && max.y <= this.max.y;
+          return min.x >= this.min.x && max2.x <= this.max.x && min.y >= this.min.y && max2.y <= this.max.y;
         },
         // @method intersects(otherBounds: Bounds): Boolean
         // Returns `true` if the rectangle intersects the given bounds. Two bounds
         // intersect if they have at least one point in common.
         intersects: function(bounds) {
           bounds = toBounds(bounds);
-          var min = this.min, max = this.max, min2 = bounds.min, max2 = bounds.max, xIntersects = max2.x >= min.x && min2.x <= max.x, yIntersects = max2.y >= min.y && min2.y <= max.y;
+          var min = this.min, max2 = this.max, min2 = bounds.min, max22 = bounds.max, xIntersects = max22.x >= min.x && min2.x <= max2.x, yIntersects = max22.y >= min.y && min2.y <= max2.y;
           return xIntersects && yIntersects;
         },
         // @method overlaps(otherBounds: Bounds): Boolean
@@ -8163,7 +9197,7 @@ var require_leaflet_src = __commonJS({
         // overlap if their intersection is an area.
         overlaps: function(bounds) {
           bounds = toBounds(bounds);
-          var min = this.min, max = this.max, min2 = bounds.min, max2 = bounds.max, xOverlaps = max2.x > min.x && min2.x < max.x, yOverlaps = max2.y > min.y && min2.y < max.y;
+          var min = this.min, max2 = this.max, min2 = bounds.min, max22 = bounds.max, xOverlaps = max22.x > min.x && min2.x < max2.x, yOverlaps = max22.y > min.y && min2.y < max2.y;
           return xOverlaps && yOverlaps;
         },
         // @method isValid(): Boolean
@@ -8176,10 +9210,10 @@ var require_leaflet_src = __commonJS({
         // For example, a ratio of 0.5 extends the bounds by 50% in each direction.
         // Negative values will retract the bounds.
         pad: function(bufferRatio) {
-          var min = this.min, max = this.max, heightBuffer = Math.abs(min.x - max.x) * bufferRatio, widthBuffer = Math.abs(min.y - max.y) * bufferRatio;
+          var min = this.min, max2 = this.max, heightBuffer = Math.abs(min.x - max2.x) * bufferRatio, widthBuffer = Math.abs(min.y - max2.y) * bufferRatio;
           return toBounds(
             toPoint(min.x - heightBuffer, min.y - widthBuffer),
-            toPoint(max.x + heightBuffer, max.y + widthBuffer)
+            toPoint(max2.x + heightBuffer, max2.y + widthBuffer)
           );
         },
         // @method equals(otherBounds: Bounds): Boolean
@@ -8478,8 +9512,8 @@ var require_leaflet_src = __commonJS({
           if (this.infinite) {
             return null;
           }
-          var b = this.projection.bounds, s2 = this.scale(zoom2), min = this.transformation.transform(b.min, s2), max = this.transformation.transform(b.max, s2);
-          return new Bounds(min, max);
+          var b = this.projection.bounds, s2 = this.scale(zoom2), min = this.transformation.transform(b.min, s2), max2 = this.transformation.transform(b.max, s2);
+          return new Bounds(min, max2);
         },
         // @method distance(latlng1: LatLng, latlng2: LatLng): Number
         // Returns the distance between two geographical coordinates.
@@ -8535,7 +9569,7 @@ var require_leaflet_src = __commonJS({
         R: earthRadius,
         MAX_LATITUDE: 85.0511287798,
         project: function(latlng) {
-          var d = Math.PI / 180, max = this.MAX_LATITUDE, lat = Math.max(Math.min(max, latlng.lat), -max), sin = Math.sin(lat * d);
+          var d = Math.PI / 180, max2 = this.MAX_LATITUDE, lat = Math.max(Math.min(max2, latlng.lat), -max2), sin = Math.sin(lat * d);
           return new Point(
             this.R * latlng.lng * d,
             this.R * Math.log((1 + sin) / (1 - sin)) / 2
@@ -9978,13 +11012,13 @@ var require_leaflet_src = __commonJS({
         getBoundsZoom: function(bounds, inside, padding) {
           bounds = toLatLngBounds(bounds);
           padding = toPoint(padding || [0, 0]);
-          var zoom2 = this.getZoom() || 0, min = this.getMinZoom(), max = this.getMaxZoom(), nw = bounds.getNorthWest(), se = bounds.getSouthEast(), size = this.getSize().subtract(padding), boundsSize = toBounds(this.project(se, zoom2), this.project(nw, zoom2)).getSize(), snap = Browser.any3d ? this.options.zoomSnap : 1, scalex = size.x / boundsSize.x, scaley = size.y / boundsSize.y, scale2 = inside ? Math.max(scalex, scaley) : Math.min(scalex, scaley);
+          var zoom2 = this.getZoom() || 0, min = this.getMinZoom(), max2 = this.getMaxZoom(), nw = bounds.getNorthWest(), se = bounds.getSouthEast(), size = this.getSize().subtract(padding), boundsSize = toBounds(this.project(se, zoom2), this.project(nw, zoom2)).getSize(), snap = Browser.any3d ? this.options.zoomSnap : 1, scalex = size.x / boundsSize.x, scaley = size.y / boundsSize.y, scale2 = inside ? Math.max(scalex, scaley) : Math.min(scalex, scaley);
           zoom2 = this.getScaleZoom(scale2, zoom2);
           if (snap) {
             zoom2 = Math.round(zoom2 / (snap / 100)) * (snap / 100);
             zoom2 = inside ? Math.ceil(zoom2 / snap) * snap : Math.floor(zoom2 / snap) * snap;
           }
-          return Math.max(min, Math.min(max, zoom2));
+          return Math.max(min, Math.min(max2, zoom2));
         },
         // @method getSize(): Point
         // Returns the current size of the map container (in pixels).
@@ -10473,11 +11507,11 @@ var require_leaflet_src = __commonJS({
           return left + right > 0 ? Math.round(left - right) / 2 : Math.max(0, Math.ceil(left)) - Math.max(0, Math.floor(right));
         },
         _limitZoom: function(zoom2) {
-          var min = this.getMinZoom(), max = this.getMaxZoom(), snap = Browser.any3d ? this.options.zoomSnap : 1;
+          var min = this.getMinZoom(), max2 = this.getMaxZoom(), snap = Browser.any3d ? this.options.zoomSnap : 1;
           if (snap) {
             zoom2 = Math.round(zoom2 / snap) * snap;
           }
-          return Math.max(min, Math.min(max, zoom2));
+          return Math.max(min, Math.min(max2, zoom2));
         },
         _onPanTransitionStep: function() {
           this.fire("move");
@@ -11617,16 +12651,16 @@ var require_leaflet_src = __commonJS({
         }
       }
       function _getEdgeIntersection(a, b, code, bounds, round) {
-        var dx = b.x - a.x, dy = b.y - a.y, min = bounds.min, max = bounds.max, x2, y;
+        var dx = b.x - a.x, dy = b.y - a.y, min = bounds.min, max2 = bounds.max, x2, y;
         if (code & 8) {
-          x2 = a.x + dx * (max.y - a.y) / dy;
-          y = max.y;
+          x2 = a.x + dx * (max2.y - a.y) / dy;
+          y = max2.y;
         } else if (code & 4) {
           x2 = a.x + dx * (min.y - a.y) / dy;
           y = min.y;
         } else if (code & 2) {
-          x2 = max.x;
-          y = a.y + dy * (max.x - a.x) / dx;
+          x2 = max2.x;
+          y = a.y + dy * (max2.x - a.x) / dx;
         } else if (code & 1) {
           x2 = min.x;
           y = a.y + dy * (min.x - a.x) / dx;
@@ -15531,7 +16565,7 @@ var require_leaflet_src = __commonJS({
           TileLayer.prototype.onAdd.call(this, map);
         },
         getTileUrl: function(coords) {
-          var tileBounds = this._tileCoordsToNwSe(coords), crs = this._crs, bounds = toBounds(crs.project(tileBounds[0]), crs.project(tileBounds[1])), min = bounds.min, max = bounds.max, bbox = (this._wmsVersion >= 1.3 && this._crs === EPSG4326 ? [min.y, min.x, max.y, max.x] : [min.x, min.y, max.x, max.y]).join(","), url = TileLayer.prototype.getTileUrl.call(this, coords);
+          var tileBounds = this._tileCoordsToNwSe(coords), crs = this._crs, bounds = toBounds(crs.project(tileBounds[0]), crs.project(tileBounds[1])), min = bounds.min, max2 = bounds.max, bbox = (this._wmsVersion >= 1.3 && this._crs === EPSG4326 ? [min.y, min.x, max2.y, max2.x] : [min.x, min.y, max2.x, max2.y]).join(","), url = TileLayer.prototype.getTileUrl.call(this, coords);
           return url + getParamString(this.wmsParams, url, this.options.uppercase) + (this.options.uppercase ? "&BBOX=" : "&bbox=") + bbox;
         },
         // @method setParams(params: Object, noRedraw?: Boolean): this
@@ -18981,7 +20015,7 @@ function textBBox(cx, cy, fontSize, text) {
   const h = fontSize * 1.12;
   return { left: cx - w * 0.5, right: cx + w * 0.5, top: cy - h * 0.82, bottom: cy + h * 0.18 };
 }
-function bboxOverlap2(a, b, pad) {
+function bboxOverlap3(a, b, pad) {
   return a.left - pad < b.right + pad && a.right + pad > b.left - pad && a.top - pad < b.bottom + pad && a.bottom + pad > b.top - pad;
 }
 function clampLabelX(cx, halfW, vbX, vbW) {
@@ -19028,7 +20062,7 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
       for (const rawX of candidates) {
         const dx = clampLabelX(rawX, halfW, vbX, vbW);
         const box = textBBox(dx, dy, m.degFont, m.deg);
-        if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
+        if (!placed.some((p) => bboxOverlap3(box, p, pad))) {
           m.degX = dx;
           m.degY = dy;
           placed.push(box);
@@ -19056,7 +20090,7 @@ function layoutTurnLabels(markers, vb, vbX, vbY, vbW, vbH) {
       x2 = clampLabelX(x2, m.distFont * distText.length * 0.32, vbX, vbW);
       y = clampLabelY(y, m.distFont, vbY, vbH);
       const box = textBBox(x2, y, m.distFont, distText);
-      if (!placed.some((p) => bboxOverlap2(box, p, pad))) {
+      if (!placed.some((p) => bboxOverlap3(box, p, pad))) {
         m.distX = x2;
         m.distY = y;
         placed.push(box);
@@ -22277,8 +23311,8 @@ function tripDiffLines(local, remote, variantId = "calm") {
   const rd = remote.days?.length || 0;
   if (ld !== rd) lines.push(`\u0427\u0438\u0441\u043B\u043E \u0434\u043D\u0435\u0439: ${ld} \u2192 ${rd}`);
   lines.push(`Revision: ${local.meta?.revision ?? 0} \u2192 ${remote.meta?.revision ?? 0}`);
-  const max = Math.max(ld, rd);
-  for (let i2 = 0; i2 < max; i2++) {
+  const max2 = Math.max(ld, rd);
+  for (let i2 = 0; i2 < max2; i2++) {
     const a = local.days?.[i2];
     const b = remote.days?.[i2];
     if (!a && b) lines.push(`\u0414\u0435\u043D\u044C ${b.n}: \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0438\u043C\u043F\u043E\u0440\u0442\u0435`);
@@ -23532,711 +24566,6 @@ var init_track_recorder = __esm({
     _points = [];
     _lastRide = [];
     _lastSample = 0;
-  }
-});
-
-// node_modules/fflate/esm/browser.js
-function deflateSync(data, opts) {
-  return dopt(data, opts || {}, 0, 0);
-}
-function strToU8(str, latin1) {
-  if (latin1) {
-    var ar_1 = new u8(str.length);
-    for (var i2 = 0; i2 < str.length; ++i2)
-      ar_1[i2] = str.charCodeAt(i2);
-    return ar_1;
-  }
-  if (te)
-    return te.encode(str);
-  var l = str.length;
-  var ar = new u8(str.length + (str.length >> 1));
-  var ai = 0;
-  var w = function(v) {
-    ar[ai++] = v;
-  };
-  for (var i2 = 0; i2 < l; ++i2) {
-    if (ai + 5 > ar.length) {
-      var n = new u8(ai + 8 + (l - i2 << 1));
-      n.set(ar);
-      ar = n;
-    }
-    var c = str.charCodeAt(i2);
-    if (c < 128 || latin1)
-      w(c);
-    else if (c < 2048)
-      w(192 | c >> 6), w(128 | c & 63);
-    else if (c > 55295 && c < 57344)
-      c = 65536 + (c & 1023 << 10) | str.charCodeAt(++i2) & 1023, w(240 | c >> 18), w(128 | c >> 12 & 63), w(128 | c >> 6 & 63), w(128 | c & 63);
-    else
-      w(224 | c >> 12), w(128 | c >> 6 & 63), w(128 | c & 63);
-  }
-  return slc(ar, 0, ai);
-}
-function zipSync(data, opts) {
-  if (!opts)
-    opts = {};
-  var r = {};
-  var files = [];
-  fltn(data, "", r, opts);
-  var o = 0;
-  var tot = 0;
-  for (var fn in r) {
-    var _a2 = r[fn], file = _a2[0], p = _a2[1];
-    var compression = p.level == 0 ? 0 : 8;
-    var f2 = strToU8(fn), s2 = f2.length;
-    var com = p.comment, m = com && strToU8(com), ms = m && m.length;
-    var exl = exfl(p.extra);
-    if (s2 > 65535)
-      err(11);
-    var d = compression ? deflateSync(file, p) : file, l = d.length;
-    var c = crc();
-    c.p(file);
-    files.push(mrg(p, {
-      size: file.length,
-      crc: c.d(),
-      c: d,
-      f: f2,
-      m,
-      u: s2 != fn.length || m && com.length != ms,
-      o,
-      compression
-    }));
-    o += 30 + s2 + exl + l;
-    tot += 76 + 2 * (s2 + exl) + (ms || 0) + l;
-  }
-  var out = new u8(tot + 22), oe = o, cdl = tot - o;
-  for (var i2 = 0; i2 < files.length; ++i2) {
-    var f2 = files[i2];
-    wzh(out, f2.o, f2, f2.f, f2.u, f2.c.length);
-    var badd = 30 + f2.f.length + exfl(f2.extra);
-    out.set(f2.c, f2.o + badd);
-    wzh(out, o, f2, f2.f, f2.u, f2.c.length, f2.o, f2.m), o += 16 + badd + (f2.m ? f2.m.length : 0);
-  }
-  wzf(out, o, files.length, cdl, oe);
-  return out;
-}
-var u8, u16, i32, fleb, fdeb, clim, freb, _a, fl, revfl, _b, fd, revfd, rev, x, i, hMap, flt, i, i, i, i, fdt, i, flm, fdm, shft, slc, ec, err, wbits, wbits16, hTree, ln, lc, clen, wfblk, wblk, deo, et, dflt, crct, crc, dopt, mrg, wbytes, fltn, te, td, tds, exfl, wzh, wzf;
-var init_browser = __esm({
-  "node_modules/fflate/esm/browser.js"() {
-    u8 = Uint8Array;
-    u16 = Uint16Array;
-    i32 = Int32Array;
-    fleb = new u8([
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      1,
-      1,
-      1,
-      1,
-      2,
-      2,
-      2,
-      2,
-      3,
-      3,
-      3,
-      3,
-      4,
-      4,
-      4,
-      4,
-      5,
-      5,
-      5,
-      5,
-      0,
-      /* unused */
-      0,
-      0,
-      /* impossible */
-      0
-    ]);
-    fdeb = new u8([
-      0,
-      0,
-      0,
-      0,
-      1,
-      1,
-      2,
-      2,
-      3,
-      3,
-      4,
-      4,
-      5,
-      5,
-      6,
-      6,
-      7,
-      7,
-      8,
-      8,
-      9,
-      9,
-      10,
-      10,
-      11,
-      11,
-      12,
-      12,
-      13,
-      13,
-      /* unused */
-      0,
-      0
-    ]);
-    clim = new u8([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
-    freb = function(eb, start2) {
-      var b = new u16(31);
-      for (var i2 = 0; i2 < 31; ++i2) {
-        b[i2] = start2 += 1 << eb[i2 - 1];
-      }
-      var r = new i32(b[30]);
-      for (var i2 = 1; i2 < 30; ++i2) {
-        for (var j = b[i2]; j < b[i2 + 1]; ++j) {
-          r[j] = j - b[i2] << 5 | i2;
-        }
-      }
-      return { b, r };
-    };
-    _a = freb(fleb, 2);
-    fl = _a.b;
-    revfl = _a.r;
-    fl[28] = 258, revfl[258] = 28;
-    _b = freb(fdeb, 0);
-    fd = _b.b;
-    revfd = _b.r;
-    rev = new u16(32768);
-    for (i = 0; i < 32768; ++i) {
-      x = (i & 43690) >> 1 | (i & 21845) << 1;
-      x = (x & 52428) >> 2 | (x & 13107) << 2;
-      x = (x & 61680) >> 4 | (x & 3855) << 4;
-      rev[i] = ((x & 65280) >> 8 | (x & 255) << 8) >> 1;
-    }
-    hMap = (function(cd, mb, r) {
-      var s2 = cd.length;
-      var i2 = 0;
-      var l = new u16(mb);
-      for (; i2 < s2; ++i2) {
-        if (cd[i2])
-          ++l[cd[i2] - 1];
-      }
-      var le = new u16(mb);
-      for (i2 = 1; i2 < mb; ++i2) {
-        le[i2] = le[i2 - 1] + l[i2 - 1] << 1;
-      }
-      var co;
-      if (r) {
-        co = new u16(1 << mb);
-        var rvb = 15 - mb;
-        for (i2 = 0; i2 < s2; ++i2) {
-          if (cd[i2]) {
-            var sv = i2 << 4 | cd[i2];
-            var r_1 = mb - cd[i2];
-            var v = le[cd[i2] - 1]++ << r_1;
-            for (var m = v | (1 << r_1) - 1; v <= m; ++v) {
-              co[rev[v] >> rvb] = sv;
-            }
-          }
-        }
-      } else {
-        co = new u16(s2);
-        for (i2 = 0; i2 < s2; ++i2) {
-          if (cd[i2]) {
-            co[i2] = rev[le[cd[i2] - 1]++] >> 15 - cd[i2];
-          }
-        }
-      }
-      return co;
-    });
-    flt = new u8(288);
-    for (i = 0; i < 144; ++i)
-      flt[i] = 8;
-    for (i = 144; i < 256; ++i)
-      flt[i] = 9;
-    for (i = 256; i < 280; ++i)
-      flt[i] = 7;
-    for (i = 280; i < 288; ++i)
-      flt[i] = 8;
-    fdt = new u8(32);
-    for (i = 0; i < 32; ++i)
-      fdt[i] = 5;
-    flm = /* @__PURE__ */ hMap(flt, 9, 0);
-    fdm = /* @__PURE__ */ hMap(fdt, 5, 0);
-    shft = function(p) {
-      return (p + 7) / 8 | 0;
-    };
-    slc = function(v, s2, e) {
-      if (s2 == null || s2 < 0)
-        s2 = 0;
-      if (e == null || e > v.length)
-        e = v.length;
-      return new u8(v.subarray(s2, e));
-    };
-    ec = [
-      "unexpected EOF",
-      "invalid block type",
-      "invalid length/literal",
-      "invalid distance",
-      "stream finished",
-      "no stream handler",
-      ,
-      // determined by compression function
-      "no callback",
-      "invalid UTF-8 data",
-      "extra field too long",
-      "date not in range 1980-2099",
-      "filename too long",
-      "stream finishing",
-      "invalid zip data"
-      // determined by unknown compression method
-    ];
-    err = function(ind, msg, nt) {
-      var e = new Error(msg || ec[ind]);
-      e.code = ind;
-      if (Error.captureStackTrace)
-        Error.captureStackTrace(e, err);
-      if (!nt)
-        throw e;
-      return e;
-    };
-    wbits = function(d, p, v) {
-      v <<= p & 7;
-      var o = p / 8 | 0;
-      d[o] |= v;
-      d[o + 1] |= v >> 8;
-    };
-    wbits16 = function(d, p, v) {
-      v <<= p & 7;
-      var o = p / 8 | 0;
-      d[o] |= v;
-      d[o + 1] |= v >> 8;
-      d[o + 2] |= v >> 16;
-    };
-    hTree = function(d, mb) {
-      var t = [];
-      for (var i2 = 0; i2 < d.length; ++i2) {
-        if (d[i2])
-          t.push({ s: i2, f: d[i2] });
-      }
-      var s2 = t.length;
-      var t2 = t.slice();
-      if (!s2)
-        return { t: et, l: 0 };
-      if (s2 == 1) {
-        var v = new u8(t[0].s + 1);
-        v[t[0].s] = 1;
-        return { t: v, l: 1 };
-      }
-      t.sort(function(a, b) {
-        return a.f - b.f;
-      });
-      t.push({ s: -1, f: 25001 });
-      var l = t[0], r = t[1], i0 = 0, i1 = 1, i22 = 2;
-      t[0] = { s: -1, f: l.f + r.f, l, r };
-      while (i1 != s2 - 1) {
-        l = t[t[i0].f < t[i22].f ? i0++ : i22++];
-        r = t[i0 != i1 && t[i0].f < t[i22].f ? i0++ : i22++];
-        t[i1++] = { s: -1, f: l.f + r.f, l, r };
-      }
-      var maxSym = t2[0].s;
-      for (var i2 = 1; i2 < s2; ++i2) {
-        if (t2[i2].s > maxSym)
-          maxSym = t2[i2].s;
-      }
-      var tr = new u16(maxSym + 1);
-      var mbt = ln(t[i1 - 1], tr, 0);
-      if (mbt > mb) {
-        var i2 = 0, dt = 0;
-        var lft = mbt - mb, cst = 1 << lft;
-        t2.sort(function(a, b) {
-          return tr[b.s] - tr[a.s] || a.f - b.f;
-        });
-        for (; i2 < s2; ++i2) {
-          var i2_1 = t2[i2].s;
-          if (tr[i2_1] > mb) {
-            dt += cst - (1 << mbt - tr[i2_1]);
-            tr[i2_1] = mb;
-          } else
-            break;
-        }
-        dt >>= lft;
-        while (dt > 0) {
-          var i2_2 = t2[i2].s;
-          if (tr[i2_2] < mb)
-            dt -= 1 << mb - tr[i2_2]++ - 1;
-          else
-            ++i2;
-        }
-        for (; i2 >= 0 && dt; --i2) {
-          var i2_3 = t2[i2].s;
-          if (tr[i2_3] == mb) {
-            --tr[i2_3];
-            ++dt;
-          }
-        }
-        mbt = mb;
-      }
-      return { t: new u8(tr), l: mbt };
-    };
-    ln = function(n, l, d) {
-      return n.s == -1 ? Math.max(ln(n.l, l, d + 1), ln(n.r, l, d + 1)) : l[n.s] = d;
-    };
-    lc = function(c) {
-      var s2 = c.length;
-      while (s2 && !c[--s2])
-        ;
-      var cl = new u16(++s2);
-      var cli = 0, cln = c[0], cls = 1;
-      var w = function(v) {
-        cl[cli++] = v;
-      };
-      for (var i2 = 1; i2 <= s2; ++i2) {
-        if (c[i2] == cln && i2 != s2)
-          ++cls;
-        else {
-          if (!cln && cls > 2) {
-            for (; cls > 138; cls -= 138)
-              w(32754);
-            if (cls > 2) {
-              w(cls > 10 ? cls - 11 << 5 | 28690 : cls - 3 << 5 | 12305);
-              cls = 0;
-            }
-          } else if (cls > 3) {
-            w(cln), --cls;
-            for (; cls > 6; cls -= 6)
-              w(8304);
-            if (cls > 2)
-              w(cls - 3 << 5 | 8208), cls = 0;
-          }
-          while (cls--)
-            w(cln);
-          cls = 1;
-          cln = c[i2];
-        }
-      }
-      return { c: cl.subarray(0, cli), n: s2 };
-    };
-    clen = function(cf, cl) {
-      var l = 0;
-      for (var i2 = 0; i2 < cl.length; ++i2)
-        l += cf[i2] * cl[i2];
-      return l;
-    };
-    wfblk = function(out, pos, dat) {
-      var s2 = dat.length;
-      var o = shft(pos + 2);
-      out[o] = s2 & 255;
-      out[o + 1] = s2 >> 8;
-      out[o + 2] = out[o] ^ 255;
-      out[o + 3] = out[o + 1] ^ 255;
-      for (var i2 = 0; i2 < s2; ++i2)
-        out[o + i2 + 4] = dat[i2];
-      return (o + 4 + s2) * 8;
-    };
-    wblk = function(dat, out, final, syms, lf, df, eb, li, bs, bl, p) {
-      wbits(out, p++, final);
-      ++lf[256];
-      var _a2 = hTree(lf, 15), dlt = _a2.t, mlb = _a2.l;
-      var _b2 = hTree(df, 15), ddt = _b2.t, mdb = _b2.l;
-      var _c = lc(dlt), lclt = _c.c, nlc = _c.n;
-      var _d = lc(ddt), lcdt = _d.c, ndc = _d.n;
-      var lcfreq = new u16(19);
-      for (var i2 = 0; i2 < lclt.length; ++i2)
-        ++lcfreq[lclt[i2] & 31];
-      for (var i2 = 0; i2 < lcdt.length; ++i2)
-        ++lcfreq[lcdt[i2] & 31];
-      var _e = hTree(lcfreq, 7), lct = _e.t, mlcb = _e.l;
-      var nlcc = 19;
-      for (; nlcc > 4 && !lct[clim[nlcc - 1]]; --nlcc)
-        ;
-      var flen = bl + 5 << 3;
-      var ftlen = clen(lf, flt) + clen(df, fdt) + eb;
-      var dtlen = clen(lf, dlt) + clen(df, ddt) + eb + 14 + 3 * nlcc + clen(lcfreq, lct) + 2 * lcfreq[16] + 3 * lcfreq[17] + 7 * lcfreq[18];
-      if (bs >= 0 && flen <= ftlen && flen <= dtlen)
-        return wfblk(out, p, dat.subarray(bs, bs + bl));
-      var lm, ll, dm, dl;
-      wbits(out, p, 1 + (dtlen < ftlen)), p += 2;
-      if (dtlen < ftlen) {
-        lm = hMap(dlt, mlb, 0), ll = dlt, dm = hMap(ddt, mdb, 0), dl = ddt;
-        var llm = hMap(lct, mlcb, 0);
-        wbits(out, p, nlc - 257);
-        wbits(out, p + 5, ndc - 1);
-        wbits(out, p + 10, nlcc - 4);
-        p += 14;
-        for (var i2 = 0; i2 < nlcc; ++i2)
-          wbits(out, p + 3 * i2, lct[clim[i2]]);
-        p += 3 * nlcc;
-        var lcts = [lclt, lcdt];
-        for (var it = 0; it < 2; ++it) {
-          var clct = lcts[it];
-          for (var i2 = 0; i2 < clct.length; ++i2) {
-            var len = clct[i2] & 31;
-            wbits(out, p, llm[len]), p += lct[len];
-            if (len > 15)
-              wbits(out, p, clct[i2] >> 5 & 127), p += clct[i2] >> 12;
-          }
-        }
-      } else {
-        lm = flm, ll = flt, dm = fdm, dl = fdt;
-      }
-      for (var i2 = 0; i2 < li; ++i2) {
-        var sym = syms[i2];
-        if (sym > 255) {
-          var len = sym >> 18 & 31;
-          wbits16(out, p, lm[len + 257]), p += ll[len + 257];
-          if (len > 7)
-            wbits(out, p, sym >> 23 & 31), p += fleb[len];
-          var dst = sym & 31;
-          wbits16(out, p, dm[dst]), p += dl[dst];
-          if (dst > 3)
-            wbits16(out, p, sym >> 5 & 8191), p += fdeb[dst];
-        } else {
-          wbits16(out, p, lm[sym]), p += ll[sym];
-        }
-      }
-      wbits16(out, p, lm[256]);
-      return p + ll[256];
-    };
-    deo = /* @__PURE__ */ new i32([65540, 131080, 131088, 131104, 262176, 1048704, 1048832, 2114560, 2117632]);
-    et = /* @__PURE__ */ new u8(0);
-    dflt = function(dat, lvl, plvl, pre, post, st) {
-      var s2 = st.z || dat.length;
-      var o = new u8(pre + s2 + 5 * (1 + Math.ceil(s2 / 7e3)) + post);
-      var w = o.subarray(pre, o.length - post);
-      var lst = st.l;
-      var pos = (st.r || 0) & 7;
-      if (lvl) {
-        if (pos)
-          w[0] = st.r >> 3;
-        var opt = deo[lvl - 1];
-        var n = opt >> 13, c = opt & 8191;
-        var msk_1 = (1 << plvl) - 1;
-        var prev = st.p || new u16(32768), head = st.h || new u16(msk_1 + 1);
-        var bs1_1 = Math.ceil(plvl / 3), bs2_1 = 2 * bs1_1;
-        var hsh = function(i3) {
-          return (dat[i3] ^ dat[i3 + 1] << bs1_1 ^ dat[i3 + 2] << bs2_1) & msk_1;
-        };
-        var syms = new i32(25e3);
-        var lf = new u16(288), df = new u16(32);
-        var lc_1 = 0, eb = 0, i2 = st.i || 0, li = 0, wi = st.w || 0, bs = 0;
-        for (; i2 + 2 < s2; ++i2) {
-          var hv = hsh(i2);
-          var imod = i2 & 32767, pimod = head[hv];
-          prev[imod] = pimod;
-          head[hv] = imod;
-          if (wi <= i2) {
-            var rem = s2 - i2;
-            if ((lc_1 > 7e3 || li > 24576) && (rem > 423 || !lst)) {
-              pos = wblk(dat, w, 0, syms, lf, df, eb, li, bs, i2 - bs, pos);
-              li = lc_1 = eb = 0, bs = i2;
-              for (var j = 0; j < 286; ++j)
-                lf[j] = 0;
-              for (var j = 0; j < 30; ++j)
-                df[j] = 0;
-            }
-            var l = 2, d = 0, ch_1 = c, dif = imod - pimod & 32767;
-            if (rem > 2 && hv == hsh(i2 - dif)) {
-              var maxn = Math.min(n, rem) - 1;
-              var maxd = Math.min(32767, i2);
-              var ml = Math.min(258, rem);
-              while (dif <= maxd && --ch_1 && imod != pimod) {
-                if (dat[i2 + l] == dat[i2 + l - dif]) {
-                  var nl = 0;
-                  for (; nl < ml && dat[i2 + nl] == dat[i2 + nl - dif]; ++nl)
-                    ;
-                  if (nl > l) {
-                    l = nl, d = dif;
-                    if (nl > maxn)
-                      break;
-                    var mmd = Math.min(dif, nl - 2);
-                    var md = 0;
-                    for (var j = 0; j < mmd; ++j) {
-                      var ti = i2 - dif + j & 32767;
-                      var pti = prev[ti];
-                      var cd = ti - pti & 32767;
-                      if (cd > md)
-                        md = cd, pimod = ti;
-                    }
-                  }
-                }
-                imod = pimod, pimod = prev[imod];
-                dif += imod - pimod & 32767;
-              }
-            }
-            if (d) {
-              syms[li++] = 268435456 | revfl[l] << 18 | revfd[d];
-              var lin = revfl[l] & 31, din = revfd[d] & 31;
-              eb += fleb[lin] + fdeb[din];
-              ++lf[257 + lin];
-              ++df[din];
-              wi = i2 + l;
-              ++lc_1;
-            } else {
-              syms[li++] = dat[i2];
-              ++lf[dat[i2]];
-            }
-          }
-        }
-        for (i2 = Math.max(i2, wi); i2 < s2; ++i2) {
-          syms[li++] = dat[i2];
-          ++lf[dat[i2]];
-        }
-        pos = wblk(dat, w, lst, syms, lf, df, eb, li, bs, i2 - bs, pos);
-        if (!lst) {
-          st.r = pos & 7 | w[pos / 8 | 0] << 3;
-          pos -= 7;
-          st.h = head, st.p = prev, st.i = i2, st.w = wi;
-        }
-      } else {
-        for (var i2 = st.w || 0; i2 < s2 + lst; i2 += 65535) {
-          var e = i2 + 65535;
-          if (e >= s2) {
-            w[pos / 8 | 0] = lst;
-            e = s2;
-          }
-          pos = wfblk(w, pos + 1, dat.subarray(i2, e));
-        }
-        st.i = s2;
-      }
-      return slc(o, 0, pre + shft(pos) + post);
-    };
-    crct = /* @__PURE__ */ (function() {
-      var t = new Int32Array(256);
-      for (var i2 = 0; i2 < 256; ++i2) {
-        var c = i2, k = 9;
-        while (--k)
-          c = (c & 1 && -306674912) ^ c >>> 1;
-        t[i2] = c;
-      }
-      return t;
-    })();
-    crc = function() {
-      var c = -1;
-      return {
-        p: function(d) {
-          var cr = c;
-          for (var i2 = 0; i2 < d.length; ++i2)
-            cr = crct[cr & 255 ^ d[i2]] ^ cr >>> 8;
-          c = cr;
-        },
-        d: function() {
-          return ~c;
-        }
-      };
-    };
-    dopt = function(dat, opt, pre, post, st) {
-      if (!st) {
-        st = { l: 1 };
-        if (opt.dictionary) {
-          var dict = opt.dictionary.subarray(-32768);
-          var newDat = new u8(dict.length + dat.length);
-          newDat.set(dict);
-          newDat.set(dat, dict.length);
-          dat = newDat;
-          st.w = dict.length;
-        }
-      }
-      return dflt(dat, opt.level == null ? 6 : opt.level, opt.mem == null ? st.l ? Math.ceil(Math.max(8, Math.min(13, Math.log(dat.length))) * 1.5) : 20 : 12 + opt.mem, pre, post, st);
-    };
-    mrg = function(a, b) {
-      var o = {};
-      for (var k in a)
-        o[k] = a[k];
-      for (var k in b)
-        o[k] = b[k];
-      return o;
-    };
-    wbytes = function(d, b, v) {
-      for (; v; ++b)
-        d[b] = v, v >>>= 8;
-    };
-    fltn = function(d, p, t, o) {
-      for (var k in d) {
-        var val = d[k], n = p + k, op = o;
-        if (Array.isArray(val))
-          op = mrg(o, val[1]), val = val[0];
-        if (ArrayBuffer.isView(val))
-          t[n] = [val, op];
-        else {
-          t[n += "/"] = [new u8(0), op];
-          fltn(val, n, t, o);
-        }
-      }
-    };
-    te = typeof TextEncoder != "undefined" && /* @__PURE__ */ new TextEncoder();
-    td = typeof TextDecoder != "undefined" && /* @__PURE__ */ new TextDecoder();
-    tds = 0;
-    try {
-      td.decode(et, { stream: true });
-      tds = 1;
-    } catch (e) {
-    }
-    exfl = function(ex) {
-      var le = 0;
-      if (ex) {
-        for (var k in ex) {
-          var l = ex[k].length;
-          if (l > 65535)
-            err(9);
-          le += l + 4;
-        }
-      }
-      return le;
-    };
-    wzh = function(d, b, f2, fn, u2, c, ce, co) {
-      var fl2 = fn.length, ex = f2.extra, col = co && co.length;
-      var exl = exfl(ex);
-      wbytes(d, b, ce != null ? 33639248 : 67324752), b += 4;
-      if (ce != null)
-        d[b++] = 20, d[b++] = f2.os;
-      d[b] = 20, b += 2;
-      d[b++] = f2.flag << 1 | (c < 0 && 8), d[b++] = u2 && 8;
-      d[b++] = f2.compression & 255, d[b++] = f2.compression >> 8;
-      var dt = new Date(f2.mtime == null ? Date.now() : f2.mtime), y = dt.getFullYear() - 1980;
-      if (y < 0 || y > 119)
-        err(10);
-      wbytes(d, b, y << 25 | dt.getMonth() + 1 << 21 | dt.getDate() << 16 | dt.getHours() << 11 | dt.getMinutes() << 5 | dt.getSeconds() >> 1), b += 4;
-      if (c != -1) {
-        wbytes(d, b, f2.crc);
-        wbytes(d, b + 4, c < 0 ? -c - 2 : c);
-        wbytes(d, b + 8, f2.size);
-      }
-      wbytes(d, b + 12, fl2);
-      wbytes(d, b + 14, exl), b += 16;
-      if (ce != null) {
-        wbytes(d, b, col);
-        wbytes(d, b + 6, f2.attrs);
-        wbytes(d, b + 10, ce), b += 14;
-      }
-      d.set(fn, b);
-      b += fl2;
-      if (exl) {
-        for (var k in ex) {
-          var exf = ex[k], l = exf.length;
-          wbytes(d, b, +k);
-          wbytes(d, b + 2, l);
-          d.set(exf, b + 4), b += 4 + l;
-        }
-      }
-      if (col)
-        d.set(co, b), b += col;
-      return b;
-    };
-    wzf = function(o, b, c, d, e) {
-      wbytes(o, b, 101010256);
-      wbytes(o, b + 8, c);
-      wbytes(o, b + 10, c);
-      wbytes(o, b + 12, d);
-      wbytes(o, b + 16, e);
-    };
   }
 });
 
@@ -27528,13 +27857,13 @@ function wrapStepper(input) {
   wrap.append(minus, input, plus);
   const step = parseFloat(input.getAttribute("step")) || 1;
   const min = parseFloat(input.getAttribute("min"));
-  const max = parseFloat(input.getAttribute("max"));
+  const max2 = parseFloat(input.getAttribute("max"));
   function bump(dir) {
     let v = parseFloat(input.value);
     if (!isFinite(v)) v = 0;
     v += dir * step;
     if (isFinite(min)) v = Math.max(min, v);
-    if (isFinite(max)) v = Math.min(max, v);
+    if (isFinite(max2)) v = Math.min(max2, v);
     if (step >= 1) v = Math.round(v);
     else v = Math.round(v * 10) / 10;
     input.value = String(v);

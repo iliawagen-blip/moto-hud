@@ -20,6 +20,7 @@
     "trip:extract": "node scripts/extract-trip-jul2026.mjs",
     "interchange:test": "node scripts/interchange-test.mjs",
     "cameras:snapshot": "node scripts/fetch-cameras-snapshot.mjs",
+    "highways:snapshot": "node scripts/fetch-highways-snapshot.mjs",
     "regression:sim:moscow": "node regression/scripts/run-sim-moscow.mjs",
     "regression:sim:russia": "node regression/scripts/run-sim-russia.mjs",
     "cap:sync": "npm run build && npx cap sync",
