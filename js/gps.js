@@ -12,7 +12,7 @@ import telemetry from './telemetry.js';
 import { getNavSnap } from './route-geometry.js';
 import {
   FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN,
-  GPS_INVALIDATE_ACC_M, GPS_LOST_RECONVERGE_MS,
+  GPS_INVALIDATE_ACC_M, GPS_INVALIDATE_ACC_STATIONARY_M, GPS_LOST_RECONVERGE_MS,
   GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M,
   GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO,
   GPS_SPEED_STATIONARY_DIST_M,
@@ -302,7 +302,10 @@ export function applyGpsFix(next){
 
   feedGpsConverge(next, telCtx);
   const effAcc = effectiveAccM(next.acc, S._gpsSpreadBuf);
-  if(effAcc != null && effAcc > GPS_INVALIDATE_ACC_M) invalidateGpsConverge('invalidate_acc', telCtx);
+  // На стоянке не сбрасывать converge при среднем acc (field 19-03: spd=0, acc 40–120 thrash)
+  const spdNow = next.speed != null && next.speed >= 0 ? next.speed : 0;
+  const invAccLim = spdNow < 1.2 ? GPS_INVALIDATE_ACC_STATIONARY_M : GPS_INVALIDATE_ACC_M;
+  if(effAcc != null && effAcc > invAccLim) invalidateGpsConverge('invalidate_acc', telCtx);
   if($('hud').classList.contains('on') && isSnapLost() && lostDurationMs() > GPS_LOST_RECONVERGE_MS){
     telemetry.log('nav', {
       sub: 'snap_lost_long',

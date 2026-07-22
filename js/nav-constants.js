@@ -11,6 +11,11 @@ export const SNAP_QUALITY_LOST_IN = 2.5;
 export const SNAP_QUALITY_DEGRADED_OUT = 2.0;
 export const SNAP_QUALITY_LOST_LATERAL_M = 80;
 export const SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M = 60;
+/**
+ * Score-based LOST только при существенном lateral.
+ * Иначе lat≈39 / acc≈8 → score>2.5 → sticky LOST на минуты (field 18-51).
+ */
+export const SNAP_QUALITY_LOST_SCORE_MIN_LATERAL_M = 55;
 export const SNAP_QUALITY_ACC_FLOOR_M = 5;
 export const SNAP_QUALITY_TICKS_REQUIRED = 2;
 export const SNAP_QUALITY_TICK_WINDOW = 3;
@@ -59,6 +64,11 @@ export const OFF_ROUTE_CONFIRM_DIST_M = 100;
 export const OFF_ROUTE_CONFIRM_DIST_HIGH_M = 200;
 export const OFF_ROUTE_HIGH_SPD_MPS = 25;
 export const OFF_ROUTE_GPS_ACC_GATE_M = 30;
+/**
+ * Lateral-скачок без телепорта spdSrc — junk GPS (field 18-41: lat_off 500–1000 м).
+ * Не входить в SUSPECT / не копить confirm.
+ */
+export const OFF_ROUTE_LATERAL_JUNK_M = 280;
 export const OFF_ROUTE_ACC_FACTOR = 1.5;
 export const OFF_ROUTE_HEADING_DIVERGE_DEG = 45;
 export const OFF_ROUTE_HEADING_DIVERGE_MS = 3000;
@@ -138,6 +148,8 @@ export const LOW_SPEED_MAP_EXIT_PAD_KMH = 2;
 export const PATH_SKIP_DS_M = 2;
 export const PATH_SKIP_FRAMES = 2;
 export const GPS_INVALIDATE_ACC_M = 50;
+/** На стоянке (spd≈0) invalidate только при экстремальном acc (field 19-03 thrash) */
+export const GPS_INVALIDATE_ACC_STATIONARY_M = 120;
 export const GPS_LOST_RECONVERGE_MS = 60000;
 
 /** --- GPS speed sanity (отображение и навигация) --- */
