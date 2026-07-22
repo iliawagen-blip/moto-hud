@@ -5,6 +5,7 @@
 import { gunzipSync } from 'fflate';
 import { MOSCOW_CAM_BBOX } from './cameras-snapshot.js';
 import {
+  CITY_ARTERIAL_REGION_IDS,
   loadMergedLayer,
   loadRegionLayer,
   routeIntersectsBbox
@@ -141,16 +142,20 @@ export async function loadHighwaysSnapshotForRoute(coords){
   bboxes.push(...hw.bboxes);
   if(hw.updated) updated = hw.updated;
 
-  const mw = await loadMergedLayer(coords, 'motorways', 'ways', 'id');
-  for(const raw of mw.items){
-    const w = normalizeSnapshotWay(raw);
-    if(w && !byId.has(String(w.id))) byId.set(String(w.id), w);
+  // Городской arterial уже есть — не тянуть 7+ MB russia_motorways (field 17–21.07: 7–35 с)
+  const hasCityArterial = hw.regions.some(id => CITY_ARTERIAL_REGION_IDS.has(id)) && hw.items.length > 200;
+  if(!hasCityArterial){
+    const mw = await loadMergedLayer(coords, 'motorways', 'ways', 'id');
+    for(const raw of mw.items){
+      const w = normalizeSnapshotWay(raw);
+      if(w && !byId.has(String(w.id))) byId.set(String(w.id), w);
+    }
+    for(const id of mw.regions){
+      if(!regions.includes(id)) regions.push(id);
+    }
+    bboxes.push(...mw.bboxes);
+    if(mw.updated && (!updated || mw.updated > updated)) updated = mw.updated;
   }
-  for(const id of mw.regions){
-    if(!regions.includes(id)) regions.push(id);
-  }
-  bboxes.push(...mw.bboxes);
-  if(mw.updated && (!updated || mw.updated > updated)) updated = mw.updated;
 
   if(!byId.size){
     const legacy = await loadLegacyMoscowHighways();

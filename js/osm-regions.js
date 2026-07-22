@@ -113,11 +113,15 @@ export async function loadRegionLayer(regionId, layer){
   return p;
 }
 
+/** Регионы с городским arterial highways — без russia_motorways */
+export const CITY_ARTERIAL_REGION_IDS = new Set(['moscow', 'mkad_plus', 'spb']);
+
 /** Слить массивы из нескольких регионов по idKey */
 export async function loadMergedLayer(coords, layer, arrayKey, idKey){
   const regs = await regionsForRoute(coords);
   const byId = new Map();
   const bboxes = [];
+  const usedRegions = [];
   let updated = null;
   for(const reg of regs){
     if(!(reg.layers || []).includes(layer) && layer !== 'motorways') continue;
@@ -127,6 +131,7 @@ export async function loadMergedLayer(coords, layer, arrayKey, idKey){
     const j = await loadRegionLayer(reg.id, layer);
     if(!j?.[arrayKey]?.length) continue;
     bboxes.push(j.bbox || reg.bbox);
+    usedRegions.push(reg.id);
     if(j.updated && (!updated || j.updated > updated)) updated = j.updated;
     for(const item of j[arrayKey]){
       const id = idKey ? item[idKey] : (item.id || `${item.lat},${item.lon}`);
@@ -138,7 +143,8 @@ export async function loadMergedLayer(coords, layer, arrayKey, idKey){
     items: [...byId.values()],
     bboxes,
     updated,
-    regions: regs.map(r => r.id)
+    // только регионы, реально отдавшие данные (не весь intersect bbox)
+    regions: usedRegions
   };
 }
 

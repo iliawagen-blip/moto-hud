@@ -12,7 +12,7 @@ import {
   OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS,
   OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M,
   OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS,
-  OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_ACC_FACTOR,
+  OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_LATERAL_JUNK_M, OFF_ROUTE_ACC_FACTOR,
   OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS,
   OFF_ROUTE_HEADING_MIN_SPD,
   OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M,
@@ -150,6 +150,24 @@ function headingDiverged(feed, now){
   return simScaledDelta(now - _ctx.headingDivergeSince) >= OFF_ROUTE_HEADING_DIVERGE_MS;
 }
 
+/** Мусорный GPS: телепорт / плохой acc / абсурдный lateral (field 18-41) */
+function isGpsJunk(feed){
+  if(feed.gpsTeleport) return true;
+  if(feed.lateral != null && feed.lateral >= OFF_ROUTE_LATERAL_JUNK_M) return true;
+  // acc==null / 0 из `acc || 0` раньше обходили gate — требуем валидный acc
+  if(feed.acc == null || !Number.isFinite(feed.acc) || feed.acc <= 0){
+    return feed.lateral != null && feed.lateral > OFF_ROUTE_ENTER_M;
+  }
+  return feed.acc > OFF_ROUTE_GPS_ACC_GATE_M;
+}
+
+function isGpsJunkHard(feed){
+  if(feed.gpsTeleport) return true;
+  if(feed.lateral != null && feed.lateral >= OFF_ROUTE_LATERAL_JUNK_M) return true;
+  if(feed.acc == null || !Number.isFinite(feed.acc) || feed.acc <= 0) return true;
+  return feed.acc > OFF_ROUTE_GPS_ACC_GATE_M * 2;
+}
+
 function lateralAfterReroute(){
   const geom = S.route?.geometry;
   const gps = S.gps;
@@ -170,10 +188,10 @@ function canTriggerReroute(feed, now){
   // Регрессионный sim: disableReroute → OFFLINE instead of REROUTING; lateral_*/dist_time
   // при SIM_TIME_SCALE×10 раздувают false_reroute (SUSPECT↔ON). Поле — без флага.
   const isRegSim = !!globalThis.__REGRESSION_SIM__?.active;
-  // Мусорный GPS (field 18-13: acc↑ + телепорты, ложный spd=0) — не триггерить reroute
-  const gpsJunk = (feed.acc != null && feed.acc > OFF_ROUTE_GPS_ACC_GATE_M * 1.5) ||
-    !!feed.gpsTeleport;
-  if(gpsJunk) return null;
+  // Мусорный GPS (field 18-13/18-41: acc↑, телепорты, lat_off 500–1000) — не reroute
+  if(isGpsJunk(feed) || (feed.acc != null && feed.acc > OFF_ROUTE_GPS_ACC_GATE_M * 1.5)){
+    return null;
+  }
 
   if(!isRegSim){
     // Вечерний field: реальный spd≈0 → heading/dist не копятся. peak+текущий ≥ HARD.
@@ -320,12 +338,14 @@ export function tickOffRouteMachine(feed){
     return;
   }
 
-  const enterM = Math.max(OFF_ROUTE_ENTER_M, OFF_ROUTE_ACC_FACTOR * feed.acc);
+  const accForEnter = (feed.acc != null && Number.isFinite(feed.acc) && feed.acc > 0)
+    ? feed.acc : OFF_ROUTE_GPS_ACC_GATE_M;
+  const enterM = Math.max(OFF_ROUTE_ENTER_M, OFF_ROUTE_ACC_FACTOR * accForEnter);
   const inDeadZone = feed.lateral >= OFF_ROUTE_EXIT_M && feed.lateral <= OFF_ROUTE_ENTER_M;
 
   if(S.offRouteState === OffRouteState.ON_ROUTE){
-    // плохой GPS / телепорт — не входим в SUSPECT (шум; field 18-13)
-    if(feed.acc > OFF_ROUTE_GPS_ACC_GATE_M || feed.gpsTeleport) return;
+    // плохой GPS / телепорт / lateral junk — не входим в SUSPECT (field 18-13 / 18-41)
+    if(isGpsJunk(feed)) return;
     const lostOff = S.snapQuality === SnapQuality.LOST && feed.lateral > OFF_ROUTE_ENTER_M;
     if(feed.lateral > enterM || lostOff){
       resetSuspectCtx();
@@ -336,9 +356,13 @@ export function tickOffRouteMachine(feed){
 
   if(S.offRouteState === OffRouteState.SUSPECT){
     // Мусорный GPS в SUSPECT: не копим confirm / peak (иначе lateral_time на телепортах)
-    if(feed.gpsTeleport || feed.acc > OFF_ROUTE_GPS_ACC_GATE_M * 2){
+    if(isGpsJunkHard(feed)){
       if(feed.lateral < OFF_ROUTE_ENTER_M){
         tryReturnOnRoute(feed);
+      } else if(feed.lateral >= OFF_ROUTE_LATERAL_JUNK_M){
+        // абсурдный lateral — сброс в ON_ROUTE, не REROUTING
+        transition(OffRouteState.SUSPECT, OffRouteState.ON_ROUTE, metaFromFeed(feed));
+        resetSuspectCtx();
       }
       return;
     }

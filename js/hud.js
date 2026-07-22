@@ -353,7 +353,8 @@ export function onTick(){
   if(hudOn){
     tickOffRouteMachine({
       lateral: lateralForOffRoute(snap),
-      acc: S.gps.acc || 0,
+      // null ≠ 0: раньше `acc || 0` обходил GPS junk gate (field 18-41)
+      acc: S.gps.acc != null && Number.isFinite(S.gps.acc) ? S.gps.acc : null,
       spdMps,
       spdKmh: kmh,
       heading: S.smoothedHeading,

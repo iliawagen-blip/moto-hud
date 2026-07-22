@@ -6,6 +6,7 @@ import { S } from './state.js';
 import {
   SNAP_QUALITY_GOOD_IN, SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN,
   SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M,
+  SNAP_QUALITY_LOST_SCORE_MIN_LATERAL_M,
   SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M,
   SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_HOLD_MS,
   SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_DEGRADED_TIMEOUT_MS,
@@ -51,18 +52,33 @@ function rawScore(snap, gps){
   return snap.lateral / acc;
 }
 
+function isScoreLost(score, lateral, mult){
+  const s = score / mult;
+  // lateral жёсткий порог — всегда LOST
+  if(lateral > SNAP_QUALITY_LOST_LATERAL_M) return true;
+  // score LOST только если боковой уход уже заметный (анти sticky 18-51)
+  return s > SNAP_QUALITY_LOST_IN && lateral >= SNAP_QUALITY_LOST_SCORE_MIN_LATERAL_M;
+}
+
 function classifyInstant(score, lateral, mult){
   const s = score / mult;
-  if(lateral > SNAP_QUALITY_LOST_LATERAL_M || s > SNAP_QUALITY_LOST_IN) return SnapQuality.LOST;
-  if(s > SNAP_QUALITY_DEGRADED_IN) return SnapQuality.DEGRADED;
+  if(isScoreLost(score, lateral, mult)) return SnapQuality.LOST;
+  if(s > SNAP_QUALITY_DEGRADED_IN || lateral > SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M){
+    return SnapQuality.DEGRADED;
+  }
   return SnapQuality.GOOD;
 }
 
 function classifyExit(score, lateral, mult){
   const s = score / mult;
-  if(lateral > SNAP_QUALITY_LOST_LATERAL_M || s > SNAP_QUALITY_LOST_IN) return SnapQuality.LOST;
-  if(lateral < SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M && s <= SNAP_QUALITY_DEGRADED_OUT) return SnapQuality.GOOD;
-  if(s <= SNAP_QUALITY_GOOD_OUT) return SnapQuality.GOOD;
+  if(isScoreLost(score, lateral, mult)) return SnapQuality.LOST;
+  // Выход из LOST/DEGRADED: умеренный lateral + приемлемый score
+  if(lateral < SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M && s <= SNAP_QUALITY_DEGRADED_OUT){
+    return SnapQuality.GOOD;
+  }
+  if(s <= SNAP_QUALITY_GOOD_OUT && lateral < SNAP_QUALITY_LOST_SCORE_MIN_LATERAL_M){
+    return SnapQuality.GOOD;
+  }
   return SnapQuality.DEGRADED;
 }
 

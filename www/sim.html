@@ -669,6 +669,7 @@
       GPS: step/dt при gap не обнуляет скорость; телепорт &gt;400 м не кормит offroute.
       Съезд path-diverge только гибрид: геометрия + слабый OSRM (ramp/fork/lanes), не дуга одна.
       OSM-снапшоты <code>data/regions/*</code> (Москва/МО/СПб/магистрали): камеры, АЗС, urban place, traffic_signals, highways.
+      В городе не грузим <code>russia_motorways</code>. Junk-GPS (acc/телепорт/lat≫) не кормит SUSPECT; sticky LOST при lat≈40 закрыт.
       Вне региона — Overpass; камеры abort → localStorage (CAM*). Светофоры — только точки (не live RGB).
       <strong>Тема:</strong> селекты синхронизированы с приложением и localStorage <code>moto-hud-theme</code>.
       <strong>На ПК</strong> справа — карта на всё свободное место; старт GPS — поиск адреса (Nominatim).
