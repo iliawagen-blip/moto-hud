@@ -585,36 +585,44 @@ export async function loadCameras(){
     updateCamStatusUI();
   }
 
-  const CAM_AROUND_M = 80;
+  const CAM_AROUND_M = 150;
 
   // 1) Снапшоты регионов (Москва / МО / СПб…) — без Overpass в поездке
   try{
     const snap = await loadCamerasSnapshotForRoute(coords);
     if(snap?.cameras?.length){
-      S.cameras = filterCamerasNearRoute(snap.cameras, coords, CAM_AROUND_M);
-      S.camLoadStatus = 'ok';
-      if(S.cameras.length){
+      const filtered = filterCamerasNearRoute(snap.cameras, coords, CAM_AROUND_M);
+      if(filtered.length){
+        S.cameras = filtered;
+        S.camLoadStatus = 'ok';
         saveCamerasToRouteCache(coords, S.cameras);
         saveLastRun();
+        telemetry.log('nav', {
+          sub: 'cameras_loaded',
+          count: S.cameras.length,
+          with_speed: S.cameras.filter(c => c.speed != null).length,
+          ms: Date.now() - t0,
+          mode: 'snapshot',
+          snap_count: snap.count,
+          snap_updated: snap.updated || undefined,
+          regions: snap.regions
+        });
+        updateCamStatusUI();
+        return;
       }
+      // Снапшот есть, но коридор пуст — дотягиваем Overpass (field 07-07 count=0)
       telemetry.log('nav', {
-        sub: 'cameras_loaded',
-        count: S.cameras.length,
-        with_speed: S.cameras.filter(c => c.speed != null).length,
-        ms: Date.now() - t0,
-        mode: 'snapshot',
+        sub: 'cameras_snapshot_empty_corridor',
         snap_count: snap.count,
-        snap_updated: snap.updated || undefined,
+        ms: Date.now() - t0,
         regions: snap.regions
       });
-      updateCamStatusUI();
-      return;
     }
   }catch(e){
     console.warn('cameras snapshot path:', e);
   }
 
-  // 2) Overpass-коридор вне зоны снапшота / если файла нет
+  // 2) Overpass-коридор вне зоны снапшота / пустой фильтр / нет файла
   try{
     S.cameras = await fetchCamerasFromOverpassCorridor(coords, CAM_AROUND_M);
     S.camLoadStatus = 'ok';
