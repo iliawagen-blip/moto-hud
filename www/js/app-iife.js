@@ -5603,25 +5603,49 @@
     if (!e || e.type !== "node" || e.lat == null || e.lon == null) return null;
     return cameraFromOsmTags(e.lat, e.lon, e.tags || {}, e.id);
   }
-  function filterCamerasNearRoute(cameras, coords, aroundM = 80, sampleStepM = 600) {
+  function filterCamerasNearRoute(cameras, coords, aroundM = 150, sampleStepM = 600) {
     if (!cameras?.length || !coords?.length) return [];
+    let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+    for (const c of coords) {
+      if (c[0] < minLat) minLat = c[0];
+      if (c[0] > maxLat) maxLat = c[0];
+      if (c[1] < minLon) minLon = c[1];
+      if (c[1] > maxLon) maxLon = c[1];
+    }
+    const padDeg = Math.max(2e-3, aroundM / 111320 * 1.2);
+    minLat -= padDeg;
+    maxLat += padDeg;
+    minLon -= padDeg;
+    maxLon += padDeg;
     const samples = sampleRoutePoints(coords, sampleStepM);
-    if (!samples.length) return [];
+    const coarseM = Math.max(aroundM, sampleStepM * 0.55) + aroundM;
     const out = [];
     const seen = /* @__PURE__ */ new Set();
     for (const cam of cameras) {
       if (cam?.lat == null || cam?.lon == null) continue;
+      if (cam.lat < minLat || cam.lat > maxLat || cam.lon < minLon || cam.lon > maxLon) continue;
       const key = cam.id || cam.lat.toFixed(5) + "," + cam.lon.toFixed(5);
       if (seen.has(key)) continue;
       const p = { lat: cam.lat, lon: cam.lon };
-      let near = false;
+      let coarse = !samples.length;
       for (const s2 of samples) {
-        if (haversine(p, s2) <= aroundM) {
-          near = true;
+        if (haversine(p, s2) <= coarseM) {
+          coarse = true;
           break;
         }
       }
-      if (near) {
+      if (!coarse) continue;
+      let best = Infinity;
+      for (let i2 = 0; i2 < coords.length - 1; i2++) {
+        const d = distToSegment(
+          p,
+          { lat: coords[i2][0], lon: coords[i2][1] },
+          { lat: coords[i2 + 1][0], lon: coords[i2 + 1][1] }
+        );
+        if (d < best) best = d;
+        if (best <= aroundM) break;
+      }
+      if (best <= aroundM) {
         seen.add(key);
         out.push({
           lat: cam.lat,
@@ -7155,28 +7179,35 @@ out body;`;
       S.camLoadStatus = "loading";
       updateCamStatusUI();
     }
-    const CAM_AROUND_M = 80;
+    const CAM_AROUND_M = 150;
     try {
       const snap = await loadCamerasSnapshotForRoute(coords);
       if (snap?.cameras?.length) {
-        S.cameras = filterCamerasNearRoute(snap.cameras, coords, CAM_AROUND_M);
-        S.camLoadStatus = "ok";
-        if (S.cameras.length) {
+        const filtered = filterCamerasNearRoute(snap.cameras, coords, CAM_AROUND_M);
+        if (filtered.length) {
+          S.cameras = filtered;
+          S.camLoadStatus = "ok";
           saveCamerasToRouteCache(coords, S.cameras);
           saveLastRun();
+          telemetry_default.log("nav", {
+            sub: "cameras_loaded",
+            count: S.cameras.length,
+            with_speed: S.cameras.filter((c) => c.speed != null).length,
+            ms: Date.now() - t0,
+            mode: "snapshot",
+            snap_count: snap.count,
+            snap_updated: snap.updated || void 0,
+            regions: snap.regions
+          });
+          updateCamStatusUI();
+          return;
         }
         telemetry_default.log("nav", {
-          sub: "cameras_loaded",
-          count: S.cameras.length,
-          with_speed: S.cameras.filter((c) => c.speed != null).length,
-          ms: Date.now() - t0,
-          mode: "snapshot",
+          sub: "cameras_snapshot_empty_corridor",
           snap_count: snap.count,
-          snap_updated: snap.updated || void 0,
+          ms: Date.now() - t0,
           regions: snap.regions
         });
-        updateCamStatusUI();
-        return;
       }
     } catch (e) {
       console.warn("cameras snapshot path:", e);

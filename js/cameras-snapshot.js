@@ -2,7 +2,7 @@
  * Снапшот камер OSM по регионам + фильтр коридором маршрута.
  * data/regions/{id}/cameras.json (+ legacy data/cameras-moscow.json).
  */
-import { haversine } from './geo.js';
+import { haversine, distToSegment } from './geo.js';
 import {
   loadMergedLayer,
   loadRegionLayer,
@@ -72,25 +72,54 @@ export function cameraFromOverpassNode(e){
   return cameraFromOsmTags(e.lat, e.lon, e.tags || {}, e.id);
 }
 
-export function filterCamerasNearRoute(cameras, coords, aroundM = 80, sampleStepM = 600){
+/**
+ * Камеры в коридоре aroundM от polyline маршрута.
+ * Раньше — только до sample-точек шаг 600 м: камера на дороге в 100–300 м
+ * от сэмпла отбрасывалась (field 07-07: 0 камер почти весь заезд).
+ */
+export function filterCamerasNearRoute(cameras, coords, aroundM = 150, sampleStepM = 600){
   if(!cameras?.length || !coords?.length) return [];
+  // Грубый bbox маршрута + запас — не крутить все 2k камер по сегментам
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  for(const c of coords){
+    if(c[0] < minLat) minLat = c[0];
+    if(c[0] > maxLat) maxLat = c[0];
+    if(c[1] < minLon) minLon = c[1];
+    if(c[1] > maxLon) maxLon = c[1];
+  }
+  const padDeg = Math.max(0.002, aroundM / 111320 * 1.2);
+  minLat -= padDeg; maxLat += padDeg;
+  minLon -= padDeg; maxLon += padDeg;
+
+  // Быстрый отсев далёких: sample-шары чуть шире (половина шага + around)
   const samples = sampleRoutePoints(coords, sampleStepM);
-  if(!samples.length) return [];
+  const coarseM = Math.max(aroundM, sampleStepM * 0.55) + aroundM;
+
   const out = [];
   const seen = new Set();
   for(const cam of cameras){
     if(cam?.lat == null || cam?.lon == null) continue;
+    if(cam.lat < minLat || cam.lat > maxLat || cam.lon < minLon || cam.lon > maxLon) continue;
     const key = cam.id || (cam.lat.toFixed(5) + ',' + cam.lon.toFixed(5));
     if(seen.has(key)) continue;
     const p = { lat: cam.lat, lon: cam.lon };
-    let near = false;
+    let coarse = !samples.length;
     for(const s of samples){
-      if(haversine(p, s) <= aroundM){
-        near = true;
-        break;
-      }
+      if(haversine(p, s) <= coarseM){ coarse = true; break; }
     }
-    if(near){
+    if(!coarse) continue;
+
+    let best = Infinity;
+    for(let i = 0; i < coords.length - 1; i++){
+      const d = distToSegment(
+        p,
+        { lat: coords[i][0], lon: coords[i][1] },
+        { lat: coords[i + 1][0], lon: coords[i + 1][1] }
+      );
+      if(d < best) best = d;
+      if(best <= aroundM) break;
+    }
+    if(best <= aroundM){
       seen.add(key);
       out.push({
         lat: cam.lat,
