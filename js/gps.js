@@ -1,5 +1,5 @@
 import { S } from './state.js';
-import { bearing, haversine } from './geo.js';
+import { bearing, haversine, angleDiff } from './geo.js';
 import { $ } from './util.js';
 import { isNative, isSim } from './platform.js';
 import {
@@ -17,7 +17,8 @@ import {
   GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO,
   GPS_SPEED_STATIONARY_DIST_M,
   GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2,
-  GPS_SPEED_TELEPORT_M, GPS_SPEED_COAST_MAX_DT_S
+  GPS_SPEED_TELEPORT_M, GPS_SPEED_COAST_MAX_DT_S,
+  SNAP_STATIONARY_SPD_MPS
 } from './nav-constants.js';
 import { isSpeedOverLimit } from './speed-limit.js';
 import { tickRoundaboutHudRefresh } from './roundabout.js';
@@ -258,6 +259,15 @@ export function applyGpsFix(next){
     if(d > 3 && d < 500) S.distDone += d;
     if((next.heading == null || isNaN(next.heading)) && d > 3){
       next.heading = bearing(S.lastPos, next);
+      next.hdgSrc = 'move';
+    } else if(d > 2 && dt > 0.3 && next.heading != null && !isNaN(next.heading)){
+      // На низкой скорости GPS-курс часто врёт — предпочитаем вектор движения
+      const moveHdg = bearing(S.lastPos, next);
+      const spdEst = dt > 0 ? d / dt : 0;
+      if(spdEst >= 1 && spdEst < 5 && angleDiff(next.heading, moveHdg) > 50){
+        next.heading = moveHdg;
+        next.hdgSrc = 'move';
+      }
     }
   }
   const speedRes = resolveGpsSpeed(next, S.lastPos);
@@ -273,12 +283,17 @@ export function applyGpsFix(next){
     if(S.smoothedHeading == null) S.smoothedHeading = next.heading;
     else {
       const spd = next.speed ?? S.measSpeed ?? 0;
-      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
-      const keep = 1 - alpha;
-      const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
-      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
-      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
+      // Стоянка: не крутить курс от шумного GPS
+      if(spd < SNAP_STATIONARY_SPD_MPS){
+        /* hold S.smoothedHeading */
+      } else {
+        const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
+        const keep = 1 - alpha;
+        const r = Math.PI / 180, d = 180 / Math.PI;
+        const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
+        const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
+        S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
+      }
     }
   }
   _lastGpsRcvMs = Date.now();

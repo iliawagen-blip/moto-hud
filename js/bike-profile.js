@@ -65,6 +65,15 @@ export const BUILTIN_BIKES = [
     consumptionL100: { default: 4.5, highway: 4.0, city: 5.0, mountain: 5.5, offroad: 6.5 }
   },
   {
+    id: 'car_haval_f7',
+    name: 'Haval F7',
+    tankLiters: 56,
+    reserveKm: 80,
+    fuelType: '95',
+    builtin: true,
+    consumptionL100: { default: 9.5, highway: 8.2, city: 11.5, mountain: 12.0, offroad: 13.5 }
+  },
+  {
     id: 'bike_custom',
     name: 'Свой профиль',
     tankLiters: 18,

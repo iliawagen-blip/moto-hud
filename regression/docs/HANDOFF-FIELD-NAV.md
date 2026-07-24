@@ -14,7 +14,7 @@
 
 | Тема | Статус |
 |------|--------|
-| Hybrid path_diverge (геометрия + слабый OSRM) | ✅ в коде; в поле `path_diverge=0` |
+| Hybrid path_diverge (геометрия + слабый OSRM) | ✅ hint-first + мягкие пороги с hint; probe `path_diverge_probe` (раньше =0 из‑за MIN_TURN 20° vs slight&lt;18°) |
 | Кэш камер маршрута (`CAM*`) | ✅ |
 | Снапшоты OSM по регионам (камеры/fuel/urban/signals/highways) | ✅ + weekly Actions |
 | `russia_motorways` (~151k ways) | ✅ в repo; **не грузить** в городе |
@@ -92,6 +92,7 @@ npm: `osm:snapshot`, `osm:snapshot:small`, `osm:snapshot:motorways`, `cameras:sn
 - Highways: `regions: ["moscow"]`, load 100–300 ms, match часто 100%.  
 - `path_diverge` во всех свежих = **0**.  
 - Вечерний junk: acc p50≫30, lat сотни метров; SUSPECT иногда у порога `OFF_ROUTE_LATERAL_JUNK_M=280`.
+- HUD при junk+LOST: «GPS ШУМНЫЙ / ДЕРЖУ КУРС» + стрелка к snap (не «НЕТ ПРИВЯЗКИ»).
 
 ---
 
@@ -99,10 +100,11 @@ npm: `osm:snapshot`, `osm:snapshot:small`, `osm:snapshot:motorways`, `cameras:sn
 
 1. **SPb highways** snapshot — layer в каталоге есть, полного dump в repo может не быть (manual Actions `spb-highways`).  
 2. **Официальные камеры** (ФВФ ГИБДД / data.mos.ru) — OSM на ряде коридоров пуст.  
-3. **Overpass abort** после empty corridor — долгий таймаут; можно короче / не ждать при уже непустом keep.  
-4. **LOST при lat≫100** с хорошим acc (07-49 lat 472) — не sticky-40; смотреть snap/route seed.  
+3. ~~**Overpass abort** после empty corridor~~ — при keep&gt;0: probe ≤7 с / 2 batch; иначе budget 28 с.  
+4. ~~**LOST при lat≫100**~~ — `return_reseed` + forceWide при выходе из LOST / возврате после peak≥80.  
 5. **MASTERPLAN.md** (ревизия 2026-07-05) не отражает снапшоты/hybrid — обновить при случае.  
-6. Продуктовый план дальше: OEM GPS matrix + Play closed testing → audio focus → офлайн роутер/PMTiles (Фазы 2–4 MASTERPLAN).
+6. Продуктовый план дальше: OEM GPS matrix + Play closed testing → audio focus → офлайн роутер/PMTiles (Фазы 2–4 MASTERPLAN).  
+7. Поле: проверить `path_diverge_probe` / `path_diverge`, junk UX «GPS ШУМНЫЙ», `return_reseed`, `route_low_bearing`.
 
 ---
 

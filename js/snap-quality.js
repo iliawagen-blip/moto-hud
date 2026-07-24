@@ -42,6 +42,12 @@ export function takeForceReeval(){
   return v;
 }
 
+/** Внешний запрос wide re-eval (возврат на маршрут после большого lateral) */
+export function requestForceReeval(){
+  _forceReeval = true;
+  _frozenS = null;
+}
+
 function curvatureMult(geom, s, override){
   if(override != null) return override;
   return 1;
@@ -133,6 +139,11 @@ export function updateSnapQuality(snap, gps, geom, opts){
   if(next === SnapQuality.LOST && prev !== SnapQuality.LOST){
     _lostSince = now;
     _forceReeval = true;
+  }
+  if(prev === SnapQuality.LOST && next !== SnapQuality.LOST){
+    // Выход из LOST: широкий snap + сброс freeze (field 07-49 lat≫100)
+    _forceReeval = true;
+    _frozenS = null;
   }
   if(next !== SnapQuality.LOST) _lostSince = 0;
 

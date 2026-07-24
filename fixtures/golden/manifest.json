@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "note": "Golden field: пороги — потолки регрессии (не «идеал»). Эталоны 07-23/07-24 из Telegram — добавить путями ниже при копировании в fixtures/field/.",
+  "cases": [
+    {
+      "id": "good_morning",
+      "file": "fixtures/field/telemetry_2026-07-14_06-34.jsonl",
+      "role": "Эталонный утренний заезд (низкий lat_off, мало LOST)",
+      "max": {
+        "lat_off_p95": 28,
+        "snap_lost_pct": 8,
+        "reroutes": 2,
+        "snap_jumps": 4
+      }
+    },
+    {
+      "id": "junk_evening",
+      "file": "fixtures/field/telemetry_2026-07-14_16-15.jsonl",
+      "role": "Вечерний junk GPS: LOST допустим, false-reroute — нет",
+      "max": {
+        "reroutes": 1,
+        "snap_jumps": 60
+      },
+      "min": {
+        "snap_lost_pct": 3
+      }
+    },
+    {
+      "id": "big_lateral",
+      "file": "fixtures/field/telemetry_2026-07-15_06-43.jsonl",
+      "role": "Большой уход (lat≫100): должен быть ≥1 reroute, без thrash",
+      "max": {
+        "reroutes": 4
+      },
+      "min": {
+        "reroutes": 1,
+        "lat_off_max": 200
+      }
+    }
+  ]
+}

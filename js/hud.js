@@ -36,11 +36,12 @@ import { getHeadingHealth } from './heading.js';
 import { tickAutoMode } from './theme-manager.js';
 import { applyFinishInfoVisibility } from './hud-opts.js';
 import { clearHudChromeReveal, applyHudChrome } from './hud-chrome.js';
-import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide, OffRouteState } from './offroute.js';
+import { tickOffRouteMachine, resetOffRouteMachine, isOfflineGuide, OffRouteState, isGpsJunk } from './offroute.js';
 import {
   OFF_ROUTE_ENTER_M,
   INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M,
-  INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M
+  INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M,
+  ROUTE_LOW_BEARING_REMAIN_M
 } from './nav-constants.js';
 import telemetry from './telemetry.js';
 import { logFunnel } from './telemetry-funnel.js';
@@ -62,6 +63,8 @@ import { resetConvergeTelemetryRide, flushConvergeSummary } from './converge-tel
 
 /** @type {object|null} */
 let _lastMarkCtx = null;
+/** Уже ушли в пеленг из‑за LOW OSM на этом маршруте */
+let _lowRouteBearingDone = false;
 
 /** Контекст для телеметрической метки (phantom_turn и др.) */
 export function getLastMarkContext(){ return _lastMarkCtx; }
@@ -125,6 +128,11 @@ function setHudStreetLabels(top, bottom){
 }
 
 function maneuverVoiceThresholds(kmh, step){
+  // LOW OSM: не орать «съезд» за километр по ломаной геометрии
+  if(S.routeQuality === RouteQuality.LOW && isInterchangeStep(step)){
+    const mps = Math.max(kmh / 3.6, 4);
+    return { mps, farM: 220, nearM: 70 };
+  }
   const mps = Math.max(kmh / 3.6, 4);
   if(isInterchangeStep(step)){
     return {
@@ -279,7 +287,11 @@ function shouldUseReturnArrow(snap){
   return false;
 }
 
-function paintReturnToRouteArrow(snap){
+/**
+ * @param {object} snap
+ * @param {{ junk?: boolean }} [opts]
+ */
+function paintReturnToRouteArrow(snap, opts = {}){
   const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
   const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading)
     ? S.smoothedHeading : S.gps.heading;
@@ -294,9 +306,29 @@ function paintReturnToRouteArrow(snap){
     $('v-mdist').textContent = (dSnap / 1000).toFixed(1);
     $('v-mdist-u').textContent = 'км';
   }
-  const label = isOfflineGuide() ? 'ВОЗВРАТ НА МАРШРУТ' : 'СЪЕЗД С МАРШРУТА';
-  setHudStreetLabels(label, hudCurrentStreetLabel(snap));
+  let label;
+  let sub;
+  if(opts.junk){
+    label = 'GPS ШУМНЫЙ';
+    sub = 'ДЕРЖУ КУРС';
+  } else if(isOfflineGuide()){
+    label = 'ВОЗВРАТ НА МАРШРУТ';
+    sub = hudCurrentStreetLabel(snap);
+  } else {
+    label = 'СЪЕЗД С МАРШРУТА';
+    sub = hudCurrentStreetLabel(snap);
+  }
+  setHudStreetLabels(label, sub);
   $('rb-exit-label')?.classList.add('hidden');
+}
+
+function junkFeedFromSnap(snap){
+  const lat = lateralForOffRoute(snap);
+  return {
+    lateral: lat,
+    acc: S.gps?.acc != null && Number.isFinite(S.gps.acc) ? S.gps.acc : null,
+    gpsTeleport: S.gps?.spdSrc === 'teleport'
+  };
 }
 
 export function onTick(){
@@ -371,11 +403,16 @@ export function onTick(){
   }
 
   if(snapLostBlocksNav(snap)){
-    setHudStreetLabels('НЕТ ПРИВЯЗКИ', '—');
-    $('v-mdist').textContent = '—';
-    $('v-mdist-u').textContent = '';
-    $('arrow-box').innerHTML = buildTurnArrowSVG(0);
-    $('rb-exit-label')?.classList.add('hidden');
+    const junk = isGpsJunk(junkFeedFromSnap(snap));
+    if(snap && S.gps){
+      paintReturnToRouteArrow(snap, { junk });
+    } else {
+      setHudStreetLabels(junk ? 'GPS ШУМНЫЙ' : 'НЕТ ПРИВЯЗКИ', junk ? 'ДЕРЖУ КУРС' : '—');
+      $('v-mdist').textContent = '—';
+      $('v-mdist-u').textContent = '';
+      $('arrow-box').innerHTML = buildTurnArrowSVG(0);
+      $('rb-exit-label')?.classList.add('hidden');
+    }
     updateFinishInfo(getRemainingDistance(), kmh, now);
     $('mid-info').textContent = S.startTs ? 'T+' + fmtTime((Date.now() - S.startTs) / 1000) : '—';
     if(hudOn) return;
@@ -389,7 +426,7 @@ export function onTick(){
   if(snapLostBlocksNav(snap)) return;
 
   if(shouldUseReturnArrow(snap) && snap && S.gps){
-    paintReturnToRouteArrow(snap);
+    paintReturnToRouteArrow(snap, { junk: isGpsJunk(junkFeedFromSnap(snap)) });
   } else {
     let nm = isSnapDegraded() ? getCachedManeuver() : null;
     if(!nm) nm = findNextManeuver();
@@ -539,6 +576,16 @@ export function onTick(){
   if(snapLost) fullMid += ' · SNAP?';
   if(S.routeQuality === RouteQuality.LOW){
     $('mid-info').textContent = fullMid + ' · НИЗК. OSM';
+    // Направление 13: ближе финиша — пеленг без ломаных манёвров
+    if(!_lowRouteBearingDone && !isBearingMode() &&
+       remaining > 30 && remaining < ROUTE_LOW_BEARING_REMAIN_M){
+      _lowRouteBearingDone = true;
+      enterBearingMode({ quiet: true });
+      telemetry.log('nav', {
+        sub: 'route_low_bearing',
+        remain: Math.round(remaining)
+      });
+    }
   } else {
     $('mid-info').textContent = fullMid;
   }
@@ -596,6 +643,7 @@ export async function startHud(){
   resetCurveRibbonState();
   resetSpeedLimitState();
   resetRoundaboutState();
+  _lowRouteBearingDone = false;
   if(hasRoute){
     ensureRouteGeometry(S.route);
     seedSnapFromGps({ relaxed: true });

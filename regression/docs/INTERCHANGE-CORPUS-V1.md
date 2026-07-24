@@ -26,7 +26,7 @@ Sim **не** ассертит текст голоса / path_diverge в tick JSO
 | 1 | МКАД / магистраль **прямо** (анти-Варшавка) | `8162bbfd` mkad many_waypoints; `d195dc03` / `d5ad1146` mkad; highway `1a514758` m11 | нет спама «Съезд» на slight &lt;18° | unit slight 10°; поле; sim on_route (косвенно fr/snap) |
 | 2 | Реальный **off ramp** ≥18° | **GAP** dedicated sim-assert; cache: 9× `off ramp slight` с \|ang\|≥18 среди 81 slight-off | «Съезд направо/налево» | unit ramp 22°; **нужен** 1–2 fixture с явной рампой ≥18° |
 | 3 | Fork keep L/R | **GAP** labeled; forks в cache много (378) | «держитесь …» / keep | unit fork tiny 6° = not significant; sim — GAP |
-| 4 | Клевер / многоуровневая | **GAP** explicit clover tag; proxy: `8162bbfd` / `c3ba91fb` moscow many_waypoints | гибрид: path_diverge **+** OSRM hint (не геометрия alone) | unit `findOsrmExitHint`; sim — on_route health |
+| 4 | Клевер / многоуровневая | **GAP** explicit clover tag; proxy: `8162bbfd` / `c3ba91fb` moscow many_waypoints | гибрид: path_diverge **+** OSRM hint (не геометрия alone) | unit `resolveHybridPathDiverge` (hint-first, turn≥12° с hint); field: `path_diverge_probe` |
 | 5 | Roundabout на развязке | `37920e54` moscow_center; `9cc6b59f` `a6f82017` `bea66c2f`; mkad/spb tags `roundabouts` | кольцо без ложного съезда | moscow/nw sim on_route (pass на 17–18.07) |
 | 6 | Серпантин / south | `137f5e6b` `491d8990` caucasus; `0f6d2613` sochi (snap P2); `8612e160` many_wp | много маневров, без voice spam | `leg south` on_route |
 | 7 | On-ramp въезд | **GAP** (в cache type чаще `off ramp`; on-ramp не размечен) | въезд без ложного «Съезд» на дуге | unit gentle arc; **нужен** fixture |
