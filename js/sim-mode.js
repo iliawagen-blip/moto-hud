@@ -15,6 +15,32 @@
   };
   const listeners = [];
 
+  function dashKey(mode){
+    return DASH_HEIGHT_KEY + ':' + (mode || current);
+  }
+
+  function applyDashHeightForMode(mode){
+    const m = mode || current;
+    const saved = parseInt(sessionStorage.getItem(dashKey(m)) || '', 10);
+    /* Inline на body перебивает CSS-дефолты по data-sim-mode */
+    if(saved >= 100){
+      document.body.style.setProperty('--sim-dash-height', saved + 'px');
+      return;
+    }
+    document.body.style.removeProperty('--sim-dash-height');
+    document.documentElement.style.removeProperty('--sim-dash-height');
+  }
+
+  function afterLayoutChange(){
+    const run = () => {
+      try{ window.applySize?.(); }catch(e){}
+      window.SimMap?.invalidateSize?.();
+    };
+    /* Двойной rAF + короткий timeout: дашборд успевает пересчитать высоту */
+    requestAnimationFrame(() => requestAnimationFrame(run));
+    setTimeout(run, 80);
+  }
+
   function $(id){ return document.getElementById(id); }
 
   function showError(msg, detail){
@@ -92,6 +118,8 @@
     if(opts?.url !== false) syncUrl(mode);
     notify(from, mode);
     restoreMode(mode);
+    applyDashHeightForMode(mode);
+    afterLayoutChange();
     return current;
   }
 
@@ -202,25 +230,31 @@
     if(!handle || !wrap) return;
     let startY = 0;
     let startH = 0;
-    const saved = parseInt(sessionStorage.getItem(DASH_HEIGHT_KEY) || '', 10);
-    if(saved >= 200) document.documentElement.style.setProperty('--sim-dash-height', saved + 'px');
+    /* Миграция старого общего ключа → telemetry */
+    const legacy = parseInt(sessionStorage.getItem(DASH_HEIGHT_KEY) || '', 10);
+    if(legacy >= 100 && !sessionStorage.getItem(dashKey('telemetry'))){
+      sessionStorage.setItem(dashKey('telemetry'), String(legacy));
+      sessionStorage.setItem(dashKey('regression'), String(legacy));
+    }
+    applyDashHeightForMode(current);
 
     handle.addEventListener('mousedown', e => {
       e.preventDefault();
       const dash = $('sim-dashboard');
       startY = e.clientY;
       startH = dash?.getBoundingClientRect().height || 280;
+      const minH = current === 'synth' ? 100 : 160;
       const onMove = ev => {
         const dy = startY - ev.clientY;
-        const h = Math.max(200, Math.min(window.innerHeight * 0.55, startH + dy));
-        document.documentElement.style.setProperty('--sim-dash-height', h + 'px');
+        const h = Math.max(minH, Math.min(window.innerHeight * 0.55, startH + dy));
+        document.body.style.setProperty('--sim-dash-height', h + 'px');
       };
       const onUp = () => {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
-        const h = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sim-dash-height'), 10);
-        if(h >= 200) sessionStorage.setItem(DASH_HEIGHT_KEY, String(h));
-        window.SimMap?.invalidateSize?.();
+        const h = parseInt(getComputedStyle(document.body).getPropertyValue('--sim-dash-height'), 10);
+        if(h >= 100) sessionStorage.setItem(dashKey(current), String(h));
+        afterLayoutChange();
       };
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
@@ -247,14 +281,15 @@
     bindSegmented();
     bindKeyboard();
     bindMobileTabs();
-    bindDashboardResizer();
     onModeChange(handleModeSwitch);
     const initial = parseUrlMode();
     current = initial;
     updateModeUi(initial);
+    bindDashboardResizer();
     notify(null, initial);
     if(initial === 'telemetry') restoreMode('telemetry');
     if(initial === 'regression') restoreMode('regression');
+    afterLayoutChange();
   }
 
   window.__simMode = {
