@@ -167,7 +167,7 @@ var init_theme = __esm({
 });
 
 // js/state.js
-var DEFAULT_FUEL_PLANNER_COUNT, MIN_FUEL_PLANNER_COUNT, MAX_FUEL_PLANNER_COUNT, DEFAULT_CAM_SPEED_TOL, DEFAULT_PATH_CHEVRON_MAX, DEFAULT_PATH_MIN_SPEED_KMH, MAX_PATH_MIN_SPEED_KMH, S, L2, CAM_H, CAM_B, CAM_PITCH, ROAD_MAX, ROAD_HALF, RUN_KEY, FAV_KEY, ELEV_OPTS_KEY, CURVE_OPTS_KEY, HUD_OPTS_KEY, APP_OPTS_KEY, DEFAULT_ELEV_EXAG, DEFAULT_ELEV_PROFILE_H, MIN_ELEV_PROFILE_H, MAX_ELEV_PROFILE_H, DEFAULT_ELEV_PROFILE_LEN_KM, MIN_ELEV_PROFILE_LEN_KM, MAX_ELEV_PROFILE_LEN_KM, FUEL_CORRIDOR;
+var DEFAULT_FUEL_PLANNER_COUNT, MIN_FUEL_PLANNER_COUNT, MAX_FUEL_PLANNER_COUNT, DEFAULT_CAM_SPEED_TOL, DEFAULT_PATH_CHEVRON_MAX, DEFAULT_PATH_MIN_SPEED_KMH, MAX_PATH_MIN_SPEED_KMH, S, L2, CAM_H, CAM_B, CAM_PITCH, ROAD_MAX, ROAD_HALF, RUN_KEY, FAV_KEY, ELEV_OPTS_KEY, CURVE_OPTS_KEY, GHOST_OPTS_KEY, HUD_OPTS_KEY, APP_OPTS_KEY, DEFAULT_ELEV_EXAG, DEFAULT_ELEV_PROFILE_H, MIN_ELEV_PROFILE_H, MAX_ELEV_PROFILE_H, DEFAULT_ELEV_PROFILE_LEN_KM, MIN_ELEV_PROFILE_LEN_KM, MAX_ELEV_PROFILE_LEN_KM, FUEL_CORRIDOR, FUEL_MAP_CORRIDOR;
 var init_state = __esm({
   "js/state.js"() {
     init_theme();
@@ -250,6 +250,8 @@ var init_state = __esm({
       camSpeedTol: DEFAULT_CAM_SPEED_TOL,
       lastVoiceTs: 0,
       curveWarn: true,
+      /** ROADPATH этап 5: ghost-ленты развязки в POV дорожки */
+      ghostRibbons: true,
       curveStrict: "normal",
       // relaxed | normal | strict
       showFinishDist: true,
@@ -309,6 +311,7 @@ var init_state = __esm({
     FAV_KEY = "moto-hud-favs";
     ELEV_OPTS_KEY = "moto-hud-elev-opts";
     CURVE_OPTS_KEY = "moto-hud-curve-opts";
+    GHOST_OPTS_KEY = "moto-hud-ghost-ribbons";
     HUD_OPTS_KEY = "moto-hud-hud-opts";
     APP_OPTS_KEY = "moto-hud-app-opts";
     DEFAULT_ELEV_EXAG = 1.8;
@@ -318,7 +321,8 @@ var init_state = __esm({
     DEFAULT_ELEV_PROFILE_LEN_KM = 3;
     MIN_ELEV_PROFILE_LEN_KM = 1;
     MAX_ELEV_PROFILE_LEN_KM = 5;
-    FUEL_CORRIDOR = 600;
+    FUEL_CORRIDOR = 200;
+    FUEL_MAP_CORRIDOR = 350;
   }
 });
 
@@ -1417,7 +1421,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_LOST_SCORE_MIN_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_LATERAL_JUNK_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, OFF_ROUTE_LOST_HOLD_CONFIRM_MULT, REROUTE_SUCCESS_COOLDOWN_MS, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_TURN_MIN_ANGLE_DEG, MANEUVER_SOFT_MAX_AHEAD_M, INTERCHANGE_DIVERGE_MIN_M, INTERCHANGE_DIVERGE_MAX_M, INTERCHANGE_DIVERGE_LATERAL_M, INTERCHANGE_DIVERGE_STEP_M, INTERCHANGE_DIVERGE_MIN_TURN_DEG, INTERCHANGE_DIVERGE_MIN_TURN_WITH_HINT_DEG, INTERCHANGE_DIVERGE_LATERAL_WITH_HINT_M, INTERCHANGE_DIVERGE_HUD_MAX_M, INTERCHANGE_DIVERGE_HINT_AHEAD_M, INTERCHANGE_DIVERGE_HINT_BAND_M, INTERCHANGE_DIVERGE_SIG_COVER_SLACK_M, INTERCHANGE_DIVERGE_PROBE_MIN_DS_M, INTERCHANGE_RAMP_MIN_ANGLE_DEG, INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, ROUTE_LOW_BEARING_REMAIN_M, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_INVALIDATE_ACC_STATIONARY_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2, GPS_SPEED_TELEPORT_M, GPS_SPEED_COAST_MAX_DT_S, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_LOST_SCORE_MIN_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_SLOW_SPD_MPS, SNAP_SLOW_WINDOW_M, SNAP_FAST_SPD_MPS, SNAP_FAST_BACK_M, SNAP_FAST_FWD_M, SNAP_WEAK_HEADING_ACC_M, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_LATERAL_JUNK_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, OFF_ROUTE_LOST_HOLD_CONFIRM_MULT, REROUTE_SUCCESS_COOLDOWN_MS, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_TURN_MIN_ANGLE_DEG, MANEUVER_SOFT_MAX_AHEAD_M, INTERCHANGE_DIVERGE_MIN_M, INTERCHANGE_DIVERGE_MAX_M, INTERCHANGE_DIVERGE_LATERAL_M, INTERCHANGE_DIVERGE_STEP_M, INTERCHANGE_DIVERGE_MIN_TURN_DEG, INTERCHANGE_DIVERGE_MIN_TURN_WITH_HINT_DEG, INTERCHANGE_DIVERGE_LATERAL_WITH_HINT_M, INTERCHANGE_DIVERGE_HUD_MAX_M, INTERCHANGE_DIVERGE_HINT_AHEAD_M, INTERCHANGE_DIVERGE_HINT_BAND_M, INTERCHANGE_DIVERGE_SIG_COVER_SLACK_M, INTERCHANGE_DIVERGE_PROBE_MIN_DS_M, INTERCHANGE_RAMP_MIN_ANGLE_DEG, INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, ROUTE_LOW_BEARING_REMAIN_M, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_INVALIDATE_ACC_STATIONARY_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2, GPS_SPEED_TELEPORT_M, GPS_SPEED_COAST_MAX_DT_S, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1445,6 +1449,12 @@ var init_nav_constants = __esm({
     SNAP_WINDOW_ACC_MULT = 3;
     SNAP_WINDOW_DT_CAP_S = 2;
     SNAP_STATIONARY_SPD_MPS = 0.6;
+    SNAP_SLOW_SPD_MPS = 5 / 3.6;
+    SNAP_SLOW_WINDOW_M = 100;
+    SNAP_FAST_SPD_MPS = 50 / 3.6;
+    SNAP_FAST_BACK_M = 15;
+    SNAP_FAST_FWD_M = 200;
+    SNAP_WEAK_HEADING_ACC_M = 30;
     SNAP_JUMP_PENALTY = 3;
     SNAP_ANGLE_PENALTY = 2;
     SNAP_COLD_START_SKIP_FIXES = 3;
@@ -2911,6 +2921,7 @@ var init_cam_status = __esm({
 // js/curve-speed.js
 function resetCurveRibbonState() {
   _ribbonState.clear();
+  _voiceLatch.clear();
 }
 function getCurveParams() {
   return PRESETS[S.curveStrict] || PRESETS.normal;
@@ -3085,16 +3096,20 @@ function ribbonCurveColor(sMid, geom, speedMps) {
   if (!isFinite(vSafe) || vSafe < 2) return null;
   const ratio = speedMps / vSafe;
   const { yellow, red } = getCurveParams();
+  const yOn = yellow * HYST_ON;
+  const yOff = yellow * HYST_OFF;
+  const rOn = red * HYST_ON;
+  const rOff = red * HYST_OFF;
   const spanKey = Math.round(span.sEntry);
   let state = _ribbonState.get(spanKey) || null;
   if (state === "red") {
-    if (ratio < red - RIBBON_HYST) state = ratio >= yellow ? "yellow" : null;
+    if (ratio < rOff) state = ratio >= yOn ? "yellow" : null;
   } else if (state === "yellow") {
-    if (ratio >= red) state = "red";
-    else if (ratio < yellow - RIBBON_HYST) state = null;
+    if (ratio >= rOn) state = "red";
+    else if (ratio < yOff) state = null;
   } else {
-    if (ratio >= red) state = "red";
-    else if (ratio >= yellow) state = "yellow";
+    if (ratio >= rOn) state = "red";
+    else if (ratio >= yOn) state = "yellow";
   }
   _ribbonState.set(spanKey, state);
   if (state === "red") return THEME.curveRed;
@@ -3109,11 +3124,19 @@ function pickCurveVoiceWarn(geom, snapS, speedMps) {
     const dist = sp.sEntry - snapS;
     if (dist > 320) break;
     const vSafe = vSafeForSpan(geom, sp);
-    if (speedMps <= vSafe * params.yellow) continue;
+    if (!isFinite(vSafe) || vSafe < 2) continue;
+    const ratio = speedMps / vSafe;
+    const key = "curve_" + Math.round(sp.sEntry);
+    const latched = _voiceLatch.get(key) || false;
+    const onT = params.yellow * HYST_ON;
+    const offT = params.yellow * HYST_OFF;
+    const armed = latched ? ratio >= offT : ratio >= onT;
+    _voiceLatch.set(key, armed);
+    if (!armed) continue;
     const sec = dist / speedMps;
     if (sec > 7 || sec < 2.5) continue;
     return {
-      key: "curve_" + Math.round(sp.sEntry),
+      key,
       vSafeKmh: Math.round(vSafe * 3.6),
       sec: Math.round(sec)
     };
@@ -3145,7 +3168,7 @@ function saveCurveOptsToStorage() {
   } catch (e) {
   }
 }
-var CURVE_R_WARN, MIN_CURVE_LEN_M, G, RIBBON_HYST, _ribbonState, PRESETS;
+var CURVE_R_WARN, MIN_CURVE_LEN_M, G, HYST_ON, HYST_OFF, _ribbonState, _voiceLatch, PRESETS;
 var init_curve_speed = __esm({
   "js/curve-speed.js"() {
     init_state();
@@ -3154,8 +3177,10 @@ var init_curve_speed = __esm({
     CURVE_R_WARN = 100;
     MIN_CURVE_LEN_M = 25;
     G = 9.81;
-    RIBBON_HYST = 0.06;
+    HYST_ON = 0.95;
+    HYST_OFF = 0.9;
     _ribbonState = /* @__PURE__ */ new Map();
+    _voiceLatch = /* @__PURE__ */ new Map();
     PRESETS = {
       relaxed: { aLat: 0.28 * G, yellow: 1, red: 1.12 },
       normal: { aLat: 0.32 * G, yellow: 0.88, red: 1.02 },
@@ -5216,7 +5241,7 @@ async function prefetchFuelForMap() {
 function fuelStationsForMap(limit) {
   if (!S.fuelStations.length) return [];
   recomputeFuelGeometry();
-  return S.fuelStations.filter((s2) => s2.routeS != null && (s2.offRoute ?? Infinity) <= FUEL_CORRIDOR + 150).sort((a, b) => a.routeS - b.routeS).slice(0, limit || 48);
+  return S.fuelStations.filter((s2) => s2.routeS != null && (s2.offRoute ?? Infinity) <= FUEL_MAP_CORRIDOR).sort((a, b) => a.routeS - b.routeS).slice(0, limit || 48);
 }
 function fuelStationsForRoad(maxDist) {
   if (S.fuelMode === 0 || !S.fuelStations.length) return [];
@@ -5577,61 +5602,6 @@ var init_voice = __esm({
     DEDUPE_MS = 6500;
     TTS_RATE = 0.98;
     TTS_PITCH = 1;
-  }
-});
-
-// js/router.js
-function getRouterBackend() {
-  return S.routerBackend || RouterBackend.OSRM;
-}
-function buildRouteRequestUrl(from, to, opts = {}) {
-  const backend = getRouterBackend();
-  if (backend === RouterBackend.VALHALLA) {
-    throw new Error("Valhalla: \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043F\u0430\u0439\u043A \u0424\u0430\u0437\u0430 4)");
-  }
-  const pts = opts.waypoints?.length ? opts.waypoints : [from, to];
-  const coordStr = pts.map((p) => `${p.lon},${p.lat}`).join(";");
-  let url = OSRM_BASE + coordStr + "?overview=full&geometries=geojson&steps=true&annotations=speed";
-  if (opts.alternatives) url += "&alternatives=2";
-  if (opts.rerouteBearing != null && opts.rerouteRadius != null && pts.length === 2) {
-    url += "&bearings=" + opts.rerouteBearing + ",45;&radiuses=" + opts.rerouteRadius + ";";
-  }
-  return url;
-}
-function parseRouteResponse(json) {
-  if (!json?.routes?.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-  return json.routes;
-}
-var RouterBackend, OSRM_BASE;
-var init_router = __esm({
-  "js/router.js"() {
-    init_state();
-    RouterBackend = { OSRM: "osrm", VALHALLA: "valhalla" };
-    OSRM_BASE = "https://router.project-osrm.org/route/v1/driving/";
-  }
-});
-
-// js/route-quality.js
-function assessRouteQuality(route) {
-  const geom = route?.geometry;
-  if (!geom || geom.n < 2) return RouteQuality.OK;
-  const totalM = geom.s[geom.n - 1] || 0;
-  if (totalM < 500) return RouteQuality.OK;
-  let segSum = 0;
-  for (let i2 = 1; i2 < geom.n; i2++) segSum += geom.s[i2] - geom.s[i2 - 1];
-  const avgSeg = segSum / Math.max(1, geom.n - 1);
-  const maneuvers = geom.maneuvers?.length || 0;
-  const perKm = totalM > 0 ? maneuvers / totalM * 1e3 : 0;
-  if (avgSeg < ROUTE_LOW_AVG_SEG_M || perKm > ROUTE_LOW_MANEUVER_PER_KM) {
-    return RouteQuality.LOW;
-  }
-  return RouteQuality.OK;
-}
-var RouteQuality;
-var init_route_quality = __esm({
-  "js/route-quality.js"() {
-    init_nav_constants();
-    RouteQuality = { OK: "OK", LOW: "LOW" };
   }
 });
 
@@ -6762,6 +6732,342 @@ var init_speed_limit = __esm({
   }
 });
 
+// js/interchange-corridor.js
+function injectMockCorridor(json) {
+  _mockPayload = json || null;
+}
+function resetGhostCorridor() {
+  _gen++;
+  _state = { targetS: null, status: "idle", ways: [], fetchedAt: 0 };
+}
+function ghostCorridorStatus() {
+  return {
+    status: _state.status,
+    targetS: _state.targetS,
+    ways: _state.ways.length,
+    enabled: !!S.ghostRibbons
+  };
+}
+function loadGhostOptsFromStorage() {
+  try {
+    const raw = localStorage.getItem(GHOST_OPTS_KEY);
+    if (raw == null) return;
+    const on = raw === "1" || raw === "true" || raw.startsWith("{") && JSON.parse(raw).enabled !== false;
+    S.ghostRibbons = !!on;
+    const cb = document.getElementById("opt-ghost-ribbons");
+    if (cb) cb.checked = S.ghostRibbons;
+  } catch (e) {
+  }
+}
+function saveGhostOptsToStorage() {
+  try {
+    localStorage.setItem(GHOST_OPTS_KEY, JSON.stringify({ enabled: !!S.ghostRibbons }));
+  } catch (e) {
+  }
+}
+function findUpcomingInterchange(geom, curS) {
+  if (!geom?.maneuvers || curS == null || !Number.isFinite(curS)) return null;
+  let best = null;
+  for (const m of geom.maneuvers) {
+    if (!m.step || !isInterchangeStep(m.step)) continue;
+    if (curS > m.s + MANEUVER_PASSED_M) continue;
+    const along = m.s - curS;
+    if (along < -30 || along > GHOST_PREFETCH_M) continue;
+    if (!best || m.s < best.s) {
+      best = {
+        s: m.s,
+        step: m.step,
+        lat: m.lat,
+        lon: m.lon,
+        along
+      };
+    }
+  }
+  return best;
+}
+function bboxForStep(step) {
+  const t = step?.type;
+  if (t === "fork" || t === "on ramp") return GHOST_BBOX_LARGE_M;
+  const cls = String(step?.driving_side || step?.mode || "");
+  if (/motorway|trunk/i.test(cls)) return GHOST_BBOX_LARGE_M;
+  return GHOST_BBOX_SIMPLE_M;
+}
+function layerOffsetM(tags) {
+  if (!tags) return 0;
+  if (tags.layer != null && tags.layer !== "") {
+    const n = parseInt(tags.layer, 10);
+    if (Number.isFinite(n)) return n * GHOST_LAYER_M;
+  }
+  if (tags.bridge && tags.bridge !== "no") return GHOST_LAYER_M;
+  if (tags.tunnel && tags.tunnel !== "no") return -GHOST_LAYER_M;
+  return 0;
+}
+function densifyWay(nodes, stepM) {
+  if (!nodes || nodes.length < 2) return nodes || [];
+  const out = [{ lat: nodes[0].lat, lon: nodes[0].lon }];
+  for (let i2 = 1; i2 < nodes.length; i2++) {
+    const a = nodes[i2 - 1];
+    const b = nodes[i2];
+    const d = haversine(a, b);
+    if (d > stepM * 1.35) {
+      const n = Math.max(1, Math.floor(d / stepM));
+      for (let k = 1; k < n; k++) {
+        const t = k / n;
+        out.push({
+          lat: a.lat + (b.lat - a.lat) * t,
+          lon: a.lon + (b.lon - a.lon) * t
+        });
+      }
+    }
+    out.push({ lat: b.lat, lon: b.lon });
+  }
+  return out;
+}
+function parseOverpassWays2(json) {
+  const nodes = /* @__PURE__ */ new Map();
+  for (const el of json?.elements || []) {
+    if (el.type === "node") nodes.set(el.id, { lat: el.lat, lon: el.lon });
+  }
+  const ways = [];
+  for (const el of json?.elements || []) {
+    if (el.type !== "way" || !el.nodes?.length) continue;
+    const raw = [];
+    for (const id of el.nodes) {
+      const n = nodes.get(id);
+      if (n) raw.push(n);
+    }
+    if (raw.length < 2) continue;
+    ways.push({
+      id: el.id,
+      tags: el.tags || {},
+      pts: densifyWay(raw, GHOST_SAMPLE_M),
+      layerOff: layerOffsetM(el.tags)
+    });
+  }
+  return ways;
+}
+function isPrimaryMatch(way, geom) {
+  if (!geom || !way.pts?.length) return false;
+  let hits = 0;
+  let n = 0;
+  const step = Math.max(1, Math.floor(way.pts.length / 7));
+  for (let i2 = 0; i2 < way.pts.length; i2 += step) {
+    const proj = projectPointToRoute(geom, way.pts[i2]);
+    n++;
+    if (proj && proj.lateral < GHOST_PRIMARY_MATCH_M) hits++;
+  }
+  return n > 0 && hits / n >= 0.55;
+}
+function selectGhostWays(ways, geom, center, bboxM) {
+  const ghosts = [];
+  for (const w of ways) {
+    if (isPrimaryMatch(w, geom)) continue;
+    const mid = w.pts[Math.floor(w.pts.length / 2)];
+    if (haversine(center, mid) > bboxM * 1.25) continue;
+    ghosts.push(w);
+  }
+  ghosts.sort((a, b) => {
+    const am = a.pts[Math.floor(a.pts.length / 2)];
+    const bm = b.pts[Math.floor(b.pts.length / 2)];
+    return haversine(center, am) - haversine(center, bm);
+  });
+  return ghosts.slice(0, GHOST_MAX_WAYS);
+}
+async function fetchCorridor(lat, lon, radiusM) {
+  if (_mockPayload) return _mockPayload;
+  const r = Math.round(radiusM);
+  const q = `[out:json][timeout:25];
+(
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"](around:${r},${lat},${lon});
+);
+out body; >; out skel qt;`;
+  return overpassFetch(q, GHOST_OVERPASS_TIMEOUT_MS);
+}
+function applyReady(gen, targetS, ways) {
+  if (gen !== _gen) return;
+  _state = {
+    targetS,
+    status: ways.length ? "ready" : "failed",
+    ways,
+    fetchedAt: Date.now()
+  };
+}
+function tickGhostCorridor(geom, snap) {
+  if (!S.ghostRibbons || !geom || !snap) {
+    if (_state.status !== "idle" && !S.ghostRibbons) resetGhostCorridor();
+    return;
+  }
+  const upcoming = findUpcomingInterchange(geom, snap.s);
+  if (!upcoming) {
+    if (_state.targetS != null && snap.s > _state.targetS + 80) resetGhostCorridor();
+    return;
+  }
+  if (snap.s > upcoming.s + MANEUVER_PASSED_M) {
+    resetGhostCorridor();
+    return;
+  }
+  if (_state.targetS === upcoming.s && (_state.status === "ready" || _state.status === "fetching" || _state.status === "failed")) {
+    return;
+  }
+  if (upcoming.along > GHOST_PREFETCH_M) return;
+  const bbox = bboxForStep(upcoming.step);
+  const center = { lat: upcoming.lat, lon: upcoming.lon };
+  const gen = ++_gen;
+  _state = { targetS: upcoming.s, status: "fetching", ways: [], fetchedAt: 0 };
+  Promise.resolve().then(() => fetchCorridor(center.lat, center.lon, bbox)).then((json) => {
+    if (gen !== _gen) return;
+    const parsed = parseOverpassWays2(json);
+    const ghosts = selectGhostWays(parsed, geom, center, bbox);
+    applyReady(gen, upcoming.s, ghosts);
+  }).catch(() => {
+    if (gen === _gen) {
+      _state = { targetS: upcoming.s, status: "failed", ways: [], fetchedAt: Date.now() };
+    }
+  });
+}
+function getGhostWays() {
+  if (!S.ghostRibbons || _state.status !== "ready") return [];
+  return _state.ways;
+}
+function computeGhostSections(way, snap, headingRad, geom, maxDist) {
+  if (!way?.pts?.length || !snap) return [];
+  const elev0 = geom?.elevReady ? interpolateElevAtS(geom, snap.s) : 0;
+  const halfW = GHOST_HALF_W;
+  const samples = [];
+  let segs = 0;
+  for (const p of way.pts) {
+    const c = worldToCamXZ(p.lat, p.lon, snap, headingRad);
+    if (c.z < 0.4 || c.z > maxDist) continue;
+    let elev = way.layerOff || 0;
+    if (geom?.elevReady) {
+      const proj = projectPointToRoute(geom, p);
+      if (proj) elev += interpolateElevAtS(geom, proj.s) - elev0;
+    }
+    samples.push({ x: c.x, z: c.z, elev, s: c.z });
+    if (++segs >= GHOST_MAX_SEGS) break;
+  }
+  if (samples.length < 2) return [];
+  samples.sort((a, b) => a.z - b.z);
+  const sections = [];
+  let prevNx = null;
+  let prevNz = null;
+  for (let i2 = 0; i2 < samples.length; i2++) {
+    const cur = samples[i2];
+    const i0 = Math.max(0, i2 - 1);
+    const i1 = Math.min(samples.length - 1, i2 + 1);
+    let tx2 = samples[i1].x - samples[i0].x;
+    let tz = samples[i1].z - samples[i0].z;
+    const tl = Math.hypot(tx2, tz);
+    if (tl < 0.08) continue;
+    tx2 /= tl;
+    tz /= tl;
+    let nx = -tz;
+    let nz = tx2;
+    if (prevNx != null && nx * prevNx + nz * prevNz < 0) {
+      nx = -nx;
+      nz = -nz;
+    }
+    prevNx = nx;
+    prevNz = nz;
+    sections.push({
+      s: cur.s,
+      elev: cur.elev,
+      cx: cur.x,
+      cz: cur.z,
+      lx: cur.x + nx * halfW,
+      lz: cur.z + nz * halfW,
+      rx: cur.x - nx * halfW,
+      rz: cur.z - nz * halfW
+    });
+  }
+  return sections;
+}
+var GHOST_PREFETCH_M, GHOST_SHOW_MAX_M, GHOST_BBOX_SIMPLE_M, GHOST_BBOX_LARGE_M, GHOST_MAX_WAYS, GHOST_MAX_SEGS, GHOST_LAYER_M, GHOST_HALF_W, GHOST_PRIMARY_MATCH_M, GHOST_SAMPLE_M, GHOST_OVERPASS_TIMEOUT_MS, _mockPayload, _gen, _state;
+var init_interchange_corridor = __esm({
+  "js/interchange-corridor.js"() {
+    init_geo();
+    init_state();
+    init_speed_limit();
+    init_interchange();
+    init_route_geometry();
+    init_nav_constants();
+    GHOST_PREFETCH_M = 1800;
+    GHOST_SHOW_MAX_M = 950;
+    GHOST_BBOX_SIMPLE_M = 400;
+    GHOST_BBOX_LARGE_M = 1e3;
+    GHOST_MAX_WAYS = 8;
+    GHOST_MAX_SEGS = 500;
+    GHOST_LAYER_M = 5;
+    GHOST_HALF_W = ROAD_HALF * 0.72;
+    GHOST_PRIMARY_MATCH_M = 18;
+    GHOST_SAMPLE_M = 8;
+    GHOST_OVERPASS_TIMEOUT_MS = 8e3;
+    _mockPayload = null;
+    _gen = 0;
+    _state = {
+      targetS: null,
+      status: "idle",
+      ways: [],
+      fetchedAt: 0
+    };
+  }
+});
+
+// js/router.js
+function getRouterBackend() {
+  return S.routerBackend || RouterBackend.OSRM;
+}
+function buildRouteRequestUrl(from, to, opts = {}) {
+  const backend = getRouterBackend();
+  if (backend === RouterBackend.VALHALLA) {
+    throw new Error("Valhalla: \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043F\u0430\u0439\u043A \u0424\u0430\u0437\u0430 4)");
+  }
+  const pts = opts.waypoints?.length ? opts.waypoints : [from, to];
+  const coordStr = pts.map((p) => `${p.lon},${p.lat}`).join(";");
+  let url = OSRM_BASE + coordStr + "?overview=full&geometries=geojson&steps=true&annotations=speed";
+  if (opts.alternatives) url += "&alternatives=2";
+  if (opts.rerouteBearing != null && opts.rerouteRadius != null && pts.length === 2) {
+    url += "&bearings=" + opts.rerouteBearing + ",45;&radiuses=" + opts.rerouteRadius + ";";
+  }
+  return url;
+}
+function parseRouteResponse(json) {
+  if (!json?.routes?.length) throw new Error("\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+  return json.routes;
+}
+var RouterBackend, OSRM_BASE;
+var init_router = __esm({
+  "js/router.js"() {
+    init_state();
+    RouterBackend = { OSRM: "osrm", VALHALLA: "valhalla" };
+    OSRM_BASE = "https://router.project-osrm.org/route/v1/driving/";
+  }
+});
+
+// js/route-quality.js
+function assessRouteQuality(route) {
+  const geom = route?.geometry;
+  if (!geom || geom.n < 2) return RouteQuality.OK;
+  const totalM = geom.s[geom.n - 1] || 0;
+  if (totalM < 500) return RouteQuality.OK;
+  let segSum = 0;
+  for (let i2 = 1; i2 < geom.n; i2++) segSum += geom.s[i2] - geom.s[i2 - 1];
+  const avgSeg = segSum / Math.max(1, geom.n - 1);
+  const maneuvers = geom.maneuvers?.length || 0;
+  const perKm = totalM > 0 ? maneuvers / totalM * 1e3 : 0;
+  if (avgSeg < ROUTE_LOW_AVG_SEG_M || perKm > ROUTE_LOW_MANEUVER_PER_KM) {
+    return RouteQuality.LOW;
+  }
+  return RouteQuality.OK;
+}
+var RouteQuality;
+var init_route_quality = __esm({
+  "js/route-quality.js"() {
+    init_nav_constants();
+    RouteQuality = { OK: "OK", LOW: "LOW" };
+  }
+});
+
 // js/route.js
 function auditRouteDrivability(route) {
   const types = route?.highwayTypes;
@@ -6857,6 +7163,7 @@ function attachRouteGeometry(route) {
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
+  resetGhostCorridor();
   _pdProbeAtS = -1e9;
   loadRouteHighwayTypes(route).catch((e) => console.warn("highway types:", e));
 }
@@ -7625,6 +7932,7 @@ var init_route = __esm({
     init_elevation();
     init_curve_speed();
     init_fuel();
+    init_interchange_corridor();
     init_voice();
     init_telemetry();
     init_maneuver_filter();
@@ -8251,6 +8559,7 @@ function buildRouteGeometry(route) {
   const lat = Float64Array.from(latArr);
   const lon = Float64Array.from(lonArr);
   const s2 = buildArcLength(latArr, lonArr);
+  const heading = buildHeadingArray(lat, lon, n);
   const elev = new Float64Array(n);
   const grade = new Float64Array(n);
   const maneuvers = refineManeuvers(buildManeuvers(route.steps, route.coords, { s: s2, n, lat, lon }));
@@ -8258,6 +8567,7 @@ function buildRouteGeometry(route) {
     lat,
     lon,
     s: s2,
+    heading,
     elev,
     grade,
     maneuvers,
@@ -8267,6 +8577,17 @@ function buildRouteGeometry(route) {
     crossings: [],
     roundabouts: []
   };
+}
+function buildHeadingArray(lat, lon, n) {
+  const heading = new Float64Array(n);
+  for (let i2 = 0; i2 < n - 1; i2++) {
+    heading[i2] = bearing(
+      { lat: lat[i2], lon: lon[i2] },
+      { lat: lat[i2 + 1], lon: lon[i2 + 1] }
+    ) * Math.PI / 180;
+  }
+  heading[n - 1] = n > 1 ? heading[n - 2] : 0;
+  return heading;
 }
 function findSegAtS2(geom, s2) {
   let lo = 0;
@@ -8305,6 +8626,9 @@ function turnAngleAtS(geom, s2) {
   return (bOut - bIn + 540) % 360 - 180;
 }
 function segmentBearing(geom, i2) {
+  if (geom.heading && i2 >= 0 && i2 < geom.heading.length) {
+    return (geom.heading[i2] * 180 / Math.PI + 360) % 360;
+  }
   return bearing(
     { lat: geom.lat[i2], lon: geom.lon[i2] },
     { lat: geom.lat[i2 + 1], lon: geom.lon[i2 + 1] }
@@ -8336,9 +8660,22 @@ function headingDot(tangentDeg, gpsHdg) {
 function computeSnapWindow(spd, dt, acc) {
   const v = Math.max(spd || 0, 0);
   const a = Math.max(acc || 8, 8);
-  if (v < SNAP_STATIONARY_SPD_MPS) return Math.max(8, a * 0.5);
-  if (v < 1) return Math.max(25, SNAP_WINDOW_ACC_MULT * a);
-  return v * Math.min(dt, SNAP_WINDOW_DT_CAP_S) + SNAP_WINDOW_ACC_MULT * a + SNAP_WINDOW_BASE_M;
+  if (v < SNAP_STATIONARY_SPD_MPS) {
+    const w = Math.max(8, a * 0.5);
+    return { back: w, fwd: w };
+  }
+  if (v < SNAP_SLOW_SPD_MPS) {
+    return { back: SNAP_SLOW_WINDOW_M, fwd: SNAP_SLOW_WINDOW_M };
+  }
+  if (v >= SNAP_FAST_SPD_MPS) {
+    return { back: SNAP_FAST_BACK_M, fwd: SNAP_FAST_FWD_M };
+  }
+  if (v < 1) {
+    const w = Math.max(25, SNAP_WINDOW_ACC_MULT * a);
+    return { back: w, fwd: w };
+  }
+  const base = v * Math.min(dt, SNAP_WINDOW_DT_CAP_S) + SNAP_WINDOW_ACC_MULT * a + SNAP_WINDOW_BASE_M;
+  return { back: Math.min(80, Math.max(20, base * 0.45)), fwd: Math.max(40, base) };
 }
 function headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, segIdx) {
   if (gpsHdg == null || isNaN(gpsHdg)) return false;
@@ -8379,13 +8716,15 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx) {
     if (s2 < sMin - 1 || s2 > sMax + 1) continue;
     const tangent = segmentBearing(geom, i2);
     const dot = headingDot(tangent, gpsHdg);
-    if (requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, i2)) continue;
-    if (requireDir && dot < SNAP_MIN_DOT) continue;
-    if (requireDir && spd > 1 && ctx?.prevPos) {
+    const weakHdg = acc > SNAP_WEAK_HEADING_ACC_M;
+    if (requireDir && !weakHdg && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, i2)) continue;
+    if (requireDir && !weakHdg && dot < SNAP_MIN_DOT) continue;
+    if (requireDir && !weakHdg && spd > 1 && ctx?.prevPos) {
       const moveBrg = bearing(ctx.prevPos, gps);
       if (headingDot(tangent, moveBrg) < 0) continue;
     }
-    let score = proj.lateral + SNAP_ANGLE_PENALTY * (gpsHdg != null ? (1 - dot) * 50 : 0);
+    const angleW = weakHdg ? 0.25 : 1;
+    let score = proj.lateral + SNAP_ANGLE_PENALTY * angleW * (gpsHdg != null ? (1 - dot) * 50 : 0);
     if (!skipJump && prevS > 0) {
       const maxJump = spd * dt + acc;
       const jumpExcess = Math.max(0, Math.abs(s2 - prevS) - maxJump);
@@ -8427,9 +8766,19 @@ function snapToRoute(gps, geom, gpsHeadingDeg, meta) {
   const snapLost = S.snapQuality === SnapQuality.LOST;
   const forceWide = takeForceReeval() || snapLost || prev && prev.lateral > SNAP_QUALITY_LOST_LATERAL_M;
   const anchorS = prev ? prev.s : globalHint?.s ?? 0;
-  const sWin = anchorS > 0 && prev ? computeSnapWindow(spd, dt, acc) : Math.max(300, Math.min(600, total * 0.1));
-  const sMin = Math.max(0, anchorS - sWin);
-  const sMax = Math.min(total, anchorS + sWin);
+  let sBack;
+  let sFwd;
+  if (anchorS > 0 && prev) {
+    const win = computeSnapWindow(spd, dt, acc);
+    sBack = win.back;
+    sFwd = win.fwd;
+  } else {
+    const cold = Math.max(300, Math.min(600, total * 0.1));
+    sBack = cold;
+    sFwd = cold;
+  }
+  const sMin = Math.max(0, anchorS - sBack);
+  const sMax = Math.min(total, anchorS + sFwd);
   const ctx = {
     spd,
     acc,
@@ -8441,7 +8790,7 @@ function snapToRoute(gps, geom, gpsHeadingDeg, meta) {
   };
   let best = null;
   if ((forceWide || !prev) && globalHint) {
-    const wide = Math.max(220, 3 * acc + 120, sWin * 1.5);
+    const wide = Math.max(220, 3 * acc + 120, Math.max(sBack, sFwd) * 1.5);
     best = scanSnap(
       gps,
       geom,
@@ -20343,6 +20692,52 @@ function triArea2(a, b, c) {
 function projectCam(x2, z, elev) {
   return projectGround2(x2, z, elev);
 }
+function buildGhostStripSvg(sections) {
+  if (sections.length < 2) return "";
+  const tok = getThemeTokens();
+  const edgeCol = tok.pathEdge || "#9aa3ad";
+  const fillCol = tok.pathFill && tok.pathFill !== "none" ? tok.pathFill : edgeCol;
+  let html = "";
+  const pt = (p) => p.x.toFixed(1) + "," + p.y.toFixed(1);
+  for (let i2 = sections.length - 2; i2 >= 0; i2--) {
+    const a = sections[i2];
+    const b = sections[i2 + 1];
+    if (b.cz <= a.cz + 0.05) continue;
+    const aL = projectCam(a.lx, a.lz, a.elev);
+    const aR = projectCam(a.rx, a.rz, a.elev);
+    const bL = projectCam(b.lx, b.lz, b.elev);
+    const bR = projectCam(b.rx, b.rz, b.elev);
+    if (!aL || !aR || !bL || !bR) continue;
+    const t1 = triArea2(aL, bL, bR);
+    const t2 = triArea2(aL, bR, aR);
+    if (t1 * t2 > 0) {
+      if (t1 > 1) {
+        html += '<polygon points="' + pt(aL) + " " + pt(bL) + " " + pt(bR) + '" fill="' + fillCol + '" fill-opacity="0.14" stroke="none"/>';
+      }
+      if (t2 > 1) {
+        html += '<polygon points="' + pt(aL) + " " + pt(bR) + " " + pt(aR) + '" fill="' + fillCol + '" fill-opacity="0.14" stroke="none"/>';
+      }
+    }
+    html += '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) + '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="1.2" stroke-linecap="round" opacity="0.28"/><line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) + '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) + '" stroke="' + edgeCol + '" stroke-width="1.2" stroke-linecap="round" opacity="0.28"/>';
+  }
+  return html;
+}
+function renderGhostRibbons(snap, headingRad, geom, maxDist) {
+  tickGhostCorridor(geom, snap);
+  const ways = getGhostWays();
+  if (!ways.length) return "";
+  const dist = Math.min(maxDist, GHOST_SHOW_MAX_M);
+  let html = "";
+  let segsLeft = 500;
+  for (const way of ways) {
+    if (segsLeft <= 0) break;
+    const sections = computeGhostSections(way, snap, headingRad, geom, dist);
+    if (sections.length < 2) continue;
+    segsLeft -= sections.length;
+    html += buildGhostStripSvg(sections);
+  }
+  return html;
+}
 function buildStripMeshSvg(sections, geom, speedMps) {
   if (sections.length < 2) return { fill: "", edges: "" };
   const tok = getThemeTokens();
@@ -20738,6 +21133,7 @@ function renderPathway() {
     return;
   }
   let html = "";
+  html += renderGhostRibbons(snap, headingRad, geomReady, maxDist);
   if (isCrossingContextEnabled()) {
     html += renderCrossingWhiskers(snap, headingRad, geomReady, rawSnap.s, speedMps);
     if (activeRb) html += renderRoundaboutSchema(activeRb, snap, headingRad);
@@ -21031,6 +21427,7 @@ var init_render = __esm({
     init_curve_speed();
     init_theme_tokens();
     init_crossings();
+    init_interchange_corridor();
     _pathLastS = null;
     _pathSkipFrames = 0;
     PROFILE_GAP = 6;
@@ -21135,6 +21532,7 @@ var init_settings_presets = __esm({
           "opt-elev-profile": false,
           "opt-curve-warn": true,
           "opt-curve-strict": "strict",
+          "opt-ghost-ribbons": true,
           "opt-limit": 60,
           "opt-cam-speed-tol": 10,
           "opt-hud-status-mode": "tap",
@@ -21152,6 +21550,7 @@ var init_settings_presets = __esm({
           "opt-elev-profile": false,
           "opt-curve-warn": true,
           "opt-curve-strict": "normal",
+          "opt-ghost-ribbons": true,
           "opt-limit": 90,
           "opt-cam-speed-tol": 15,
           "opt-hud-status-mode": "tap",
@@ -21169,6 +21568,7 @@ var init_settings_presets = __esm({
           "opt-elev-profile": true,
           "opt-curve-warn": true,
           "opt-curve-strict": "relaxed",
+          "opt-ghost-ribbons": true,
           "opt-limit": 90,
           "opt-cam-speed-tol": 20,
           "opt-hud-status-mode": "tap",
@@ -26501,6 +26901,7 @@ async function startHud() {
   resetRouteSnap();
   resetSnapQuality();
   resetCurveRibbonState();
+  resetGhostCorridor();
   resetSpeedLimitState();
   resetRoundaboutState();
   _lowRouteBearingDone = false;
@@ -26797,6 +27198,7 @@ var init_hud = __esm({
     init_maneuver_filter();
     init_route();
     init_curve_speed();
+    init_interchange_corridor();
     init_favorites();
     init_wake_lock();
     init_voice();
@@ -27647,6 +28049,10 @@ function bindSetupUI() {
     saveCurveOptsToStorage();
     recomputeCurveIfReady();
   });
+  $2("opt-ghost-ribbons")?.addEventListener("change", (e) => {
+    S.ghostRibbons = e.target.checked;
+    saveGhostOptsToStorage();
+  });
   $2("opt-heading").addEventListener("change", (e) => {
     S.showCompass = e.target.checked;
     $2("hud").classList.toggle("show-compass", S.showCompass);
@@ -27789,6 +28195,7 @@ function syncOptionsFromDom() {
     S.curveStrict = strictEl.value || "normal";
     strictEl.disabled = !S.curveWarn;
   }
+  S.ghostRibbons = $2("opt-ghost-ribbons")?.checked ?? true;
   S.showCompass = $2("opt-heading").checked;
   S.cams = $2("opt-cams").checked;
   S.backOnly = $2("opt-back-only").checked;
@@ -27831,6 +28238,7 @@ var init_setup = __esm({
     init_cam_status();
     init_elevation();
     init_curve_speed();
+    init_interchange_corridor();
     init_hud_opts();
     init_hud_chrome();
     init_app_opts();
@@ -28243,6 +28651,7 @@ init_favorites();
 init_cam_status();
 init_elevation();
 init_curve_speed();
+init_interchange_corridor();
 init_hud_opts();
 init_app_opts();
 init_theme();
@@ -28790,6 +29199,7 @@ init_setup();
 init_route();
 init_speed_limit();
 init_yandex_link();
+init_interchange_corridor();
 var DEMO_FINISH = [55.827099, 37.632066];
 function isSimPage() {
   return new URLSearchParams(location.search).get("sim") === "1";
@@ -29003,8 +29413,23 @@ function simGetStatus() {
     gps: !!S.gps?.lat,
     finish: !!S.finish?.lat,
     routePts: S.route?.geometry?.n || S.route?.coords?.length || 0,
-    hudOn: !!$2("hud")?.classList.contains("on")
+    hudOn: !!$2("hud")?.classList.contains("on"),
+    ghost: ghostCorridorStatus()
   };
+}
+async function simLoadGhostMock() {
+  if (!isSimPage()) return { ok: false, skipped: true };
+  const q = new URLSearchParams(location.search);
+  if (q.get("ghostMock") !== "1") return { ok: false, skipped: true };
+  try {
+    const res = await fetch("fixtures/ghost-corridor-mock.json");
+    if (!res.ok) return { ok: false, error: "mock HTTP " + res.status };
+    const json = await res.json();
+    injectMockCorridor(json);
+    return { ok: true, ways: (json.elements || []).filter((e) => e.type === "way").length };
+  } catch (e) {
+    return { ok: false, error: String(e?.message || e) };
+  }
 }
 
 // js/main.js
@@ -29026,6 +29451,7 @@ function persistSettingsFromDom() {
   saveHudOptsToStorage();
   saveElevOptsToStorage();
   saveCurveOptsToStorage();
+  saveGhostOptsToStorage();
   updateCamStatusUI();
 }
 function reloadAllSettingsFromStorage() {
@@ -29033,6 +29459,7 @@ function reloadAllSettingsFromStorage() {
   applyTheme(prefs.theme, prefs.modePref, false);
   loadElevOptsFromStorage();
   loadCurveOptsFromStorage();
+  loadGhostOptsFromStorage();
   loadHudOptsFromStorage();
   loadAppOptsFromStorage();
   syncOptionsFromDom();
@@ -29056,6 +29483,7 @@ initTelemetry().then(() => {
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();
+loadGhostOptsFromStorage();
 loadHudOptsFromStorage();
 loadAppOptsFromStorage();
 syncOptionsFromDom();
@@ -29092,6 +29520,8 @@ window.__motoHUD = {
   simGetStatus,
   simKickGps,
   simEnsureDemoFinish,
+  injectMockCorridor,
+  ghostCorridorStatus,
   _searchBusy: false,
   _finishFocused: false
 };
@@ -29099,6 +29529,8 @@ window.applyTheme = applyTheme;
 window.addEventListener("load", () => {
   setTimeout(startGps, 400);
   registerServiceWorker();
+  simLoadGhostMock().catch(() => {
+  });
   if (window.__SIM__?.boot && !window.__SIM__._bootScheduled) {
     window.__SIM__._bootScheduled = true;
     setTimeout(() => window.__SIM__.boot(), 500);

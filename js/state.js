@@ -82,6 +82,8 @@ export const S = {
   camSpeedTol: DEFAULT_CAM_SPEED_TOL,
   lastVoiceTs: 0,
   curveWarn: true,
+  /** ROADPATH этап 5: ghost-ленты развязки в POV дорожки */
+  ghostRibbons: true,
   curveStrict: 'normal', // relaxed | normal | strict
   showFinishDist: true,
   showFinishEta: true,
@@ -126,6 +128,7 @@ export const RUN_KEY = 'moto-hud-last-run';
 export const FAV_KEY = 'moto-hud-favs';
 export const ELEV_OPTS_KEY = 'moto-hud-elev-opts';
 export const CURVE_OPTS_KEY = 'moto-hud-curve-opts';
+export const GHOST_OPTS_KEY = 'moto-hud-ghost-ribbons';
 export const HUD_OPTS_KEY = 'moto-hud-hud-opts';
 export const APP_OPTS_KEY = 'moto-hud-app-opts';
 /** Усиление вертикали профиля высот по умолчанию */
@@ -141,4 +144,7 @@ export const MAX_ELEV_PROFILE_LEN_KM = 5;
 
 export { FUEL_COLORS } from './theme.js';
 // Коридор вдоль маршрута (м): АЗС дальше него считается «не по маршруту»
-export const FUEL_CORRIDOR = 600;
+/** АЗС на дорожке: lateral к маршруту (ROADPATH этап 4: 100–200 м). */
+export const FUEL_CORRIDOR = 200;
+/** Маркеры на карте — чуть шире коридора HUD. */
+export const FUEL_MAP_CORRIDOR = 350;

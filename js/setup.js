@@ -14,6 +14,7 @@ import { onTick, startHud, stopHud, cycleFuelAssist } from './hud.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { loadRouteElevation, saveElevOptsToStorage } from './elevation.js';
 import { computeCurveSpeed, saveCurveOptsToStorage } from './curve-speed.js';
+import { saveGhostOptsToStorage } from './interchange-corridor.js';
 import { saveHudOptsToStorage, applyFinishInfoVisibility, clampFuelPlannerCount } from './hud-opts.js';
 import { applyHudChrome, normalizeChromeMode } from './hud-chrome.js';
 import { saveAppOptsToStorage } from './app-opts.js';
@@ -698,6 +699,11 @@ export function bindSetupUI(){
     recomputeCurveIfReady();
   });
 
+  $('opt-ghost-ribbons')?.addEventListener('change', e => {
+    S.ghostRibbons = e.target.checked;
+    saveGhostOptsToStorage();
+  });
+
   $('opt-heading').addEventListener('change', e => {
 
     S.showCompass = e.target.checked;
@@ -888,6 +894,7 @@ export function syncOptionsFromDom(){
     S.curveStrict = strictEl.value || 'normal';
     strictEl.disabled = !S.curveWarn;
   }
+  S.ghostRibbons = $('opt-ghost-ribbons')?.checked ?? true;
 
   S.showCompass = $('opt-heading').checked;
 

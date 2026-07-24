@@ -13,6 +13,8 @@ import {
   SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD,
   SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT,
   SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS,
+  SNAP_SLOW_SPD_MPS, SNAP_SLOW_WINDOW_M, SNAP_FAST_SPD_MPS, SNAP_FAST_BACK_M, SNAP_FAST_FWD_M,
+  SNAP_WEAK_HEADING_ACC_M,
   SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES,
   SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M,
   SNAP_QUALITY_JUMP_DS_M, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT,
@@ -280,11 +282,25 @@ export function buildRouteGeometry(route){
   const lat = Float64Array.from(latArr);
   const lon = Float64Array.from(lonArr);
   const s = buildArcLength(latArr, lonArr);
+  const heading = buildHeadingArray(lat, lon, n);
   const elev = new Float64Array(n);
   const grade = new Float64Array(n);
   const maneuvers = refineManeuvers(buildManeuvers(route.steps, route.coords, { s, n, lat, lon }));
-  return { lat, lon, s, elev, grade, maneuvers, n, elevReady: false, curveReady: false,
+  return { lat, lon, s, heading, elev, grade, maneuvers, n, elevReady: false, curveReady: false,
     crossings: [], roundabouts: [] };
+}
+
+/** Предвычисленная касательная в каждой точке, рад (север = 0, по часовой). */
+function buildHeadingArray(lat, lon, n){
+  const heading = new Float64Array(n);
+  for(let i = 0; i < n - 1; i++){
+    heading[i] = bearing(
+      { lat: lat[i], lon: lon[i] },
+      { lat: lat[i + 1], lon: lon[i + 1] }
+    ) * Math.PI / 180;
+  }
+  heading[n - 1] = n > 1 ? heading[n - 2] : 0;
+  return heading;
 }
 
 /** Индекс сегмента, содержащего s */
@@ -330,6 +346,9 @@ export function turnAngleAtS(geom, s){
 }
 
 function segmentBearing(geom, i){
+  if(geom.heading && i >= 0 && i < geom.heading.length){
+    return (geom.heading[i] * 180 / Math.PI + 360) % 360;
+  }
   return bearing(
     { lat: geom.lat[i], lon: geom.lon[i] },
     { lat: geom.lat[i + 1], lon: geom.lon[i + 1] });
@@ -360,12 +379,26 @@ function headingDot(tangentDeg, gpsHdg){
   return Math.cos(diff * Math.PI / 180);
 }
 
+/** Адаптивное окно snap: { back, fwd } по дуге s (ROADPATH этап 1). */
 function computeSnapWindow(spd, dt, acc){
   const v = Math.max(spd || 0, 0);
   const a = Math.max(acc || 8, 8);
-  if(v < SNAP_STATIONARY_SPD_MPS) return Math.max(8, a * 0.5);
-  if(v < 1) return Math.max(25, SNAP_WINDOW_ACC_MULT * a);
-  return v * Math.min(dt, SNAP_WINDOW_DT_CAP_S) + SNAP_WINDOW_ACC_MULT * a + SNAP_WINDOW_BASE_M;
+  if(v < SNAP_STATIONARY_SPD_MPS){
+    const w = Math.max(8, a * 0.5);
+    return { back: w, fwd: w };
+  }
+  if(v < SNAP_SLOW_SPD_MPS){
+    return { back: SNAP_SLOW_WINDOW_M, fwd: SNAP_SLOW_WINDOW_M };
+  }
+  if(v >= SNAP_FAST_SPD_MPS){
+    return { back: SNAP_FAST_BACK_M, fwd: SNAP_FAST_FWD_M };
+  }
+  if(v < 1){
+    const w = Math.max(25, SNAP_WINDOW_ACC_MULT * a);
+    return { back: w, fwd: w };
+  }
+  const base = v * Math.min(dt, SNAP_WINDOW_DT_CAP_S) + SNAP_WINDOW_ACC_MULT * a + SNAP_WINDOW_BASE_M;
+  return { back: Math.min(80, Math.max(20, base * 0.45)), fwd: Math.max(40, base) };
 }
 
 function headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, segIdx){
@@ -406,15 +439,17 @@ function scanSnap(gps, geom, sMin, sMax, gpsHdg, requireDir, ctx){
     const tangent = segmentBearing(geom, i);
     const dot = headingDot(tangent, gpsHdg);
 
-    if(requireDir && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, i)) continue;
-    if(requireDir && dot < SNAP_MIN_DOT) continue;
+    const weakHdg = acc > SNAP_WEAK_HEADING_ACC_M;
+    if(requireDir && !weakHdg && headingGateReject(tangent, gpsHdg, spd, acc, headingAgeMs, i)) continue;
+    if(requireDir && !weakHdg && dot < SNAP_MIN_DOT) continue;
 
-    if(requireDir && spd > 1 && ctx?.prevPos){
+    if(requireDir && !weakHdg && spd > 1 && ctx?.prevPos){
       const moveBrg = bearing(ctx.prevPos, gps);
       if(headingDot(tangent, moveBrg) < 0) continue;
     }
 
-    let score = proj.lateral + SNAP_ANGLE_PENALTY * (gpsHdg != null ? (1 - dot) * 50 : 0);
+    const angleW = weakHdg ? 0.25 : 1;
+    let score = proj.lateral + SNAP_ANGLE_PENALTY * angleW * (gpsHdg != null ? (1 - dot) * 50 : 0);
     if(!skipJump && prevS > 0){
       const maxJump = spd * dt + acc;
       const jumpExcess = Math.max(0, Math.abs(s - prevS) - maxJump);
@@ -462,11 +497,19 @@ export function snapToRoute(gps, geom, gpsHeadingDeg, meta){
     (prev && prev.lateral > SNAP_QUALITY_LOST_LATERAL_M);
   const anchorS = prev ? prev.s : (globalHint?.s ?? 0);
 
-  const sWin = anchorS > 0 && prev
-    ? computeSnapWindow(spd, dt, acc)
-    : Math.max(300, Math.min(600, total * 0.1));
-  const sMin = Math.max(0, anchorS - sWin);
-  const sMax = Math.min(total, anchorS + sWin);
+  let sBack;
+  let sFwd;
+  if(anchorS > 0 && prev){
+    const win = computeSnapWindow(spd, dt, acc);
+    sBack = win.back;
+    sFwd = win.fwd;
+  } else {
+    const cold = Math.max(300, Math.min(600, total * 0.1));
+    sBack = cold;
+    sFwd = cold;
+  }
+  const sMin = Math.max(0, anchorS - sBack);
+  const sMax = Math.min(total, anchorS + sFwd);
 
   const ctx = {
     spd, acc, headingAgeMs, prevS: anchorS, dt,
@@ -477,7 +520,7 @@ export function snapToRoute(gps, geom, gpsHeadingDeg, meta){
   let best = null;
 
   if((forceWide || !prev) && globalHint){
-    const wide = Math.max(220, 3 * acc + 120, sWin * 1.5);
+    const wide = Math.max(220, 3 * acc + 120, Math.max(sBack, sFwd) * 1.5);
     best = scanSnap(gps, geom, Math.max(0, globalHint.s - wide),
       Math.min(total, globalHint.s + wide), gpsHeadingDeg, false, ctx);
   }

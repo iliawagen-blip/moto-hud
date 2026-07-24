@@ -29,6 +29,9 @@ import {
   renderCrossingWhiskers, renderRoundaboutSchema,
   getActiveRoundabout, isCrossingContextEnabled
 } from './crossings.js';
+import {
+  tickGhostCorridor, getGhostWays, computeGhostSections, GHOST_SHOW_MAX_M
+} from './interchange-corridor.js';
 
 const PROFILE_GAP = 6;
 
@@ -86,6 +89,63 @@ function projectCam(x, z, elev){
 }
 
 /** Triangle strip в камерной системе */
+/** Ghost ribbons: та же проекция, ниже opacity; без curve-color. */
+function buildGhostStripSvg(sections){
+  if(sections.length < 2) return '';
+  const tok = getThemeTokens();
+  const edgeCol = tok.pathEdge || '#9aa3ad';
+  const fillCol = tok.pathFill && tok.pathFill !== 'none' ? tok.pathFill : edgeCol;
+  let html = '';
+  const pt = p => p.x.toFixed(1) + ',' + p.y.toFixed(1);
+  for(let i = sections.length - 2; i >= 0; i--){
+    const a = sections[i];
+    const b = sections[i + 1];
+    if(b.cz <= a.cz + 0.05) continue;
+    const aL = projectCam(a.lx, a.lz, a.elev);
+    const aR = projectCam(a.rx, a.rz, a.elev);
+    const bL = projectCam(b.lx, b.lz, b.elev);
+    const bR = projectCam(b.rx, b.rz, b.elev);
+    if(!aL || !aR || !bL || !bR) continue;
+    const t1 = triArea2(aL, bL, bR);
+    const t2 = triArea2(aL, bR, aR);
+    if(t1 * t2 > 0){
+      if(t1 > 1){
+        html += '<polygon points="' + pt(aL) + ' ' + pt(bL) + ' ' + pt(bR) +
+          '" fill="' + fillCol + '" fill-opacity="0.14" stroke="none"/>';
+      }
+      if(t2 > 1){
+        html += '<polygon points="' + pt(aL) + ' ' + pt(bR) + ' ' + pt(aR) +
+          '" fill="' + fillCol + '" fill-opacity="0.14" stroke="none"/>';
+      }
+    }
+    html +=
+      '<line x1="' + aL.x.toFixed(1) + '" y1="' + aL.y.toFixed(1) +
+        '" x2="' + bL.x.toFixed(1) + '" y2="' + bL.y.toFixed(1) +
+        '" stroke="' + edgeCol + '" stroke-width="1.2" stroke-linecap="round" opacity="0.28"/>' +
+      '<line x1="' + aR.x.toFixed(1) + '" y1="' + aR.y.toFixed(1) +
+        '" x2="' + bR.x.toFixed(1) + '" y2="' + bR.y.toFixed(1) +
+        '" stroke="' + edgeCol + '" stroke-width="1.2" stroke-linecap="round" opacity="0.28"/>';
+  }
+  return html;
+}
+
+function renderGhostRibbons(snap, headingRad, geom, maxDist){
+  tickGhostCorridor(geom, snap);
+  const ways = getGhostWays();
+  if(!ways.length) return '';
+  const dist = Math.min(maxDist, GHOST_SHOW_MAX_M);
+  let html = '';
+  let segsLeft = 500;
+  for(const way of ways){
+    if(segsLeft <= 0) break;
+    const sections = computeGhostSections(way, snap, headingRad, geom, dist);
+    if(sections.length < 2) continue;
+    segsLeft -= sections.length;
+    html += buildGhostStripSvg(sections);
+  }
+  return html;
+}
+
 function buildStripMeshSvg(sections, geom, speedMps){
   if(sections.length < 2) return { fill: '', edges: '' };
   const tok = getThemeTokens();
@@ -564,6 +624,8 @@ export function renderPathway(){
   }
 
   let html = '';
+  // Ghost за primary: та же камера, ниже opacity (ROADPATH этап 5)
+  html += renderGhostRibbons(snap, headingRad, geomReady, maxDist);
   if(isCrossingContextEnabled()){
     html += renderCrossingWhiskers(snap, headingRad, geomReady, rawSnap.s, speedMps);
     if(activeRb) html += renderRoundaboutSchema(activeRb, snap, headingRad);

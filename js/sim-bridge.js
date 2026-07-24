@@ -15,6 +15,7 @@ import { doBuildRoute, refreshRouteUi, setGoBarVisible, setFinishQuiet } from '.
 import { buildDirectRouteFromWaypoints, attachRouteFromImport, scheduleGeometryBuild, fetchRouteThroughWaypoints, auditRouteDrivability } from './route.js';
 import { loadRouteHighwayTypes } from './speed-limit.js';
 import { parseYandexRouteLink, extractYandexUrl } from './yandex-link.js';
+import { injectMockCorridor, ghostCorridorStatus } from './interchange-corridor.js';
 
 const DEMO_FINISH = [55.827099, 37.632066];
 
@@ -268,6 +269,23 @@ export function simGetStatus(){
     gps: !!(S.gps?.lat),
     finish: !!(S.finish?.lat),
     routePts: S.route?.geometry?.n || S.route?.coords?.length || 0,
-    hudOn: !!$('hud')?.classList.contains('on')
+    hudOn: !!$('hud')?.classList.contains('on'),
+    ghost: ghostCorridorStatus()
   };
+}
+
+/** ?ghostMock=1 — подгрузить fixtures/ghost-corridor-mock.json (без публичного Overpass). */
+export async function simLoadGhostMock(){
+  if(!isSimPage()) return { ok: false, skipped: true };
+  const q = new URLSearchParams(location.search);
+  if(q.get('ghostMock') !== '1') return { ok: false, skipped: true };
+  try{
+    const res = await fetch('fixtures/ghost-corridor-mock.json');
+    if(!res.ok) return { ok: false, error: 'mock HTTP ' + res.status };
+    const json = await res.json();
+    injectMockCorridor(json);
+    return { ok: true, ways: (json.elements || []).filter(e => e.type === 'way').length };
+  }catch(e){
+    return { ok: false, error: String(e?.message || e) };
+  }
 }

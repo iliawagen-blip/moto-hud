@@ -1,4 +1,4 @@
-import { S, FUEL_COLORS, FUEL_CORRIDOR } from './state.js';
+import { S, FUEL_COLORS, FUEL_CORRIDOR, FUEL_MAP_CORRIDOR } from './state.js';
 import { haversine } from './geo.js';
 import { curPos } from './gps.js';
 import { findNearestOnRoute } from './route.js';
@@ -358,7 +358,7 @@ export function fuelStationsForMap(limit){
   if(!S.fuelStations.length) return [];
   recomputeFuelGeometry();
   return S.fuelStations
-    .filter(s => s.routeS != null && (s.offRoute ?? Infinity) <= FUEL_CORRIDOR + 150)
+    .filter(s => s.routeS != null && (s.offRoute ?? Infinity) <= FUEL_MAP_CORRIDOR)
     .sort((a, b) => a.routeS - b.routeS)
     .slice(0, limit || 48);
 }
