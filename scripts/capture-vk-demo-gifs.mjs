@@ -52,7 +52,12 @@ const PORTRAIT = {
   framesDir: path.join(OUT_DIR, '_frames-portrait'),
   legs: PORTRAIT_LEGS,
   viewport: { width: 390, height: 844 },
-  outSize: { w: 360, h: 640 },
+  /**
+   * VK анимирует GIF только при AR width/height ∈ [0.75 … 2.5]
+   * (см. @authors … kak-publikovat-izobrazhenia). 9:16 = 0.56 → статичная картинка.
+   * Portrait: 3:4 = 0.75.
+   */
+  outSize: { w: 540, h: 720 },
   dpr: 1,
   theme: 'avionics',
   mode: 'day',
@@ -70,6 +75,7 @@ const LANDSCAPE = {
   framesDir: path.join(OUT_DIR, '_frames-landscape'),
   legs: LANDSCAPE_LEGS,
   viewport: { width: 844, height: 390 },
+  /** Landscape 16:9 ≈ 1.78 — внутри окна VK для анимированных GIF */
   outSize: { w: 720, h: 405 },
   dpr: 1,
   theme: 'avionics',
