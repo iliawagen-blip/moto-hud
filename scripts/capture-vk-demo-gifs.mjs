@@ -247,22 +247,119 @@ async function bootHud(page, cfg) {
   });
 }
 
-/** Плавное положение на пути: без скачков idx */
-async function seekAndTick(page, frac, speed = 14) {
-  await page.evaluate(({ f, spd }) => {
+/** Демо: скорость как у мото — 30…120 км/ч */
+const SPD_MIN_KMH = 30;
+const SPD_MAX_KMH = 120;
+
+async function ensureCruiseProfile(page) {
+  await page.evaluate((maxKmh) => {
+    window.__SIM__?.setSpeed?.(maxKmh / 3.6);
+  }, SPD_MAX_KMH);
+}
+
+/**
+ * Целевая скорость на frac: повороты по path + уклон рельефа.
+ * Возвращает км/ч в [30, 120].
+ */
+async function targetSpeedKmh(page, frac) {
+  return page.evaluate(({ f, minK, maxK }) => {
     const hud = window.__motoHUD;
     const sim = window.__SIM__;
-    if (!sim?.PATH?.length) return;
+    const path = sim?.path;
+    if (!path?.length) return 70;
+    sim.setSpeed?.(maxK / 3.6);
+
+    const maxIdx = Math.max(0, path.length - 2);
+    const pos = Math.min(Math.max(f, 0), 0.995) * maxIdx;
+    const idx = Math.floor(pos);
+    sim.idx = idx;
+    sim.frac = pos - idx;
+
+    const toRad = d => d * Math.PI / 180;
+    const bearing = (p, q) => {
+      const f1 = toRad(p[0]); const f2 = toRad(q[0]); const dl = toRad(q[1] - p[1]);
+      const y = Math.sin(dl) * Math.cos(f2);
+      const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    };
+    const turnAt = (i) => {
+      if (i < 1 || i >= path.length - 1) return 0;
+      const b1 = bearing(path[i - 1], path[i]);
+      const b2 = bearing(path[i], path[i + 1]);
+      let d = Math.abs(b2 - b1);
+      if (d > 180) d = 360 - d;
+      return d;
+    };
+    // худший поворот в окне вперёд (~15 точек path)
+    let worst = 0;
+    const iEnd = Math.min(path.length - 1, idx + 15);
+    for (let j = idx; j <= iEnd; j++) worst = Math.max(worst, turnAt(j));
+
+    // прямая → 120, заметный изгиб → к 30
+    let kmh = maxK;
+    if (worst >= 3) {
+      const t = Math.min(1, (worst - 3) / 35);
+      const ease = t * t;
+      kmh = maxK + (minK - maxK) * ease;
+    }
+
+    // уклон: подъём тянет к минимуму, спуск — к крейсеру
+    const geom = hud?.S?.route?.geometry;
+    let grade = 0;
+    if (geom?.elevReady && geom.elev && geom.n > 2 && geom.s) {
+      const total = geom.s[geom.n - 1] || 1;
+      const s0 = f * total;
+      const s1 = Math.min(total, s0 + 200);
+      const elevAt = (s) => {
+        let i = 0;
+        while (i < geom.n - 2 && geom.s[i + 1] < s) i++;
+        const a = geom.s[i];
+        const b = geom.s[i + 1] || a + 1;
+        const u = (s - a) / (b - a || 1);
+        return geom.elev[i] + (geom.elev[i + 1] - geom.elev[i]) * u;
+      };
+      grade = (elevAt(s1) - elevAt(s0)) / Math.max(1, s1 - s0);
+      if (grade > 0.008) {
+        const g = Math.min(1, (grade - 0.008) / 0.06);
+        kmh = kmh + (minK - kmh) * g;
+      } else if (grade < -0.015) {
+        const g = Math.min(1, (-grade - 0.015) / 0.05);
+        kmh = kmh + (maxK - kmh) * g * 0.45;
+      }
+    }
+
+    // дыхание на длинных прямых (чтобы не висеть на 120)
+    const breath = 0.5 + 0.5 * Math.sin(f * Math.PI * 5.5);
+    if (worst < 8 && grade < 0.02) {
+      kmh = kmh * (0.72 + 0.28 * breath); // ~86…120 на «лёгкой» прямой
+    }
+
+    kmh *= 0.98 + (Math.sin(f * 41.3) * 0.5 + 0.5) * 0.04;
+    return Math.max(minK, Math.min(maxK, Math.round(kmh)));
+  }, { f: frac, minK: SPD_MIN_KMH, maxK: SPD_MAX_KMH });
+}
+
+/** Плавное положение на пути; speedKmh — если null, берём профиль 30–120 */
+async function seekAndTick(page, frac, speedKmh = null) {
+  let kmh = speedKmh;
+  if (kmh == null) kmh = await targetSpeedKmh(page, frac);
+  kmh = Math.max(SPD_MIN_KMH, Math.min(SPD_MAX_KMH, kmh));
+
+  await page.evaluate(({ f, kmh: k }) => {
+    const hud = window.__motoHUD;
+    const sim = window.__SIM__;
+    const path = sim?.path;
+    if (!path?.length) return;
     sim.onNavigationStart?.();
-    const maxIdx = Math.max(0, sim.PATH.length - 2);
+    const maxIdx = Math.max(0, path.length - 2);
     const pos = Math.min(Math.max(f, 0), 0.995) * maxIdx;
     const idx = Math.floor(pos);
     const localFrac = pos - idx;
     sim.idx = idx;
     sim.frac = localFrac;
     sim.running = true;
-    const a = sim.PATH[idx];
-    const b = sim.PATH[Math.min(idx + 1, sim.PATH.length - 1)];
+    const a = path[idx];
+    const b = path[Math.min(idx + 1, path.length - 1)];
     const lat = a[0] + (b[0] - a[0]) * localFrac;
     const lon = a[1] + (b[1] - a[1]) * localFrac;
     const toRad = d => d * Math.PI / 180;
@@ -273,26 +370,44 @@ async function seekAndTick(page, frac, speed = 14) {
       const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
       return toDeg(Math.atan2(y, x));
     };
-    // смотрим чуть вперёд по пути — стабильнее heading на плавных дугах
-    const look = Math.min(idx + 3, sim.PATH.length - 1);
-    const hdg = bearing([lat, lon], sim.PATH[look]);
-    sim.injectFix?.({ lat, lon, speed: spd, heading: hdg, acc: 4 });
+    const look = Math.min(idx + 3, path.length - 1);
+    const hdg = bearing([lat, lon], path[look]);
+    sim.injectFix?.({ lat, lon, speed: k / 3.6, heading: hdg, acc: 4 });
     hud?.onTick?.();
     document.getElementById('hud')?.classList.add('chrome-reveal', 'chrome-btns-on');
-  }, { f: frac, spd: speed });
+  }, { f: frac, kmh });
   await wait(55);
+  return kmh;
 }
 
-/** Длинный ровный проезд по фракции [from..to] */
-async function driveSegment(page, grab, from, to, frames, speed = 14, logEvery = 40) {
+/**
+ * Проезд [from..to]: быстрее на прямых, медленнее в поворотах/на подъёме.
+ * Шаг по пути пропорционален скорости — как реальное движение.
+ */
+async function driveSegment(page, grab, from, to, frames, logEvery = 40) {
+  await ensureCruiseProfile(page);
+  const targets = [];
   for (let s = 0; s < frames; s++) {
     const u = frames <= 1 ? 0 : s / (frames - 1);
-    const frac = from + (to - from) * u;
-    // скорость чуть дышит, без дёрганых скачков
-    const spd = speed + Math.sin(u * Math.PI * 2) * 1.5;
-    await seekAndTick(page, frac, spd);
+    targets.push(await targetSpeedKmh(page, from + (to - from) * u));
+  }
+  // EMA — без скачков спидометра
+  let sm = targets[0];
+  const smoothed = targets.map((k) => {
+    sm = sm * 0.78 + k * 0.22;
+    return Math.max(SPD_MIN_KMH, Math.min(SPD_MAX_KMH, Math.round(sm)));
+  });
+
+  const sumW = smoothed.reduce((a, b) => a + b, 0) || 1;
+  let acc = 0;
+  for (let s = 0; s < frames; s++) {
+    const fracMid = from + (to - from) * ((acc + smoothed[s] * 0.5) / sumW);
+    acc += smoothed[s];
+    const kmh = await seekAndTick(page, fracMid, smoothed[s]);
     await grab(1);
-    if (s % logEvery === 0) console.log('  drive', frac.toFixed(3), `${s + 1}/${frames}`);
+    if (s % logEvery === 0) {
+      console.log('  drive', fracMid.toFixed(3), `${kmh} км/ч`, `${s + 1}/${frames}`);
+    }
   }
 }
 
@@ -335,10 +450,12 @@ async function tapClick(page, selector) {
   });
   await showTap(page, selector);
   await wait(220);
-  const loc = page.locator(selector);
-  if (await loc.count()) {
-    await loc.first().click({ force: true });
-  }
+  // force:true иногда не помогает, если кнопка вне клиппа 3:4 — кликаем через DOM
+  await page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    el.click();
+  }, selector);
   await wait(450);
 }
 
@@ -489,25 +606,26 @@ async function capturePortrait(browser) {
 
   try {
     await bootHud(page, cfg);
+    await ensureCruiseProfile(page);
     await injectDemoFuel(page);
 
     // ── 1) Долгая езда ДОР — высоты, без смены режимов (~35 с)
     console.log('portrait: long path drive');
     await setNavMode(page, 'path');
-    await driveSegment(page, grab, 0.05, 0.42, 110, 13, 30);
+    await driveSegment(page, grab, 0.05, 0.42, 110, 30);
 
     // ── 2) Один раз ⛽ — держим панель, едем (~18 с). Без цикла тапов.
     console.log('portrait: fuel hold');
-    await seekAndTick(page, 0.42, 12);
+    await seekAndTick(page, 0.42);
     await tapClick(page, '#btn-fuel');
     await grab(4);
-    await driveSegment(page, grab, 0.42, 0.52, 50, 11, 25);
+    await driveSegment(page, grab, 0.42, 0.52, 50, 25);
 
     // ── 3) Закрыть топливо один раз, снова ДОР (~12 с)
     console.log('portrait: fuel close → path');
     await tapClick(page, '#btn-fuel');
     await grab(3);
-    await driveSegment(page, grab, 0.52, 0.62, 35, 13, 20);
+    await driveSegment(page, grab, 0.52, 0.62, 35, 20);
 
     // ── 4) КАРТА один раз — долго держим (~16 с)
     console.log('portrait: map hold');
@@ -515,16 +633,33 @@ async function capturePortrait(browser) {
     await wait(280);
     await setNavMode(page, 'map');
     await grab(5);
-    for (let s = 0; s < 45; s++) {
-      const frac = 0.62 + (0.10 * s) / 44;
-      await seekAndTick(page, frac, 13);
-      await page.evaluate(() => {
-        if (window.__motoHUD?.S?.viewMode === 'hud') {
-          window.__motoHUD.setViewMode('map_zoom');
-        }
-        document.getElementById('hud')?.classList.add('chrome-reveal', 'chrome-btns-on');
-      });
-      await grab(1);
+    {
+      const from = 0.62;
+      const to = 0.72;
+      const frames = 45;
+      await ensureCruiseProfile(page);
+      let sm = await targetSpeedKmh(page, from);
+      let acc = 0;
+      const speeds = [];
+      for (let s = 0; s < frames; s++) {
+        const u = s / (frames - 1);
+        const t = await targetSpeedKmh(page, from + (to - from) * u);
+        sm = sm * 0.78 + t * 0.22;
+        speeds.push(Math.max(SPD_MIN_KMH, Math.min(SPD_MAX_KMH, Math.round(sm))));
+      }
+      const sumW = speeds.reduce((a, b) => a + b, 0) || 1;
+      for (let s = 0; s < frames; s++) {
+        const fracMid = from + (to - from) * ((acc + speeds[s] * 0.5) / sumW);
+        acc += speeds[s];
+        await seekAndTick(page, fracMid, speeds[s]);
+        await page.evaluate(() => {
+          if (window.__motoHUD?.S?.viewMode === 'hud') {
+            window.__motoHUD.setViewMode('map_zoom');
+          }
+          document.getElementById('hud')?.classList.add('chrome-reveal', 'chrome-btns-on');
+        });
+        await grab(1);
+      }
     }
 
     // ── 5) ПЕЛЕНГ один раз — долго (~14 с)
@@ -533,7 +668,7 @@ async function capturePortrait(browser) {
     await wait(280);
     await setNavMode(page, 'bearing');
     await grab(5);
-    await driveSegment(page, grab, 0.72, 0.84, 40, 12, 20);
+    await driveSegment(page, grab, 0.72, 0.84, 40, 20);
 
     // ── 6) Обратно ДОР + финал подъёма (~16 с)
     console.log('portrait: path finale');
@@ -541,7 +676,7 @@ async function capturePortrait(browser) {
     await wait(280);
     await setNavMode(page, 'path');
     await grab(4);
-    await driveSegment(page, grab, 0.84, 0.96, 45, 13, 20);
+    await driveSegment(page, grab, 0.84, 0.96, 45, 20);
 
     console.log('portrait frames', i, '≈sec', (i * cfg.durationMs / 1000).toFixed(1));
   } finally {
@@ -585,6 +720,7 @@ async function captureLandscape(browser) {
 
   try {
     await bootHud(page, cfg);
+    await ensureCruiseProfile(page);
     await setNavMode(page, 'path');
 
     const themes = cfg.themes;
@@ -601,12 +737,22 @@ async function captureLandscape(browser) {
 
       const f0 = 0.06 + (t / themes.length) * 0.78;
       const f1 = 0.06 + ((t + 1) / themes.length) * 0.78;
-
-      // почти вся тема — только ДОР; карту показываем один раз на средней теме
       const showMap = t === 1;
+
+      await ensureCruiseProfile(page);
+      let sm = await targetSpeedKmh(page, f0);
+      const speeds = [];
       for (let s = 0; s < perTheme; s++) {
         const u = s / (perTheme - 1);
-        const frac = f0 + (f1 - f0) * u;
+        const tK = await targetSpeedKmh(page, f0 + (f1 - f0) * u);
+        sm = sm * 0.78 + tK * 0.22;
+        speeds.push(Math.max(SPD_MIN_KMH, Math.min(SPD_MAX_KMH, Math.round(sm))));
+      }
+      const sumW = speeds.reduce((a, b) => a + b, 0) || 1;
+      let acc = 0;
+      for (let s = 0; s < perTheme; s++) {
+        const fracMid = f0 + (f1 - f0) * ((acc + speeds[s] * 0.5) / sumW);
+        acc += speeds[s];
         if (showMap && s === 28) {
           await showTap(page, '#btn-nav-map');
           await wait(250);
@@ -619,7 +765,7 @@ async function captureLandscape(browser) {
           await setNavMode(page, 'path');
           await grab(3);
         }
-        await seekAndTick(page, frac, 13 + Math.sin(u * Math.PI) * 1.2);
+        await seekAndTick(page, fracMid, speeds[s]);
         if (showMap && s >= 28 && s < 55) {
           await page.evaluate(() => {
             if (window.__motoHUD?.S?.viewMode === 'hud') {
