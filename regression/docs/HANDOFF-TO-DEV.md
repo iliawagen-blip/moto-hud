@@ -5,6 +5,8 @@
 > **Статус:** dig/legs/docs **закрыты**; код не трогали  
 > **Next:** tags на interchange corpus / поле
 
+> **Поле + OSM (июль 20–24):** см. [`HANDOFF-FIELD-NAV.md`](./HANDOFF-FIELD-NAV.md) — снапшоты, hybrid diverge, телеметрия, HEAD `b9fd74e`.
+
 ---
 
 ## TL;DR Nightly 2026-07-18 evening — P2 dig + Russia rest
