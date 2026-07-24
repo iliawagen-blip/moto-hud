@@ -9,6 +9,10 @@
     --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --dim:#8b949e; --accent:#ffd400; --ok:#39d353;
     --sim-pad:6px; --sim-gap:6px; --sim-r:8px; --sim-dash-height:40vh
   }
+  /* Синтетика: узкая панель GPX — больше места под телефон/карту */
+  body[data-sim-mode=synth]{--sim-dash-height:140px}
+  body[data-sim-mode=telemetry],
+  body[data-sim-mode=regression]{--sim-dash-height:40vh}
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -40,8 +44,11 @@
   body.sim-wide .sim-phase-app{
     flex:1;min-height:0;overflow:hidden;
     display:grid;
-    grid-template-rows:auto minmax(0,1fr) 4px minmax(200px,var(--sim-dash-height,40vh));
+    grid-template-rows:auto minmax(0,1fr) 4px minmax(100px,var(--sim-dash-height,40vh));
     grid-template-areas:"top" "stage" "resizer" "dashboard"
+  }
+  body.sim-wide[data-sim-mode=synth] .sim-phase-app{
+    grid-template-rows:auto minmax(0,1fr) 4px minmax(100px,var(--sim-dash-height,140px));
   }
   .sim-top{grid-area:top}
   body.sim-wide .sim-top{
@@ -207,7 +214,8 @@
   body.is-desktop .page-title{display:none}
   .sim-phone-col{
     flex:0 0 auto;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    min-height:0;min-width:280px;align-self:stretch;padding:4px;position:relative;z-index:2
+    min-height:0;min-width:0;align-self:stretch;padding:4px;position:relative;z-index:2;
+    overflow:hidden
   }
   body.sim-wide .sim-stage{
     grid-area:stage;display:flex;flex-direction:row;align-items:stretch;justify-content:flex-start;
@@ -1262,17 +1270,23 @@
   }
 
   const PHONE_BEZEL = 20;
+  const PHONE_SCALE_MIN = 0.28;
 
   function measureStage(){
     const stage = document.getElementById('sim-stage');
     const topEl = document.getElementById('sim-top');
+    const dash = document.getElementById('sim-dashboard');
+    const resizer = document.getElementById('sim-dashboard-resizer');
     const topH = topEl?.offsetHeight || 72;
     let availH = stage?.clientHeight || 0;
-    if(availH < 280){
+    if(availH < 120){
       const pad = document.body.classList.contains('is-desktop') ? 12 : 0;
-      availH = window.innerHeight - topH - pad;
+      const dashH = document.body.classList.contains('sim-wide')
+        ? ((dash?.offsetHeight || 0) + (resizer?.offsetHeight || 0))
+        : 0;
+      availH = window.innerHeight - topH - dashH - pad;
     }
-    return Math.max(360, availH);
+    return Math.max(160, availH);
   }
 
   function applySize(){
@@ -1291,11 +1305,19 @@
       const maxOuter = Math.min(stageW * 0.44, 960);
       scale = Math.min(scale, (maxOuter - PHONE_BEZEL) / nativeW);
     }
-    scale = Math.max(0.65, Math.min(1, scale));
-    const scaledW = Math.round(nativeW * scale);
-    const scaledH = Math.round(nativeH * scale);
-    const outerW = scaledW + PHONE_BEZEL;
-    const outerH = scaledH + PHONE_BEZEL;
+    /* Не форсировать 0.65 — иначе телефон выше stage и «съезжает» вверх */
+    scale = Math.max(PHONE_SCALE_MIN, Math.min(1, scale));
+    let scaledW = Math.round(nativeW * scale);
+    let scaledH = Math.round(nativeH * scale);
+    let outerW = scaledW + PHONE_BEZEL;
+    let outerH = scaledH + PHONE_BEZEL;
+    if(outerH > availH && nativeH > 0){
+      scale = Math.max(PHONE_SCALE_MIN, (availH - PHONE_BEZEL) / nativeH);
+      scaledW = Math.round(nativeW * scale);
+      scaledH = Math.round(nativeH * scale);
+      outerW = scaledW + PHONE_BEZEL;
+      outerH = scaledH + PHONE_BEZEL;
+    }
 
     if(phoneScreen){
       phoneScreen.style.width = nativeW + 'px';
@@ -1335,6 +1357,7 @@
       }
     }, 300);
   }
+  window.applySize = applySize;
 
   function sim(){
     try{ return frame.contentWindow.__SIM__; }catch(e){ return null; }

@@ -4,6 +4,11 @@ www/
 *.log
 .commitmsg.tmp
 
+# VK capture temp frames
+docs/assets/vk-post/_frames-*/
+docs/assets/vk-post/_preview-*.png
+docs/assets/vk-post/_capture-*.log
+
 # Regression: секреты и кэш (fixtures/auto — в git)
 regression/.env
 regression/cache/
