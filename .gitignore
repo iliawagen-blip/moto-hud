@@ -8,6 +8,12 @@ www/
 docs/assets/vk-post/_frames-*/
 docs/assets/vk-post/_preview-*.png
 docs/assets/vk-post/_capture-*.log
+docs/assets/vk-post/_ffmpeg.exe
+docs/assets/vk-post/_test.mp4
+
+# Local ffmpeg binary (copied from imageio-ffmpeg on Windows)
+tools/ffmpeg.exe
+tools/ffmpeg
 
 # Regression: секреты и кэш (fixtures/auto — в git)
 regression/.env

@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
- * Длинные спокойные demo-GIF для VK:
- *  1) portrait 9:16 — Col du Galibier (плавный подъём) + редкие смены режимов
- *  2) landscape 16:9 — Ай-Петри (подъём) + редкая смена тем
+ * Demo-видео для VK (MP4 H.264) — без обрезки экрана телефона:
+ *  1) portrait — полный кадр телефона → pad в 1080×1920 (клипы/стена)
+ *  2) landscape — полный кадр → pad в 1920×1080
  *
  *   npm run build
  *   node scripts/capture-vk-demo-gifs.mjs
  *   node scripts/capture-vk-demo-gifs.mjs --only=portrait
- *   node scripts/capture-vk-demo-gifs.mjs --only=landscape
+ *   node scripts/capture-vk-demo-gifs.mjs --encode-only   # только MP4 из _frames-*
+ *   node scripts/capture-vk-demo-gifs.mjs --gif            # опционально ещё GIF (тоже без crop)
  */
 import { chromium } from 'playwright';
 import { spawn, spawnSync } from 'child_process';
@@ -21,6 +22,8 @@ const PORT = 3462;
 const BASE = `http://127.0.0.1:${PORT}`;
 
 const ONLY = (process.argv.find(a => a.startsWith('--only=')) || '').split('=')[1] || 'all';
+const ENCODE_ONLY = process.argv.includes('--encode-only');
+const WANT_GIF = process.argv.includes('--gif');
 
 /**
  * Col du Galibier (ФР) — плавная дорога, sharp≈0.8%, подъём ~850 м.
@@ -47,17 +50,15 @@ const LANDSCAPE_LEGS = [
 /** ~10× длиннее прежних (~10 с → ~90–100 с wall-clock) */
 const PORTRAIT = {
   id: 'portrait',
+  mp4: path.join(OUT_DIR, 'hud-demo-portrait-serpentine.mp4'),
   gif: path.join(OUT_DIR, 'hud-demo-portrait-serpentine.gif'),
   gpx: path.join(ROOT, 'fixtures', 'mountain-serpentine-demo.gpx'),
   framesDir: path.join(OUT_DIR, '_frames-portrait'),
   legs: PORTRAIT_LEGS,
+  /** Нативный экран телефона — без crop */
   viewport: { width: 390, height: 844 },
-  /**
-   * VK анимирует GIF только при AR width/height ∈ [0.75 … 2.5]
-   * (см. @authors … kak-publikovat-izobrazhenia). 9:16 = 0.56 → статичная картинка.
-   * Portrait: 3:4 = 0.75.
-   */
-  outSize: { w: 540, h: 720 },
+  /** VK Клипы / вертикаль: вписываем телефон целиком (pad, не crop) */
+  vkPad: { w: 1080, h: 1920 },
   dpr: 1,
   theme: 'avionics',
   mode: 'day',
@@ -70,13 +71,14 @@ const PORTRAIT = {
 
 const LANDSCAPE = {
   id: 'landscape',
+  mp4: path.join(OUT_DIR, 'hud-demo-landscape-themes.mp4'),
   gif: path.join(OUT_DIR, 'hud-demo-landscape-themes.gif'),
   gpx: path.join(ROOT, 'fixtures', 'crimea-coast-demo.gpx'),
   framesDir: path.join(OUT_DIR, '_frames-landscape'),
   legs: LANDSCAPE_LEGS,
   viewport: { width: 844, height: 390 },
-  /** Landscape 16:9 ≈ 1.78 — внутри окна VK для анимированных GIF */
-  outSize: { w: 720, h: 405 },
+  /** Горизонталь для стены / VK Видео — pad, не crop */
+  vkPad: { w: 1920, h: 1080 },
   dpr: 1,
   theme: 'avionics',
   mode: 'night',
@@ -532,13 +534,88 @@ function clearFrames(dir) {
   }
 }
 
+/**
+ * Резолв ffmpeg. На Windows путь с кириллицей в профиле часто ломает spawn —
+ * копируем бинарь в tools/ffmpeg.exe (ASCII).
+ */
+function resolveFfmpeg() {
+  const local = path.join(ROOT, 'tools', process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
+  if (fs.existsSync(local)) return local;
+
+  const which = spawnSync(process.platform === 'win32' ? 'where' : 'which', ['ffmpeg'], { encoding: 'utf8' });
+  if (which.status === 0 && which.stdout?.trim()) {
+    const p = which.stdout.trim().split(/\r?\n/)[0];
+    if (p && fs.existsSync(p)) return p;
+  }
+
+  const py = `
+import imageio_ffmpeg, shutil, os
+src = imageio_ffmpeg.get_ffmpeg_exe()
+dst = r'''${local.replace(/\\/g, '/')}'''
+os.makedirs(os.path.dirname(dst), exist_ok=True)
+shutil.copy2(src, dst)
+print(dst)
+`;
+  const r = spawnSync('python', ['-c', py], { encoding: 'utf8' });
+  if (r.status === 0 && r.stdout?.trim() && fs.existsSync(local)) return local;
+  if (r.stderr) process.stderr.write(r.stderr);
+  throw new Error('ffmpeg не найден. Установите: pip install imageio-ffmpeg');
+}
+
+/**
+ * MP4 H.264 для VK: телефон целиком (scale+pad), без crop.
+ * Portrait → 1080×1920, landscape → 1920×1080.
+ */
+function assembleMp4(cfg) {
+  const ffmpeg = resolveFfmpeg();
+  const fps = 1000 / cfg.durationMs;
+  const pattern = path.join(cfg.framesDir, 'frame-%04d.png').replace(/\\/g, '/');
+  const out = cfg.mp4.replace(/\\/g, '/');
+  const tw = cfg.vkPad.w;
+  const th = cfg.vkPad.h;
+  // decrease = вписать целиком; pad = чёрные поля, экран не режется
+  const vf = `scale=${tw}:${th}:force_original_aspect_ratio=decrease,pad=${tw}:${th}:(ow-iw)/2:(oh-ih)/2:black,setsar=1`;
+  const args = [
+    '-y',
+    '-framerate', String(fps),
+    '-i', pattern,
+    '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+    '-vf', vf,
+    '-c:v', 'libx264',
+    '-profile:v', 'high',
+    '-level', '4.1',
+    '-pix_fmt', 'yuv420p',
+    '-crf', '20',
+    '-preset', 'medium',
+    '-c:a', 'aac',
+    '-b:a', '128k',
+    '-shortest',
+    '-movflags', '+faststart',
+    out,
+  ];
+  console.log('ffmpeg MP4', cfg.id, `${tw}x${th}`, `fps≈${fps.toFixed(2)}`);
+  const r = spawnSync(ffmpeg, args, { encoding: 'utf8' });
+  if (r.stdout) process.stdout.write(r.stdout);
+  if (r.stderr) {
+    // ffmpeg пишет прогресс в stderr — показываем хвост при ошибке
+    if (r.status !== 0) process.stderr.write(r.stderr.slice(-2000));
+  }
+  if (r.status !== 0) throw new Error('ffmpeg MP4 failed: ' + cfg.id);
+  const nFrames = fs.readdirSync(cfg.framesDir).filter(f => f.endsWith('.png')).length;
+  const sec = nFrames * cfg.durationMs / 1000;
+  console.log('MP4', out, 'frames', nFrames, 'sec', sec.toFixed(1), 'size_kb', Math.round(fs.statSync(cfg.mp4).size / 1024));
+}
+
+/** Опциональный GIF: тоже без crop — только pad/fit */
 function assembleGif(cfg) {
+  const tw = cfg.vkPad.w > cfg.vkPad.h ? 720 : 540;
+  const th = cfg.vkPad.w > cfg.vkPad.h ? 405 : Math.round(tw * cfg.viewport.height / cfg.viewport.width);
   const py = `
 from PIL import Image
 import os, glob
 frames_dir = r'''${cfg.framesDir.replace(/\\/g, '/')}'''
 out = r'''${cfg.gif.replace(/\\/g, '/')}'''
-tw, th = ${cfg.outSize.w}, ${cfg.outSize.h}
+tw, th = ${tw}, ${th}
 files = sorted(glob.glob(os.path.join(frames_dir, 'frame-*.png')))
 if not files:
     raise SystemExit('no frames')
@@ -546,13 +623,13 @@ imgs = []
 for f in files:
     im = Image.open(f).convert('RGBA')
     sw, sh = im.size
-    scale = max(tw / sw, th / sh)
-    nw, nh = int(sw * scale + 0.5), int(sh * scale + 0.5)
+    # fit inside (не cover) — без обрезки телефона
+    scale = min(tw / sw, th / sh)
+    nw, nh = max(1, int(sw * scale + 0.5)), max(1, int(sh * scale + 0.5))
     im = im.resize((nw, nh), Image.Resampling.LANCZOS)
-    left = (nw - tw) // 2
-    top = (nh - th) // 2
-    im = im.crop((left, top, left + tw, top + th))
-    imgs.append(im.convert('P', palette=Image.ADAPTIVE, colors=80))
+    canvas = Image.new('RGBA', (tw, th), (0, 0, 0, 255))
+    canvas.paste(im, ((tw - nw) // 2, (th - nh) // 2))
+    imgs.append(canvas.convert('P', palette=Image.ADAPTIVE, colors=80))
 imgs[0].save(
     out,
     save_all=True,
@@ -569,6 +646,11 @@ print('GIF', out, 'frames', len(imgs), 'px', tw, th, 'sec', round(sec,1), 'size_
   if (r.stdout) process.stdout.write(r.stdout);
   if (r.stderr) process.stderr.write(r.stderr);
   if (r.status !== 0) throw new Error('Pillow GIF failed: ' + cfg.id);
+}
+
+function assembleOutputs(cfg) {
+  assembleMp4(cfg);
+  if (WANT_GIF) assembleGif(cfg);
 }
 
 async function capturePortrait(browser) {
@@ -682,7 +764,7 @@ async function capturePortrait(browser) {
   } finally {
     await context.close();
   }
-  assembleGif(cfg);
+  assembleOutputs(cfg);
 }
 
 async function captureLandscape(browser) {
@@ -781,13 +863,22 @@ async function captureLandscape(browser) {
   } finally {
     await context.close();
   }
-  assembleGif(cfg);
+  assembleOutputs(cfg);
 }
 
 async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   if (!fs.existsSync(path.join(ROOT, 'js', 'app.js'))) {
     console.warn('run npm run build first');
+  }
+
+  if (ENCODE_ONLY) {
+    if (ONLY === 'all' || ONLY === 'portrait') assembleOutputs(PORTRAIT);
+    if (ONLY === 'all' || ONLY === 'landscape') assembleOutputs(LANDSCAPE);
+    console.log('Done (encode-only).');
+    if (ONLY === 'all' || ONLY === 'portrait') console.log(' →', PORTRAIT.mp4);
+    if (ONLY === 'all' || ONLY === 'landscape') console.log(' →', LANDSCAPE.mp4);
+    return;
   }
 
   const server = await startServer();
@@ -810,8 +901,8 @@ async function main() {
   }
 
   console.log('Done.');
-  if (ONLY === 'all' || ONLY === 'portrait') console.log(' →', PORTRAIT.gif);
-  if (ONLY === 'all' || ONLY === 'landscape') console.log(' →', LANDSCAPE.gif);
+  if (ONLY === 'all' || ONLY === 'portrait') console.log(' →', PORTRAIT.mp4);
+  if (ONLY === 'all' || ONLY === 'landscape') console.log(' →', LANDSCAPE.mp4);
 }
 
 main().catch(e => {

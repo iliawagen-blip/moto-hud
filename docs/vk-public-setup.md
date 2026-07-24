@@ -16,8 +16,8 @@
 | `docs/assets/moto-ils-vk-avatar.png` | Аватар (на старте; позже — HUD-кадр) | квадрат, от 400×400 |
 | `docs/assets/moto-ils-telegram-avatar.png` | Запасной аватар (детальный HUD) | квадрат |
 | `docs/assets/moto-ils-vk-cover.png` | Обложка | 1920×768 (текст по центру) |
-| `docs/assets/vk-post/hud-demo-portrait-serpentine.gif` | Закреп / пост 1 — demo 3:4 (VK GIF ≥0.75) | 540×720 GIF |
-| `docs/assets/vk-post/hud-demo-landscape-themes.gif` | Пост 3 — темы 16:9 | 720×405 GIF |
+| `docs/assets/vk-post/hud-demo-portrait-serpentine.mp4` | Закреп / пост 1 / клип | MP4 1080×1920 (полный телефон) |
+| `docs/assets/vk-post/hud-demo-landscape-themes.mp4` | Пост 3 — темы | MP4 1920×1080 (полный экран) |
 | `docs/assets/vk-post/fuel-assistant.png` | Пост 10 — панель ⛽ | вертикаль |
 | `docs/assets/telegram-post/*.png` | Скрины для постов (sim) | вертикаль / квадрат |
 
@@ -184,7 +184,7 @@ https://iliawagen-blip.github.io/moto-hud/sim.html
 #мотоилс #мотонавигатор #hud
 ```
 
-**Вложение:** GIF `docs/assets/vk-post/hud-demo-portrait-serpentine.gif` (**3:4 / 540×720**, иначе VK не анимирует; ~110 с: Galibier, редкие ⛽/ДОР/КАРТ/ПЕЛЕНГ). Крепить как фото/GIF, не документ. Пересъём: `npm run vk:gifs:portrait`.
+**Вложение:** видео `docs/assets/vk-post/hud-demo-portrait-serpentine.mp4` (MP4 1080×1920, полный экран телефона, ~110 с). Крепить как **Видео** или клип. Пересъём: `npm run vk:videos`.
 
 ---
 
@@ -224,7 +224,7 @@ https://iliawagen-blip.github.io/moto-hud/sim.html
 https://iliawagen-blip.github.io/moto-hud/sim.html
 ```
 
-**Вложение:** GIF `hud-demo-landscape-themes.gif` (16:9, ~100 с: Ай-Петри, 3 темы без мельтешения) **или** portrait-demo. Пересъём: `npm run vk:gifs:landscape`.
+**Вложение:** видео `hud-demo-landscape-themes.mp4` (1920×1080, ~100 с) **или** portrait MP4. Пересъём: `npm run vk:videos`.
 
 ---
 
