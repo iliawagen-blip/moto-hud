@@ -1,0 +1,54 @@
+{
+  "version": 0.6,
+  "generator": "moto-hud mock interchange corridor",
+  "elements": [
+    {
+      "type": "node",
+      "id": 1,
+      "lat": 55.61000,
+      "lon": 37.61000
+    },
+    {
+      "type": "node",
+      "id": 2,
+      "lat": 55.61100,
+      "lon": 37.61200
+    },
+    {
+      "type": "node",
+      "id": 3,
+      "lat": 55.61200,
+      "lon": 37.61400
+    },
+    {
+      "type": "node",
+      "id": 4,
+      "lat": 55.61020,
+      "lon": 37.61040
+    },
+    {
+      "type": "node",
+      "id": 5,
+      "lat": 55.61140,
+      "lon": 37.61320
+    },
+    {
+      "type": "node",
+      "id": 6,
+      "lat": 55.61260,
+      "lon": 37.61540
+    },
+    {
+      "type": "way",
+      "id": 1001,
+      "nodes": [1, 2, 3],
+      "tags": { "highway": "motorway", "name": "primary-mock" }
+    },
+    {
+      "type": "way",
+      "id": 1002,
+      "nodes": [4, 5, 6],
+      "tags": { "highway": "motorway_link", "bridge": "yes", "layer": "1" }
+    }
+  ]
+}

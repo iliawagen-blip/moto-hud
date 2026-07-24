@@ -7,6 +7,10 @@ import { initFavorites } from './favorites.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { loadElevOptsFromStorage, saveElevOptsToStorage } from './elevation.js';
 import { loadCurveOptsFromStorage, saveCurveOptsToStorage } from './curve-speed.js';
+import {
+  loadGhostOptsFromStorage, saveGhostOptsToStorage,
+  injectMockCorridor, ghostCorridorStatus
+} from './interchange-corridor.js';
 import { loadHudOptsFromStorage, saveHudOptsToStorage } from './hud-opts.js';
 import { loadAppOptsFromStorage, saveAppOptsToStorage } from './app-opts.js';
 import { applyThemeCss } from './theme.js';
@@ -36,7 +40,10 @@ import { initHudResume } from './hud-resume.js';
 import { initSettingsUi } from './settings-ui.js';
 import { initHudSettingsSheet } from './hud-settings-sheet.js';
 import { prepareRegressionHud, sampleRegressionState, regressionPrimeSnap } from './regression-sim-bridge.js';
-import { simNavAction, simApplyTheme, simBuildRoute, simImportYandexRoute, simGetStatus, simKickGps, simEnsureDemoFinish } from './sim-bridge.js';
+import {
+  simNavAction, simApplyTheme, simBuildRoute, simImportYandexRoute, simGetStatus,
+  simKickGps, simEnsureDemoFinish, simLoadGhostMock
+} from './sim-bridge.js';
 import { findNearestOnRoute } from './route.js';
 
 applyThemeCss();
@@ -57,6 +64,7 @@ function persistSettingsFromDom(){
   saveHudOptsToStorage();
   saveElevOptsToStorage();
   saveCurveOptsToStorage();
+  saveGhostOptsToStorage();
   updateCamStatusUI();
 }
 
@@ -65,6 +73,7 @@ function reloadAllSettingsFromStorage(){
   applyTheme(prefs.theme, prefs.modePref, false);
   loadElevOptsFromStorage();
   loadCurveOptsFromStorage();
+  loadGhostOptsFromStorage();
   loadHudOptsFromStorage();
   loadAppOptsFromStorage();
   syncOptionsFromDom();
@@ -90,6 +99,7 @@ initTelemetry().then(() => {
 initGps({ onTick, onVisual: renderVisualFrame });
 loadElevOptsFromStorage();
 loadCurveOptsFromStorage();
+loadGhostOptsFromStorage();
 loadHudOptsFromStorage();
 loadAppOptsFromStorage();
 syncOptionsFromDom();
@@ -104,6 +114,7 @@ window.__motoHUD = {
   findNearestOnRoute, prepareRegressionHud, sampleRegressionState, regressionPrimeSnap,
   toggleBearingMode, isBearingMode, enterBearingMode, exitBearingMode, onNavPathButton, onNavMapButton, setViewMode, getMapDisplayPos,
   simNavAction, simApplyTheme, simBuildRoute, simImportYandexRoute, simGetStatus, simKickGps, simEnsureDemoFinish,
+  injectMockCorridor, ghostCorridorStatus,
   _searchBusy: false, _finishFocused: false
 };
 
@@ -112,6 +123,7 @@ window.applyTheme = applyTheme;
 window.addEventListener('load', () => {
   setTimeout(startGps, 400);
   registerServiceWorker();
+  simLoadGhostMock().catch(() => {});
   if(window.__SIM__?.boot && !window.__SIM__._bootScheduled){
     window.__SIM__._bootScheduled = true;
     setTimeout(() => window.__SIM__.boot(), 500);

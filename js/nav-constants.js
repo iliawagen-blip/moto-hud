@@ -40,6 +40,15 @@ export const SNAP_WINDOW_ACC_MULT = 3;
 export const SNAP_WINDOW_DT_CAP_S = 2.0;
 /** Ниже этой скорости snap не двигается вперёд по дуге (шум GPS). */
 export const SNAP_STATIONARY_SPD_MPS = 0.6;
+/** ROADPATH: spd < 5 км/ч → окно ±100 м (пробка / парковка). */
+export const SNAP_SLOW_SPD_MPS = 5 / 3.6;
+export const SNAP_SLOW_WINDOW_M = 100;
+/** ROADPATH: spd > 50 км/ч → асимметрия [-15, +200] м. */
+export const SNAP_FAST_SPD_MPS = 50 / 3.6;
+export const SNAP_FAST_BACK_M = 15;
+export const SNAP_FAST_FWD_M = 200;
+/** ROADPATH: acc > 30 м → снижать вес курса в скоринге. */
+export const SNAP_WEAK_HEADING_ACC_M = 30;
 export const SNAP_JUMP_PENALTY = 3.0;
 export const SNAP_ANGLE_PENALTY = 2;
 export const SNAP_COLD_START_SKIP_FIXES = 3;

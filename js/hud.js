@@ -29,6 +29,7 @@ import { RouteQuality } from './route-quality.js';
 import { stepTurnAngleDeg } from './maneuver-filter.js';
 import { ensureRouteGeometry } from './route.js';
 import { pickCurveVoiceWarn, resetCurveRibbonState } from './curve-speed.js';
+import { resetGhostCorridor } from './interchange-corridor.js';
 import { renderFavs } from './favorites.js';
 import { acquireWakeLock, releaseWakeLock } from './wake-lock.js';
 import { clearVoiceQueue } from './voice.js';
@@ -641,6 +642,7 @@ export async function startHud(){
   resetRouteSnap();
   resetSnapQuality();
   resetCurveRibbonState();
+  resetGhostCorridor();
   resetSpeedLimitState();
   resetRoundaboutState();
   _lowRouteBearingDone = false;

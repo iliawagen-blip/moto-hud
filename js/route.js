@@ -11,6 +11,7 @@ import { buildCrossingsData, resetCrossingTelemetry } from './crossings.js';
 import { loadRouteElevation } from './elevation.js';
 import { computeCurveSpeed } from './curve-speed.js';
 import { resetFuelRouteBinding } from './fuel.js';
+import { resetGhostCorridor } from './interchange-corridor.js';
 import { isTurnStep } from './voice.js';
 import telemetry from './telemetry.js';
 import {
@@ -161,6 +162,7 @@ function attachRouteGeometry(route){
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
+  resetGhostCorridor();
   _pdProbeAtS = -1e9;
   loadRouteHighwayTypes(route).catch(e => console.warn('highway types:', e));
 }

@@ -9,10 +9,16 @@ import { findSegAtS, interpolateAtS, radiusAtS, turnAngleAtS } from './route-geo
 export const CURVE_R_WARN = 100;
 export const MIN_CURVE_LEN_M = 25;
 const G = 9.81;
-const RIBBON_HYST = 0.06;
+/** ROADPATH MVP: on ≈ 0.95× порога, off ≈ 0.90× (антимерцание). */
+const HYST_ON = 0.95;
+const HYST_OFF = 0.90;
 const _ribbonState = new Map();
+const _voiceLatch = new Map();
 
-export function resetCurveRibbonState(){ _ribbonState.clear(); }
+export function resetCurveRibbonState(){
+  _ribbonState.clear();
+  _voiceLatch.clear();
+}
 
 const PRESETS = {
   relaxed: { aLat: 0.28 * G, yellow: 1.0, red: 1.12 },
@@ -215,17 +221,21 @@ export function ribbonCurveColor(sMid, geom, speedMps){
 
   const ratio = speedMps / vSafe;
   const { yellow, red } = getCurveParams();
+  const yOn = yellow * HYST_ON;
+  const yOff = yellow * HYST_OFF;
+  const rOn = red * HYST_ON;
+  const rOff = red * HYST_OFF;
   const spanKey = Math.round(span.sEntry);
   let state = _ribbonState.get(spanKey) || null;
 
   if(state === 'red'){
-    if(ratio < red - RIBBON_HYST) state = ratio >= yellow ? 'yellow' : null;
+    if(ratio < rOff) state = ratio >= yOn ? 'yellow' : null;
   } else if(state === 'yellow'){
-    if(ratio >= red) state = 'red';
-    else if(ratio < yellow - RIBBON_HYST) state = null;
+    if(ratio >= rOn) state = 'red';
+    else if(ratio < yOff) state = null;
   } else {
-    if(ratio >= red) state = 'red';
-    else if(ratio >= yellow) state = 'yellow';
+    if(ratio >= rOn) state = 'red';
+    else if(ratio >= yOn) state = 'yellow';
   }
   _ribbonState.set(spanKey, state);
 
@@ -245,13 +255,21 @@ export function pickCurveVoiceWarn(geom, snapS, speedMps){
     if(dist > 320) break;
 
     const vSafe = vSafeForSpan(geom, sp);
-    if(speedMps <= vSafe * params.yellow) continue;
+    if(!isFinite(vSafe) || vSafe < 2) continue;
+    const ratio = speedMps / vSafe;
+    const key = 'curve_' + Math.round(sp.sEntry);
+    const latched = _voiceLatch.get(key) || false;
+    const onT = params.yellow * HYST_ON;
+    const offT = params.yellow * HYST_OFF;
+    const armed = latched ? ratio >= offT : ratio >= onT;
+    _voiceLatch.set(key, armed);
+    if(!armed) continue;
 
     const sec = dist / speedMps;
     if(sec > 7 || sec < 2.5) continue;
 
     return {
-      key: 'curve_' + Math.round(sp.sEntry),
+      key,
       vSafeKmh: Math.round(vSafe * 3.6),
       sec: Math.round(sec)
     };
