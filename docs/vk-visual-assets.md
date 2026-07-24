@@ -26,8 +26,8 @@
 | `docs/assets/telegram-post/04-map-overview.png` | ✅ Для поста 3 | Обзор карты / развязка |
 | `docs/assets/telegram-post/05-hud-day.png` | ⚠️ | Переснять, если пустой |
 | `docs/assets/telegram-post/06-cameras-onboarding.png` | ✅ Для поста 4 | Модалка «камеры в спину» |
-| `docs/assets/vk-post/hud-demo-portrait-serpentine.gif` | ✅ **Закреп / пост 1** | 9:16, ~90–100 с: Galibier (плавный подъём) + редкие ⛽/ДОР/КАРТ/ПЕЛЕНГ |
-| `docs/assets/vk-post/hud-demo-landscape-themes.gif` | ✅ Пост 3 / лента | 16:9, ~90–100 с: Ай-Петри, 3 темы без мельтешения |
+| `docs/assets/vk-post/hud-demo-portrait-serpentine.gif` | ✅ **Закреп / пост 1** | **3:4 (540×720)**, ~110 с: Galibier + редкие ⛽/ДОР/КАРТ/ПЕЛЕНГ |
+| `docs/assets/vk-post/hud-demo-landscape-themes.gif` | ✅ Пост 3 / лента | **16:9 (720×405)**, ~100 с: Ай-Петри, 3 темы |
 | `docs/assets/vk-post/hud-elevation-serpentine.gif` | ⚠️ Устарел | Короткий только высоты — заменён portrait-demo |
 | `docs/assets/vk-post/fuel-assistant.png` | ✅ Пост 10 | Панель ⛽ с АЗС (sim, Москва) |
 | `fixtures/mountain-serpentine-demo.gpx` | техфайл | Col du Galibier (плавный подъём) |
@@ -92,7 +92,18 @@ npm run vk:gifs:landscape       # только 16:9
 ```
 
 Нужны сеть (OSRM). Кадры во временных `_frames-*` (не коммитить).  
-Соотношения: portrait **360×640 (9:16)**, landscape **720×405 (16:9)** — без растягивания, cover-crop.
+Соотношения под VK GIF: portrait **540×720 (3:4)**, landscape **720×405 (16:9)** — cover-crop, без растягивания.
+
+### VK: почему GIF «не крутится»
+
+По [гайду авторов VK](https://vk.ru/@authors-chto-vazhno-uchest-avtoram-vkontakte-pri-sozdanii-postov?anchor=kak-publikovat-izobrazhenia):
+
+> Чтобы gif отображались в виде анимированного изображения, соотношение сторон должно быть от **0,75** до **2,5**.
+
+- **9:16 = 0,56** — VK показывает как **статичный** кадр (наш старый portrait).
+- Рабочие: **3:4 = 0,75** (портрет), **16:9 ≈ 1,78** (альбом).
+- Карусель фото в ленте: от **2×3** до **16×9**; кадрирование — в редакторе поста.
+- Крепить как **фото/GIF в пост**, не как «документ» и не как короткое видео (если видео «не годится» — используй GIF 3:4 / 16:9).
 
 ### Как снять в sim за один вечер
 
