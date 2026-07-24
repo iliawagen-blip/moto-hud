@@ -26,8 +26,9 @@
 | `docs/assets/telegram-post/04-map-overview.png` | ✅ Для поста 3 | Обзор карты / развязка |
 | `docs/assets/telegram-post/05-hud-day.png` | ⚠️ | Переснять, если пустой |
 | `docs/assets/telegram-post/06-cameras-onboarding.png` | ✅ Для поста 4 | Модалка «камеры в спину» |
-| `docs/assets/vk-post/hud-demo-portrait-serpentine.gif` | ✅ **Закреп / пост 1** | **3:4 (540×720)**, ~110 с: Galibier + редкие ⛽/ДОР/КАРТ/ПЕЛЕНГ |
-| `docs/assets/vk-post/hud-demo-landscape-themes.gif` | ✅ Пост 3 / лента | **16:9 (720×405)**, ~100 с: Ай-Петри, 3 темы |
+| `docs/assets/vk-post/hud-demo-portrait-serpentine.mp4` | ✅ **Закреп / пост 1 / клип** | **MP4 H.264 1080×1920**, полный экран телефона (pad), ~110 с |
+| `docs/assets/vk-post/hud-demo-landscape-themes.mp4` | ✅ Пост 3 / лента | **MP4 H.264 1920×1080**, полный экран (pad), ~100 с |
+| `docs/assets/vk-post/hud-demo-*.gif` | ⚠️ запасной | GIF на VK капризен; основной формат — MP4 |
 | `docs/assets/vk-post/hud-elevation-serpentine.gif` | ⚠️ Устарел | Короткий только высоты — заменён portrait-demo |
 | `docs/assets/vk-post/fuel-assistant.png` | ✅ Пост 10 | Панель ⛽ с АЗС (sim, Москва) |
 | `fixtures/mountain-serpentine-demo.gpx` | техфайл | Col du Galibier (плавный подъём) |
@@ -86,24 +87,20 @@
 
 ```bash
 npm run build
-npm run vk:gifs                 # оба
-npm run vk:gifs:portrait        # только 9:16
-npm run vk:gifs:landscape       # только 16:9
+pip install imageio-ffmpeg   # один раз, для MP4
+npm run vk:videos            # снять кадры + MP4
+npm run vk:videos:encode     # только пересобрать MP4 из _frames-*
 ```
 
-Нужны сеть (OSRM). Кадры во временных `_frames-*` (не коммитить).  
-Соотношения под VK GIF: portrait **540×720 (3:4)**, landscape **720×405 (16:9)** — cover-crop, без растягивания.
+Нужны сеть (OSRM) при съёмке. Кадры `_frames-*` не коммитить.  
+Экран телефона **не обрезается**: scale+pad в **1080×1920** (portrait) / **1920×1080** (landscape).
 
-### VK: почему GIF «не крутится»
+### Формат для VK
 
-По [гайду авторов VK](https://vk.ru/@authors-chto-vazhno-uchest-avtoram-vkontakte-pri-sozdanii-postov?anchor=kak-publikovat-izobrazhenia):
-
-> Чтобы gif отображались в виде анимированного изображения, соотношение сторон должно быть от **0,75** до **2,5**.
-
-- **9:16 = 0,56** — VK показывает как **статичный** кадр (наш старый portrait).
-- Рабочие: **3:4 = 0,75** (портрет), **16:9 ≈ 1,78** (альбом).
-- Карусель фото в ленте: от **2×3** до **16×9**; кадрирование — в редакторе поста.
-- Крепить как **фото/GIF в пост**, не как «документ» и не как короткое видео (если видео «не годится» — используй GIF 3:4 / 16:9).
+- **Основной:** MP4 (H.264 + AAC), как вложение «Видео» или клип.
+- Portrait 1080×1920 — подходит для [клипов](https://vk.com/@business-kak-rabotat-s-formatami-video-vkontakte) и стены.
+- Landscape 1920×1080 — стена / VK Видео.
+- GIF на VK часто не анимируется вне AR 0.75–2.5 и режет телефон — не использовать как основной формат.
 
 ### Как снять в sim за один вечер
 
