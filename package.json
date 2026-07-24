@@ -10,6 +10,7 @@
     "nav:replay": "node scripts/nav-replay.mjs --baseline fixtures/baseline_v1.json",
     "nav:baseline": "node scripts/nav-replay.mjs --capture --baseline fixtures/baseline_v1.json",
     "nav:test": "node scripts/nav-replay.mjs --self-test",
+    "nav:golden": "node scripts/golden-field.mjs",
     "converge:report": "node scripts/converge-report.mjs",
     "funnel:report": "node scripts/telemetry-funnel-report.mjs",
     "prod:smoke": "node scripts/prod-smoke.mjs",

@@ -186,7 +186,8 @@ export function fuseHeading(gpsHeading, speedMps){
   const blendSensor = gyroFresh && spd < 5 ? gyroHeading : (sensorFresh ? sensorHeading : null);
   if(!blendSensor) return gpsHeading ?? null;
 
-  const gpsWeight = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
+  // α(spd) = clamp(0.02 + spd/25) — на дворе/стоянке почти весь вес на сенсор
+  const gpsWeight = Math.min(1, Math.max(0, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN));
 
   if(gpsHeading == null || isNaN(gpsHeading)) return blendSensor;
   if(gpsWeight >= 0.95) return gpsHeading;
@@ -195,7 +196,9 @@ export function fuseHeading(gpsHeading, speedMps){
   if(angleDiff(gpsHeading, blendSensor) > 45 && spd < 3){
     return blendSensor;
   }
-  return blendAngles(gpsHeading, blendSensor, 1 - gpsWeight);
+  // При spd < 2 м/с дополнительно режем GPS-вес (шум course на стоянке)
+  const wGps = spd < 2 ? Math.min(gpsWeight, 0.25) : gpsWeight;
+  return blendAngles(gpsHeading, blendSensor, 1 - wGps);
 }
 
 export function getSensorHeading(){ return sensorHeading; }

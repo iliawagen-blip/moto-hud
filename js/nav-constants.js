@@ -102,6 +102,12 @@ export const INTERCHANGE_DIVERGE_LATERAL_M = 55;
 export const INTERCHANGE_DIVERGE_STEP_M = 40;
 /** Мин. смена азимута polyline на diverge — иначе пологая дуга = ложный съезд */
 export const INTERCHANGE_DIVERGE_MIN_TURN_DEG = 20;
+/**
+ * С OSRM-hint (slight ramp / lanes): turn/lateral мягче.
+ * Иначе hybrid мёртв на корпусе slight-off &lt;18° (72/81) — geom turn тоже &lt;20°.
+ */
+export const INTERCHANGE_DIVERGE_MIN_TURN_WITH_HINT_DEG = 12;
+export const INTERCHANGE_DIVERGE_LATERAL_WITH_HINT_M = 40;
 /** Не показывать path_diverge в HUD дальше этого (анти-спам на дугах) */
 export const INTERCHANGE_DIVERGE_HUD_MAX_M = 450;
 /**
@@ -111,6 +117,10 @@ export const INTERCHANGE_DIVERGE_HUD_MAX_M = 450;
 export const INTERCHANGE_DIVERGE_HINT_AHEAD_M = 500;
 /** |s_hint − atS_diverge| для стыковки стороны/дистанции */
 export const INTERCHANGE_DIVERGE_HINT_BAND_M = 240;
+/** Значимый ix ближе diverge+slack → hybrid не нужен (OSRM уже покрыл) */
+export const INTERCHANGE_DIVERGE_SIG_COVER_SLACK_M = 80;
+/** Телеметрия probe: не чаще чем раз в N м вдоль s */
+export const INTERCHANGE_DIVERGE_PROBE_MIN_DS_M = 120;
 /**
  * slight off/on ramp ниже порога = смена полосы / «прямо» (field 16-51 Варшавка ang≈10°),
  * не голос «Съезд». Реальные съезды МКАД обычно ≥18° или без slight.
@@ -133,6 +143,8 @@ export const MANEUVER_FORK_MIN_SEG_M = 200;
 /** --- Route quality / compass mode (направление 13) --- */
 export const ROUTE_LOW_AVG_SEG_M = 15;
 export const ROUTE_LOW_MANEUVER_PER_KM = 25;
+/** Плохой OSM: ближе этого остатка — тихий пеленг на финиш (направление 13) */
+export const ROUTE_LOW_BEARING_REMAIN_M = 400;
 
 /** --- Heading fusion (направление 8) --- */
 export const FUSION_GPS_WEIGHT_MIN = 0.02;

@@ -1417,7 +1417,7 @@ var init_native_gps = __esm({
 });
 
 // js/nav-constants.js
-var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_LOST_SCORE_MIN_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_LATERAL_JUNK_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, OFF_ROUTE_LOST_HOLD_CONFIRM_MULT, REROUTE_SUCCESS_COOLDOWN_MS, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_TURN_MIN_ANGLE_DEG, MANEUVER_SOFT_MAX_AHEAD_M, INTERCHANGE_DIVERGE_MIN_M, INTERCHANGE_DIVERGE_MAX_M, INTERCHANGE_DIVERGE_LATERAL_M, INTERCHANGE_DIVERGE_STEP_M, INTERCHANGE_DIVERGE_MIN_TURN_DEG, INTERCHANGE_DIVERGE_HUD_MAX_M, INTERCHANGE_DIVERGE_HINT_AHEAD_M, INTERCHANGE_DIVERGE_HINT_BAND_M, INTERCHANGE_RAMP_MIN_ANGLE_DEG, INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_INVALIDATE_ACC_STATIONARY_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2, GPS_SPEED_TELEPORT_M, GPS_SPEED_COAST_MAX_DT_S, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
+var SNAP_QUALITY_GOOD_OUT, SNAP_QUALITY_DEGRADED_IN, SNAP_QUALITY_LOST_IN, SNAP_QUALITY_DEGRADED_OUT, SNAP_QUALITY_LOST_LATERAL_M, SNAP_QUALITY_DEGRADED_EXIT_LATERAL_M, SNAP_QUALITY_LOST_SCORE_MIN_LATERAL_M, SNAP_QUALITY_ACC_FLOOR_M, SNAP_QUALITY_TICKS_REQUIRED, SNAP_QUALITY_TICK_WINDOW, SNAP_QUALITY_JUMP_DEGRADED_MS, SNAP_QUALITY_JUMP_DS_M, SNAP_QUALITY_DEGRADED_TIMEOUT_MS, SNAP_CURVATURE_RADIUS_M, SNAP_CURVATURE_THRESHOLD_MULT, SNAP_HEADING_ACCEPT_DEG, SNAP_HEADING_REJECT_DEG, SNAP_HEADING_GATE_MIN_SPD, SNAP_HEADING_GATE_ACC_MAX_M, SNAP_HEADING_MAX_AGE_MS, SNAP_MIN_DOT, SNAP_WINDOW_BASE_M, SNAP_WINDOW_ACC_MULT, SNAP_WINDOW_DT_CAP_S, SNAP_STATIONARY_SPD_MPS, SNAP_JUMP_PENALTY, SNAP_ANGLE_PENALTY, SNAP_COLD_START_SKIP_FIXES, SNAP_REVERSE_EPS, SNAP_FALLBACK_BACK_M, SNAP_FALLBACK_FWD_M, GPS_CONVERGE_MIN_FIXES, GPS_CONVERGE_LAST3_ACC_M, GPS_CONVERGE_ACC_M, GPS_CONVERGE_RE_MIN_FIXES, GPS_CONVERGE_RE_ACC_M, GPS_CONVERGE_JUMP_PAD_M, OFF_ROUTE_ENTER_M, OFF_ROUTE_EXIT_M, OFF_ROUTE_CONFIRM_MS, OFF_ROUTE_CONFIRM_MS_HIGH_SPD, OFF_ROUTE_CONFIRM_DIST_M, OFF_ROUTE_CONFIRM_DIST_HIGH_M, OFF_ROUTE_HIGH_SPD_MPS, OFF_ROUTE_GPS_ACC_GATE_M, OFF_ROUTE_LATERAL_JUNK_M, OFF_ROUTE_ACC_FACTOR, OFF_ROUTE_HEADING_DIVERGE_DEG, OFF_ROUTE_HEADING_DIVERGE_MS, OFF_ROUTE_HEADING_MIN_SPD, OFF_ROUTE_RETURN_HOLD_MS, OFF_ROUTE_LATERAL_HARD_M, OFF_ROUTE_LOST_HOLD_CONFIRM_MULT, REROUTE_SUCCESS_COOLDOWN_MS, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG, MANEUVER_BEND_DEFAULT_DEG, MANEUVER_MIN_ANGLE_DEG, MANEUVER_TURN_MIN_ANGLE_DEG, MANEUVER_SOFT_MAX_AHEAD_M, INTERCHANGE_DIVERGE_MIN_M, INTERCHANGE_DIVERGE_MAX_M, INTERCHANGE_DIVERGE_LATERAL_M, INTERCHANGE_DIVERGE_STEP_M, INTERCHANGE_DIVERGE_MIN_TURN_DEG, INTERCHANGE_DIVERGE_MIN_TURN_WITH_HINT_DEG, INTERCHANGE_DIVERGE_LATERAL_WITH_HINT_M, INTERCHANGE_DIVERGE_HUD_MAX_M, INTERCHANGE_DIVERGE_HINT_AHEAD_M, INTERCHANGE_DIVERGE_HINT_BAND_M, INTERCHANGE_DIVERGE_SIG_COVER_SLACK_M, INTERCHANGE_DIVERGE_PROBE_MIN_DS_M, INTERCHANGE_RAMP_MIN_ANGLE_DEG, INTERCHANGE_VOICE_FAR_MIN_M, INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_VOICE_NEAR_MIN_M, INTERCHANGE_VOICE_NEAR_MAX_M, MANEUVER_COLLAPSE_SEG_M, MANEUVER_COLLAPSE_GAP_M, MANEUVER_PASSED_M, MANEUVER_FORK_DROP_ANGLE_DEG, MANEUVER_FORK_MIN_SEG_M, ROUTE_LOW_AVG_SEG_M, ROUTE_LOW_MANEUVER_PER_KM, ROUTE_LOW_BEARING_REMAIN_M, FUSION_GPS_WEIGHT_MIN, FUSION_GPS_WEIGHT_SPAN, LOW_SPEED_MAP_ZOOM, PATH_SKIP_DS_M, PATH_SKIP_FRAMES, GPS_INVALIDATE_ACC_M, GPS_INVALIDATE_ACC_STATIONARY_M, GPS_LOST_RECONVERGE_MS, GPS_SPEED_MAX_MPS, GPS_SPEED_ACC_TRUST_M, GPS_SPEED_STATIONARY_DIST_M, GPS_SPEED_MEAS_MIN_DIST_M, GPS_SPEED_DEVICE_MEAS_RATIO, GPS_SPEED_SLEW_UP_MPS2, GPS_SPEED_SLEW_DOWN_MPS2, GPS_SPEED_TELEPORT_M, GPS_SPEED_COAST_MAX_DT_S, SPEED_LIMIT_LOOKAHEAD_M, SPEED_LIMIT_GRACE_MS, SPEED_LIMIT_OVERSPEED_KMH, SPEED_LIMIT_VOICE_MIN_M, SPEED_LIMIT_VOICE_MAX_M, SPEED_LIMIT_URBAN_PLACE_RADIUS_M, ROUNDABOUT_LATERAL_MULTIPLIER, ROUNDABOUT_HEADING_GATE_DEG, ROUNDABOUT_TICK_MS, ROUNDABOUT_MIN_RADIUS_M, ROUNDABOUT_MAX_RADIUS_M;
 var init_nav_constants = __esm({
   "js/nav-constants.js"() {
     SNAP_QUALITY_GOOD_OUT = 1;
@@ -1485,9 +1485,13 @@ var init_nav_constants = __esm({
     INTERCHANGE_DIVERGE_LATERAL_M = 55;
     INTERCHANGE_DIVERGE_STEP_M = 40;
     INTERCHANGE_DIVERGE_MIN_TURN_DEG = 20;
+    INTERCHANGE_DIVERGE_MIN_TURN_WITH_HINT_DEG = 12;
+    INTERCHANGE_DIVERGE_LATERAL_WITH_HINT_M = 40;
     INTERCHANGE_DIVERGE_HUD_MAX_M = 450;
     INTERCHANGE_DIVERGE_HINT_AHEAD_M = 500;
     INTERCHANGE_DIVERGE_HINT_BAND_M = 240;
+    INTERCHANGE_DIVERGE_SIG_COVER_SLACK_M = 80;
+    INTERCHANGE_DIVERGE_PROBE_MIN_DS_M = 120;
     INTERCHANGE_RAMP_MIN_ANGLE_DEG = 18;
     INTERCHANGE_VOICE_FAR_MIN_M = 800;
     INTERCHANGE_VOICE_FAR_MAX_M = 1200;
@@ -1500,6 +1504,7 @@ var init_nav_constants = __esm({
     MANEUVER_FORK_MIN_SEG_M = 200;
     ROUTE_LOW_AVG_SEG_M = 15;
     ROUTE_LOW_MANEUVER_PER_KM = 25;
+    ROUTE_LOW_BEARING_REMAIN_M = 400;
     FUSION_GPS_WEIGHT_MIN = 0.02;
     FUSION_GPS_WEIGHT_SPAN = 25;
     LOW_SPEED_MAP_ZOOM = 18;
@@ -1648,14 +1653,15 @@ function fuseHeading(gpsHeading, speedMps) {
   }
   const blendSensor = gyroFresh && spd < 5 ? gyroHeading : sensorFresh ? sensorHeading : null;
   if (!blendSensor) return gpsHeading ?? null;
-  const gpsWeight = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
+  const gpsWeight = Math.min(1, Math.max(0, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN));
   if (gpsHeading == null || isNaN(gpsHeading)) return blendSensor;
   if (gpsWeight >= 0.95) return gpsHeading;
   if (gpsWeight <= 0.05) return blendSensor;
   if (angleDiff(gpsHeading, blendSensor) > 45 && spd < 3) {
     return blendSensor;
   }
-  return blendAngles(gpsHeading, blendSensor, 1 - gpsWeight);
+  const wGps = spd < 2 ? Math.min(gpsWeight, 0.25) : gpsWeight;
+  return blendAngles(gpsHeading, blendSensor, 1 - wGps);
 }
 function getSensorHeading() {
   return sensorHeading;
@@ -2367,8 +2373,8 @@ function findOsrmExitHint(maneuvers, curS, opts = {}) {
     let side = interchangeSide(st, m);
     if (st.type === "off ramp" || st.type === "on ramp" || st.type === "fork") {
       kind = "ramp_fork";
-    } else if ((st.type === "continue" || st.type === "notification") && mod.includes("slight") && (mod.includes("left") || mod.includes("right"))) {
-      kind = "continue_slight";
+    } else if ((st.type === "continue" || st.type === "notification" || st.type === "turn") && mod.includes("slight") && (mod.includes("left") || mod.includes("right"))) {
+      kind = st.type === "turn" ? "turn_slight" : "continue_slight";
     } else {
       const lane = extractExitLaneHint(st);
       if (lane?.side) {
@@ -2415,10 +2421,12 @@ function avgTangentDegLocal(geom, s2, windowM) {
   const b = interpolateGeomAtS(geom, Math.min(total, s2 + windowM));
   return bearing(a, b);
 }
-function detectPathDiverge(geom, curS) {
+function detectPathDiverge(geom, curS, opts = {}) {
   if (!geom?.n || !geom.s || curS == null || !Number.isFinite(curS)) return null;
   const total = geom.s[geom.n - 1];
   if (!(total > curS + INTERCHANGE_DIVERGE_MIN_M)) return null;
+  const lateralNeed = opts.lateralM ?? INTERCHANGE_DIVERGE_LATERAL_M;
+  const minTurn = opts.minTurnDeg ?? INTERCHANGE_DIVERGE_MIN_TURN_DEG;
   const origin = interpolateGeomAtS(geom, curS);
   const tanDeg = avgTangentDegLocal(geom, curS, 40);
   if (tanDeg == null || isNaN(tanDeg)) return null;
@@ -2438,7 +2446,7 @@ function detectPathDiverge(geom, curS) {
     const along = dE * fx + dN * fy;
     const lat = dE * nx + dN * ny;
     endLat = lat;
-    if (!first && Math.abs(lat) >= INTERCHANGE_DIVERGE_LATERAL_M && along > INTERCHANGE_DIVERGE_MIN_M * 0.4) {
+    if (!first && Math.abs(lat) >= lateralNeed && along > INTERCHANGE_DIVERGE_MIN_M * 0.4) {
       first = {
         side: lat > 0 ? "left" : "right",
         distM: Math.round(s2 - curS),
@@ -2448,12 +2456,71 @@ function detectPathDiverge(geom, curS) {
     }
   }
   if (!first) return null;
-  if (Math.abs(endLat) < INTERCHANGE_DIVERGE_LATERAL_M * 0.55) return null;
+  if (Math.abs(endLat) < lateralNeed * 0.55) return null;
   if (endLat > 0 !== (first.side === "left")) return null;
   const exitTan = avgTangentDegLocal(geom, first.atS, 50);
   if (exitTan == null || isNaN(exitTan)) return null;
-  if (angleDiff(tanDeg, exitTan) < INTERCHANGE_DIVERGE_MIN_TURN_DEG) return null;
+  if (angleDiff(tanDeg, exitTan) < minTurn) return null;
   return first;
+}
+function resolveHybridPathDiverge(geom, curS, maneuvers, ctx = {}) {
+  if (!geom || curS == null || !Number.isFinite(curS)) {
+    return { ok: false, reason: "no_geom" };
+  }
+  const isSig = ctx.isSignificant || (() => false);
+  let sigIxAlong = null;
+  for (const m of maneuvers || []) {
+    if (!m?.step || !isInterchangeStep(m.step)) continue;
+    if (!isSig(m)) continue;
+    if (curS > m.s + MANEUVER_PASSED_M) continue;
+    const along = m.s - curS;
+    if (along < 0 || along > INTERCHANGE_DIVERGE_MAX_M) continue;
+    if (sigIxAlong == null || along < sigIxAlong) sigIxAlong = along;
+  }
+  const hintLoose = findOsrmExitHint(maneuvers, curS, {
+    maxAheadM: INTERCHANGE_DIVERGE_HUD_MAX_M
+  });
+  const withHint = !!hintLoose;
+  const div = detectPathDiverge(geom, curS, withHint ? {
+    minTurnDeg: INTERCHANGE_DIVERGE_MIN_TURN_WITH_HINT_DEG,
+    lateralM: INTERCHANGE_DIVERGE_LATERAL_WITH_HINT_M
+  } : void 0);
+  if (!div || div.distM > INTERCHANGE_DIVERGE_HUD_MAX_M) {
+    return {
+      ok: false,
+      reason: hintLoose ? "hint_no_geom" : "no_geom_diverge",
+      hint: hintLoose || void 0,
+      sigIxAlong
+    };
+  }
+  if (sigIxAlong != null && sigIxAlong <= div.distM + INTERCHANGE_DIVERGE_SIG_COVER_SLACK_M) {
+    return { ok: false, reason: "covered_by_sig_ix", div, sigIxAlong };
+  }
+  const hint = findOsrmExitHint(maneuvers, curS, {
+    nearS: div.atS,
+    maxAheadM: INTERCHANGE_DIVERGE_HINT_AHEAD_M
+  }) || hintLoose;
+  if (!hint) {
+    return { ok: false, reason: "geom_no_hint", div, sigIxAlong };
+  }
+  if (!divergeSidesCompatible(div.side, hint.side)) {
+    return { ok: false, reason: "side_conflict", div, hint, sigIxAlong };
+  }
+  const step = { ...hint.step };
+  if (!interchangeSide(hint.step) && div.side) step._divergeSide = div.side;
+  return {
+    ok: true,
+    reason: "hybrid",
+    div,
+    hint,
+    sigIxAlong,
+    pack: {
+      step,
+      dist: Math.min(div.distM, hint.along > 0 ? hint.along : div.distM),
+      pathDiverge: true,
+      osrmHint: hint.kind
+    }
+  };
 }
 var init_interchange = __esm({
   "js/interchange.js"() {
@@ -2644,6 +2711,10 @@ function takeForceReeval() {
   _forceReeval = false;
   return v;
 }
+function requestForceReeval() {
+  _forceReeval = true;
+  _frozenS = null;
+}
 function curvatureMult(geom, s2, override) {
   if (override != null) return override;
   return 1;
@@ -2716,6 +2787,10 @@ function updateSnapQuality(snap, gps, geom, opts) {
   if (next === SnapQuality.LOST && prev !== SnapQuality.LOST) {
     _lostSince = now;
     _forceReeval = true;
+  }
+  if (prev === SnapQuality.LOST && next !== SnapQuality.LOST) {
+    _forceReeval = true;
+    _frozenS = null;
   }
   if (next !== SnapQuality.LOST) _lostSince = 0;
   if (prev === SnapQuality.DEGRADED && _degradedSince && now - _degradedSince > SNAP_QUALITY_DEGRADED_TIMEOUT_MS) {
@@ -6782,6 +6857,7 @@ function attachRouteGeometry(route) {
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
+  _pdProbeAtS = -1e9;
   loadRouteHighwayTypes(route).catch((e) => console.warn("highway types:", e));
 }
 function seedSnapFromGps(opts = {}) {
@@ -7123,22 +7199,31 @@ async function recalcRoute() {
     S.rerouting = false;
   }
 }
-async function fetchCamerasFromOverpassCorridor(coords, aroundM = 80) {
+async function fetchCamerasFromOverpassCorridor(coords, aroundM = 80, opts = {}) {
   const samples = sampleRoutePoints2(coords, 600);
   const byKey = /* @__PURE__ */ new Map();
   const BATCH = 16;
+  const timeoutMs = opts.timeoutMs ?? 22e3;
+  const serverTimeoutSec = opts.serverTimeoutSec ?? 18;
+  const maxBatches = opts.maxBatches ?? Infinity;
+  const deadline = opts.deadlineMs != null ? Date.now() + opts.deadlineMs : null;
+  let batches = 0;
   for (let i2 = 0; i2 < samples.length; i2 += BATCH) {
+    if (batches >= maxBatches) break;
+    if (deadline != null && Date.now() >= deadline) break;
+    batches++;
     const batch = samples.slice(i2, i2 + BATCH);
     const parts = batch.map(
       (p) => `node["highway"="speed_camera"](around:${aroundM},${p.lat.toFixed(5)},${p.lon.toFixed(5)});
 node["enforcement"="maxspeed"](around:${aroundM},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
     ).join("\n");
-    const q = `[out:json][timeout:18];
+    const q = `[out:json][timeout:${serverTimeoutSec}];
 (
 ${parts}
 );
 out body;`;
-    const j = await overpassFetch(q, 22e3);
+    const remain = deadline != null ? Math.max(800, deadline - Date.now()) : timeoutMs;
+    const j = await overpassFetch(q, Math.min(timeoutMs, remain));
     for (const e of j.elements || []) {
       const cam = cameraFromOverpassNode(e);
       if (!cam) continue;
@@ -7205,26 +7290,50 @@ async function loadCameras() {
         sub: "cameras_snapshot_empty_corridor",
         snap_count: snap.count,
         ms: Date.now() - t0,
-        regions: snap.regions
+        regions: snap.regions,
+        keep: S.cameras?.length || 0
       });
     }
   } catch (e) {
     console.warn("cameras snapshot path:", e);
   }
+  const keepN = S.cameras?.length || 0;
+  const overpassOpts = keepN > 0 ? { timeoutMs: 4500, serverTimeoutSec: 4, maxBatches: 2, deadlineMs: 7e3 } : { timeoutMs: 12e3, serverTimeoutSec: 10, maxBatches: 6, deadlineMs: 28e3 };
   try {
-    S.cameras = await fetchCamerasFromOverpassCorridor(coords, CAM_AROUND_M);
-    S.camLoadStatus = "ok";
-    if (S.cameras.length) {
+    const fresh = await fetchCamerasFromOverpassCorridor(coords, CAM_AROUND_M, overpassOpts);
+    if (fresh.length) {
+      S.cameras = fresh;
+      S.camLoadStatus = "ok";
       saveCamerasToRouteCache(coords, S.cameras);
       saveLastRun();
+      telemetry_default.log("nav", {
+        sub: "cameras_loaded",
+        count: S.cameras.length,
+        with_speed: S.cameras.filter((c) => c.speed != null).length,
+        ms: Date.now() - t0,
+        mode: keepN > 0 ? "corridor_probe" : "corridor"
+      });
+    } else if (keepN > 0) {
+      S.camLoadStatus = "stale";
+      telemetry_default.log("nav", {
+        sub: "cameras_loaded",
+        count: keepN,
+        with_speed: S.cameras.filter((c) => c.speed != null).length,
+        ms: Date.now() - t0,
+        mode: "keep_after_empty",
+        from_cache: true
+      });
+    } else {
+      S.cameras = [];
+      S.camLoadStatus = "ok";
+      telemetry_default.log("nav", {
+        sub: "cameras_loaded",
+        count: 0,
+        with_speed: 0,
+        ms: Date.now() - t0,
+        mode: "corridor"
+      });
     }
-    telemetry_default.log("nav", {
-      sub: "cameras_loaded",
-      count: S.cameras.length,
-      with_speed: S.cameras.filter((c) => c.speed != null).length,
-      ms: Date.now() - t0,
-      mode: "corridor"
-    });
   } catch (e) {
     console.warn("\u041A\u0430\u043C\u0435\u0440\u044B \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043B\u0438\u0441\u044C:", e);
     const cached = loadCamerasFromRouteCache(coords);
@@ -7396,27 +7505,24 @@ function findNextManeuver() {
       if (along > aheadMax) continue;
       return pack(m, false);
     }
-    const hasIx = sorted.some(
-      (m) => isInterchangeStep(m.step) && isSignificantManeuver(m, geom) && curS <= m.s + MANEUVER_PASSED_M && m.s - curS <= INTERCHANGE_DIVERGE_MAX_M
-    );
-    if (!hasIx) {
-      const div = detectPathDiverge(geom, curS);
-      if (div && div.distM <= INTERCHANGE_DIVERGE_HUD_MAX_M) {
-        const hint = findOsrmExitHint(sorted, curS, {
-          nearS: div.atS,
-          maxAheadM: INTERCHANGE_DIVERGE_HINT_AHEAD_M
+    if (S.routeQuality !== RouteQuality.LOW) {
+      const hybrid = resolveHybridPathDiverge(geom, curS, sorted, {
+        isSignificant: (m) => isSignificantManeuver(m, geom)
+      });
+      if (curS - _pdProbeAtS >= INTERCHANGE_DIVERGE_PROBE_MIN_DS_M) {
+        _pdProbeAtS = curS;
+        telemetry_default.log("nav", {
+          sub: "path_diverge_probe",
+          reason: hybrid.reason,
+          ok: !!hybrid.ok,
+          dist: hybrid.div?.distM ?? null,
+          side: hybrid.div?.side ?? null,
+          hint: hybrid.hint?.kind ?? null,
+          sig_ix: hybrid.sigIxAlong != null ? Math.round(hybrid.sigIxAlong) : null,
+          s0: Math.round(curS)
         });
-        if (hint && divergeSidesCompatible(div.side, hint.side)) {
-          const step = { ...hint.step };
-          if (!interchangeSide(hint.step) && div.side) step._divergeSide = div.side;
-          return {
-            step,
-            dist: Math.min(div.distM, hint.along > 0 ? hint.along : div.distM),
-            pathDiverge: true,
-            osrmHint: hint.kind
-          };
-        }
       }
+      if (hybrid.ok && hybrid.pack) return hybrid.pack;
     }
     for (const m of sorted) {
       if (!softNavManeuver(m)) continue;
@@ -7507,7 +7613,7 @@ function maneuverTurnAngle(step) {
   );
   return (bOut - bIn + 540) % 360 - 180;
 }
-var NON_MOTOR_HIGHWAYS, CAM_CACHE_KEY, CAM_CACHE_MAX, CAM_CACHE_TTL_MS, _nearMemoPos, _nearMemoVal, _nearIdx;
+var _pdProbeAtS, NON_MOTOR_HIGHWAYS, CAM_CACHE_KEY, CAM_CACHE_MAX, CAM_CACHE_TTL_MS, _nearMemoPos, _nearMemoVal, _nearIdx;
 var init_route = __esm({
   "js/route.js"() {
     init_state();
@@ -7531,6 +7637,7 @@ var init_route = __esm({
     init_snap_quality();
     init_cameras_snapshot();
     init_osm_regions();
+    _pdProbeAtS = -1e9;
     NON_MOTOR_HIGHWAYS = /* @__PURE__ */ new Set([
       "footway",
       "pedestrian",
@@ -19945,6 +20052,7 @@ function headingDiverged(feed, now) {
   return simScaledDelta(now - _ctx.headingDivergeSince) >= OFF_ROUTE_HEADING_DIVERGE_MS;
 }
 function isGpsJunk(feed) {
+  if (!feed) return false;
   if (feed.gpsTeleport) return true;
   if (feed.lateral != null && feed.lateral >= OFF_ROUTE_LATERAL_JUNK_M) return true;
   if (feed.acc == null || !Number.isFinite(feed.acc) || feed.acc <= 0) {
@@ -20067,8 +20175,20 @@ function tryReturnOnRoute(feed) {
   if (_ctx.peakLateral >= OFF_ROUTE_LATERAL_HARD_M && feed.lateral > OFF_ROUTE_EXIT_M * 0.6) {
     return false;
   }
+  const peak = _ctx.peakLateral;
   const from = S.offRouteState;
   transition(from, OffRouteState.ON_ROUTE, metaFromFeed(feed));
+  if (peak >= OFF_ROUTE_LATERAL_HARD_M) {
+    requestForceReeval();
+    clearCachedManeuver();
+    const seeded = seedSnapFromGps({ relaxed: true });
+    telemetry_default.log("nav", {
+      sub: "return_reseed",
+      peak: Math.round(peak),
+      lateral: feed.lateral != null ? Math.round(feed.lateral) : null,
+      seeded: !!seeded
+    });
+  }
   resetBackoff();
   resetCtx();
   clearOffRouteWarn();
@@ -25913,6 +26033,10 @@ function setHudStreetLabels(top, bottom) {
   if (curEl) curEl.textContent = bottom ?? "\u2014";
 }
 function maneuverVoiceThresholds(kmh, step) {
+  if (S.routeQuality === RouteQuality.LOW && isInterchangeStep(step)) {
+    const mps2 = Math.max(kmh / 3.6, 4);
+    return { mps: mps2, farM: 220, nearM: 70 };
+  }
   const mps = Math.max(kmh / 3.6, 4);
   if (isInterchangeStep(step)) {
     return {
@@ -26043,7 +26167,7 @@ function shouldUseReturnArrow(snap) {
   if (isSnapLost() && lat != null && lat > OFF_ROUTE_ENTER_M) return true;
   return false;
 }
-function paintReturnToRouteArrow(snap) {
+function paintReturnToRouteArrow(snap, opts = {}) {
   const brg = bearing(S.gps, { lat: snap.lat, lon: snap.lon });
   const hdg = S.smoothedHeading != null && !isNaN(S.smoothedHeading) ? S.smoothedHeading : S.gps.heading;
   let turn = 0;
@@ -26057,9 +26181,28 @@ function paintReturnToRouteArrow(snap) {
     $2("v-mdist").textContent = (dSnap / 1e3).toFixed(1);
     $2("v-mdist-u").textContent = "\u043A\u043C";
   }
-  const label = isOfflineGuide() ? "\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422" : "\u0421\u042A\u0415\u0417\u0414 \u0421 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0410";
-  setHudStreetLabels(label, hudCurrentStreetLabel(snap));
+  let label;
+  let sub;
+  if (opts.junk) {
+    label = "GPS \u0428\u0423\u041C\u041D\u042B\u0419";
+    sub = "\u0414\u0415\u0420\u0416\u0423 \u041A\u0423\u0420\u0421";
+  } else if (isOfflineGuide()) {
+    label = "\u0412\u041E\u0417\u0412\u0420\u0410\u0422 \u041D\u0410 \u041C\u0410\u0420\u0428\u0420\u0423\u0422";
+    sub = hudCurrentStreetLabel(snap);
+  } else {
+    label = "\u0421\u042A\u0415\u0417\u0414 \u0421 \u041C\u0410\u0420\u0428\u0420\u0423\u0422\u0410";
+    sub = hudCurrentStreetLabel(snap);
+  }
+  setHudStreetLabels(label, sub);
   $2("rb-exit-label")?.classList.add("hidden");
+}
+function junkFeedFromSnap(snap) {
+  const lat = lateralForOffRoute(snap);
+  return {
+    lateral: lat,
+    acc: S.gps?.acc != null && Number.isFinite(S.gps.acc) ? S.gps.acc : null,
+    gpsTeleport: S.gps?.spdSrc === "teleport"
+  };
 }
 function onTick() {
   if (!S.gps) return;
@@ -26127,11 +26270,16 @@ function onTick() {
     updateFinishInfo(getRemainingDistance(), kmh, now);
   }
   if (snapLostBlocksNav(snap)) {
-    setHudStreetLabels("\u041D\u0415\u0422 \u041F\u0420\u0418\u0412\u042F\u0417\u041A\u0418", "\u2014");
-    $2("v-mdist").textContent = "\u2014";
-    $2("v-mdist-u").textContent = "";
-    $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
-    $2("rb-exit-label")?.classList.add("hidden");
+    const junk = isGpsJunk(junkFeedFromSnap(snap));
+    if (snap && S.gps) {
+      paintReturnToRouteArrow(snap, { junk });
+    } else {
+      setHudStreetLabels(junk ? "GPS \u0428\u0423\u041C\u041D\u042B\u0419" : "\u041D\u0415\u0422 \u041F\u0420\u0418\u0412\u042F\u0417\u041A\u0418", junk ? "\u0414\u0415\u0420\u0416\u0423 \u041A\u0423\u0420\u0421" : "\u2014");
+      $2("v-mdist").textContent = "\u2014";
+      $2("v-mdist-u").textContent = "";
+      $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
+      $2("rb-exit-label")?.classList.add("hidden");
+    }
     updateFinishInfo(getRemainingDistance(), kmh, now);
     $2("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
     if (hudOn2) return;
@@ -26141,7 +26289,7 @@ function onTick() {
   if (!gpsOk) return;
   if (snapLostBlocksNav(snap)) return;
   if (shouldUseReturnArrow(snap) && snap && S.gps) {
-    paintReturnToRouteArrow(snap);
+    paintReturnToRouteArrow(snap, { junk: isGpsJunk(junkFeedFromSnap(snap)) });
   } else {
     let nm = isSnapDegraded() ? getCachedManeuver() : null;
     if (!nm) nm = findNextManeuver();
@@ -26292,6 +26440,14 @@ function onTick() {
   if (snapLost) fullMid += " \xB7 SNAP?";
   if (S.routeQuality === RouteQuality.LOW) {
     $2("mid-info").textContent = fullMid + " \xB7 \u041D\u0418\u0417\u041A. OSM";
+    if (!_lowRouteBearingDone && !isBearingMode() && remaining > 30 && remaining < ROUTE_LOW_BEARING_REMAIN_M) {
+      _lowRouteBearingDone = true;
+      enterBearingMode({ quiet: true });
+      telemetry_default.log("nav", {
+        sub: "route_low_bearing",
+        remain: Math.round(remaining)
+      });
+    }
   } else {
     $2("mid-info").textContent = fullMid;
   }
@@ -26347,6 +26503,7 @@ async function startHud() {
   resetCurveRibbonState();
   resetSpeedLimitState();
   resetRoundaboutState();
+  _lowRouteBearingDone = false;
   if (hasRoute) {
     ensureRouteGeometry(S.route);
     seedSnapFromGps({ relaxed: true });
@@ -26616,7 +26773,7 @@ async function selectQuickFinish(id, loadFavs2, buildAndLoad) {
     $2("mid-info").textContent = "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442\u0430";
   }
 }
-var _lastMarkCtx, _fuelBusy, _fuelPanelShownAt, FUEL_PANEL_MS;
+var _lastMarkCtx, _lowRouteBearingDone, _fuelBusy, _fuelPanelShownAt, FUEL_PANEL_MS;
 var init_hud = __esm({
   "js/hud.js"() {
     init_state();
@@ -26661,6 +26818,7 @@ var init_hud = __esm({
     init_roundabout();
     init_converge_telemetry();
     _lastMarkCtx = null;
+    _lowRouteBearingDone = false;
     _fuelBusy = false;
     _fuelPanelShownAt = 0;
     FUEL_PANEL_MS = 9e3;
@@ -27887,6 +28045,14 @@ function applyGpsFix(next) {
     if (d > 3 && d < 500) S.distDone += d;
     if ((next.heading == null || isNaN(next.heading)) && d > 3) {
       next.heading = bearing(S.lastPos, next);
+      next.hdgSrc = "move";
+    } else if (d > 2 && dt > 0.3 && next.heading != null && !isNaN(next.heading)) {
+      const moveHdg = bearing(S.lastPos, next);
+      const spdEst = dt > 0 ? d / dt : 0;
+      if (spdEst >= 1 && spdEst < 5 && angleDiff(next.heading, moveHdg) > 50) {
+        next.heading = moveHdg;
+        next.hdgSrc = "move";
+      }
     }
   }
   const speedRes = resolveGpsSpeed(next, S.lastPos);
@@ -27901,12 +28067,15 @@ function applyGpsFix(next) {
     if (S.smoothedHeading == null) S.smoothedHeading = next.heading;
     else {
       const spd = next.speed ?? S.measSpeed ?? 0;
-      const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
-      const keep = 1 - alpha;
-      const r = Math.PI / 180, d = 180 / Math.PI;
-      const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
-      const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
-      S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
+      if (spd < SNAP_STATIONARY_SPD_MPS) {
+      } else {
+        const alpha = Math.min(1, FUSION_GPS_WEIGHT_MIN + spd / FUSION_GPS_WEIGHT_SPAN);
+        const keep = 1 - alpha;
+        const r = Math.PI / 180, d = 180 / Math.PI;
+        const sx = Math.sin(S.smoothedHeading * r) * keep + Math.sin(next.heading * r) * alpha;
+        const sy = Math.cos(S.smoothedHeading * r) * keep + Math.cos(next.heading * r) * alpha;
+        S.smoothedHeading = (Math.atan2(sx, sy) * d + 360) % 360;
+      }
     }
   }
   _lastGpsRcvMs = Date.now();

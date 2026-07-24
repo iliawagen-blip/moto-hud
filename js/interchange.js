@@ -10,8 +10,12 @@ import {
   INTERCHANGE_DIVERGE_LATERAL_M,
   INTERCHANGE_DIVERGE_STEP_M,
   INTERCHANGE_DIVERGE_MIN_TURN_DEG,
+  INTERCHANGE_DIVERGE_MIN_TURN_WITH_HINT_DEG,
+  INTERCHANGE_DIVERGE_LATERAL_WITH_HINT_M,
   INTERCHANGE_DIVERGE_HINT_AHEAD_M,
   INTERCHANGE_DIVERGE_HINT_BAND_M,
+  INTERCHANGE_DIVERGE_HUD_MAX_M,
+  INTERCHANGE_DIVERGE_SIG_COVER_SLACK_M,
   MANEUVER_PASSED_M
 } from './nav-constants.js';
 
@@ -132,10 +136,10 @@ export function findOsrmExitHint(maneuvers, curS, opts = {}){
     if(st.type === 'off ramp' || st.type === 'on ramp' || st.type === 'fork'){
       kind = 'ramp_fork';
     } else if(
-      (st.type === 'continue' || st.type === 'notification') &&
+      (st.type === 'continue' || st.type === 'notification' || st.type === 'turn') &&
       mod.includes('slight') && (mod.includes('left') || mod.includes('right'))
     ){
-      kind = 'continue_slight';
+      kind = st.type === 'turn' ? 'turn_slight' : 'continue_slight';
     } else {
       const lane = extractExitLaneHint(st);
       if(lane?.side){
@@ -192,12 +196,16 @@ function avgTangentDegLocal(geom, s, windowM){
  * Уход polyline от текущего касательного (дорожка «права», OSRM сказал прямо).
  * @param {object} geom RouteGeometry { n, lat, lon, s }
  * @param {number} curS
+ * @param {{ minTurnDeg?: number, lateralM?: number }} [opts]
  * @returns {{ side: 'left'|'right', distM: number, atS: number, lateralM: number }|null}
  */
-export function detectPathDiverge(geom, curS){
+export function detectPathDiverge(geom, curS, opts = {}){
   if(!geom?.n || !geom.s || curS == null || !Number.isFinite(curS)) return null;
   const total = geom.s[geom.n - 1];
   if(!(total > curS + INTERCHANGE_DIVERGE_MIN_M)) return null;
+
+  const lateralNeed = opts.lateralM ?? INTERCHANGE_DIVERGE_LATERAL_M;
+  const minTurn = opts.minTurnDeg ?? INTERCHANGE_DIVERGE_MIN_TURN_DEG;
 
   const origin = interpolateGeomAtS(geom, curS);
   const tanDeg = avgTangentDegLocal(geom, curS, 40);
@@ -222,7 +230,7 @@ export function detectPathDiverge(geom, curS){
     const along = dE * fx + dN * fy;
     const lat = dE * nx + dN * ny;
     endLat = lat;
-    if(!first && Math.abs(lat) >= INTERCHANGE_DIVERGE_LATERAL_M && along > INTERCHANGE_DIVERGE_MIN_M * 0.4){
+    if(!first && Math.abs(lat) >= lateralNeed && along > INTERCHANGE_DIVERGE_MIN_M * 0.4){
       first = {
         side: lat > 0 ? 'left' : 'right',
         distM: Math.round(s - curS),
@@ -233,13 +241,97 @@ export function detectPathDiverge(geom, curS){
   }
 
   if(!first) return null;
-  if(Math.abs(endLat) < INTERCHANGE_DIVERGE_LATERAL_M * 0.55) return null;
+  if(Math.abs(endLat) < lateralNeed * 0.55) return null;
   if((endLat > 0) !== (first.side === 'left')) return null;
   // Пологая дуга магистрали (Варшавка): боковой уход есть, азимут почти не меняется
   const exitTan = avgTangentDegLocal(geom, first.atS, 50);
   if(exitTan == null || isNaN(exitTan)) return null;
-  if(angleDiff(tanDeg, exitTan) < INTERCHANGE_DIVERGE_MIN_TURN_DEG) return null;
+  if(angleDiff(tanDeg, exitTan) < minTurn) return null;
   return first;
+}
+
+/**
+ * Hint-first hybrid: слабый OSRM → geom с мягкими порогами → pack для HUD.
+ * @param {object} geom
+ * @param {number} curS
+ * @param {Array<{ step: object, s: number }>} maneuvers
+ * @param {{ isSignificant?: (m: object) => boolean }} [ctx]
+ * @returns {{
+ *   ok: boolean,
+ *   reason: string,
+ *   pack?: { step: object, dist: number, pathDiverge: true, osrmHint: string },
+ *   div?: object,
+ *   hint?: object,
+ *   sigIxAlong?: number|null
+ * }}
+ */
+export function resolveHybridPathDiverge(geom, curS, maneuvers, ctx = {}){
+  if(!geom || curS == null || !Number.isFinite(curS)){
+    return { ok: false, reason: 'no_geom' };
+  }
+
+  const isSig = ctx.isSignificant || (() => false);
+  let sigIxAlong = null;
+  for(const m of maneuvers || []){
+    if(!m?.step || !isInterchangeStep(m.step)) continue;
+    if(!isSig(m)) continue;
+    if(curS > m.s + MANEUVER_PASSED_M) continue;
+    const along = m.s - curS;
+    if(along < 0 || along > INTERCHANGE_DIVERGE_MAX_M) continue;
+    if(sigIxAlong == null || along < sigIxAlong) sigIxAlong = along;
+  }
+
+  // Сначала hint — иначе slight&lt;18° никогда не дойдёт до мягких порогов
+  const hintLoose = findOsrmExitHint(maneuvers, curS, {
+    maxAheadM: INTERCHANGE_DIVERGE_HUD_MAX_M
+  });
+
+  const withHint = !!hintLoose;
+  const div = detectPathDiverge(geom, curS, withHint ? {
+    minTurnDeg: INTERCHANGE_DIVERGE_MIN_TURN_WITH_HINT_DEG,
+    lateralM: INTERCHANGE_DIVERGE_LATERAL_WITH_HINT_M
+  } : undefined);
+
+  if(!div || div.distM > INTERCHANGE_DIVERGE_HUD_MAX_M){
+    return {
+      ok: false,
+      reason: hintLoose ? 'hint_no_geom' : 'no_geom_diverge',
+      hint: hintLoose || undefined,
+      sigIxAlong
+    };
+  }
+
+  if(sigIxAlong != null && sigIxAlong <= div.distM + INTERCHANGE_DIVERGE_SIG_COVER_SLACK_M){
+    return { ok: false, reason: 'covered_by_sig_ix', div, sigIxAlong };
+  }
+
+  const hint = findOsrmExitHint(maneuvers, curS, {
+    nearS: div.atS,
+    maxAheadM: INTERCHANGE_DIVERGE_HINT_AHEAD_M
+  }) || hintLoose;
+
+  if(!hint){
+    return { ok: false, reason: 'geom_no_hint', div, sigIxAlong };
+  }
+  if(!divergeSidesCompatible(div.side, hint.side)){
+    return { ok: false, reason: 'side_conflict', div, hint, sigIxAlong };
+  }
+
+  const step = { ...hint.step };
+  if(!interchangeSide(hint.step) && div.side) step._divergeSide = div.side;
+  return {
+    ok: true,
+    reason: 'hybrid',
+    div,
+    hint,
+    sigIxAlong,
+    pack: {
+      step,
+      dist: Math.min(div.distM, hint.along > 0 ? hint.along : div.distM),
+      pathDiverge: true,
+      osrmHint: hint.kind
+    }
+  };
 }
 
 /**

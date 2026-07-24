@@ -152,3 +152,9 @@ export async function loadDemoTrip(){
   if(!r.ok) throw new Error('Демо-план недоступен (нужен http:// или npm run dev, не file://)');
   return validateTrip(await r.json());
 }
+
+export async function loadAug2026Trip(){
+  const r = await fetch('fixtures/trip-aug2026.json');
+  if(!r.ok) throw new Error('План «Август F7» недоступен (нужен http:// или npm run dev, не file://)');
+  return validateTrip(await r.json());
+}

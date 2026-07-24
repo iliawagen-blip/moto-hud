@@ -21,15 +21,15 @@ import {
   MANEUVER_BEND_ANGLE
 } from './maneuver-filter.js';
 import {
-  detectPathDiverge, findOsrmExitHint, divergeSidesCompatible, interchangeSide
+  resolveHybridPathDiverge
 } from './interchange.js';
 
 import {
   MANEUVER_PASSED_M, REROUTE_SEED_MAX_LATERAL_M, REROUTE_SEED_MAX_ANGLE_DEG,
   STREET_LABEL_MANEUVER_M, MANEUVER_SOFT_MAX_AHEAD_M, REROUTE_SUCCESS_COOLDOWN_MS,
   MANEUVER_TURN_MIN_ANGLE_DEG, INTERCHANGE_DIVERGE_MAX_M,
-  INTERCHANGE_VOICE_FAR_MAX_M, INTERCHANGE_DIVERGE_HUD_MAX_M,
-  INTERCHANGE_DIVERGE_HINT_AHEAD_M
+  INTERCHANGE_VOICE_FAR_MAX_M,
+  INTERCHANGE_DIVERGE_PROBE_MIN_DS_M
 } from './nav-constants.js';
 import { buildRouteRequestUrl, parseRouteResponse } from './router.js';
 import { HIGHWAY_CLASSES } from './maneuver-filter.js';
@@ -42,6 +42,9 @@ import {
   loadCamerasSnapshotForRoute
 } from './cameras-snapshot.js';
 import { loadMergedLayer } from './osm-regions.js';
+
+/** Throttle path_diverge_probe по дуге маршрута */
+let _pdProbeAtS = -1e9;
 
 /** Типы OSM highway без проезда для мото/авто (аудит после Overpass). */
 export const NON_MOTOR_HIGHWAYS = new Set([
@@ -158,6 +161,7 @@ function attachRouteGeometry(route){
   resetRouteSnap();
   resetCrossingTelemetry();
   resetFuelRouteBinding();
+  _pdProbeAtS = -1e9;
   loadRouteHighwayTypes(route).catch(e => console.warn('highway types:', e));
 }
 
@@ -530,19 +534,33 @@ export async function recalcRoute(){
   }
 }
 
-/** Overpass-коридор (вне Москвы / нет снапшота) */
-async function fetchCamerasFromOverpassCorridor(coords, aroundM = 80){
+/**
+ * Overpass-коридор (вне снапшота / пустой фильтр).
+ * @param {number[][]} coords
+ * @param {number} [aroundM]
+ * @param {{ timeoutMs?: number, serverTimeoutSec?: number, maxBatches?: number, deadlineMs?: number }} [opts]
+ */
+async function fetchCamerasFromOverpassCorridor(coords, aroundM = 80, opts = {}){
   const samples = sampleRoutePoints(coords, 600);
   const byKey = new Map();
   const BATCH = 16;
+  const timeoutMs = opts.timeoutMs ?? 22000;
+  const serverTimeoutSec = opts.serverTimeoutSec ?? 18;
+  const maxBatches = opts.maxBatches ?? Infinity;
+  const deadline = opts.deadlineMs != null ? Date.now() + opts.deadlineMs : null;
+  let batches = 0;
   for(let i = 0; i < samples.length; i += BATCH){
+    if(batches >= maxBatches) break;
+    if(deadline != null && Date.now() >= deadline) break;
+    batches++;
     const batch = samples.slice(i, i + BATCH);
     const parts = batch.map(p =>
       `node["highway"="speed_camera"](around:${aroundM},${p.lat.toFixed(5)},${p.lon.toFixed(5)});\n` +
       `node["enforcement"="maxspeed"](around:${aroundM},${p.lat.toFixed(5)},${p.lon.toFixed(5)});`
     ).join('\n');
-    const q = `[out:json][timeout:18];\n(\n${parts}\n);\nout body;`;
-    const j = await overpassFetch(q, 22000);
+    const q = `[out:json][timeout:${serverTimeoutSec}];\n(\n${parts}\n);\nout body;`;
+    const remain = deadline != null ? Math.max(800, deadline - Date.now()) : timeoutMs;
+    const j = await overpassFetch(q, Math.min(timeoutMs, remain));
     for(const e of (j.elements || [])){
       const cam = cameraFromOverpassNode(e);
       if(!cam) continue;
@@ -615,28 +633,55 @@ export async function loadCameras(){
         sub: 'cameras_snapshot_empty_corridor',
         snap_count: snap.count,
         ms: Date.now() - t0,
-        regions: snap.regions
+        regions: snap.regions,
+        keep: S.cameras?.length || 0
       });
     }
   }catch(e){
     console.warn('cameras snapshot path:', e);
   }
 
-  // 2) Overpass-коридор вне зоны снапшота / пустой фильтр / нет файла
+  // 2) Overpass: при уже непустом keep — короткий probe (field 07-49 abort)
+  const keepN = S.cameras?.length || 0;
+  const overpassOpts = keepN > 0
+    ? { timeoutMs: 4500, serverTimeoutSec: 4, maxBatches: 2, deadlineMs: 7000 }
+    : { timeoutMs: 12000, serverTimeoutSec: 10, maxBatches: 6, deadlineMs: 28000 };
+
   try{
-    S.cameras = await fetchCamerasFromOverpassCorridor(coords, CAM_AROUND_M);
-    S.camLoadStatus = 'ok';
-    if(S.cameras.length){
+    const fresh = await fetchCamerasFromOverpassCorridor(coords, CAM_AROUND_M, overpassOpts);
+    if(fresh.length){
+      S.cameras = fresh;
+      S.camLoadStatus = 'ok';
       saveCamerasToRouteCache(coords, S.cameras);
       saveLastRun();
+      telemetry.log('nav', {
+        sub: 'cameras_loaded',
+        count: S.cameras.length,
+        with_speed: S.cameras.filter(c => c.speed != null).length,
+        ms: Date.now() - t0,
+        mode: keepN > 0 ? 'corridor_probe' : 'corridor'
+      });
+    } else if(keepN > 0){
+      S.camLoadStatus = 'stale';
+      telemetry.log('nav', {
+        sub: 'cameras_loaded',
+        count: keepN,
+        with_speed: S.cameras.filter(c => c.speed != null).length,
+        ms: Date.now() - t0,
+        mode: 'keep_after_empty',
+        from_cache: true
+      });
+    } else {
+      S.cameras = [];
+      S.camLoadStatus = 'ok';
+      telemetry.log('nav', {
+        sub: 'cameras_loaded',
+        count: 0,
+        with_speed: 0,
+        ms: Date.now() - t0,
+        mode: 'corridor'
+      });
     }
-    telemetry.log('nav', {
-      sub: 'cameras_loaded',
-      count: S.cameras.length,
-      with_speed: S.cameras.filter(c => c.speed != null).length,
-      ms: Date.now() - t0,
-      mode: 'corridor'
-    });
   }catch(e){
     console.warn('Камеры не загрузились:', e);
     const cached = loadCamerasFromRouteCache(coords);
@@ -819,33 +864,25 @@ export function findNextManeuver(){
       return pack(m, false);
     }
 
-    // 1b) гибрид: геометрия + слабый OSRM (не invent на дуге, field 06-58 / 18-13)
-    const hasIx = sorted.some(m =>
-      isInterchangeStep(m.step) &&
-      isSignificantManeuver(m, geom) &&
-      curS <= m.s + MANEUVER_PASSED_M &&
-      (m.s - curS) <= INTERCHANGE_DIVERGE_MAX_M
-    );
-    if(!hasIx){
-      const div = detectPathDiverge(geom, curS);
-      if(div && div.distM <= INTERCHANGE_DIVERGE_HUD_MAX_M){
-        const hint = findOsrmExitHint(sorted, curS, {
-          nearS: div.atS,
-          maxAheadM: INTERCHANGE_DIVERGE_HINT_AHEAD_M
+    // 1b) hint-first hybrid; на LOW OSM — не invent съезды из шумной геометрии
+    if(S.routeQuality !== RouteQuality.LOW){
+      const hybrid = resolveHybridPathDiverge(geom, curS, sorted, {
+        isSignificant: (m) => isSignificantManeuver(m, geom)
+      });
+      if(curS - _pdProbeAtS >= INTERCHANGE_DIVERGE_PROBE_MIN_DS_M){
+        _pdProbeAtS = curS;
+        telemetry.log('nav', {
+          sub: 'path_diverge_probe',
+          reason: hybrid.reason,
+          ok: !!hybrid.ok,
+          dist: hybrid.div?.distM ?? null,
+          side: hybrid.div?.side ?? null,
+          hint: hybrid.hint?.kind ?? null,
+          sig_ix: hybrid.sigIxAlong != null ? Math.round(hybrid.sigIxAlong) : null,
+          s0: Math.round(curS)
         });
-        if(hint && divergeSidesCompatible(div.side, hint.side)){
-          // Реальный OSRM step (голос/тип); сторона с геометрии если OSRM молчит
-          const step = { ...hint.step };
-          if(!interchangeSide(hint.step) && div.side) step._divergeSide = div.side;
-          return {
-            step,
-            dist: Math.min(div.distM, hint.along > 0 ? hint.along : div.distM),
-            pathDiverge: true,
-            osrmHint: hint.kind
-          };
-        }
-        // Без OSRM-хинта — не показываем синтетический съезд (ложные дуги)
       }
+      if(hybrid.ok && hybrid.pack) return hybrid.pack;
     }
 
     // 2) soft в 500 м (arrive тоже — иначе «финиш» на 12 км, field 18-13)

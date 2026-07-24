@@ -1,11 +1,11 @@
 import { S } from './state.js';
 import { $ } from './util.js';
 import { angleDiff } from './geo.js';
-import { recalcRoute } from './route.js';
+import { recalcRoute, seedSnapFromGps } from './route.js';
 import { projectPointToRoute } from './route-geometry.js';
 import { speak } from './voice.js';
 import telemetry from './telemetry.js';
-import { SnapQuality } from './snap-quality.js';
+import { SnapQuality, requestForceReeval, clearCachedManeuver } from './snap-quality.js';
 import { isBearingMode } from './bearing-mode.js';
 import { simScaledDelta } from './sim-time-scale.js';
 import {
@@ -150,8 +150,12 @@ function headingDiverged(feed, now){
   return simScaledDelta(now - _ctx.headingDivergeSince) >= OFF_ROUTE_HEADING_DIVERGE_MS;
 }
 
-/** Мусорный GPS: телепорт / плохой acc / абсурдный lateral (field 18-41) */
-function isGpsJunk(feed){
+/**
+ * Мусорный GPS: телепорт / плохой acc / абсурдный lateral (field 18-41).
+ * @param {{ lateral?: number|null, acc?: number|null, gpsTeleport?: boolean }} feed
+ */
+export function isGpsJunk(feed){
+  if(!feed) return false;
   if(feed.gpsTeleport) return true;
   if(feed.lateral != null && feed.lateral >= OFF_ROUTE_LATERAL_JUNK_M) return true;
   // acc==null / 0 из `acc || 0` раньше обходили gate — требуем валидный acc
@@ -307,8 +311,21 @@ function tryReturnOnRoute(feed){
     return false;
   }
 
+  const peak = _ctx.peakLateral;
   const from = S.offRouteState;
   transition(from, OffRouteState.ON_ROUTE, metaFromFeed(feed));
+  // После большого ухода — wide snap + seed, иначе HUD «мёртвый» на старом s0
+  if(peak >= OFF_ROUTE_LATERAL_HARD_M){
+    requestForceReeval();
+    clearCachedManeuver();
+    const seeded = seedSnapFromGps({ relaxed: true });
+    telemetry.log('nav', {
+      sub: 'return_reseed',
+      peak: Math.round(peak),
+      lateral: feed.lateral != null ? Math.round(feed.lateral) : null,
+      seeded: !!seeded
+    });
+  }
   resetBackoff();
   resetCtx();
   clearOffRouteWarn();

@@ -7,7 +7,7 @@ import {
 } from '../js/maneuver-filter.js';
 import {
   detectPathDiverge, syntheticDivergeStep, interchangeVoiceText, isInterchangeStep,
-  findOsrmExitHint, divergeSidesCompatible
+  findOsrmExitHint, divergeSidesCompatible, resolveHybridPathDiverge
 } from '../js/interchange.js';
 
 function assert(cond, msg){
@@ -125,8 +125,51 @@ const farOnly = findOsrmExitHint([
 ], 0, { nearS: div.atS, nearBandM: 240 });
 assert(!farOnly, 'hint outside band ignored');
 
+// D: slight ramp + умеренный уход — hybrid с мягкими порогами (корпус &lt;18°)
+const mild = [];
+for(let i = 0; i <= 35; i++){
+  const along = i * 35;
+  let east = 0;
+  if(along > 90) east = Math.min(70, (along - 90) * 0.28);
+  mild.push({
+    lat: origin.lat + along / 111320,
+    lon: origin.lon + east / (111320 * Math.cos(origin.lat * Math.PI / 180))
+  });
+}
+const mildGeom = makeGeom(mild);
+assert(!detectPathDiverge(mildGeom, 0), 'mild exit: strict geom alone fails');
+const mildDivHint = detectPathDiverge(mildGeom, 0, { minTurnDeg: 12, lateralM: 40 });
+assert(mildDivHint, 'mild exit: relaxed geom ok');
+const mildManeuvers = [
+  { step: { type: 'off ramp', modifier: 'slight right', bearing_before: 0, bearing_after: 14 }, s: mildDivHint.atS }
+];
+assert(!isSignificantManeuver(mildManeuvers[0]), 'mild slight not significant');
+const hybridMild = resolveHybridPathDiverge(mildGeom, 0, mildManeuvers, {
+  isSignificant: (m) => isSignificantManeuver(m)
+});
+assert(hybridMild.ok && hybridMild.pack?.pathDiverge, 'hint-first hybrid on mild exit');
+assert(hybridMild.reason === 'hybrid', 'reason hybrid');
+
+// E: пологая дуга + ложный slight hint — всё ещё reject (анти-Варшавка)
+const arcManeuvers = [
+  { step: { type: 'off ramp', modifier: 'slight right', bearing_before: 0, bearing_after: 8 }, s: 200 }
+];
+const hybridArc = resolveHybridPathDiverge(makeGeom(arc), 0, arcManeuvers, {
+  isSignificant: (m) => isSignificantManeuver(m)
+});
+assert(!hybridArc.ok, 'gentle arc + slight hint must not hybrid');
+assert(hybridArc.reason === 'hint_no_geom' || hybridArc.reason === 'no_geom_diverge',
+  'arc reject reason, got ' + hybridArc.reason);
+
+// F: turn slight как hint
+const turnHint = findOsrmExitHint([
+  { step: { type: 'turn', modifier: 'slight right' }, s: div.atS }
+], 0, { nearS: div.atS });
+assert(turnHint && turnHint.kind === 'turn_slight', 'turn slight is hint');
+
 console.log('interchange-test OK', {
   voice: interchangeVoiceText(rampOk.step),
   diverge: { side: div.side, distM: div.distM },
-  hybrid: hintOk.kind
+  hybrid: hintOk.kind,
+  mild: hybridMild.pack?.osrmHint
 });

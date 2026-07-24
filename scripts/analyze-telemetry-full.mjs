@@ -33,6 +33,17 @@ console.log('reroute:', summary.rerouteCount);
 console.log('view_auto_map:', summary.viewAutoMapCount);
 console.log('converge_blocked_ms:', summary.convergeBlockedMs);
 
+const navEv = parsed.events.filter(e => e.type === 'nav');
+const pdFire = navEv.filter(e => e.sub === 'path_diverge').length;
+const pdProbe = navEv.filter(e => e.sub === 'path_diverge_probe');
+const probeReasons = {};
+for(const e of pdProbe){
+  const r = e.reason || 'unknown';
+  probeReasons[r] = (probeReasons[r] || 0) + 1;
+}
+console.log('path_diverge fires:', pdFire);
+console.log('path_diverge_probe:', pdProbe.length, probeReasons);
+
 const movingPairs = pairs.filter(p => p.snap?.lat_off > 3);
 console.log('\n=== FIX+SNAP pairs (lat_off>3m):', movingPairs.length);
 if(movingPairs.length){

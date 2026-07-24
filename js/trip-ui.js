@@ -9,7 +9,7 @@ import {
   touchTripRevision
 } from './trip-model.js';
 import {
-  loadAllTrips, loadTrip, saveTrip, deleteTrip, loadDemoTrip
+  loadAllTrips, loadTrip, saveTrip, deleteTrip, loadDemoTrip, loadAug2026Trip
 } from './trip-storage.js';
 import {
   applyTripSegment, setTripContext, clearTripContext,
@@ -61,12 +61,16 @@ function getTripBikeProfile(trip){
   return getActiveBikeProfile();
 }
 
-function attachBikeToTrip(trip){
-  const p = getActiveBikeProfile();
-  if(!trip || !p) return;
+function attachBikeToTrip(trip, preferProfileId){
+  if(!trip) return;
+  const prefer = preferProfileId || trip.meta?.bikeProfileId;
+  const p = (prefer && getBikeProfile(prefer)) || getActiveBikeProfile();
+  if(!p) return;
   trip.meta = trip.meta || {};
   trip.meta.bikeProfileId = p.id;
-  trip.meta.bikeProfileSnapshot = profileSnapshot(p);
+  trip.meta.bikeProfileSnapshot = trip.meta.bikeProfileSnapshot?.id === p.id
+    ? trip.meta.bikeProfileSnapshot
+    : profileSnapshot(p);
 }
 
 async function persistTrip(trip, opts){
@@ -538,6 +542,24 @@ async function loadDemo(){
   }
 }
 
+async function loadAugF7(){
+  setStatus('Загрузка Август F7…');
+  try{
+    setActiveBikeId('car_haval_f7');
+    renderBikePanel();
+    const trip = await loadAug2026Trip();
+    attachBikeToTrip(trip, 'car_haval_f7');
+    await persistTrip(trip, { bump: false });
+    S.activeTrip = trip;
+    renderActiveTrip();
+    await refreshTripList();
+    replaceTripLocalUrl(trip.id, true);
+    setStatus('✓ Кавказ август 2026 · Haval F7');
+  }catch(e){
+    setStatus('❌ ' + (e.message || e), true);
+  }
+}
+
 function showNewTripModal(on){
   $('tripNewModal')?.classList.toggle('on', !!on);
   if(on){
@@ -692,6 +714,7 @@ export function initTripPlannerUi(){
   }
 
   $('btn-trip-demo')?.addEventListener('click', loadDemo);
+  $('btn-trip-aug')?.addEventListener('click', loadAugF7);
   $('btn-trip-new')?.addEventListener('click', () => showNewTripModal(true));
   $('btn-trip-today')?.addEventListener('click', () => applyToday().catch(e => setStatus('❌ ' + (e.message || e), true)));
   $('btn-trip-fuel-all')?.addEventListener('click', () => onPlanAllFuel());
