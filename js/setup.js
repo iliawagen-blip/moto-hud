@@ -30,6 +30,7 @@ import {
 
 import { prefetchFuelForMap, searchNearestFuelStations, formatFuelDist, fuelStatusText, fuelStatusHint } from './fuel.js';
 import { getFuelProxyBase, setFuelProxyBase } from './fuel-config.js';
+import { rememberFinish } from './finish-history.js';
 import { openSettingsPanel } from './settings-ui.js';
 import { handleHudGearClick } from './hud-settings-sheet.js';
 import { refreshTtsBanner } from './tts-health.js';
@@ -279,6 +280,7 @@ export async function doAddressSearch(){
 
         box.style.display = 'none';
 
+        rememberFinish(S.finish);
         invalidateRoute();
 
       });
@@ -318,6 +320,7 @@ function applyFuelFinish(st){
   $('finish-input').dataset.userEdited = '1';
   $('s-finish').textContent = '✅ Финиш: ' + inputVal + ' · ' + formatFuelDist(st.distGps);
   $('s-finish').className = 'status ok';
+  rememberFinish(S.finish);
   invalidateRoute();
   checkStartReady();
 }
@@ -390,6 +393,7 @@ export function setFinishQuiet(lat, lon, label = 'Точка'){
   S.finish = { lat, lon, label };
   $('s-finish').textContent = '✅ Финиш: ' + lat.toFixed(5) + ', ' + lon.toFixed(5);
   $('s-finish').className = 'status ok';
+  if(label !== 'Демо') rememberFinish(S.finish);
   checkStartReady();
   updateBearingStartHint();
 }
@@ -424,6 +428,7 @@ export async function applyCoordsOrLink(opts = {}){
 
   if(hideSearch) $('search-results').style.display = 'none';
 
+  rememberFinish(p);
   invalidateRoute();
   updateBearingStartHint();
 

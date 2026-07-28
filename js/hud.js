@@ -31,6 +31,10 @@ import { ensureRouteGeometry } from './route.js';
 import { pickCurveVoiceWarn, resetCurveRibbonState } from './curve-speed.js';
 import { resetGhostCorridor } from './interchange-corridor.js';
 import { renderFavs } from './favorites.js';
+import { rememberFinish } from './finish-history.js';
+import {
+  saveActiveRide, clearActiveRide, startRidePersistPeriodic
+} from './ride-persist.js';
 import { acquireWakeLock, releaseWakeLock } from './wake-lock.js';
 import { clearVoiceQueue } from './voice.js';
 import { getHeadingHealth } from './heading.js';
@@ -627,6 +631,7 @@ export async function startHud(){
   }
   const hasRoute = !!(S.route?.coords?.length);
   saveLastRun();
+  rememberFinish(S.finish);
   if(telemetry.isEnabled()){
     telemetry.start({ routeKm: hasRoute && S.route?.distance ? r2(S.route.distance / 1000) : null });
     telemetry.updateMarkButtonVisibility();
@@ -677,11 +682,14 @@ export async function startHud(){
       : (d / 1000).toFixed(1) + ' километров';
     speak('Пеленг к цели. До финиша ' + distSpeech);
   }
+  startRidePersistPeriodic();
+  saveActiveRide('start');
   onTick();
   startVisualLoop();
 }
 
 export async function stopHud(){
+  clearActiveRide();
   if(window.__SIM__?.onNavigationStop) window.__SIM__.onNavigationStop();
   flushConvergeSummary();
   let telSessionId = null;

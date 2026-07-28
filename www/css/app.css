@@ -68,6 +68,7 @@ html,body{height:100%;overflow:hidden;overflow-x:hidden}
   }
   #setup>.headrow,#setup>.opts-migration-banner,#setup>.lbl-in,#setup>.row,
   #setup>.btnrow,#setup>.fuel-search-btn,#setup>.status,#setup>#search-results,
+  #setup>.recent-finishes-lbl,#setup>.recent-finishes,
   #setup>.favs-headrow,#setup>.favs-list,#setup>.map-provider-row,
   #setup>#btn-build-route,#setup>#yandex-banner,#setup>#route-section,
   #setup>#tts-banner,#setup>.setup-details,#setup>.go-bar,
@@ -260,6 +261,8 @@ body.setup-first-run #opts-migration-banner{display:none!important}
   white-space:nowrap;margin:0
 }
 .favs-more{padding:6px 4px;font-size:12px}
+.recent-finishes-lbl{margin-top:10px;margin-bottom:4px}
+.recent-finishes{margin-bottom:10px}
 .favs-manage-modal{background:transparent;padding:0;align-items:stretch;justify-content:stretch;z-index:45}
 .favs-manage-modal.on{display:flex}
 .favs-manage-modal .favs-manage-backdrop{
