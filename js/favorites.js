@@ -4,6 +4,7 @@ import { startGps, checkStartReady } from './gps.js';
 import { buildRoute, loadCameras } from './route.js';
 import { invalidateRoute } from './setup.js';
 import { onTick, selectQuickFinish } from './hud.js';
+import { rememberFinish } from './finish-history.js';
 
 const FAV_EMOJIS = ['🏠', '🏢', '⛽', '🍔', '🏍', '🏔', '🏖', '🛠', '🅿', '⭐', '❤', '📍'];
 const LEGACY_FAV_KEYS = ['moto-hud-favs', 'moto-hud-places', 'mh-favs'];
@@ -156,6 +157,7 @@ function applyFav(id){
   $('s-finish').className = 'status ok';
   $('finish-input').value = fav.lat + ', ' + fav.lon;
   $('search-results').style.display = 'none';
+  rememberFinish(S.finish);
   invalidateRoute();
   checkStartReady();
 }

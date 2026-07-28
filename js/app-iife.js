@@ -22323,6 +22323,108 @@ out body;`;
     }
   });
 
+  // js/finish-history.js
+  function normalize(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const lat = typeof raw.lat === "number" ? raw.lat : parseFloat(raw.lat);
+    const lon = typeof raw.lon === "number" ? raw.lon : parseFloat(raw.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    const labelRaw = raw.label || raw.name || raw.title;
+    const label = typeof labelRaw === "string" && labelRaw.trim() ? labelRaw.trim().slice(0, 80) : lat.toFixed(5) + ", " + lon.toFixed(5);
+    return {
+      lat,
+      lon,
+      label,
+      ts: typeof raw.ts === "number" ? raw.ts : Date.now()
+    };
+  }
+  function loadFinishHistory() {
+    try {
+      const raw = localStorage.getItem(FINISH_HIST_KEY);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      return arr.map(normalize).filter(Boolean).slice(0, FINISH_HIST_MAX);
+    } catch (e) {
+      return [];
+    }
+  }
+  function saveFinishHistory(list) {
+    try {
+      localStorage.setItem(FINISH_HIST_KEY, JSON.stringify(list.slice(0, FINISH_HIST_MAX)));
+    } catch (e) {
+    }
+  }
+  function rememberFinish(finish) {
+    const item = normalize(finish);
+    if (!item) return;
+    if (item.label === "\u0414\u0435\u043C\u043E") return;
+    const list = loadFinishHistory().filter((f2) => haversine(f2, item) > DEDUP_M);
+    list.unshift(item);
+    saveFinishHistory(list);
+    renderFinishHistory();
+  }
+  function applyFinishFromHistory(idx) {
+    const list = loadFinishHistory();
+    const f2 = list[idx];
+    if (!f2) return;
+    S.finish = { lat: f2.lat, lon: f2.lon, label: f2.label };
+    const inp = $2("finish-input");
+    if (inp) {
+      inp.value = f2.label && !/^-?\d+\.\d+/.test(f2.label) ? f2.lat.toFixed(5) + ", " + f2.lon.toFixed(5) + " " + f2.label : f2.lat.toFixed(5) + ", " + f2.lon.toFixed(5);
+      inp.dataset.userEdited = "1";
+    }
+    const st = $2("s-finish");
+    if (st) {
+      st.textContent = "\u2705 " + f2.label + " (" + f2.lat.toFixed(5) + ", " + f2.lon.toFixed(5) + ")";
+      st.className = "status ok";
+    }
+    $2("search-results") && ($2("search-results").style.display = "none");
+    rememberFinish(f2);
+    S.route = null;
+    S.routeAlternatives = [];
+    S.selectedRouteIdx = 0;
+    $2("route-export-row")?.classList.add("hidden");
+    checkStartReady();
+  }
+  function renderFinishHistory() {
+    const box = $2("recent-finishes");
+    const lbl = $2("recent-finishes-lbl");
+    if (!box) return;
+    const list = loadFinishHistory();
+    if (lbl) lbl.hidden = !list.length;
+    if (!list.length) {
+      box.innerHTML = "";
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    box.innerHTML = list.map(
+      (f2, i2) => '<div class="fav-item"><button type="button" class="fav-apply recent-finish-btn" data-idx="' + i2 + '"><span class="fav-name"><span class="fav-emoji">\u{1F3C1}</span>' + escapeHtml(f2.label) + "</span></button></div>"
+    ).join("");
+    box.querySelectorAll(".recent-finish-btn").forEach((b) => {
+      b.addEventListener("click", () => {
+        const idx = parseInt(b.getAttribute("data-idx"), 10);
+        applyFinishFromHistory(idx);
+      });
+    });
+  }
+  function initFinishHistory() {
+    renderFinishHistory();
+  }
+  var FINISH_HIST_KEY, FINISH_HIST_MAX, DEDUP_M;
+  var init_finish_history = __esm({
+    "js/finish-history.js"() {
+      init_state();
+      init_util();
+      init_geo();
+      init_gps();
+      FINISH_HIST_KEY = "moto-hud-finish-history-v1";
+      FINISH_HIST_MAX = 10;
+      DEDUP_M = 80;
+    }
+  });
+
   // js/favorites.js
   function normalizeFav(raw, idx) {
     if (!raw || typeof raw !== "object") return null;
@@ -22449,6 +22551,7 @@ out body;`;
     $2("s-finish").className = "status ok";
     $2("finish-input").value = fav.lat + ", " + fav.lon;
     $2("search-results").style.display = "none";
+    rememberFinish(S.finish);
     invalidateRoute();
     checkStartReady();
   }
@@ -22608,10 +22711,113 @@ out body;`;
       init_route();
       init_setup();
       init_hud();
+      init_finish_history();
       FAV_EMOJIS = ["\u{1F3E0}", "\u{1F3E2}", "\u26FD", "\u{1F354}", "\u{1F3CD}", "\u{1F3D4}", "\u{1F3D6}", "\u{1F6E0}", "\u{1F17F}", "\u2B50", "\u2764", "\u{1F4CD}"];
       LEGACY_FAV_KEYS = ["moto-hud-favs", "moto-hud-places", "mh-favs"];
       FAV_QUICK_MAX = 5;
       favModalState = { point: null, emoji: "\u2B50" };
+    }
+  });
+
+  // js/ride-persist.js
+  function hudOn2() {
+    return !!$2("hud")?.classList.contains("on");
+  }
+  function stripRoute(route) {
+    if (!route?.coords?.length) return null;
+    return {
+      coords: route.coords,
+      steps: route.steps || [],
+      distance: route.distance,
+      duration: route.duration,
+      waypoints: route.waypoints || null,
+      name: route.name || null
+    };
+  }
+  function clearActiveRide() {
+    try {
+      localStorage.removeItem(ACTIVE_RIDE_KEY);
+    } catch (e) {
+    }
+    stopRidePersistPeriodic();
+  }
+  function loadActiveRide() {
+    try {
+      const raw = localStorage.getItem(ACTIVE_RIDE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || data.v !== 1 || !data.finish) return null;
+      if (Date.now() - (data.ts || 0) > ACTIVE_RIDE_TTL_MS) {
+        clearActiveRide();
+        return null;
+      }
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+  function saveActiveRide(reason) {
+    if (!hudOn2() || !S.finish) return false;
+    try {
+      const snap = getNavSnap(S.smoothedHeading);
+      const payload = {
+        v: 1,
+        ts: Date.now(),
+        reason: reason || "save",
+        finish: {
+          lat: S.finish.lat,
+          lon: S.finish.lon,
+          label: S.finish.label || "\u0424\u0438\u043D\u0438\u0448"
+        },
+        route: stripRoute(S.route),
+        cameras: Array.isArray(S.cameras) ? S.cameras.slice(0, 200) : [],
+        snapS: snap?.s ?? null,
+        navMode: S.navMode || (S.route?.coords?.length ? "route" : "bearing"),
+        startTs: S.startTs || Date.now(),
+        distDone: S.distDone || 0,
+        showCompass: !!S.showCompass
+      };
+      localStorage.setItem(ACTIVE_RIDE_KEY, JSON.stringify(payload));
+      saveLastRun();
+      return true;
+    } catch (e) {
+      console.warn("saveActiveRide:", e);
+      return false;
+    }
+  }
+  function startRidePersistPeriodic() {
+    stopRidePersistPeriodic();
+    if (typeof setInterval === "undefined") return;
+    _periodicTimer = setInterval(() => {
+      if (hudOn2()) saveActiveRide("periodic");
+    }, 2e4);
+  }
+  function stopRidePersistPeriodic() {
+    if (_periodicTimer) {
+      clearInterval(_periodicTimer);
+      _periodicTimer = null;
+    }
+  }
+  function shouldSkipRideRestore() {
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get("sim") === "1") return true;
+      if (q.get("no_resume") === "1") return true;
+    } catch (e) {
+    }
+    if (globalThis.__REGRESSION_SIM__?.active) return true;
+    return false;
+  }
+  var ACTIVE_RIDE_KEY, ACTIVE_RIDE_TTL_MS, _periodicTimer;
+  var init_ride_persist = __esm({
+    "js/ride-persist.js"() {
+      init_state();
+      init_util();
+      init_route_geometry();
+      init_route();
+      ACTIVE_RIDE_KEY = "moto-hud-active-ride-v1";
+      ACTIVE_RIDE_TTL_MS = 6 * 3600 * 1e3;
+      _periodicTimer = null;
     }
   });
 
@@ -26659,11 +26865,11 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     }
     tickSpeedLimit(getNavSnap(S.smoothedHeading));
     const gpsOk = hasEverConverged() || S.gpsConverged !== false;
-    const hudOn2 = $2("hud").classList.contains("on");
-    const snap = hudOn2 ? getNavSnap(S.smoothedHeading) : gpsOk ? getNavSnap(S.smoothedHeading) : null;
+    const hudOn3 = $2("hud").classList.contains("on");
+    const snap = hudOn3 ? getNavSnap(S.smoothedHeading) : gpsOk ? getNavSnap(S.smoothedHeading) : null;
     const spdMps = S.gps.speed != null && S.gps.speed >= 0 ? S.gps.speed : 0;
     const snapLost = isSnapLost();
-    if (hudOn2) {
+    if (hudOn3) {
       tickOffRouteMachine({
         lateral: lateralForOffRoute(snap),
         // null ≠ 0: раньше `acc || 0` обходил GPS junk gate (field 18-41)
@@ -26675,7 +26881,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
         gpsTeleport: S.gps?.spdSrc === "teleport"
       });
     }
-    if (hudOn2 && !gpsOk) {
+    if (hudOn3 && !gpsOk) {
       setHudStreetLabels("GPS \u0421\u0425\u041E\u0414\u0418\u0422\u0421\u042F", "\u2014");
       $2("v-mdist").textContent = "\u2014";
       $2("arrow-box").innerHTML = buildTurnArrowSVG(0);
@@ -26694,7 +26900,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       }
       updateFinishInfo(getRemainingDistance(), kmh, now);
       $2("mid-info").textContent = S.startTs ? "T+" + fmtTime((Date.now() - S.startTs) / 1e3) : "\u2014";
-      if (hudOn2) return;
+      if (hudOn3) return;
     }
     const remaining = getRemainingDistance();
     const near = findNearestOnRoute();
@@ -26898,6 +27104,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     }
     const hasRoute = !!S.route?.coords?.length;
     saveLastRun();
+    rememberFinish(S.finish);
     if (telemetry_default.isEnabled()) {
       telemetry_default.start({ routeKm: hasRoute && S.route?.distance ? r23(S.route.distance / 1e3) : null });
       telemetry_default.updateMarkButtonVisibility();
@@ -26950,10 +27157,13 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       const distSpeech = d < 1e3 ? Math.max(0, Math.round(d / 10) * 10) + " \u043C\u0435\u0442\u0440\u043E\u0432" : (d / 1e3).toFixed(1) + " \u043A\u0438\u043B\u043E\u043C\u0435\u0442\u0440\u043E\u0432";
       speak("\u041F\u0435\u043B\u0435\u043D\u0433 \u043A \u0446\u0435\u043B\u0438. \u0414\u043E \u0444\u0438\u043D\u0438\u0448\u0430 " + distSpeech);
     }
+    startRidePersistPeriodic();
+    saveActiveRide("start");
     onTick();
     startVisualLoop();
   }
   async function stopHud() {
+    clearActiveRide();
     if (window.__SIM__?.onNavigationStop) window.__SIM__.onNavigationStop();
     flushConvergeSummary();
     let telSessionId = null;
@@ -27212,6 +27422,8 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       init_curve_speed();
       init_interchange_corridor();
       init_favorites();
+      init_finish_history();
+      init_ride_persist();
       init_wake_lock();
       init_voice();
       init_heading();
@@ -27747,6 +27959,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
           $2("s-finish").className = "status ok";
           $2("finish-input").value = r.display_name;
           box.style.display = "none";
+          rememberFinish(S.finish);
           invalidateRoute();
         });
         box.appendChild(d);
@@ -27773,6 +27986,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     $2("finish-input").dataset.userEdited = "1";
     $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + inputVal + " \xB7 " + formatFuelDist(st.distGps);
     $2("s-finish").className = "status ok";
+    rememberFinish(S.finish);
     invalidateRoute();
     checkStartReady();
   }
@@ -27840,6 +28054,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     S.finish = { lat, lon, label };
     $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + lat.toFixed(5) + ", " + lon.toFixed(5);
     $2("s-finish").className = "status ok";
+    if (label !== "\u0414\u0435\u043C\u043E") rememberFinish(S.finish);
     checkStartReady();
     updateBearingStartHint();
   }
@@ -27857,6 +28072,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     $2("s-finish").textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448: " + p.lat.toFixed(5) + ", " + p.lon.toFixed(5);
     $2("s-finish").className = "status ok";
     if (hideSearch) $2("search-results").style.display = "none";
+    rememberFinish(p);
     invalidateRoute();
     updateBearingStartHint();
   }
@@ -28258,6 +28474,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       init_route_map();
       init_fuel();
       init_fuel_config();
+      init_finish_history();
       init_settings_ui();
       init_hud_settings_sheet();
       init_tts_health();
@@ -28660,6 +28877,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
   init_render();
   init_setup();
   init_favorites();
+  init_finish_history();
   init_cam_status();
   init_elevation();
   init_curve_speed();
@@ -29006,6 +29224,13 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
   init_hud();
   init_wake_lock();
   init_platform();
+  init_hud_chrome();
+  init_bearing_mode();
+  init_hud_settings_sheet();
+  init_vintage_vfd();
+  init_cam_status();
+  init_ride_persist();
+  init_finish_history();
   init_telemetry();
   var _resumeBusy = false;
   var _lastResumeMs = 0;
@@ -29014,26 +29239,28 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
     return !!$2("hud")?.classList.contains("on");
   }
   async function resumeHudAfterBackground(reason) {
-    if (!hudActive() || !S.route || _resumeBusy) return false;
+    if (!hudActive() || !S.route && !S.finish || _resumeBusy) return false;
     const now = Date.now();
     if (now - _lastResumeMs < RESUME_DEBOUNCE_MS) return false;
     _resumeBusy = true;
     _lastResumeMs = now;
     try {
       telemetry_default.log("nav", { sub: "hud_resume", reason: reason || "visibility" });
-      if (!S.route.geometry?.n) {
-        ensureRouteGeometry(S.route);
-      }
-      const snap = getNavSnap(S.smoothedHeading);
-      if (!snap || snap.s == null) {
-        resetRouteSnap();
-        resetSnapQuality();
-        seedSnapFromGps({ relaxed: true });
-      }
-      clearCachedManeuver();
-      const hwOk = (S.route.highwayTypes?.filter(Boolean).length || 0) / Math.max(1, (S.route.coords?.length || 1) - 1);
-      if (hwOk < 0.4) {
-        loadRouteHighwayTypes(S.route).catch((e) => console.warn("resume highway:", e));
+      if (S.route?.coords?.length) {
+        if (!S.route.geometry?.n) {
+          ensureRouteGeometry(S.route);
+        }
+        const snap = getNavSnap(S.smoothedHeading);
+        if (!snap || snap.s == null) {
+          resetRouteSnap();
+          resetSnapQuality();
+          seedSnapFromGps({ relaxed: true });
+        }
+        clearCachedManeuver();
+        const hwOk = (S.route.highwayTypes?.filter(Boolean).length || 0) / Math.max(1, (S.route.coords?.length || 1) - 1);
+        if (hwOk < 0.4) {
+          loadRouteHighwayTypes(S.route).catch((e) => console.warn("resume highway:", e));
+        }
       }
       startVisualLoop();
       if (isNative() && !isNavGpsMode()) {
@@ -29044,6 +29271,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
         }
       }
       await acquireWakeLock();
+      saveActiveRide(reason || "visibility");
       onTick();
       return true;
     } catch (e) {
@@ -29054,27 +29282,137 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
       _resumeBusy = false;
     }
   }
+  async function tryRestoreActiveRide() {
+    if (shouldSkipRideRestore() || hudActive() || _resumeBusy) return false;
+    const data = loadActiveRide();
+    if (!data?.finish) return false;
+    _resumeBusy = true;
+    try {
+      telemetry_default.log("nav", {
+        sub: "hud_cold_resume",
+        age_s: Math.round((Date.now() - data.ts) / 1e3)
+      });
+      S.finish = {
+        lat: data.finish.lat,
+        lon: data.finish.lon,
+        label: data.finish.label || "\u0424\u0438\u043D\u0438\u0448"
+      };
+      rememberFinish(S.finish);
+      const inp = $2("finish-input");
+      if (inp) {
+        inp.value = S.finish.lat.toFixed(5) + ", " + S.finish.lon.toFixed(5);
+        inp.dataset.userEdited = "1";
+      }
+      const st = $2("s-finish");
+      if (st) {
+        st.textContent = "\u2705 \u0424\u0438\u043D\u0438\u0448 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D: " + S.finish.lat.toFixed(5) + ", " + S.finish.lon.toFixed(5);
+        st.className = "status ok";
+      }
+      const hasRoute = !!data.route?.coords?.length;
+      if (hasRoute) {
+        S.route = data.route;
+        delete S.route.geometry;
+        ensureRouteGeometry(S.route);
+        if (Array.isArray(data.cameras) && data.cameras.length) S.cameras = data.cameras;
+      } else {
+        S.route = null;
+      }
+      S.startTs = data.startTs || Date.now();
+      S.distDone = data.distDone || 0;
+      S.measSpeed = null;
+      if (!S.camWarned) S.camWarned = /* @__PURE__ */ new Set();
+      S.camWarned.clear();
+      if (data.showCompass != null) S.showCompass = !!data.showCompass;
+      S.navMode = data.navMode || (hasRoute ? "route" : "bearing");
+      clearHudChromeReveal();
+      applyHudChrome();
+      resetSnapQuality();
+      clearCachedManeuver();
+      resetBearingMode();
+      if (hasRoute) {
+        if (data.snapS != null && Number.isFinite(data.snapS)) {
+          resetRouteSnap({ seedS: data.snapS, lateral: 0 });
+        } else {
+          resetRouteSnap();
+          seedSnapFromGps({ relaxed: true });
+        }
+        loadRouteHighwayTypes(S.route).catch(() => {
+        });
+        if (!globalThis.__REGRESSION_SIM__?.active) loadCameras().catch(() => {
+        });
+      }
+      $2("setup").style.display = "none";
+      $2("setup").style.zIndex = "30";
+      $2("hud").classList.add("on");
+      $2("hud").classList.toggle("show-compass", !!S.showCompass);
+      closeHudSettingsSheet();
+      resetVintageVfd();
+      syncVintageVfdDomClasses();
+      updateCamStatusUI();
+      if (hasRoute) syncNavButtons();
+      else enterBearingMode({ quiet: true });
+      startVisualLoop();
+      try {
+        await startNavigationGps();
+      } catch (e) {
+        console.warn("cold resume GPS:", e);
+      }
+      await acquireWakeLock();
+      requestAppFullscreen();
+      startRidePersistPeriodic();
+      saveActiveRide("restored");
+      onTick();
+      return true;
+    } catch (e) {
+      console.warn("tryRestoreActiveRide:", e);
+      telemetry_default.log("sys", {
+        sub: "hud_cold_resume_fail",
+        message: String(e?.message || e).slice(0, 120)
+      });
+      return false;
+    } finally {
+      _resumeBusy = false;
+    }
+  }
   function initHudResume() {
     if (typeof document === "undefined") return;
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        resumeHudAfterBackground("visibility");
+      if (document.visibilityState === "hidden") {
+        if (hudActive()) saveActiveRide("hidden");
+        return;
       }
+      if (document.visibilityState === "visible") {
+        if (hudActive()) resumeHudAfterBackground("visibility");
+        else tryRestoreActiveRide();
+      }
+    });
+    window.addEventListener("pagehide", () => {
+      if (hudActive()) saveActiveRide("pagehide");
     });
     if (isNative()) {
       Promise.resolve().then(() => (init_esm5(), esm_exports3)).then(({ App: App2 }) => {
         App2.addListener("appStateChange", ({ isActive: isActive2 }) => {
-          if (isActive2) resumeHudAfterBackground("app_active");
+          if (isActive2) {
+            if (hudActive()) resumeHudAfterBackground("app_active");
+            else tryRestoreActiveRide();
+          } else if (hudActive()) {
+            saveActiveRide("app_inactive");
+          }
         }).catch(() => {
         });
         App2.addListener("resume", () => {
-          resumeHudAfterBackground("app_resume");
+          if (hudActive()) resumeHudAfterBackground("app_resume");
+          else tryRestoreActiveRide();
         }).catch(() => {
         });
       }).catch(() => {
       });
     }
     initWakeLockResume();
+    setTimeout(() => {
+      tryRestoreActiveRide().catch(() => {
+      });
+    }, 900);
   }
 
   // js/main.js
@@ -29502,6 +29840,7 @@ ${cal.prev} \u2192 ${cal.suggested} \u043B/100
   updateCamStatusUI();
   bindSetupUI();
   initFavorites();
+  initFinishHistory();
   initNativeHints();
   initTtsHealth();
   window.__motoHUD = {

@@ -4,6 +4,7 @@ import { onTick, startHud, initFuelReportUi } from './hud.js';
 import { renderVisualFrame } from './render.js';
 import { bindSetupUI, syncOptionsFromDom, applyCoordsOrLink, setFinishQuiet, initNativeHints, doBuildRoute, doAddressSearch } from './setup.js';
 import { initFavorites } from './favorites.js';
+import { initFinishHistory } from './finish-history.js';
 import { updateCamStatusUI } from './cam-status.js';
 import { loadElevOptsFromStorage, saveElevOptsToStorage } from './elevation.js';
 import { loadCurveOptsFromStorage, saveCurveOptsToStorage } from './curve-speed.js';
@@ -106,6 +107,7 @@ syncOptionsFromDom();
 updateCamStatusUI();
 bindSetupUI();
 initFavorites();
+initFinishHistory();
 initNativeHints();
 initTtsHealth();
 
