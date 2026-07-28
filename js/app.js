@@ -3779,17 +3779,23 @@ var init_crossings = __esm({
 });
 
 // js/fuel-config.js
+function normalizeProxyBase(url) {
+  return String(url || "").trim().replace(/\/$/, "");
+}
+function isGoogleAppsScriptProxy(url) {
+  return /script\.google\.com\/macros\/s\//i.test(String(url || ""));
+}
 function getFuelProxyBase() {
   try {
     const q = new URLSearchParams(location.search).get("fuel_proxy");
     if (q === "0" || q === "off") return "";
-    if (q && /^https?:\/\//i.test(q)) return q.replace(/\/$/, "");
+    if (q && /^https?:\/\//i.test(q)) return normalizeProxyBase(q);
   } catch (e) {
   }
   try {
     const stored = localStorage.getItem(FUEL_PROXY_LS_KEY);
     if (stored === "0" || stored === "") return "";
-    if (stored && /^https?:\/\//i.test(stored)) return stored.replace(/\/$/, "");
+    if (stored && /^https?:\/\//i.test(stored)) return normalizeProxyBase(stored);
   } catch (e) {
   }
   if (typeof location !== "undefined" && location.protocol.startsWith("http")) {
@@ -3798,13 +3804,18 @@ function getFuelProxyBase() {
   return "";
 }
 function setFuelProxyBase(url) {
-  const v = (url || "").trim().replace(/\/$/, "");
+  const v = normalizeProxyBase(url);
   if (!v) localStorage.removeItem(FUEL_PROXY_LS_KEY);
   else localStorage.setItem(FUEL_PROXY_LS_KEY, v);
 }
 function fuelProxyNearbyUrl(base, lat, lon, radiusKm) {
-  const root = (base || "").replace(/\/$/, "");
-  const path = root.endsWith("/nearby") ? root : root + "/nearby";
+  const root = normalizeProxyBase(base);
+  let path;
+  if (isGoogleAppsScriptProxy(root)) {
+    path = root.split(/[?#]/)[0].replace(/\/$/, "");
+  } else {
+    path = root.endsWith("/nearby") ? root : root + "/nearby";
+  }
   const u2 = new URL(path, root.startsWith("http") ? void 0 : location.origin);
   u2.searchParams.set("lat", String(lat));
   u2.searchParams.set("lon", String(lon));
@@ -28784,7 +28795,7 @@ var HELP_TEXTS = {
   "opt-back-only": "\u041F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0430\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u043E \u043A\u0430\u043C\u0435\u0440\u0430\u0445 \xAB\u0432 \u0441\u043F\u0438\u043D\u0443\xBB \u2014 \u0432\u0441\u0442\u0440\u0435\u0447\u043D\u044B\u0439 \u043F\u043E\u0442\u043E\u043A.",
   "opt-cam-speed-tol": "\u0414\u043E\u043F\u0443\u0441\u043A \u043F\u0440\u0435\u0432\u044B\u0448\u0435\u043D\u0438\u044F \u043B\u0438\u043C\u0438\u0442\u0430 (\u043A\u043C/\u0447) \u043F\u0435\u0440\u0435\u0434 \u0441\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u043D\u0438\u0435\u043C \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u044F.",
   "opt-tol": "\u0414\u043E\u043F\u0443\u0441\u043A \u0443\u0433\u043B\u0430 \u043D\u0430\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044F \u043A\u0430\u043C\u0435\u0440\u044B \u043E\u0442\u043D\u043E\u0441\u0438\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u0430\u0448\u0435\u0433\u043E \u043A\u0443\u0440\u0441\u0430 (\u0433\u0440\u0430\u0434\u0443\u0441\u044B).",
-  "opt-fuel-proxy": "\u041F\u0440\u043E\u043A\u0441\u0438 Cloudflare Workers \u0434\u043B\u044F \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u0442\u043E\u043F\u043B\u0438\u0432\u0430 \u0441 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430.",
+  "opt-fuel-proxy": "\u041F\u0440\u043E\u043A\u0441\u0438 \u0442\u043E\u043F\u043B\u0438\u0432\u0430: Cloudflare Worker (\u043E\u0441\u043D\u043E\u0432\u043D\u043E\u0439) \u0438\u043B\u0438 Google Apps Script \u2026/exec (\u0437\u0430\u043F\u0430\u0441\u043D\u043E\u0439).",
   "opt-hud-status-mode": "\u0421\u0442\u0440\u043E\u043A\u0430 GPS/CAM/T+ \u043D\u0430 HUD: \u0432\u0441\u0435\u0433\u0434\u0430, \u043F\u043E \u0442\u0430\u043F\u0443 15 \u0441 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u0430.",
   "opt-hud-finish-mode": "\u0414\u043E \u0444\u0438\u043D\u0438\u0448\u0430: \u043A\u043C / \u043C\u0438\u043D / ETA \u2014 \u0432\u0441\u0435\u0433\u0434\u0430, \u043F\u043E \u0442\u0430\u043F\u0443 \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u043E. \u0422\u043E\u043B\u044C\u043A\u043E \u0446\u0438\u0444\u0440\u044B, \u0431\u0435\u0437 \u043F\u043E\u0434\u043F\u0438\u0441\u0435\u0439."
 };

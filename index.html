@@ -261,7 +261,7 @@
           <div class="toggle opt-row">⛽ Заправок в списке <input type="number" id="opt-fuel-count" value="5" min="1" max="10" step="1"></div>
           <div class="toggle opt-row opt-row--wrap">
             <span>⛽ URL прокси топлива</span>
-            <input type="url" id="opt-fuel-proxy" class="opt-input-url" placeholder="https://….workers.dev">
+            <input type="url" id="opt-fuel-proxy" class="opt-input-url" placeholder="https://….workers.dev или …/exec">
           </div>
           <p class="opt-hint"><a href="#help-fuel-proxy">Как настроить прокси</a></p>
         </div>
@@ -469,7 +469,8 @@
       <span class="help-section" id="help-fuel-proxy">
         <b>Топливо и прокси</b>
         Статус АЗС (есть / очередь / мало / нет) — крауд-отчёты и прокси.
-        В «Мотоциклы и топливо»: URL Cloudflare Worker. Пусто — <code>/api/fuel</code> на домене, затем публичные CORS-прокси.
+        В «Мотоциклы и топливо»: URL Cloudflare Worker (основной) или Google Apps Script <code>…/exec</code> (запасной, без <code>?org=</code>).
+        Пусто — <code>/api/fuel</code> на домене, затем публичные CORS-прокси.
         На остановке у АЗС можно отметить статус в панели ⛽.
       </span>
       <span class="help-section">
@@ -935,8 +936,8 @@
   ⚠ Не удалось загрузить JS. Для полной работы запустите <strong>preview.bat</strong> или <code>npm run dev</code> — откроется <code>http://localhost:3456</code>.
 </div>
 
-<script>window.__BUILD_ID__='mryyp9ou';</script>
-<script src="js/sim.js?v=mryyp9ou"></script>
+<script>window.__BUILD_ID__='ms4md6f4';</script>
+<script src="js/sim.js?v=ms4md6f4"></script>
 <script>
 (function(){
   var v = window.__BUILD_ID__ || '';
