@@ -18,8 +18,12 @@
 - **API:** `GET https://gdebenz.ru/api/nearby?lat=&lon=&radius_km=`
 - **CORS:** нет для браузера; в APK — `CapacitorHttp`
 - **Сопоставление:** `osm_id`, иначе ближайшая точка &lt; 100 м
-- **Прокси:** `workers/gdebenz-proxy` — деплой `npx wrangler deploy`, URL в ⚙ **URL прокси ГдеБЕНЗ**
-- **Ограничения:** периодические 503 с серверов CI; кэш 5 мин в `sessionStorage`
+- **Прокси (основной):** `workers/gdebenz-proxy` — деплой `npx wrangler deploy`, URL в ⚙ **URL прокси ГдеБЕНЗ**
+- **Прокси (запасной):** Google Apps Script `Documents/jul26/fuel-proxy.gs` — dual-mode:
+  - `?lat=&lon=&radius_km=` → чистый JSON `{ stations }` (контракт HUD; поле прокси = `…/exec` без `?org=`)
+  - `?org=&slug=&callback=` → JSONP карточки Яндекса для route-aug2026 (`org` ≠ ключ nearby)
+  - клиент: `fuelProxyNearbyUrl` для `script.google.com` не дописывает `/nearby`
+- **Ограничения:** периодические 503 с серверов CI; кэш 5 мин в `sessionStorage`; GAS медленнее Worker (квоты UrlFetch)
 
 ## ГдеЗаправка (gdeto-zapravka.ru)
 
