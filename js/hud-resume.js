@@ -75,6 +75,12 @@ export async function resumeHudAfterBackground(reason){
 
     await acquireWakeLock();
     saveActiveRide(reason || 'visibility');
+    if(telemetry.isEnabled() && !telemetry.isActive()){
+      try{
+        await telemetry.ensureStarted({ reason: 'hud_resume', routeKm: S.route?.distance
+          ? Math.round(S.route.distance / 100) / 10 : null });
+      }catch(e){ console.warn('telemetry resume start:', e); }
+    }
     onTick();
     return true;
   }catch(e){
@@ -172,6 +178,15 @@ export async function tryRestoreActiveRide(){
     requestAppFullscreen();
     startRidePersistPeriodic();
     saveActiveRide('restored');
+    if(telemetry.isEnabled()){
+      try{
+        await telemetry.ensureStarted({
+          reason: 'hud_cold_resume',
+          routeKm: hasRoute && S.route?.distance
+            ? Math.round(S.route.distance / 100) / 10 : null
+        });
+      }catch(e){ console.warn('telemetry cold start:', e); }
+    }
     onTick();
     return true;
   }catch(e){

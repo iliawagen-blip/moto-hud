@@ -142,10 +142,19 @@ async function markDirtyIncomplete(){
   try{
     const all = await listSessionsRaw();
     for(const s of all){
-      if(!s.endedAt && !s.dirty){
-        s.dirty = true;
-        await putSession(s);
+      if(s.endedAt) continue;
+      s.dirty = true;
+      // Оценка конца по последнему событию — иначе сессия «вечная» в экспорте
+      try{
+        const events = await getSessionEvents(s.id);
+        const lastT = events.length ? (events[events.length - 1].t || 0) : 0;
+        s.endedAt = (s.startedAt || Date.now()) + Math.max(0, lastT);
+        s.endReason = s.endReason || 'orphan_recovery';
+      }catch(e){
+        s.endedAt = Date.now();
+        s.endReason = s.endReason || 'orphan_recovery';
       }
+      await putSession(s);
     }
   }catch(e){ console.warn('telemetry dirty scan:', e); }
 }
@@ -338,6 +347,8 @@ async function stop(){
     const sess = await getSession(id);
     if(sess){
       sess.endedAt = ended;
+      sess.dirty = false;
+      sess.endReason = 'stop';
       await putSession(sess);
     }
   }
@@ -350,6 +361,45 @@ async function stop(){
   stopTimers();
   updateMarkButtonVisibility();
   return id;
+}
+
+/**
+ * Аварийное закрытие при pagehide / убийстве вкладки (звонок).
+ * Пишет endedAt + dirty, чтобы экспорт не выглядел «бесконечным».
+ */
+async function interrupt(reason){
+  if(!_active) return null;
+  const why = reason || 'pagehide';
+  flushPerfAggregate();
+  log('meta', { sub: 'interrupt', reason: why });
+  await flushBuffer(true);
+  const id = _sessionId;
+  const ended = Date.now();
+  if(id){
+    const sess = await getSession(id);
+    if(sess){
+      sess.endedAt = ended;
+      sess.dirty = true;
+      sess.endReason = why;
+      await putSession(sess);
+    }
+  }
+  _active = false;
+  _sessionId = null;
+  _sessionStart = 0;
+  _lastSnapS0 = null;
+  _lastTrackTs = 0;
+  document.documentElement.classList.remove('telemetry-on');
+  stopTimers();
+  updateMarkButtonVisibility();
+  return id;
+}
+
+/** После interrupt / cold resume — новая сессия, если телеметрия включена и HUD on. */
+async function ensureStarted(meta){
+  if(_active) return _sessionId;
+  if(!isEnabledPref()) return null;
+  return start(meta || { sub: 'ensure_started' });
 }
 
 function mark(noteOrObj){
@@ -446,6 +496,7 @@ async function buildSessionExport(sessionId){
     startedAt: sess.startedAt,
     endedAt: sess.endedAt,
     dirty: !!sess.dirty,
+    endReason: sess.endReason || null,
     userAgent: sess.userAgent,
     appVersion: sess.appVersion,
     buildId: getBuildId(),
@@ -543,8 +594,10 @@ function onVisibility(){
 
 function bindGlobalHandlers(){
   window.addEventListener('visibilitychange', onVisibility);
-  window.addEventListener('pagehide', () => {
-    if(_active) flushBuffer(true).catch(() => {});
+  window.addEventListener('pagehide', (e) => {
+    if(!_active) return;
+    // Не ждём: IDB часто успевает на Samsung/Chrome до kill
+    interrupt(e.persisted ? 'pagehide_persisted' : 'pagehide').catch(() => {});
   });
   window.addEventListener('error', e => {
     log('sys', {
@@ -579,6 +632,8 @@ export async function initTelemetry(){
 export const telemetry = {
   start,
   stop,
+  interrupt,
+  ensureStarted,
   log,
   mark,
   export: exportSession,

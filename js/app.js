@@ -1803,10 +1803,18 @@ async function markDirtyIncomplete() {
   try {
     const all = await listSessionsRaw();
     for (const s2 of all) {
-      if (!s2.endedAt && !s2.dirty) {
-        s2.dirty = true;
-        await putSession(s2);
+      if (s2.endedAt) continue;
+      s2.dirty = true;
+      try {
+        const events = await getSessionEvents(s2.id);
+        const lastT = events.length ? events[events.length - 1].t || 0 : 0;
+        s2.endedAt = (s2.startedAt || Date.now()) + Math.max(0, lastT);
+        s2.endReason = s2.endReason || "orphan_recovery";
+      } catch (e) {
+        s2.endedAt = Date.now();
+        s2.endReason = s2.endReason || "orphan_recovery";
       }
+      await putSession(s2);
     }
   } catch (e) {
     console.warn("telemetry dirty scan:", e);
@@ -1996,6 +2004,8 @@ async function stop() {
     const sess = await getSession(id);
     if (sess) {
       sess.endedAt = ended;
+      sess.dirty = false;
+      sess.endReason = "stop";
       await putSession(sess);
     }
   }
@@ -2008,6 +2018,38 @@ async function stop() {
   stopTimers();
   updateMarkButtonVisibility();
   return id;
+}
+async function interrupt(reason) {
+  if (!_active) return null;
+  const why = reason || "pagehide";
+  flushPerfAggregate();
+  log("meta", { sub: "interrupt", reason: why });
+  await flushBuffer(true);
+  const id = _sessionId;
+  const ended = Date.now();
+  if (id) {
+    const sess = await getSession(id);
+    if (sess) {
+      sess.endedAt = ended;
+      sess.dirty = true;
+      sess.endReason = why;
+      await putSession(sess);
+    }
+  }
+  _active = false;
+  _sessionId = null;
+  _sessionStart = 0;
+  _lastSnapS0 = null;
+  _lastTrackTs = 0;
+  document.documentElement.classList.remove("telemetry-on");
+  stopTimers();
+  updateMarkButtonVisibility();
+  return id;
+}
+async function ensureStarted(meta) {
+  if (_active) return _sessionId;
+  if (!isEnabledPref()) return null;
+  return start(meta || { sub: "ensure_started" });
 }
 function mark(noteOrObj) {
   if (!_active) return;
@@ -2099,6 +2141,7 @@ async function buildSessionExport(sessionId) {
     startedAt: sess.startedAt,
     endedAt: sess.endedAt,
     dirty: !!sess.dirty,
+    endReason: sess.endReason || null,
     userAgent: sess.userAgent,
     appVersion: sess.appVersion,
     buildId: getBuildId(),
@@ -2188,8 +2231,9 @@ function onVisibility() {
 }
 function bindGlobalHandlers() {
   window.addEventListener("visibilitychange", onVisibility);
-  window.addEventListener("pagehide", () => {
-    if (_active) flushBuffer(true).catch(() => {
+  window.addEventListener("pagehide", (e) => {
+    if (!_active) return;
+    interrupt(e.persisted ? "pagehide_persisted" : "pagehide").catch(() => {
     });
   });
   window.addEventListener("error", (e) => {
@@ -2249,6 +2293,8 @@ var init_telemetry = __esm({
     telemetry = {
       start,
       stop,
+      interrupt,
+      ensureStarted,
       log,
       mark,
       export: exportSession,
@@ -29271,6 +29317,13 @@ async function resumeHudAfterBackground(reason) {
     }
     await acquireWakeLock();
     saveActiveRide(reason || "visibility");
+    if (telemetry_default.isEnabled() && !telemetry_default.isActive()) {
+      try {
+        await telemetry_default.ensureStarted({ reason: "hud_resume", routeKm: S.route?.distance ? Math.round(S.route.distance / 100) / 10 : null });
+      } catch (e) {
+        console.warn("telemetry resume start:", e);
+      }
+    }
     onTick();
     return true;
   } catch (e) {
@@ -29360,6 +29413,16 @@ async function tryRestoreActiveRide() {
     requestAppFullscreen();
     startRidePersistPeriodic();
     saveActiveRide("restored");
+    if (telemetry_default.isEnabled()) {
+      try {
+        await telemetry_default.ensureStarted({
+          reason: "hud_cold_resume",
+          routeKm: hasRoute && S.route?.distance ? Math.round(S.route.distance / 100) / 10 : null
+        });
+      } catch (e) {
+        console.warn("telemetry cold start:", e);
+      }
+    }
     onTick();
     return true;
   } catch (e) {
