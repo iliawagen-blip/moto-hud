@@ -42,6 +42,78 @@ import { syncTripRefuelHud } from './trip-refuel-hud.js';
 
 let _busy = false;
 
+function sleep(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/** Ожидание первой GPS-фиксации для автостарта HUD из deep-link. */
+async function waitForGpsFix(timeoutMs = 25000){
+  const t0 = Date.now();
+  while(Date.now() - t0 < timeoutMs){
+    if(S.gps && Number.isFinite(S.gps.lat) && Number.isFinite(S.gps.lon)) return true;
+    await sleep(400);
+  }
+  return !!(S.gps && Number.isFinite(S.gps.lat) && Number.isFinite(S.gps.lon));
+}
+
+/**
+ * Deep-link из плана: ?rtext=lat,lon~…&telemetry=1&label=…&hud=1&bike=car_haval_f7
+ * Строит OSRM-маршрут и при возможности сразу включает HUD + телеметрию.
+ */
+async function bootRtextFromUrl(){
+  if(typeof location === 'undefined') return false;
+  const params = new URLSearchParams(location.search);
+  const rtextRaw = params.get('rtext');
+  if(!rtextRaw?.trim()) return false;
+
+  const rtext = rtextRaw.trim();
+  const label = (params.get('label') || 'Маршрут из плана').trim() || 'Маршрут из плана';
+  const wantHud = params.get('hud') !== '0';
+  const bike = params.get('bike');
+
+  if(bike){
+    setActiveBikeId(bike);
+    renderBikePanel();
+  }
+
+  setStatus('Строим маршрут из плана…');
+  try{
+    await applyTripSegment({ label, rtext }, 'osrm');
+    setTripContext({
+      tripTitle: 'План',
+      segmentLabel: label,
+      source: 'plan_rtext'
+    });
+
+    try{
+      const url = new URL(location.href);
+      url.searchParams.delete('rtext');
+      url.searchParams.delete('label');
+      url.searchParams.delete('hud');
+      url.searchParams.delete('bike');
+      history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }catch(e){ /* ignore */ }
+
+    if(wantHud){
+      setStatus('Ждём GPS для старта HUD…');
+      const gpsOk = await waitForGpsFix(25000);
+      if(!gpsOk || !S.finish){
+        setStatus('✓ Маршрут готов — дождитесь GPS и нажмите «Старт»');
+        return true;
+      }
+      const { startHud } = await import('./hud.js');
+      await startHud();
+      setStatus('');
+    }else{
+      setStatus('✓ Маршрут загружен — нажмите «Старт»');
+    }
+    return true;
+  }catch(e){
+    setStatus('❌ Маршрут из плана: ' + (e.message || e), true);
+    return true;
+  }
+}
+
 function setTripNewError(msg){
   const el = $('trip-new-error');
   if(!el) return;
@@ -327,6 +399,8 @@ async function shareTripLink(){
 }
 
 async function handleTripDeepLink(){
+  if(await bootRtextFromUrl()) return;
+
   const { localId, pack, openPlanner } = readTripDeepLink();
   if(openPlanner) $('drawer-trip')?.setAttribute('open', '');
 

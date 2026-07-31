@@ -24910,6 +24910,66 @@ var init_trip_refuel_hud = __esm({
 });
 
 // js/trip-ui.js
+function sleep2(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+async function waitForGpsFix(timeoutMs = 25e3) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeoutMs) {
+    if (S.gps && Number.isFinite(S.gps.lat) && Number.isFinite(S.gps.lon)) return true;
+    await sleep2(400);
+  }
+  return !!(S.gps && Number.isFinite(S.gps.lat) && Number.isFinite(S.gps.lon));
+}
+async function bootRtextFromUrl() {
+  if (typeof location === "undefined") return false;
+  const params = new URLSearchParams(location.search);
+  const rtextRaw = params.get("rtext");
+  if (!rtextRaw?.trim()) return false;
+  const rtext = rtextRaw.trim();
+  const label = (params.get("label") || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u043F\u043B\u0430\u043D\u0430").trim() || "\u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u043F\u043B\u0430\u043D\u0430";
+  const wantHud = params.get("hud") !== "0";
+  const bike = params.get("bike");
+  if (bike) {
+    setActiveBikeId(bike);
+    renderBikePanel();
+  }
+  setStatus("\u0421\u0442\u0440\u043E\u0438\u043C \u043C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u043F\u043B\u0430\u043D\u0430\u2026");
+  try {
+    await applyTripSegment({ label, rtext }, "osrm");
+    setTripContext({
+      tripTitle: "\u041F\u043B\u0430\u043D",
+      segmentLabel: label,
+      source: "plan_rtext"
+    });
+    try {
+      const url = new URL(location.href);
+      url.searchParams.delete("rtext");
+      url.searchParams.delete("label");
+      url.searchParams.delete("hud");
+      url.searchParams.delete("bike");
+      history.replaceState(null, "", url.pathname + url.search + url.hash);
+    } catch (e) {
+    }
+    if (wantHud) {
+      setStatus("\u0416\u0434\u0451\u043C GPS \u0434\u043B\u044F \u0441\u0442\u0430\u0440\u0442\u0430 HUD\u2026");
+      const gpsOk = await waitForGpsFix(25e3);
+      if (!gpsOk || !S.finish) {
+        setStatus("\u2713 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0433\u043E\u0442\u043E\u0432 \u2014 \u0434\u043E\u0436\u0434\u0438\u0442\u0435\u0441\u044C GPS \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u0421\u0442\u0430\u0440\u0442\xBB");
+        return true;
+      }
+      const { startHud: startHud2 } = await Promise.resolve().then(() => (init_hud(), hud_exports));
+      await startHud2();
+      setStatus("");
+    } else {
+      setStatus("\u2713 \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D \u2014 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u0421\u0442\u0430\u0440\u0442\xBB");
+    }
+    return true;
+  } catch (e) {
+    setStatus("\u274C \u041C\u0430\u0440\u0448\u0440\u0443\u0442 \u0438\u0437 \u043F\u043B\u0430\u043D\u0430: " + (e.message || e), true);
+    return true;
+  }
+}
 function setTripNewError(msg) {
   const el = $2("trip-new-error");
   if (!el) return;
@@ -25170,6 +25230,7 @@ async function shareTripLink() {
   setStatus("\u2713 \u0421\u0441\u044B\u043B\u043A\u0430 \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u0430 \u2014 \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435 (\u043D\u0443\u0436\u0435\u043D trip_pack \u0432 URL)");
 }
 async function handleTripDeepLink() {
+  if (await bootRtextFromUrl()) return;
   const { localId, pack, openPlanner } = readTripDeepLink();
   if (openPlanner) $2("drawer-trip")?.setAttribute("open", "");
   if (pack) {
@@ -26641,6 +26702,18 @@ var init_telemetry_ask = __esm({
 });
 
 // js/hud.js
+var hud_exports = {};
+__export(hud_exports, {
+  checkCamerasILS: () => checkCamerasILS,
+  cycleFuelAssist: () => cycleFuelAssist,
+  getLastMarkContext: () => getLastMarkContext,
+  initFuelReportUi: () => initFuelReportUi,
+  onTick: () => onTick,
+  refreshFuelPanel: () => refreshFuelPanel,
+  selectQuickFinish: () => selectQuickFinish,
+  startHud: () => startHud,
+  stopHud: () => stopHud
+});
 function getLastMarkContext() {
   return _lastMarkCtx;
 }
