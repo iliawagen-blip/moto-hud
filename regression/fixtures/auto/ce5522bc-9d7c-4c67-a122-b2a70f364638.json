@@ -61,7 +61,7 @@
     "duration_s": 10752,
     "step_count": 30,
     "router": "osrm",
-    "fetched_at": "2026-07-30T05:24:50.390Z",
+    "fetched_at": "2026-08-06T05:32:53.741Z",
     "fetch_error": null
   },
   "metrics": {
