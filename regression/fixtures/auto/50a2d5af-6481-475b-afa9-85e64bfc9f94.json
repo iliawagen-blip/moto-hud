@@ -69,9 +69,9 @@
   "motohud": {
     "distance_m": 143787,
     "duration_s": 7771,
-    "step_count": 85,
+    "step_count": 86,
     "router": "osrm",
-    "fetched_at": "2026-08-27T12:57:47.757Z",
+    "fetched_at": "2026-09-03T07:17:44.993Z",
     "fetch_error": null
   },
   "metrics": {
