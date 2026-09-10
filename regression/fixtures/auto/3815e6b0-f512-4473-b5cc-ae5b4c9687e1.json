@@ -64,11 +64,11 @@
     "yandex_web": null
   },
   "motohud": {
-    "distance_m": 43760,
+    "distance_m": 43761,
     "duration_s": 3643,
     "step_count": 62,
     "router": "osrm",
-    "fetched_at": "2026-09-03T07:17:16.855Z",
+    "fetched_at": "2026-09-10T07:25:08.716Z",
     "fetch_error": null
   },
   "metrics": {
